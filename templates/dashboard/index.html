@@ -531,6 +531,58 @@
           }
       {% endif %}
 
+
+      function confirmDeleteAlias() {
+          let that = $(this);
+          let alias = that.data("alias-email");
+          let aliasDomainTrashUrl = that.data("custom-domain-trash-url");
+
+          let userAliasDeleteAction = "{{ current_user.alias_delete_action.name }}";
+          let message = `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`;
+
+          if (userAliasDeleteAction === "{{ UserAliasDeleteAction.MoveToTrash.name }}") {
+              let aliasTrashUrl = "{{ url_for('dashboard.alias_trash') }}";
+              message = `Maybe you want to disable the alias instead? Once deleted, you will only be able to restore it for a limited time in your trash.<br><a href="${aliasTrashUrl}">See your trashed aliases now</a>`;
+          }
+
+          if (aliasDomainTrashUrl !== undefined) {
+              message = `Maybe you want to disable the alias instead? When it's deleted, it's moved to the domain
+    <a href="${aliasDomainTrashUrl}">trash</a>`;
+          }
+
+          bootbox.dialog({
+              title: `Delete ${alias}`,
+              message: message,
+              size: 'large',
+              onEscape: true,
+              backdrop: true,
+              buttons: {
+                  disable: {
+                      label: 'Disable it',
+                      className: 'btn-primary',
+                      callback: function () {
+                          that.closest("form").find('input[name="form-name"]').val("disable-alias");
+                          that.closest("form").submit();
+                      }
+                  },
+
+                  delete: {
+                      label: "Delete it, I don't need it anymore",
+                      className: 'btn-outline-danger',
+                      callback: function () {
+                          that.closest("form").submit();
+                      }
+                  },
+
+                  cancel: {
+                      label: 'Cancel',
+                      className: 'btn-outline-primary'
+                  },
+
+              }
+          });
+      }
+
       $('.highlighted').tooltip("show");
   </script>
 {% endblock %}

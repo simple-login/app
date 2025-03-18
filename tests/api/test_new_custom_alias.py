@@ -1,6 +1,6 @@
 from app import config
+from app.alias_delete import delete_alias
 from app.alias_suffix import signer
-from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, Mailbox, AliasUsedOn

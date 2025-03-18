@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app import alias_utils, parallel_limiter
+from app import alias_utils, parallel_limiter, alias_delete
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
@@ -17,6 +17,7 @@ from app.models import (
     User,
     EmailLog,
     Contact,
+    UserAliasDeleteAction,
 )
 from app.utils import CSRFValidationForm
 
@@ -30,7 +31,7 @@ class Stats:
 
 
 def get_stats(user: User) -> Stats:
-    nb_alias = Alias.filter_by(user_id=user.id).count()
+    nb_alias = Alias.filter_by(user_id=user.id, delete_on=None).count()  # noqa : E711
     nb_forward = (
         Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)
@@ -147,7 +148,7 @@ def index():
             if request.form.get("form-name") == "delete-alias":
                 LOG.i(f"User {current_user} requested deletion of alias {alias}")
                 email = alias.email
-                alias_utils.delete_alias(
+                alias_delete.delete_alias(
                     alias, current_user, AliasDeleteReason.ManualAction, commit=True
                 )
                 flash(f"Alias {email} has been deleted", "success")
@@ -221,6 +222,7 @@ def index():
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        UserAliasDeleteAction=UserAliasDeleteAction,
         mailboxes=mailboxes,
         show_intro=show_intro,
         page=page,

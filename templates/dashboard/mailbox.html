@@ -141,7 +141,7 @@
             let inputOptions = new_mailboxes.map((index, option) => { return {["value"]: option.value, ["text"]: option.text}}).toArray()
 
             let that = $(this);
-            let message = `All aliases owned by the mailbox <b>${mailbox}</b> will be also deleted.<br>` +
+            let message = `Depending on your alias deletion setting, all aliases owned by the mailbox <b>${mailbox}</b> will be either immediately deleted or moved to the trash.<br>` +
                 "You can choose to transfer them to a different mailbox:<br><br>";
 
             bootbox.prompt({

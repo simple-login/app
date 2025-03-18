@@ -25,11 +25,12 @@ from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.log import LOG
-from app.models import User, Job, BatchImport, Mailbox, CustomDomain, JobState
+from app.models import User, Job, BatchImport, Mailbox, JobState
 from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from events.event_sink import HttpEventSink
 from server import create_light_app
+from tasks.delete_custom_domain_job import DeleteCustomDomainJob
 
 _MAX_JOBS_PER_BATCH = 50
 
@@ -259,42 +260,10 @@ def process_job(job: Job):
         delete_mailbox_job(job)
 
     elif job.name == JobType.DELETE_DOMAIN.value:
-        custom_domain_id = job.payload.get("custom_domain_id")
-        custom_domain: Optional[CustomDomain] = CustomDomain.get(custom_domain_id)
-        if not custom_domain:
-            return
+        delete_job = DeleteCustomDomainJob.create_from_job(job)
+        if delete_job:
+            delete_job.run()
 
-        is_subdomain = custom_domain.is_sl_subdomain
-        domain_name = custom_domain.domain
-        user = custom_domain.user
-
-        custom_domain_partner_id = custom_domain.partner_id
-        CustomDomain.delete(custom_domain.id)
-        Session.commit()
-
-        if is_subdomain:
-            message = f"Delete subdomain {custom_domain_id} ({domain_name})"
-        else:
-            message = f"Delete custom domain {custom_domain_id} ({domain_name})"
-        emit_user_audit_log(
-            user=user,
-            action=UserAuditLogAction.DeleteCustomDomain,
-            message=message,
-        )
-
-        LOG.d("Domain %s deleted", domain_name)
-
-        if custom_domain_partner_id is None:
-            send_email(
-                user.email,
-                f"Your domain {domain_name} has been deleted",
-                f"""Domain {domain_name} along with its aliases are deleted successfully.
-
-    Regards,
-    SimpleLogin team.
-    """,
-                retries=3,
-            )
     elif job.name == JobType.SEND_USER_REPORT.value:
         export_job = ExportUserDataJob.create_from_job(job)
         if export_job:

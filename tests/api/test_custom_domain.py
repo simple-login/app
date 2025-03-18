@@ -1,4 +1,4 @@
-from app.alias_utils import delete_alias
+from app.alias_delete import delete_alias
 from app.models import CustomDomain, Alias, Mailbox
 from tests.utils import login
 

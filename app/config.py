@@ -557,12 +557,21 @@ def getRateLimitFromConfig(
     return limits
 
 
+# Rate limits
 ALIAS_CREATE_RATE_LIMIT_FREE = getRateLimitFromConfig(
     "ALIAS_CREATE_RATE_LIMIT_FREE", "10,900:50,3600"
 )
 ALIAS_CREATE_RATE_LIMIT_PAID = getRateLimitFromConfig(
     "ALIAS_CREATE_RATE_LIMIT_PAID", "50,900:200,3600"
 )
+ALIAS_RESTORE_ONE_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ONE_RATE_LIMIT", "100,86400:200,604800"
+)
+ALIAS_RESTORE_ALL_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ALL_RATE_LIMIT", "5,3600:20,604800"
+)
+
+
 PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
     FLASK_SECRET + "partnerapitoken"
 )
@@ -670,3 +679,4 @@ MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
 )
 
 AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
+ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))

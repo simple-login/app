@@ -1,7 +1,7 @@
 from typing import List
 
+from app.alias_delete import delete_alias
 from app.alias_utils import (
-    delete_alias,
     check_alias_prefix,
     get_user_if_alias_would_auto_create,
     get_alias_recipient_name,

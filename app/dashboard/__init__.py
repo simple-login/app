@@ -33,6 +33,7 @@ from .views import (
     notification,
     support,
     account_setting,
+    alias_trash,
 )
 
 __all__ = [
@@ -70,4 +71,5 @@ __all__ = [
     "notification",
     "support",
     "account_setting",
+    "alias_trash",
 ]

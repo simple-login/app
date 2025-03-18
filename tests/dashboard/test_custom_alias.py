@@ -3,13 +3,13 @@ from random import random
 from flask import url_for
 
 from app import config
+from app.alias_delete import delete_alias
 from app.alias_suffix import (
     get_alias_suffixes,
     AliasSuffix,
     signer,
     verify_prefix_suffix,
 )
-from app.alias_utils import delete_alias
 from app.config import EMAIL_DOMAIN
 from app.db import Session
 from app.models import (

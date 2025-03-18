@@ -276,6 +276,11 @@ class AliasDeleteReason(EnumE):
     CustomDomainDeleted = 5
 
 
+class UserAliasDeleteAction(EnumE):
+    MoveToTrash = 0
+    DeleteImmediately = 1
+
+
 class JobPriority(EnumE):
     Low = 1
     Default = 50
@@ -290,9 +295,13 @@ class IntEnumType(sa.types.TypeDecorator):
         self._enum_type = enumtype
 
     def process_bind_param(self, enum_obj, dialect):
+        if enum_obj is None:
+            return None
         return enum_obj.value
 
     def process_result_value(self, enum_value, dialect):
+        if enum_value is None:
+            return None
         return self._enum_type(enum_value)
 
 
@@ -573,6 +582,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     # Trigger hard deletion of the account at this time
     delete_on = sa.Column(ArrowType, default=None)
 
+    # Action to perform when deleting an alias
+    alias_delete_action = sa.Column(
+        IntEnumType(UserAliasDeleteAction),
+        default=UserAliasDeleteAction.MoveToTrash,
+        server_default=str(UserAliasDeleteAction.MoveToTrash.value),
+        nullable=False,
+    )
+
     __table_args__ = (
         sa.Index(
             "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
@@ -711,7 +728,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
 
         # Manually delete all aliases for the user that is about to be deleted
-        from app.alias_utils import delete_alias
+        from app.alias_delete import delete_alias
 
         for alias in Alias.filter_by(user_id=user.id):
             delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
@@ -901,7 +918,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def can_create_new_alias(self) -> bool:
         """
         Whether user can create a new alias. User can't create a new alias if
-        - has more than 15 aliases in the free plan, *even in the free trial*
+        - has more than user.max_alias_for_free_account() aliases in the free plan, *even in the free trial*
         """
         if not self.is_active():
             return False
@@ -912,10 +929,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if self.lifetime_or_active_subscription():
             return True
         else:
-            return (
-                Alias.filter_by(user_id=self.id).count()
-                < self.max_alias_for_free_account()
-            )
+            active_alias_count = Alias.filter_by(
+                user_id=self.id, delete_on=None
+            ).count()
+            return active_alias_count < self.max_alias_for_free_account()
 
     def can_send_or_receive(self) -> bool:
         if self.disabled:
@@ -1620,6 +1637,14 @@ class Alias(Base, ModelMixin):
 
     last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
 
+    delete_on = sa.Column(ArrowType, default=None, server_default=None, nullable=True)
+    delete_reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        default=None,
+        server_default=None,
+        nullable=True,
+    )
+
     __table_args__ = (
         Index("ix_video___ts_vector__", ts_vector, postgresql_using="gin"),
         # index on note column using pg_trgm
@@ -1630,6 +1655,7 @@ class Alias(Base, ModelMixin):
             postgresql_using="gin",
         ),
         Index("ix_alias_original_owner_id", "original_owner_id"),
+        Index("ix_alias_delete_on", "delete_on"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -1671,6 +1697,9 @@ class Alias(Base, ModelMixin):
             return True
         return False
 
+    def is_trashed(self) -> bool:
+        return self.delete_on is not None
+
     @staticmethod
     def get_custom_domain(alias_address: str) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
@@ -1696,7 +1725,7 @@ class Alias(Base, ModelMixin):
             limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
         # limits is array of (hits,days)
         for limit in limits:
-            key = f"alias_create_{limit[1]}d:{user.id}"
+            key = f"alias_create_{limit[1]}:{user.id}"
             rate_limiter.check_bucket_limit(key, limit[0], limit[1])
 
         email = kw["email"]
@@ -2536,7 +2565,9 @@ class CustomDomain(Base, ModelMixin):
             return [self.user.default_mailbox]
 
     def nb_alias(self):
-        return Alias.filter_by(custom_domain_id=self.id).count()
+        from app.custom_domain_utils import count_custom_domain_aliases
+
+        return count_custom_domain_aliases(self)
 
     def get_trash_url(self):
         return config.URL + f"/dashboard/domains/{self.id}/trash"
@@ -2568,11 +2599,11 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
-        from app import alias_utils
+        from app.alias_delete import perform_alias_deletion
 
         for alias in Alias.filter_by(custom_domain_id=obj_id):
-            alias_utils.delete_alias(
-                alias, obj.user, AliasDeleteReason.CustomDomainDeleted
+            perform_alias_deletion(
+                alias, alias.user, AliasDeleteReason.CustomDomainDeleted
             )
 
         return super(CustomDomain, cls).delete(obj_id)
@@ -2747,9 +2778,9 @@ class Directory(Base, ModelMixin):
         user = obj.user
         # Put all aliases belonging to this directory to global or domain trash
         for alias in Alias.filter_by(directory_id=obj_id):
-            from app import alias_utils
+            from app import alias_delete
 
-            alias_utils.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
+            alias_delete.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
@@ -2843,15 +2874,9 @@ class Mailbox(Base, ModelMixin):
         return False
 
     def nb_alias(self):
-        alias_ids = set(
-            am.alias_id
-            for am in AliasMailbox.filter_by(mailbox_id=self.id).values(
-                AliasMailbox.alias_id
-            )
-        )
-        for alias in Alias.filter_by(mailbox_id=self.id).values(Alias.id):
-            alias_ids.add(alias.id)
-        return len(alias_ids)
+        from app.mailbox_utils import count_mailbox_aliases
+
+        return count_mailbox_aliases(self)
 
     def is_proton(self) -> bool:
         for proton_email_domain in config.PROTON_EMAIL_DOMAINS:
@@ -2885,10 +2910,10 @@ class Mailbox(Base, ModelMixin):
                 alias.mailbox_id = first_mb.id
                 alias._mailboxes.remove(first_mb)
             else:
-                from app import alias_utils
+                from app.alias_delete import perform_alias_deletion
 
                 # only put aliases that have mailbox as a single mailbox into trash
-                alias_utils.delete_alias(alias, user, AliasDeleteReason.MailboxDeleted)
+                perform_alias_deletion(alias, user, AliasDeleteReason.MailboxDeleted)
             Session.commit()
 
         cls.filter(cls.id == obj_id).delete()

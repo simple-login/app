@@ -1,12 +1,12 @@
 import csv
-from io import StringIO
 import re
 from dataclasses import dataclass
+from io import StringIO
 from typing import Optional, Tuple
 
 from email_validator import validate_email, EmailNotValidError
-from sqlalchemy.exc import IntegrityError, DataError
 from flask import make_response
+from sqlalchemy.exc import IntegrityError, DataError
 
 from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
 from app.config import (
@@ -38,11 +38,9 @@ from app.events.generated.event_pb2 import (
 from app.log import LOG
 from app.models import (
     Alias,
-    AliasDeleteReason,
     CustomDomain,
     Directory,
     User,
-    DeletedAlias,
     DomainDeletedAlias,
     AliasMailbox,
     Mailbox,
@@ -333,62 +331,13 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
 
 
-def delete_alias(
-    alias: Alias,
-    user: User,
-    reason: AliasDeleteReason = AliasDeleteReason.Unspecified,
-    commit: bool = False,
-):
-    """
-    Delete an alias and add it to either global or domain trash
-    Should be used instead of Alias.delete, DomainDeletedAlias.create, DeletedAlias.create
-    """
-    LOG.i(f"User {user} has deleted alias {alias}")
-    # save deleted alias to either global or domain tra
-    if alias.custom_domain_id:
-        if not DomainDeletedAlias.get_by(
-            email=alias.email, domain_id=alias.custom_domain_id
-        ):
-            domain_deleted_alias = DomainDeletedAlias(
-                user_id=user.id,
-                email=alias.email,
-                domain_id=alias.custom_domain_id,
-                reason=reason,
-            )
-            Session.add(domain_deleted_alias)
-            Session.commit()
-            LOG.i(
-                f"Moving {alias} to domain {alias.custom_domain_id} trash {domain_deleted_alias}"
-            )
-    else:
-        if not DeletedAlias.get_by(email=alias.email):
-            deleted_alias = DeletedAlias(email=alias.email, reason=reason)
-            Session.add(deleted_alias)
-            Session.commit()
-            LOG.i(f"Moving {alias} to global trash {deleted_alias}")
-
-    alias_id = alias.id
-    alias_email = alias.email
-
-    emit_alias_audit_log(
-        alias, AliasAuditLogAction.DeleteAlias, "Alias deleted by user action"
-    )
-    Alias.filter(Alias.id == alias.id).delete()
-    Session.commit()
-
-    EventDispatcher.send_event(
-        user,
-        EventContent(alias_deleted=AliasDeleted(id=alias_id, email=alias_email)),
-    )
-    if commit:
-        Session.commit()
-
-
 def aliases_for_mailbox(mailbox: Mailbox) -> [Alias]:
     """
     get list of aliases for a given mailbox
     """
-    ret = set(Alias.filter(Alias.mailbox_id == mailbox.id).all())
+    ret = set(
+        Alias.filter(Alias.mailbox_id == mailbox.id, Alias.delete_on == None).all()  # noqa: E711
+    )
 
     for alias in (
         Session.query(Alias)
@@ -433,7 +382,7 @@ def alias_export_csv(user, csv_direct_export=False):
 
     """
     data = [["alias", "note", "enabled", "mailboxes"]]
-    for alias in Alias.filter_by(user_id=user.id).all():  # type: Alias
+    for alias in Alias.filter_by(user_id=user.id, delete_on=None).all():  # type: Alias
         # Always put the main mailbox first
         # It is seen a primary while importing
         alias_mailboxes = alias.mailboxes
