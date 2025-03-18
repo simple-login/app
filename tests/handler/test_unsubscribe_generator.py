@@ -205,6 +205,14 @@ def test_unsub_preserve_original(
         assert message[headers.LIST_UNSUBSCRIBE_POST] is None
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
+        assert (
+            "List-Unsubscribe=One-Click"
+            == message[f"X-SL-Proxy-{headers.LIST_UNSUBSCRIBE_POST}"]
+        )
+    assert (
+        message[headers.LIST_UNSUBSCRIBE]
+        == message[f"X-SL-Proxy-{headers.LIST_UNSUBSCRIBE}"]
+    )
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
 
 
