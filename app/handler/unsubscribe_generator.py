@@ -16,9 +16,9 @@ from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 
 
 class UnsubscribeGenerator:
-    def _generate_header_with_original_behaviour(
+    def _calculate_header_with_original_behaviour(
         self, alias: Alias, message: Message
-    ) -> Message:
+    ) -> dict[str, str]:
         """
         Generate a header that will encode the original unsub request. To do so
          1. Look if there's an original List_Unsubscribe headers, otherwise do nothing
@@ -34,7 +34,7 @@ class UnsubscribeGenerator:
         unsubscribe_data = message[headers.LIST_UNSUBSCRIBE]
         if not unsubscribe_data:
             LOG.info("Email has no unsubscribe header")
-            return message
+            return {}
         if isinstance(unsubscribe_data, Header):
             unsubscribe_data = str(unsubscribe_data.encode())
         raw_methods = [method.strip() for method in unsubscribe_data.split(",")]
@@ -56,7 +56,12 @@ class UnsubscribeGenerator:
                     LOG.debug(
                         f"Skipping replacing unsubscribe since the original email already points to {config.UNSUBSCRIBER}"
                     )
-                    return message
+                    out = {headers.LIST_UNSUBSCRIBE: unsubscribe_data}
+                    if message[headers.LIST_UNSUBSCRIBE_POST]:
+                        out[headers.LIST_UNSUBSCRIBE_POST] = str(
+                            message[headers.LIST_UNSUBSCRIBE_POST]
+                        )
+                    return out
                 query_data = urllib.parse.parse_qs(url_data.query)
                 mailto_unsubs = (url_data.path, query_data.get("subject", [""])[0])
                 LOG.debug(f"Unsub is mailto to {mailto_unsubs}")
@@ -65,27 +70,34 @@ class UnsubscribeGenerator:
                 other_unsubs.append(method)
         # If there are non mailto unsubscribe methods, use those in the header
         if other_unsubs:
-            add_or_replace_header(
-                message,
-                headers.LIST_UNSUBSCRIBE,
-                ", ".join([f"<{method}>" for method in other_unsubs]),
-            )
-            add_or_replace_header(
-                message, headers.LIST_UNSUBSCRIBE_POST, "List-Unsubscribe=One-Click"
-            )
             LOG.debug(f"Adding click unsub methods to header {other_unsubs}")
-            return message
+            return {
+                headers.LIST_UNSUBSCRIBE: ", ".join(
+                    [f"<{method}>" for method in other_unsubs]
+                ),
+                headers.LIST_UNSUBSCRIBE_POST: "List-Unsubscribe=One-Click",
+            }
         elif not mailto_unsubs:
             LOG.debug("No unsubs. Deleting all unsub headers")
-            delete_header(message, headers.LIST_UNSUBSCRIBE)
-            delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
-            return message
-        unsub_data = UnsubscribeData(
+            return {}
+        unsub_link = UnsubscribeEncoder.encode(
             UnsubscribeAction.OriginalUnsubscribeMailto,
             UnsubscribeOriginalData(alias.id, mailto_unsubs[0], mailto_unsubs[1]),
         )
-        LOG.debug(f"Adding unsub data {unsub_data}")
-        return self._add_unsubscribe_header(message, unsub_data)
+        LOG.debug(f"Adding unsub link {unsub_link.link}")
+        out = {headers.LIST_UNSUBSCRIBE: f"<{unsub_link.link}>"}
+        if not unsub_link.via_email:
+            out[headers.LIST_UNSUBSCRIBE_POST] = "List-Unsubscribe=One-Click"
+        return out
+
+    def __replace_unsub_headers(
+        self, message, unsub_headers: dict[str, str]
+    ) -> Message:
+        delete_header(message, headers.LIST_UNSUBSCRIBE)
+        delete_header(message, headers.LIST_UNSUBSCRIBE_POST)
+        for header in unsub_headers:
+            add_or_replace_header(message, header, unsub_headers[header])
+        return message
 
     def _add_unsubscribe_header(
         self, message: Message, unsub: UnsubscribeData
@@ -106,11 +118,35 @@ class UnsubscribeGenerator:
         Add List-Unsubscribe header based on the user preference.
         """
         unsub_behaviour = alias.user.unsub_behaviour
+        original_unsub_proxied = self._calculate_header_with_original_behaviour(
+            alias, message
+        )
+        message = self.__preserve_original_headers(message, original_unsub_proxied)
         if unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
-            return self._generate_header_with_original_behaviour(alias, message)
+            return self.__replace_unsub_headers(message, original_unsub_proxied)
         elif unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
             unsub = UnsubscribeData(UnsubscribeAction.DisableAlias, alias.id)
             return self._add_unsubscribe_header(message, unsub)
         else:
             unsub = UnsubscribeData(UnsubscribeAction.DisableContact, contact.id)
             return self._add_unsubscribe_header(message, unsub)
+
+    def __preserve_original_headers(
+        self, message: Message, original_unsub_proxied: dict[str, str]
+    ) -> Message:
+        unsubscribe_data = message[headers.LIST_UNSUBSCRIBE]
+        if unsubscribe_data:
+            add_or_replace_header(
+                message, headers.SL_ORIGINAL_LIST_UNSUBSCRIBE, unsubscribe_data
+            )
+        unsubscribe_data = message[headers.LIST_UNSUBSCRIBE_POST]
+        if unsubscribe_data:
+            add_or_replace_header(
+                message, headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST, unsubscribe_data
+            )
+        for header in original_unsub_proxied:
+            add_or_replace_header(
+                message, f"X-SL-Proxy-{header}", original_unsub_proxied[header]
+            )
+
+        return message

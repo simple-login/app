@@ -38,6 +38,8 @@ SL_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
 SL_ORIGINAL_FROM = "X-SimpleLogin-Original-From"
 SL_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
 SL_CLIENT_IP = "X-SimpleLogin-Client-IP"
+SL_ORIGINAL_LIST_UNSUBSCRIBE = "X-SimpleLogin-Original-List-Unsubscribe"
+SL_ORIGINAL_LIST_UNSUBSCRIBE_POST = "X-SimpleLogin-Original-List-Unsubscribe-Post"
 
 # to let Rspamd know that the message should be signed
 SL_WANT_SIGNING = "X-SimpleLogin-Want-Signing"
