@@ -144,6 +144,12 @@ class UnsubscribeGenerator:
             add_or_replace_header(
                 message, headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST, unsubscribe_data
             )
+        unsubscribe_data = message[headers.LIST_ID]
+        if unsubscribe_data:
+            add_or_replace_header(
+                message, headers.SL_ORIGINAL_LIST_ID, unsubscribe_data
+            )
+            delete_header(message, headers.LIST_ID)
         for header in original_unsub_proxied:
             add_or_replace_header(
                 message, f"X-SL-Proxy-{header}", original_unsub_proxied[header]

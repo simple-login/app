@@ -839,6 +839,7 @@ def forward_email_to_mailbox(
         headers.IN_REPLY_TO,
         headers.SL_QUEUE_ID,
         headers.LIST_UNSUBSCRIBE,
+        headers.LIST_ID,
         headers.LIST_UNSUBSCRIBE_POST,
     ] + headers.MIME_HEADERS
     if user.include_header_email_header:
