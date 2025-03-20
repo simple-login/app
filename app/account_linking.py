@@ -9,17 +9,16 @@ from newrelic import agent
 from psycopg2.errors import UniqueViolation
 from sqlalchemy import or_
 
+from app import config
 from app.db import Session
 from app.email_utils import send_welcome_email
-from app.events.event_dispatcher import EventDispatcher
-from app.events.generated.event_pb2 import UserPlanChanged, EventContent
-from app.partner_user_utils import create_partner_user, create_partner_subscription
-from app.utils import sanitize_email, canonicalize_email
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
     AccountIsUsingAliasAsEmail,
     AccountAlreadyLinkedToAnotherUserException,
 )
+from app.events.event_dispatcher import EventDispatcher
+from app.events.generated.event_pb2 import UserPlanChanged, EventContent
 from app.log import LOG
 from app.models import (
     PartnerSubscription,
@@ -28,8 +27,10 @@ from app.models import (
     User,
     Alias,
 )
+from app.partner_user_utils import create_partner_user, create_partner_subscription
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
+from app.utils import sanitize_email, canonicalize_email
 
 
 class SLPlanType(Enum):
@@ -337,6 +338,11 @@ def link_user(
 def switch_already_linked_user(
     link_request: PartnerLinkRequest, partner_user: PartnerUser, current_user: User
 ):
+    if config.PROTON_PREVENT_CHANGE_LINKED_ACCOUNT:
+        LOG.i(
+            f"Proton account is linked to another user partner_user:{partner_user.id} from user:{current_user.id}"
+        )
+        raise AccountAlreadyLinkedToAnotherUserException()
     # Find if the user has another link and unlink it
     other_partner_user = PartnerUser.get_by(
         user_id=current_user.id,
@@ -346,7 +352,6 @@ def switch_already_linked_user(
         LOG.i(
             f"Deleting previous partner_user:{other_partner_user.id} from user:{current_user.id}"
         )
-
         emit_user_audit_log(
             user=other_partner_user.user,
             action=UserAuditLogAction.UnlinkAccount,
