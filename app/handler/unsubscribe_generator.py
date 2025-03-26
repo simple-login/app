@@ -17,7 +17,7 @@ from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 
 class UnsubscribeGenerator:
     def _calculate_header_with_original_behaviour(
-        self, alias: Alias, message: Message
+        self, alias: Alias, message: Message, force_web: bool = False
     ) -> dict[str, str]:
         """
         Generate a header that will encode the original unsub request. To do so
@@ -83,6 +83,7 @@ class UnsubscribeGenerator:
         unsub_link = UnsubscribeEncoder.encode(
             UnsubscribeAction.OriginalUnsubscribeMailto,
             UnsubscribeOriginalData(alias.id, mailto_unsubs[0], mailto_unsubs[1]),
+            force_web=force_web,
         )
         LOG.debug(f"Adding unsub link {unsub_link.link}")
         out = {headers.LIST_UNSUBSCRIBE: f"<{unsub_link.link}>"}
@@ -100,9 +101,11 @@ class UnsubscribeGenerator:
         return message
 
     def _add_unsubscribe_header(
-        self, message: Message, unsub: UnsubscribeData
+        self, message: Message, unsub: UnsubscribeData, force_web: bool = False
     ) -> Message:
-        unsub_link = UnsubscribeEncoder.encode(unsub.action, unsub.data)
+        unsub_link = UnsubscribeEncoder.encode(
+            unsub.action, unsub.data, force_web=force_web
+        )
 
         add_or_replace_header(message, headers.LIST_UNSUBSCRIBE, f"<{unsub_link.link}>")
         if not unsub_link.via_email:
@@ -117,19 +120,22 @@ class UnsubscribeGenerator:
         """
         Add List-Unsubscribe header based on the user preference.
         """
+        force_web = False
+        if alias.user_id in config.USERS_WITH_HTTP_UNSUBSCRIBE:
+            force_web = True
         unsub_behaviour = alias.user.unsub_behaviour
         original_unsub_proxied = self._calculate_header_with_original_behaviour(
-            alias, message
+            alias, message, force_web=force_web
         )
         message = self.__preserve_original_headers(message, original_unsub_proxied)
         if unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
             return self.__replace_unsub_headers(message, original_unsub_proxied)
         elif unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
             unsub = UnsubscribeData(UnsubscribeAction.DisableAlias, alias.id)
-            return self._add_unsubscribe_header(message, unsub)
+            return self._add_unsubscribe_header(message, unsub, force_web=force_web)
         else:
             unsub = UnsubscribeData(UnsubscribeAction.DisableContact, contact.id)
-            return self._add_unsubscribe_header(message, unsub)
+            return self._add_unsubscribe_header(message, unsub, force_web=force_web)
 
     def __preserve_original_headers(
         self, message: Message, original_unsub_proxied: dict[str, str]
