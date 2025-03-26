@@ -538,11 +538,15 @@
           let aliasDomainTrashUrl = that.data("custom-domain-trash-url");
 
           let userAliasDeleteAction = "{{ current_user.alias_delete_action.name }}";
+          let title = `Delete ${alias}`;
           let message = `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`;
+          let buttonText = "Delete it, I don't need it anymore";
 
           if (userAliasDeleteAction === "{{ UserAliasDeleteAction.MoveToTrash.name }}") {
               let aliasTrashUrl = "{{ url_for('dashboard.alias_trash') }}";
+              title = `Trash ${alias};`
               message = `Maybe you want to disable the alias instead? Once deleted, you will only be able to restore it for a limited time in your trash.<br><a href="${aliasTrashUrl}">See your trashed aliases now</a>`;
+              buttonText = "Trash it";
           }
 
           if (aliasDomainTrashUrl !== undefined) {
@@ -551,7 +555,7 @@
           }
 
           bootbox.dialog({
-              title: `Delete ${alias}`,
+              title: title,
               message: message,
               size: 'large',
               onEscape: true,
@@ -567,7 +571,7 @@
                   },
 
                   delete: {
-                      label: "Delete it, I don't need it anymore",
+                      label: buttonText,
                       className: 'btn-outline-danger',
                       callback: function () {
                           that.closest("form").submit();
