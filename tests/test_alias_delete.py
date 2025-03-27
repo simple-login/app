@@ -18,13 +18,15 @@ from app.models import (
     DeletedAlias,
     Mailbox,
     PartnerUser,
+    CustomDomain,
+    DomainDeletedAlias,
 )
 from tests.events.event_test_utils import (
     OnMemoryDispatcher,
     _get_event_from_string,
     _create_linked_user,
 )
-from tests.utils import create_new_user
+from tests.utils import create_new_user, random_domain
 
 on_memory_dispatcher = OnMemoryDispatcher()
 
@@ -130,6 +132,28 @@ def test_perform_alias_deletion():
     ensure_alias_is_deleted(alias_id, alias_email, 2, reason)
 
 
+def test_alias_custom_domain_perform_deletion_moves_to_domain_deleted_alias():
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id, domain=random_domain(), verified=True
+    )
+    alias = Alias.create_new_random(user)
+    alias.custom_domain_id = custom_domain.id
+    Session.commit()
+    alias_id = alias.id
+    alias_email = alias.email
+
+    perform_alias_deletion(
+        alias, user, reason=AliasDeleteReason.ManualAction, commit=True
+    )
+
+    db_alias = Alias.get_by(id=alias_id)
+    assert db_alias is None
+
+    deleted_custom_alias = DomainDeletedAlias.get_by(email=alias_email)
+    assert deleted_custom_alias is not None
+
+
 # move_alias_to_trash
 def test_move_alias_to_trash():
     user = create_new_user()
@@ -139,6 +163,26 @@ def test_move_alias_to_trash():
     reason = AliasDeleteReason.ManualAction
     move_alias_to_trash(alias, user, reason=reason, commit=True)
     ensure_alias_is_trashed(alias, 2, reason)
+
+
+def test_move_alias_custom_domain_to_trash_to_domain_deleted_alias():
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id, domain=random_domain(), verified=True
+    )
+    alias = Alias.create_new_random(user)
+    alias.custom_domain_id = custom_domain.id
+    Session.commit()
+    alias_id = alias.id
+    alias_email = alias.email
+
+    move_alias_to_trash(alias, user, reason=AliasDeleteReason.ManualAction, commit=True)
+
+    db_alias = Alias.get_by(id=alias_id)
+    assert db_alias is None
+
+    deleted_custom_alias = DomainDeletedAlias.get_by(email=alias_email)
+    assert deleted_custom_alias is not None
 
 
 # delete mailbox

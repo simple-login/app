@@ -43,4 +43,4 @@ def test_delete_custom_domain_removes_aliases():
     job.run()
 
     assert_alias_audit_log(a1_id, 2, AliasAuditLogAction.DeleteAlias)
-    assert_alias_audit_log(a2_id, 3, AliasAuditLogAction.DeleteAlias)
+    assert_alias_audit_log(a2_id, 2, AliasAuditLogAction.DeleteAlias)
