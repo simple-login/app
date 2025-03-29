@@ -15,7 +15,10 @@ SUDO_MODE_MINUTES_VALID = 5
 
 def authorize_request() -> Optional[Tuple[str, int]]:
     api_code = request.headers.get("Authentication")
-    api_key = ApiKey.get_by(code=api_code)
+    if api_code is not None:
+        api_key = ApiKey.get_by(code=api_code)
+    else:
+        api_key = None
 
     if not api_key:
         if current_user.is_authenticated:

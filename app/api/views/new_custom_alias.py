@@ -27,8 +27,8 @@ from app.utils import convert_to_id
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
-@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@limiter.limit(ALIAS_LIMIT)
 @parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v2():
     """
@@ -126,8 +126,8 @@ def new_custom_alias_v2():
 
 
 @api_bp.route("/v3/alias/custom/new", methods=["POST"])
-@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@limiter.limit(ALIAS_LIMIT)
 @parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v3():
     """
