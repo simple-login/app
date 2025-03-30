@@ -67,7 +67,7 @@ def new_random_alias():
 
         # cannot use this alias as it belongs to another user
         if alias and not alias.user_id == user.id:
-            LOG.d("%s belongs to another user", alias)
+            LOG.i(f"User {user} tried to create an alias that belongs to another user")
             alias = None
         elif alias and alias.user_id == user.id:
             # make sure alias was created for this website
@@ -101,6 +101,9 @@ def new_random_alias():
             elif mode == "uuid":
                 scheme = AliasGeneratorEnum.uuid.value
             else:
+                LOG.i(
+                    f"User {user} tried to create a random alias with invalid word or uuid"
+                )
                 return jsonify(error=f"{mode} must be either word or uuid"), 400
 
         alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
