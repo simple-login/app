@@ -19,8 +19,8 @@ from app.utils import convert_to_id
 
 
 @api_bp.route("/alias/random/new", methods=["POST"])
-@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@limiter.limit(ALIAS_LIMIT)
 @parallel_limiter.lock(name="alias_creation")
 def new_random_alias():
     """
