@@ -172,6 +172,7 @@ def delete_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/toggle", methods=["POST"])
 @require_api_auth
+@limiter.limit("100/hour")
 def toggle_alias(alias_id):
     """
     Enable/disable alias
@@ -202,6 +203,7 @@ def toggle_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/activities")
 @require_api_auth
+@limiter.limit("30/minute")
 def get_alias_activities(alias_id):
     """
     Get aliases
