@@ -364,9 +364,7 @@ def test_add_alias_in_custom_domain_trash(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert "You have deleted this alias before. You can restore it on" in r.get_data(
-        True
-    )
+    assert "You have deleted this alias before" in r.get_data(True)
 
 
 def test_too_many_requests(flask_client):

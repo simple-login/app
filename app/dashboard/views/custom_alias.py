@@ -126,7 +126,7 @@ def custom_alias():
                 )
                 custom_domain = domain_deleted_alias.domain
                 flash(
-                    f"You have deleted this alias before. You can restore it on "
+                    f"You have deleted this alias before. If you want to re-create it, please delete it from "
                     f"{custom_domain.domain} 'Deleted Alias' page",
                     "error",
                 )
