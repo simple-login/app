@@ -1,5 +1,5 @@
 from app.db import Session
-from app.models import SLDomain, PartnerUser, AliasOptions, BlockedDomain
+from app.models import SLDomain, PartnerUser, AliasOptions
 from app.proton.proton_partner import get_proton_partner
 from init_app import add_sl_domains
 from tests.utils import create_new_user, random_token
@@ -7,7 +7,6 @@ from tests.utils import create_new_user, random_token
 
 def setup_module():
     Session.query(SLDomain).delete()
-    Session.query(BlockedDomain).delete()
     SLDomain.create(
         domain="hidden", premium_only=False, flush=True, order=5, hidden=True
     )
@@ -34,7 +33,6 @@ def setup_module():
 
 def teardown_module():
     Session.query(SLDomain).delete()
-    Session.query(BlockedDomain).delete()
     add_sl_domains()
 
 
@@ -229,16 +227,3 @@ def test_get_free_partner_and_premium_partner():
     assert [d.domain for d in domains] == user.available_sl_domains(
         alias_options=options
     )
-
-
-def test_domain_blocked_for_user():
-    user = create_new_user()
-    BlockedDomain.create(
-        user_id=user.id,
-        domain="example.com",
-        flush=True,
-    )
-    Session.flush()
-
-    assert user.is_domain_blocked("example.com")
-    assert not user.is_domain_blocked("some-other-example.com")

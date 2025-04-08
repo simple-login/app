@@ -61,6 +61,7 @@ from app.alias_utils import (
     change_alias_status,
     get_alias_recipient_name,
 )
+from app.blocked_domain_utils import is_domain_blocked
 from app.config import (
     EMAIL_DOMAIN,
     URL,
@@ -613,7 +614,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
             return [(True, status.E209)]
 
     mail_from_domain = get_email_domain_part(mail_from)
-    if user.is_domain_blocked(mail_from_domain):
+    if is_domain_blocked(user.id, mail_from_domain):
         # by default return 2** instead of 5** to allow user to receive emails again when domain is unblocked
         res_status = status.E200
         if user.block_behaviour == BlockBehaviourEnum.return_5xx:

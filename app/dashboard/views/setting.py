@@ -20,7 +20,7 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
     CONNECT_WITH_PROTON,
 )
-from app.custom_domain_utils import sanitize_domain, can_domain_be_used
+from app.custom_domain_utils import sanitize_domain, can_blocked_domain_be_used
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.extensions import limiter
@@ -295,8 +295,8 @@ def setting():
         elif request.form.get("form-name") == "blocked-domains-add":
             domain = request.form.get("domain-name")
             new_domain = sanitize_domain(domain)
-            domain_forbidden_cause = can_domain_be_used(
-                current_user, new_domain, BlockedDomain
+            domain_forbidden_cause = can_blocked_domain_be_used(
+                current_user, new_domain
             )
 
             if domain_forbidden_cause:
