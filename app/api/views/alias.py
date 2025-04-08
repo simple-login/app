@@ -5,7 +5,7 @@ from flask import g
 from flask import jsonify
 from flask import request
 
-from app import alias_utils
+from app import alias_utils, alias_delete
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_mailbox_utils import set_mailboxes_for_alias
 from app.api.base import api_bp, require_api_auth
@@ -165,13 +165,14 @@ def delete_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_utils.delete_alias(alias, user, AliasDeleteReason.ManualAction)
+    alias_delete.delete_alias(alias, user, AliasDeleteReason.ManualAction)
 
     return jsonify(deleted=True), 200
 
 
 @api_bp.route("/aliases/<int:alias_id>/toggle", methods=["POST"])
 @require_api_auth
+@limiter.limit("100/hour")
 def toggle_alias(alias_id):
     """
     Enable/disable alias
@@ -202,6 +203,7 @@ def toggle_alias(alias_id):
 
 @api_bp.route("/aliases/<int:alias_id>/activities")
 @require_api_auth
+@limiter.limit("30/minute")
 def get_alias_activities(alias_id):
     """
     Get aliases

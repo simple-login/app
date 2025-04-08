@@ -128,3 +128,10 @@ class ProtonAccountNotVerified(LinkException):
         super().__init__(
             "The Proton account you are trying to use has not been verified"
         )
+
+
+class CannotCreateAliasQuotaExceeded(SLException):
+    """raised when an alias cannot be created because there is no quota left"""
+
+    def __init__(self):
+        super().__init__("You cannot create more aliases")

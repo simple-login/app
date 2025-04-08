@@ -1,7 +1,8 @@
 import random
 
+from app.alias_delete import delete_alias
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
-from app.alias_utils import delete_alias, transfer_alias
+from app.alias_utils import transfer_alias
 from app.models import Alias, AliasAuditLog, AliasDeleteReason
 from app.utils import random_string
 from tests.utils import create_new_user, random_email

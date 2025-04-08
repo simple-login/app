@@ -1,10 +1,10 @@
-from flask import url_for, g
+from flask import url_for
 
 from app import config
 from app.models import (
     Alias,
 )
-from tests.utils import login
+from tests.utils import fix_rate_limit_after_request, login
 
 
 def test_create_random_alias_success(flask_client):
@@ -34,7 +34,7 @@ def test_too_many_requests(flask_client):
 
         # to make flask-limiter work with unit test
         # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
-        g._rate_limiting_complete = False
+        fix_rate_limit_after_request()
     else:
         # last request
         assert r.status_code == 429

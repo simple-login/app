@@ -42,6 +42,7 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
     BlockedDomain,
+    UserAliasDeleteAction,
 )
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import can_unlink_proton_account
@@ -324,6 +325,19 @@ def setting():
             Session.commit()
             flash(f"Deleted blocked domain [{domain_name}]", "success")
             return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "alias-delete-action":
+            action = request.form.get("alias-delete-action")
+            if action == str(UserAliasDeleteAction.MoveToTrash.value):
+                current_user.alias_delete_action = UserAliasDeleteAction.MoveToTrash
+            elif action == str(UserAliasDeleteAction.DeleteImmediately.value):
+                current_user.alias_delete_action = (
+                    UserAliasDeleteAction.DeleteImmediately
+                )
+            else:
+                flash("There was an error. Please try again", "warning")
+                return redirect(url_for("dashboard.setting"))
+            Session.commit()
+            flash("Your preference has been updated", "success")
 
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
@@ -349,6 +363,7 @@ def setting():
         pending_email=pending_email,
         AliasGeneratorEnum=AliasGeneratorEnum,
         UnsubscribeBehaviourEnum=UnsubscribeBehaviourEnum,
+        UserAliasDeleteAction=UserAliasDeleteAction,
         manual_sub=manual_sub,
         partner_sub=partner_sub,
         partner_name=partner_name,

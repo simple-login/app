@@ -75,6 +75,7 @@ def test_unsub_disable_contact(
         assert message[headers.LIST_UNSUBSCRIBE_POST] is None
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
 
 
 def generate_unsub_disable_alias_data() -> Iterable:
@@ -134,6 +135,7 @@ def test_unsub_disable_alias(
         assert message[headers.LIST_UNSUBSCRIBE_POST] is None
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
 
 
 def generate_unsub_preserve_original_data() -> Iterable:
@@ -203,6 +205,15 @@ def test_unsub_preserve_original(
         assert message[headers.LIST_UNSUBSCRIBE_POST] is None
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
+        assert (
+            "List-Unsubscribe=One-Click"
+            == message[f"X-SL-Proxy-{headers.LIST_UNSUBSCRIBE_POST}"]
+        )
+    assert (
+        message[headers.LIST_UNSUBSCRIBE]
+        == message[f"X-SL-Proxy-{headers.LIST_UNSUBSCRIBE}"]
+    )
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
 
 
 def test_unsub_preserves_sl_unsubscriber():
@@ -223,3 +234,45 @@ def test_unsub_preserves_sl_unsubscriber():
     message[headers.LIST_UNSUBSCRIBE] = original_header
     message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
     assert original_header == message[headers.LIST_UNSUBSCRIBE]
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+
+
+def test_unsub_preserves_nothing_if_there_is_no_original_unsub():
+    user = create_new_user()
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+    alias = Alias.create_new_random(user)
+    Session.flush()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.lan",
+        commit=True,
+    )
+    message = Message()
+    message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] is None
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST] is None
+
+
+def test_unsub_preserves_original():
+    user = create_new_user()
+    user.unsub_behaviour = UnsubscribeBehaviourEnum.PreserveOriginal
+    alias = Alias.create_new_random(user)
+    Session.flush()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.lan",
+        commit=True,
+    )
+    message = Message()
+    original_header = f"<mailto:{config.UNSUBSCRIBER}?subject=dummysubject>"
+    message[headers.LIST_UNSUBSCRIBE] = original_header
+    message[headers.LIST_UNSUBSCRIBE_POST] = original_header + "post"
+    message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
+    assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+    assert (
+        message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST] == original_header + "post"
+    )

@@ -16,6 +16,7 @@ from app.models import (
     Mailbox,
     Job,
     DomainMailbox,
+    Alias,
     ModelMixin,
 )
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -214,3 +215,7 @@ def set_custom_domain_mailboxes(
     )
     Session.commit()
     return SetCustomDomainMailboxesResult(success=True)
+
+
+def count_custom_domain_aliases(custom_domain: CustomDomain) -> int:
+    return Alias.filter_by(custom_domain_id=custom_domain.id, delete_on=None).count()

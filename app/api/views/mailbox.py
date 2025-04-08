@@ -7,6 +7,7 @@ from flask import request
 from app import mailbox_utils
 from app.api.base import api_bp, require_api_auth
 from app.db import Session
+from app.extensions import limiter
 from app.models import Mailbox
 from app.utils import sanitize_email
 
@@ -23,6 +24,7 @@ def mailbox_to_dict(mailbox: Mailbox):
 
 
 @api_bp.route("/mailboxes", methods=["POST"])
+@limiter.limit("20/hour")
 @require_api_auth
 def create_mailbox():
     """
@@ -51,6 +53,7 @@ def create_mailbox():
 
 
 @api_bp.route("/mailboxes/<int:mailbox_id>", methods=["DELETE"])
+@limiter.limit("100/hour")
 @require_api_auth
 def delete_mailbox(mailbox_id):
     """
@@ -82,6 +85,7 @@ def delete_mailbox(mailbox_id):
 
 @api_bp.route("/mailboxes/<int:mailbox_id>", methods=["PUT"])
 @require_api_auth
+@limiter.limit("100/hour")
 def update_mailbox(mailbox_id):
     """
     Update mailbox

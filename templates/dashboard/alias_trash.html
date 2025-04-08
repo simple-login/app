@@ -1,0 +1,157 @@
+{% extends "default.html" %}
+
+{% set active_page = "dashboard" %}
+{% block title %}Alias Trash{% endblock %}
+{% block default_content %}
+
+  <div class="row">
+    <div class="col">
+      <h1 class="h3">
+        {{ alias_trash_count }} Deleted alias
+        <a class="ml-3 text-info"
+           style="font-size: 12px"
+           data-toggle="collapse"
+           href="#howtouse"
+           role="button"
+           aria-expanded="false"
+           aria-controls="collapseExample">
+          How to use <i class="fe fe-chevrons-down"></i>
+        </a>
+      </h1>
+      <div class="alert alert-primary collapse" id="howtouse" role="alert">
+        Here you will see deleted aliases in the last 30 days. After 30 days each alias will be automatically deleted.
+        <br />
+        You can always clear or restore the deleted aliases manually.
+      </div>
+    </div>
+  </div>
+  <div id="filter-app">
+    <div class="row mb-3">
+      <div class="col d-flex flex-wrap justify-content-between">
+        <div class="btn-group" role="group">
+          <form method="post">
+            {{ form.csrf_token }}
+            <input type="hidden" name="action" value="restore-all">
+            <span id='restore-all-btn'
+                  data-toggle="tooltip"
+                  title="Restore all alias from the trash"
+                  class="btn btn-primary mr-2">
+              <i class="fa fa-undo"></i> Restore all alias from trash
+            </span>
+          </form>
+        </div>
+        <div class="btn-group" role="group">
+          <div class="btn-group" role="group">
+            <form method="post">
+              {{ form.csrf_token }}
+              <input type="hidden" name="action" value="trash-all">
+              <span id='delete-all-btn'
+                    data-toggle="tooltip"
+                    title="Delete all trashed alias"
+                    class="btn btn-danger">
+                <i class="fa fa-ban"></i> Delete all trashed aliases
+              </span>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END Controls: buttons & search -->
+  <!-- Alias list -->
+  <div class="row">
+    {% for alias in alias_in_trash %}
+
+      <div class="col-12 col-lg-6" id="alias-container-{{ alias.id }}">
+        <div class="card p-4 shadow-sm">
+          <div class="row">
+            <div class="col-8">
+              <span class="font-weight-bold">{{ alias.email }}</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-8">
+              <span class="font-weight-small">Deletion scheduled {{ alias.delete_on |dt }}</span>
+            </div>
+            <div class="col text-right">
+              <form method="post">
+                {{ form.csrf_token }}
+                <input type="hidden" name="action" value="restore-one">
+                <input type="hidden" name="alias_id" value="{{ alias.id }}">
+                <button data-toggle="tooltip" class="btn btn-primary btn-sm">
+                  <i class="fa fa-share"></i> Restore alias
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% if page > 0 or not last_page %}
+
+    <div class="row">
+      <div class="col">
+        <nav aria-label="Alias navigation">
+          <ul class="pagination">
+            <li class="page-item mr-1">
+              <a class="btn btn-outline-primary {% if page == 0 %}disabled{% endif %}" href="{{ url_for('dashboard.alias_trash', page=page-1) }}">Previous</a>
+            </li>
+            <li class="page-item">
+              <a class="btn btn-outline-primary {% if last_page %}disabled{% endif %}" href="{{ url_for('dashboard.alias_trash', page=(page+1) ) }}">Next</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  {% endif %}
+  <script>
+    $("#restore-all-btn").on("click", function (e) {
+        let that = $(this);
+        console.log("Wtf");
+
+        bootbox.confirm({
+            message: "Are you sure you want to restore all aliases?",
+            buttons: {
+                confirm: {
+                    label: 'Yes, restore them.',
+                    className: 'btn-success'
+                },
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-outline-primary'
+                }
+            },
+            callback: function (result) {
+                console.log("Wtf callback");
+                if (result) {
+                    that.closest("form").submit();
+                }
+            }
+        })
+    });
+
+    $("#delete-all-btn").on("click", function (e) {
+        let that = $(this);
+
+        bootbox.confirm({
+            message: "This will permanently delete all alias in the trash. Are you sure?",
+            buttons: {
+                confirm: {
+                    label: 'Delete All',
+                    className: 'btn-danger'
+                },
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-outline-primary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    that.closest("form").submit();
+                }
+            }
+        })
+    });
+  </script>
+{% endblock %}

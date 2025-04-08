@@ -477,6 +477,7 @@
                          class="btn btn-outline-primary">See quarantine & bounce emails</a>
                     </div>
                   </div>
+                  <!-- START Disabled alias/Blocked contact -->
                   <div class="card" id="blocked-behaviour">
                     <div class="card-body">
                       <div class="card-title">Disabled alias/Blocked contact</div>
@@ -506,6 +507,38 @@
                       </form>
                     </div>
                   </div>
+                  <!-- END Disabled alias/Blocked contact -->
+                  <!-- START Alias delete action -->
+                  <div class="card" id="alias-delete-action">
+                      <div class="card-body">
+                          <div class="card-title">Alias delete action</div>
+                          <div class="mb-3">
+                              Action to be performed when an alias is <b>deleted</b>.
+                              <br />
+                              <b>Trash</b> means the alias will go to the Alias trash, where you will be able to restore them, in case of accidental deletion.
+                              <br />
+                              <b>Delete</b> means the alias will be permanently deleted and won't be available for restore.
+                              <br />
+                          </div>
+                          <form method="post" action="#alias-delete-action" class="form-inline mb-3">
+                              {{ csrf_form.csrf_token }}
+                              <input type="hidden" name="form-name" value="alias-delete-action">
+                              <select class="form-control mr-sm-2" name="alias-delete-action">
+                                  <option value="{{ UserAliasDeleteAction.MoveToTrash.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.MoveToTrash.value %}selected="selected"{% endif %}>
+                                      Trash
+                                  </option>
+                                  <option value="{{ UserAliasDeleteAction.DeleteImmediately.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.DeleteImmediately.value %}selected="selected"{% endif %}>
+                                      Delete
+                                  </option>
+                              </select>
+                              <button class="btn btn-outline-primary">Update</button>
+                          </form>
+
+                          <a href="{{ url_for("dashboard.alias_trash") }}"
+                             class="btn btn-outline-primary">See alias trash</a>
+                      </div>
+                  </div>
+                  <!-- END Alias delete action -->
                   <div class="card" id="sender-header">
                     <div class="card-body">
                       <div class="card-title">Include original sender in email headers</div>

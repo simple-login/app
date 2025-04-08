@@ -64,6 +64,7 @@ from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
+from tasks.cleanup_alias import cleanup_alias
 from tasks.clean_user_audit_log import cleanup_user_audit_log
 from tasks.cleanup_old_imports import cleanup_old_imports
 from tasks.cleanup_old_jobs import cleanup_old_jobs
@@ -1110,6 +1111,7 @@ def get_alias_to_check_hibp(
             ),
             Alias.user_id.notin_(user_ids_to_skip),
             Alias.enabled,
+            Alias.delete_on == None,  # noqa: E711
             Alias.id >= min_alias_id,
             Alias.id < max_alias_id,
             User.disabled == False,  # noqa: E712
@@ -1290,6 +1292,11 @@ def clear_user_audit_log():
     cleanup_user_audit_log(oldest_valid)
 
 
+def clear_aliases_pending_to_be_deleted():
+    oldest_valid = arrow.now().shift(days=-config.ALIAS_TRASH_DAYS)
+    cleanup_alias(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1353,3 +1360,6 @@ if __name__ == "__main__":
         elif args.job == "clear_user_audit_log":
             LOG.d("Clearing user audit log")
             clear_user_audit_log()
+        elif args.job == "clear_alias_delete_on":
+            LOG.d("Clearing aliases pending to be deleted")
+            clear_aliases_pending_to_be_deleted()

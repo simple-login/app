@@ -15,6 +15,7 @@ from app.config import (
     PROTON_EXTRA_HEADER_VALUE,
     PROTON_VALIDATE_CERTS,
     URL,
+    ALLOWED_OAUTH_SCHEMES,
 )
 from app.log import LOG
 from app.models import ApiKey, User
@@ -88,6 +89,9 @@ def proton_login():
 
     scheme = sanitize_scheme(request.args.get("scheme"))
     if scheme:
+        if scheme not in ALLOWED_OAUTH_SCHEMES:
+            flash("Bad OAuth request", "error")
+            return redirect(url_for("auth.login"))
         session["oauth_scheme"] = scheme
     elif "oauth_scheme" in session:
         del session["oauth_scheme"]

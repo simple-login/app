@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 
 import newrelic.agent
@@ -22,7 +22,7 @@ def check_bucket_limit(
     bucket_seconds: int = 3600,
 ):
     # Calculate current bucket time
-    int_time = int(datetime.utcnow().timestamp())
+    int_time = int(datetime.now(UTC).timestamp())
     bucket_id = int_time - (int_time % bucket_seconds)
     bucket_lock_name = f"bl:{lock_name}:{bucket_id}"
     if not lock_redis:
