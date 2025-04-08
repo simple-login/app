@@ -1,9 +1,9 @@
-import arrow
 import re
-
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Type
+from typing import List, Optional
+
+import arrow
 
 from app.constants import JobType
 from app.db import Session
@@ -16,8 +16,8 @@ from app.models import (
     Mailbox,
     Job,
     DomainMailbox,
-    ModelMixin,
     Alias,
+    BlockedDomain,
 )
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -98,21 +98,45 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
-def can_domain_be_used(
-    user: User, domain: str, model_type: Type[ModelMixin]
-) -> Optional[CannotUseDomainReason]:
+def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReason]:
     if not is_valid_domain(domain):
         return CannotUseDomainReason.InvalidDomain
     elif SLDomain.get_by(domain=domain):
         return CannotUseDomainReason.BuiltinDomain
-    elif model_type.get_by(domain=domain):
-        return CannotUseDomainReason.DomainAlreadyUsed
     elif get_email_domain_part(user.email) == domain:
         return CannotUseDomainReason.DomainPartOfUserEmail
     elif Mailbox.filter(
         Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{domain}")
     ).first():
         return CannotUseDomainReason.DomainUserInMailbox
+    else:
+        return None
+
+
+def can_custom_domain_be_used(
+    user: User, domain: str
+) -> Optional[CannotUseDomainReason]:
+    reason = can_domain_be_used(user, domain)
+
+    if reason is not None:
+        return reason
+
+    if CustomDomain.get_by(domain=domain):
+        return CannotUseDomainReason.DomainAlreadyUsed
+    else:
+        return None
+
+
+def can_blocked_domain_be_used(
+    user: User, domain: str
+) -> Optional[CannotUseDomainReason]:
+    reason = can_domain_be_used(user, domain)
+
+    if reason is not None:
+        return reason
+
+    if BlockedDomain.get_by(domain=domain):
+        return CannotUseDomainReason.DomainAlreadyUsed
     else:
         return None
 
@@ -127,7 +151,7 @@ def create_custom_domain(
         )
 
     new_domain = sanitize_domain(domain)
-    domain_forbidden_cause = can_domain_be_used(user, new_domain, CustomDomain)
+    domain_forbidden_cause = can_custom_domain_be_used(user, new_domain)
     if domain_forbidden_cause:
         return CreateCustomDomainResult(
             message=domain_forbidden_cause.message(new_domain), message_category="error"
