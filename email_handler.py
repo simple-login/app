@@ -86,9 +86,11 @@ from app.config import (
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
+    MAX_EMAIL_FORWARD_RECIPIENTS,
 )
 from app.db import Session
 from app.email import status, headers
+from app.email.checks import check_recipient_limit
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -910,6 +912,10 @@ def forward_email_to_mailbox(
         )
         add_or_replace_header(msg, "Reply-To", new_reply_to_header)
         LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, original_reply_to)
+
+    # Check recipient limit
+    if not check_recipient_limit(msg, MAX_EMAIL_FORWARD_RECIPIENTS):
+        return False, status.E526
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     try:
