@@ -61,4 +61,5 @@ E522 = (
 E523 = "550 SL E523 Unknown error"
 E524 = "550 SL E524 Wrong use of reverse-alias"
 E525 = "550 SL E525 Alias loop"
+E526 = "550 SL E526 Too many recipients"
 # endregion
