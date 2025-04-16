@@ -48,9 +48,6 @@ from typing import List, Tuple, Optional
 import newrelic.agent
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
-from email_validator import validate_email, EmailNotValidError
-from flanker.addresslib import address
-from flanker.addresslib.address import EmailAddress
 from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3, config, contact_utils
@@ -87,10 +84,12 @@ from app.config import (
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
     ALERT_TO_NOREPLY,
     MAX_EMAIL_FORWARD_RECIPIENTS,
+    MAX_CONTACTS_TO_CREATE_FOR_FORWARD,
 )
 from app.db import Session
 from app.email import status, headers
 from app.email.checks import check_recipient_limit
+from app.email.forward_replacements import replace_headers_when_forward
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
 from app.email_utils import (
@@ -111,7 +110,6 @@ from app.email_utils import (
     should_add_dkim_signature,
     add_header,
     get_header_unicode,
-    generate_reply_email,
     is_reverse_alias,
     replace,
     should_disable,
@@ -243,87 +241,6 @@ def get_or_create_reply_to_contact(
         return None
 
     return contact_utils.create_contact(contact_address, alias, contact_name).contact
-
-
-def replace_header_when_forward(msg: Message, alias: Alias, header: str):
-    """
-    Replace CC or To header by Reply emails in forward phase
-    """
-    new_addrs: [str] = []
-    headers = msg.get_all(header, [])
-    # headers can be an array of Header, convert it to string here
-    headers = [get_header_unicode(h) for h in headers]
-
-    full_addresses: [EmailAddress] = []
-    for h in headers:
-        full_addresses += address.parse_list(h)
-
-    for full_address in full_addresses:
-        contact_email = sanitize_email(full_address.address, not_lower=True)
-
-        # no transformation when alias is already in the header
-        if contact_email.lower() == alias.email:
-            new_addrs.append(full_address.full_spec())
-            continue
-
-        try:
-            # NOT allow unicode for contact address
-            validate_email(
-                contact_email, check_deliverability=False, allow_smtputf8=False
-            )
-        except EmailNotValidError:
-            LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
-            continue
-
-        contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-        contact_name = full_address.display_name
-        if len(contact_name) >= Contact.MAX_NAME_LENGTH:
-            contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
-
-        if contact:
-            # update the contact name if needed
-            if contact.name != full_address.display_name:
-                LOG.d(
-                    "Update contact %s name %s to %s",
-                    contact,
-                    contact.name,
-                    contact_name,
-                )
-                contact.name = contact_name
-                Session.commit()
-        else:
-            LOG.d(
-                "create contact for alias %s and email %s, header %s",
-                alias,
-                contact_email,
-                header,
-            )
-
-            try:
-                contact = Contact.create(
-                    user_id=alias.user_id,
-                    alias_id=alias.id,
-                    website_email=contact_email,
-                    name=contact_name,
-                    reply_email=generate_reply_email(contact_email, alias),
-                    is_cc=header.lower() == "cc",
-                    automatic_created=True,
-                )
-                Session.commit()
-            except IntegrityError:
-                LOG.w("Contact %s %s already exist", alias, contact_email)
-                Session.rollback()
-                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-
-        new_addrs.append(contact.new_addr())
-
-    if new_addrs:
-        new_header = ",".join(new_addrs)
-        LOG.d("Replace %s header, old: %s, new: %s", header, msg[header], new_header)
-        add_or_replace_header(msg, header, new_header)
-    else:
-        LOG.d("Delete %s header, old value %s", header, msg[header])
-        delete_header(msg, header)
 
 
 def add_alias_to_header_if_needed(msg, alias):
@@ -919,8 +836,11 @@ def forward_email_to_mailbox(
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
     try:
-        replace_header_when_forward(msg, alias, headers.CC)
-        replace_header_when_forward(msg, alias, headers.TO)
+        if not replace_headers_when_forward(
+            msg, alias, MAX_CONTACTS_TO_CREATE_FOR_FORWARD
+        ):
+            Session.rollback()
+            return False, status.E526
     except CannotCreateContactForReverseAlias:
         LOG.d("CannotCreateContactForReverseAlias error, delete %s", email_log)
         EmailLog.delete(email_log.id)

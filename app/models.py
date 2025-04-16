@@ -2117,7 +2117,7 @@ class Contact(Base, ModelMixin):
         And return new address with RFC 2047 format
         """
         user = self.user
-        sender_format = user.sender_format if user else SenderFormatEnum.AT.value
+        sender_format = int(user.sender_format) if user else SenderFormatEnum.AT.value
 
         if sender_format == SenderFormatEnum.NO_NAME.value:
             return self.reply_email
