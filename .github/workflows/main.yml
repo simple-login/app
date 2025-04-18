@@ -10,6 +10,7 @@ on:
 
 env:
   DOCKERHUB_REPO: simplelogin/app-ci
+  CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
 jobs:
   lint:
