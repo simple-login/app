@@ -9,7 +9,7 @@ from app.constants import JobType
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
-from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox
+from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox, Alias
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
@@ -204,3 +204,7 @@ def set_custom_domain_mailboxes(
     )
     Session.commit()
     return SetCustomDomainMailboxesResult(success=True)
+
+
+def count_custom_domain_aliases(custom_domain: CustomDomain) -> int:
+    return Alias.filter_by(custom_domain_id=custom_domain.id, delete_on=None).count()

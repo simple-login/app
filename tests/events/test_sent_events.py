@@ -1,6 +1,6 @@
 import arrow
 
-from app import config, alias_utils
+from app import config, alias_utils, alias_delete
 from app.db import Session
 from app.events.event_dispatcher import GlobalDispatcher
 from app.models import Alias, SyncEvent
@@ -93,7 +93,7 @@ def test_fire_event_on_alias_deletion():
     alias_id = alias.id
     Session.flush()
     on_memory_dispatcher.clear()
-    alias_utils.delete_alias(alias, user)
+    alias_delete.delete_alias(alias, user)
     assert len(on_memory_dispatcher.memory) == 1
     event_data = on_memory_dispatcher.memory[0]
     event_content = _get_event_from_string(event_data, user, pu)

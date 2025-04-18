@@ -18,7 +18,7 @@ from app.email_utils import (
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
-from app.models import User, Mailbox, Job, MailboxActivation, Alias
+from app.models import User, Mailbox, Job, MailboxActivation, Alias, AliasMailbox
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import canonicalize_email, sanitize_email
 
@@ -151,7 +151,7 @@ def delete_mailbox(
             LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
             raise MailboxError("Your new mailbox is not verified")
 
-    # Schedule delete account job
+    # Schedule delete mailbox job
     LOG.i(
         f"User {user} has scheduled delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
     )
@@ -508,3 +508,17 @@ def get_mailbox_for_reply_phase(
     # For services that use VERP sending (envelope from has encoded data to account for bounces)
     # if the domain is the same in the header from as the envelope from we can use the header from
     return __get_alias_mailbox_from_email_or_canonical_email(header_mail_from, alias)
+
+
+def count_mailbox_aliases(mailbox: Mailbox) -> int:
+    alias_ids = set()
+
+    for am in AliasMailbox.filter_by(mailbox_id=mailbox.id).all():
+        if not am.alias.is_trashed():
+            alias_ids.add(am.alias_id)
+
+    for alias in Alias.filter_by(mailbox_id=mailbox.id, delete_on=None).values(
+        Alias.id
+    ):
+        alias_ids.add(alias.id)
+    return len(alias_ids)

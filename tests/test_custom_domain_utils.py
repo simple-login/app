@@ -1,6 +1,7 @@
 from typing import Optional
 
 from app import config
+from app.alias_delete import move_alias_to_trash
 from app.config import ALIAS_DOMAINS
 from app.custom_domain_utils import (
     can_domain_be_used,
@@ -10,9 +11,10 @@ from app.custom_domain_utils import (
     set_custom_domain_mailboxes,
     CannotUseDomainReason,
     CannotSetCustomDomainMailboxesCause,
+    count_custom_domain_aliases,
 )
 from app.db import Session
-from app.models import User, CustomDomain, Mailbox, DomainMailbox
+from app.models import User, CustomDomain, Mailbox, DomainMailbox, Alias
 from tests.utils import create_new_user, random_string, random_domain
 from tests.utils import get_proton_partner, random_email
 
@@ -273,3 +275,58 @@ def test_set_custom_domain_mailboxes_with_unverified_mailbox():
     )
     assert res.success is False
     assert res.reason is CannotSetCustomDomainMailboxesCause.InvalidMailbox
+
+
+def test_custom_domain_alias_count():
+    user = create_new_user()
+
+    # Test setup
+    # Domains:
+    # - cd1
+    # - cd2
+    # - cd3
+    # - cd4
+    # Aliases:
+    # - alias1(active) -> cd1
+    # - alias2(active) -> cd1
+    # - alias3(active) -> cd2
+    # - alias4(trashed) -> cd1
+    # - alias5(trashed) -> cd1
+    # - alias6(trashed) -> cd2
+    # - alias7(trashed) -> cd3
+    # Expected counts:
+    # - cd1 -> 2 (alias1, alias2)
+    # - cd2 -> 1 (alias3)
+    # - cd3 -> 0 (alias7 is trashed)
+    # - cd4 -> 0
+
+    cd1 = CustomDomain.create(user_id=user.id, domain=random_domain())
+    cd2 = CustomDomain.create(user_id=user.id, domain=random_domain())
+    cd3 = CustomDomain.create(user_id=user.id, domain=random_domain())
+    cd4 = CustomDomain.create(user_id=user.id, domain=random_domain())
+    Session.commit()
+
+    def alias_for_domain(domain: CustomDomain, trashed: bool = False) -> Alias:
+        alias = Alias.create(
+            user_id=user.id,
+            email=random_email(),
+            mailbox_id=user.default_mailbox_id,
+            custom_domain_id=domain.id,
+        )
+        if trashed:
+            move_alias_to_trash(alias, user)
+        Session.commit()
+        return alias
+
+    _alias1 = alias_for_domain(cd1)
+    _alias2 = alias_for_domain(cd1)
+    _alias3 = alias_for_domain(cd2)
+    _alias4 = alias_for_domain(cd1, True)
+    _alias5 = alias_for_domain(cd1, True)
+    _alias6 = alias_for_domain(cd2, True)
+    _alias7 = alias_for_domain(cd3, True)
+
+    assert count_custom_domain_aliases(cd1) == 2
+    assert count_custom_domain_aliases(cd2) == 1
+    assert count_custom_domain_aliases(cd3) == 0
+    assert count_custom_domain_aliases(cd4) == 0

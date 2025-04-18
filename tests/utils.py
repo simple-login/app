@@ -9,12 +9,17 @@ from typing import Optional, Dict
 import jinja2
 from flask import url_for
 
-from app.models import User, PartnerUser
+from app.db import Session
+from app.models import User, PartnerUser, UserAliasDeleteAction
 from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
 
 
-def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> User:
+def create_new_user(
+    email: Optional[str] = None,
+    name: Optional[str] = None,
+    alias_delete_action: UserAliasDeleteAction = UserAliasDeleteAction.DeleteImmediately,
+) -> User:
     if not email:
         email = f"user_{random_token(10)}@mailbox.lan"
     if not name:
@@ -27,6 +32,8 @@ def create_new_user(email: Optional[str] = None, name: Optional[str] = None) -> 
         activated=True,
         flush=True,
     )
+    user.alias_delete_action = alias_delete_action
+    Session.flush()
 
     return user
 

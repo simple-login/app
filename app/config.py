@@ -195,6 +195,7 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
+USERS_WITH_HTTP_UNSUBSCRIBE = get_env_csv("USERS_WITH_HTTP_UNSUBSCRIBE", "")
 
 # due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
 OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
@@ -303,6 +304,9 @@ PROTON_BASE_URL = os.environ.get(
     "PROTON_BASE_URL", "https://account.protonmail.com/api"
 )
 PROTON_VALIDATE_CERTS = "PROTON_VALIDATE_CERTS" in os.environ
+PROTON_PREVENT_CHANGE_LINKED_ACCOUNT = (
+    "PROTON_PREVENT_CHANGE_LINKED_ACCOUNT" in os.environ
+)
 CONNECT_WITH_PROTON = "CONNECT_WITH_PROTON" in os.environ
 PROTON_EXTRA_HEADER_NAME = os.environ.get("PROTON_EXTRA_HEADER_NAME")
 PROTON_EXTRA_HEADER_VALUE = os.environ.get("PROTON_EXTRA_HEADER_VALUE")
@@ -557,12 +561,21 @@ def getRateLimitFromConfig(
     return limits
 
 
+# Rate limits
 ALIAS_CREATE_RATE_LIMIT_FREE = getRateLimitFromConfig(
     "ALIAS_CREATE_RATE_LIMIT_FREE", "10,900:50,3600"
 )
 ALIAS_CREATE_RATE_LIMIT_PAID = getRateLimitFromConfig(
     "ALIAS_CREATE_RATE_LIMIT_PAID", "50,900:200,3600"
 )
+ALIAS_RESTORE_ONE_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ONE_RATE_LIMIT", "100,86400:200,604800"
+)
+ALIAS_RESTORE_ALL_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ALL_RATE_LIMIT", "5,3600:20,604800"
+)
+
+
 PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
     FLASK_SECRET + "partnerapitoken"
 )
@@ -670,3 +683,6 @@ MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
 )
 
 AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
+ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
+ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
+MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))

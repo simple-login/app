@@ -4,6 +4,7 @@ from flask import jsonify
 from app.api.base import api_bp, require_api_auth
 from app.custom_domain_utils import set_custom_domain_mailboxes
 from app.db import Session
+from app.extensions import limiter
 from app.log import LOG
 from app.models import CustomDomain, DomainDeletedAlias
 
@@ -61,6 +62,7 @@ def get_custom_domain_trash(custom_domain_id: int):
 
 @api_bp.route("/custom_domains/<int:custom_domain_id>", methods=["PATCH"])
 @require_api_auth
+@limiter.limit("100/hour")
 def update_custom_domain(custom_domain_id):
     """
     Update alias note
