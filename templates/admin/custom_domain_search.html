@@ -9,10 +9,15 @@
             border-radius: 8px;
         }
         .domain-title {
-            background-color: #007bff;
             color: white;
             padding: 10px;
             border-radius: 8px 8px 0 0;
+        }
+        .domain-active {
+            background-color: #007bff;
+        }
+        .domain-pending-deletion {
+            background-color: #cdca06;
         }
         .status-icon {
             font-size: 1.2em;
@@ -130,9 +135,18 @@
 {% macro show_domain(domain_with_data) -%}
   <div class="col-md-3 mb-4">
     <div class="card card-shadow">
-      <div class="domain-title text-center">
-        <h4>Domain {{ domain_with_data.domain.domain }}</h4>
-      </div>
+
+      {% if domain_with_data.domain.pending_deletion == True %}
+          <div class="domain-title domain-pending-deletion text-center">
+              <h4>Domain {{ domain_with_data.domain.domain }}</h4>
+              <h5>Scheduled for deletion</h5>
+          </div>
+      {% else %}
+          <div class="domain-title domain-active text-center">
+              <h4>Domain {{ domain_with_data.domain.domain }}</h4>
+          </div>
+      {% endif %}
+
       <div class="card-body">
         {% set domain = domain_with_data.domain %}
         <ul class="list-group">
@@ -144,6 +158,15 @@
             {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
           {% endfor %}
         </ul>
+
+        <form class="my-3"
+              action="{{ url_for("admin.custom_domain_search.delete_custom_domain") }}"
+              method="POST">
+            <input type="hidden" name="domain_id" value="{{ domain.id }}">
+            <button type="submit"
+                    onclick="return confirm('Are you sure you would like to delete the custom domain?');"
+                    class="btn btn-danger w-100">Delete</button>
+        </form>
       </div>
     </div>
   </div>
