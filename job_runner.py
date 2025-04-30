@@ -24,6 +24,7 @@ from app.import_utils import handle_batch_import
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.jobs.send_event_job import SendEventToWebhookJob
+from app.jobs.sync_subscription_job import SyncSubscriptionJob
 from app.log import LOG
 from app.models import User, Job, BatchImport, Mailbox, JobState
 from app.monitor_utils import send_version_event
@@ -286,6 +287,10 @@ def process_job(job: Job):
         send_job = SendEventToWebhookJob.create_from_job(job)
         if send_job:
             send_job.run(HttpEventSink())
+    elif job.name == JobType.SYNC_SUBSCRIPTION.value:
+        sync_job = SyncSubscriptionJob.create_from_job(job)
+        if sync_job:
+            sync_job.run(HttpEventSink())
     else:
         LOG.e("Unknown job name %s", job.name)
 
