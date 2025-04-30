@@ -240,6 +240,7 @@ class AuditLogActionEnum(EnumE):
     enable_user = 10
     stop_trial = 11
     unlink_user = 12
+    delete_custom_domain = 13
 
 
 class Phase(EnumE):
@@ -1030,7 +1031,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
 
     def custom_domains(self) -> List["CustomDomain"]:
-        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+        return (
+            CustomDomain.filter_by(user_id=self.id, verified=True)
+            .order_by(CustomDomain.id.asc())
+            .all()
+        )
 
     def available_domains_for_random_alias(
         self, alias_options: Optional[AliasOptions] = None
