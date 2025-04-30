@@ -16,3 +16,4 @@ class JobType(enum.Enum):
     SEND_PROTON_WELCOME_1 = "proton-welcome-1"
     SEND_ALIAS_CREATION_EVENTS = "send-alias-creation-events"
     SEND_EVENT_TO_WEBHOOK = "send-event-to-webhook"
+    SYNC_SUBSCRIPTION = "sync-subscription"
