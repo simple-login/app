@@ -373,6 +373,7 @@ if __name__ == "__main__":
 
                     job.state = JobState.done.value
                     jobs_done += 1
+                    LOG.d("Processed job %s", job)
                 except Exception as e:
                     LOG.warn(f"Error processing job (id={job.id} name={job.name}): {e}")
 
