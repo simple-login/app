@@ -36,9 +36,16 @@ def process(start_pu_id: int, end_pu_id: int, step: int, only_lifetime: bool):
             processed += 1
         Session.commit()
         elapsed = time.time() - start_time
-        time_per_user = elapsed / processed
+        if processed == 0:
+            time_per_user = elapsed
+        else:
+            time_per_user = elapsed / processed
+
         remaining = end_pu_id - batch_end
-        mins_remaining = (time_per_user / remaining) / 60
+        if remaining == 0:
+            mins_remaining = 0
+        else:
+            mins_remaining = (time_per_user / remaining) / 60
         print(
             f"PartnerUser {batch_start}/{end_pu_id} | processed = {processed} | {mins_remaining:.2f} mins remaining"
         )
