@@ -75,6 +75,9 @@ def main():
     only_lifetime = args.lifetime
     step = args.step
 
+    if start_pu_id <= 0:
+        start_pu_id = Session.query(func.min(PartnerUser.id)).scalar()
+
     if not end_pu_id:
         end_pu_id = Session.query(func.max(PartnerUser.id)).scalar()
 
