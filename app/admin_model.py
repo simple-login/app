@@ -1061,3 +1061,39 @@ class CustomDomainSearchAdmin(BaseView):
             data=search,
             query=query,
         )
+
+    @expose("/delete_domain", methods=["POST"])
+    def delete_custom_domain(self):
+        domain_id = request.form.get("domain_id")
+        if not domain_id:
+            flash("Missing domain_id", "error")
+            return redirect(url_for("admin.custom_domain_search.index"))
+        try:
+            domain_id = int(domain_id)
+        except ValueError:
+            flash("Missing domain_id", "error")
+            return redirect(url_for("admin.custom_domain_search.index"))
+        domain: Optional[CustomDomain] = CustomDomain.get(domain_id)
+        if domain is None:
+            flash("Domain not found", "error")
+            return redirect(url_for("admin.custom_domain_search.index"))
+
+        domain_user_email = domain.user.email
+        domain_domain = domain.domain
+        from app.custom_domain_utils import delete_custom_domain
+
+        delete_custom_domain(domain)
+
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model=CustomDomain.__class__.__name__,
+            model_id=domain_id,
+            action=AuditLogActionEnum.delete_custom_domain.value,
+            data={"domain": domain_domain},
+        )
+        Session.commit()
+
+        flash("Scheduled deletion of custom domain", "success")
+        return redirect(
+            url_for("admin.custom_domain_search.index", user=domain_user_email)
+        )
