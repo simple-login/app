@@ -3,9 +3,9 @@
 import argparse
 import sys
 import time
+from typing import Optional
 
 from sqlalchemy import func
-from typing import Optional
 
 from app.db import Session
 from app.jobs.sync_subscription_job import SyncSubscriptionJob
@@ -34,12 +34,11 @@ def process(start_pu_id: int, end_pu_id: int, step: int, only_lifetime: bool):
             job = SyncSubscriptionJob(user)
             job.store_job_in_db(priority=JobPriority.Low, run_at=None, commit=False)
             processed += 1
-            Session.flush()
         Session.commit()
         elapsed = time.time() - start_time
         time_per_user = elapsed / processed
         remaining = end_pu_id - batch_end
-        mins_remaining = remaining / time_per_user
+        mins_remaining = (time_per_user / remaining) / 60
         print(
             f"PartnerUser {batch_start}/{end_pu_id} | processed = {processed} | {mins_remaining:.2f} mins remaining"
         )
@@ -56,7 +55,7 @@ def main():
     parser.add_argument(
         "-e", "--end_pu_id", default=0, type=int, help="Last partner_user_id"
     )
-    parser.add_argument("-t", "--step", default=10000, type=int, help="Step to use")
+    parser.add_argument("-t", "--step", default=100, type=int, help="Step to use")
     parser.add_argument("-u", "--user", default="", type=str, help="User to sync")
     parser.add_argument(
         "-l", "--lifetime", action="store_true", help="Only sync lifetime users"
