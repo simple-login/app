@@ -2828,7 +2828,14 @@ class Job(Base, ModelMixin):
     )
 
     __table_args__ = (
-        Index("ix_state_run_at_taken_at_priority", state, run_at, taken_at, priority),
+        Index(
+            "ix_state_run_at_taken_at_priority_attempts",
+            state,
+            run_at,
+            taken_at,
+            priority,
+            attempts,
+        ),
     )
 
     def __repr__(self):
