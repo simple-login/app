@@ -45,7 +45,7 @@ def process(start_pu_id: int, end_pu_id: int, step: int, only_lifetime: bool):
         if remaining == 0:
             mins_remaining = 0
         else:
-            mins_remaining = (time_per_user / remaining) / 60
+            mins_remaining = (time_per_user * remaining) / 60
         print(
             f"PartnerUser {batch_start}/{end_pu_id} | processed = {processed} | {mins_remaining:.2f} mins remaining"
         )
