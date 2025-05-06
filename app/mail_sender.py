@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import base64
 import email
 import json
@@ -186,6 +187,9 @@ class MailSender:
             TimeoutError,
         ) as e:
             if retries > 0:
+                LOG.warn(
+                    f"Retrying sending email due to error {e}. {retries} retries left. Will wait {0.3*retries} seconds."
+                )
                 time.sleep(0.3 * retries)
                 return self._send_to_smtp(send_request, retries - 1)
             else:
