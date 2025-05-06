@@ -3756,7 +3756,7 @@ class ProviderComplaintState(EnumE):
 class ProviderComplaint(Base, ModelMixin):
     __tablename__ = "provider_complaint"
 
-    user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
     state = sa.Column(
         sa.Integer, nullable=False, server_default=str(ProviderComplaintState.new.value)
     )
