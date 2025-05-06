@@ -17,4 +17,4 @@ class MetricExporter:
             self.__newrelic.send(metrics)
             LOG.info("Upcloud metrics sent to NewRelic")
         except Exception as e:
-            LOG.warn(f"Could not export metrics: {e}")
+            LOG.warning(f"Could not export metrics: {e}")

@@ -34,7 +34,7 @@ class PostgresEventSource(EventSource):
             try:
                 self.__listen(on_event)
             except Exception as e:
-                LOG.warn(f"Error listening to events: {e}")
+                LOG.warning(f"Error listening to events: {e}")
                 sleep(_POSTGRES_RECONNECT_INTERVAL_SECONDS)
                 self.__connect()
 
@@ -68,7 +68,7 @@ class PostgresEventSource(EventSource):
                         else:
                             LOG.info(f"Could not find event with id={notify.payload}")
                     except Exception as e:
-                        LOG.warn(f"Error getting event: {e}")
+                        LOG.warning(f"Error getting event: {e}")
                     Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
 
     def __connect(self):
@@ -112,5 +112,5 @@ class DeadLetterEventSource(EventSource):
                     LOG.debug("No dead letter events")
                     sleep(_DEAD_LETTER_INTERVAL_SECONDS)
             except Exception as e:
-                LOG.warn(f"Error getting dead letter event: {e}")
+                LOG.warning(f"Error getting dead letter event: {e}")
                 sleep(_DEAD_LETTER_INTERVAL_SECONDS)

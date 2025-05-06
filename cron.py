@@ -920,7 +920,7 @@ def check_custom_domain():
     ):
         alias_count = Alias.filter(Alias.custom_domain_id == custom_domain.id).count()
         if alias_count > 0:
-            LOG.warn(
+            LOG.warning(
                 f"Custom Domain {custom_domain} has {alias_count} aliases. Won't delete"
             )
         else:
