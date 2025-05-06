@@ -351,48 +351,51 @@ def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
     return res.rowcount > 0
 
 
+@newrelic.agent.background_task()
+def execute():
+    # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
+    with create_light_app().app_context():
+        taken_before_time = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
+
+        jobs_done = 0
+        for job in get_jobs_to_run(taken_before_time):
+            if not take_job(job, taken_before_time):
+                continue
+            LOG.d("Take job %s", job)
+
+            try:
+                newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
+                process_job(job)
+                job_result = "success"
+
+                job.state = JobState.done.value
+                jobs_done += 1
+                LOG.d("Processed job %s", job)
+            except Exception as e:
+                LOG.warn(f"Error processing job (id={job.id} name={job.name}): {e}")
+
+                # Increment manually, as the attempts increment is done by the take_job but not
+                # updated in our instance
+                job_attempts = job.attempts + 1
+                if job_attempts >= config.JOB_MAX_ATTEMPTS:
+                    LOG.warn(
+                        f"Marking job (id={job.id} name={job.name} attempts={job_attempts}) as ERROR"
+                    )
+                    job.state = JobState.error.value
+                    job_result = "error"
+                else:
+                    job_result = "retry"
+
+            newrelic.agent.record_custom_event(
+                "JobProcessed", {"job": job.name, "result": job_result}
+            )
+            Session.commit()
+
+        if jobs_done == 0:
+            time.sleep(10)
+
+
 if __name__ == "__main__":
     send_version_event("job_runner")
     while True:
-        # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
-        with create_light_app().app_context():
-            taken_before_time = arrow.now().shift(
-                minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS
-            )
-
-            jobs_done = 0
-            for job in get_jobs_to_run(taken_before_time):
-                if not take_job(job, taken_before_time):
-                    continue
-                LOG.d("Take job %s", job)
-
-                try:
-                    newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
-                    process_job(job)
-                    job_result = "success"
-
-                    job.state = JobState.done.value
-                    jobs_done += 1
-                    LOG.d("Processed job %s", job)
-                except Exception as e:
-                    LOG.warn(f"Error processing job (id={job.id} name={job.name}): {e}")
-
-                    # Increment manually, as the attempts increment is done by the take_job but not
-                    # updated in our instance
-                    job_attempts = job.attempts + 1
-                    if job_attempts >= config.JOB_MAX_ATTEMPTS:
-                        LOG.warn(
-                            f"Marking job (id={job.id} name={job.name} attempts={job_attempts}) as ERROR"
-                        )
-                        job.state = JobState.error.value
-                        job_result = "error"
-                    else:
-                        job_result = "retry"
-
-                newrelic.agent.record_custom_event(
-                    "JobProcessed", {"job": job.name, "result": job_result}
-                )
-                Session.commit()
-
-            if jobs_done == 0:
-                time.sleep(10)
+        execute()
