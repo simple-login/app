@@ -1,8 +1,11 @@
+import pytest
+
 from flask import url_for
 
 from tests.api.utils import get_new_user_and_api_key
 
 
+@pytest.mark.skip(reason="apple sandbox environment is too flaky")
 def test_apple_process_payment(flask_client):
     user, api_key = get_new_user_and_api_key()
 
