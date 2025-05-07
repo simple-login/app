@@ -35,7 +35,7 @@ def get_metric(json: Any, metric: str) -> UpcloudMetric:
                     UpcloudRecord(time=time, db_role=db_role, label=label, value=value)
                 )
             else:
-                LOG.warn(f"Could not get value for metric {metric}")
+                LOG.warning(f"Could not get value for metric {metric}")
 
     return UpcloudMetric(metric_name=metric, records=records)
 

@@ -187,7 +187,7 @@ class MailSender:
             TimeoutError,
         ) as e:
             if retries > 0:
-                LOG.warn(
+                LOG.warning(
                     f"Retrying sending email due to error {e}. {retries} retries left. Will wait {0.3*retries} seconds."
                 )
                 time.sleep(0.3 * retries)

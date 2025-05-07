@@ -372,13 +372,13 @@ def execute():
                 jobs_done += 1
                 LOG.d("Processed job %s", job)
             except Exception as e:
-                LOG.warn(f"Error processing job (id={job.id} name={job.name}): {e}")
+                LOG.warning(f"Error processing job (id={job.id} name={job.name}): {e}")
 
                 # Increment manually, as the attempts increment is done by the take_job but not
                 # updated in our instance
                 job_attempts = job.attempts + 1
                 if job_attempts >= config.JOB_MAX_ATTEMPTS:
-                    LOG.warn(
+                    LOG.warning(
                         f"Marking job (id={job.id} name={job.name} attempts={job_attempts}) as ERROR"
                     )
                     job.state = JobState.error.value
