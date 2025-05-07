@@ -151,7 +151,15 @@ def index():
                 alias_delete.delete_alias(
                     alias, current_user, AliasDeleteReason.ManualAction, commit=True
                 )
-                flash(f"Alias {email} has been deleted", "success")
+                if (
+                    current_user.alias_delete_action
+                    == UserAliasDeleteAction.MoveToTrash.value
+                ):
+                    msg = f"Alias {email} has been moved to the trash"
+                else:
+                    msg = f"Alias {email} has been deleted"
+
+                flash(msg, "success")
             elif request.form.get("form-name") == "disable-alias":
                 alias_utils.change_alias_status(
                     alias, enabled=False, message="Set enabled=False from dashboard"
