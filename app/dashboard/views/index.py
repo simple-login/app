@@ -153,7 +153,7 @@ def index():
                 )
                 if (
                     current_user.alias_delete_action
-                    == UserAliasDeleteAction.MoveToTrash.value
+                    == UserAliasDeleteAction.MoveToTrash
                 ):
                     msg = f"Alias {email} has been moved to the trash"
                 else:
