@@ -8,11 +8,13 @@ from app.api.base import api_bp
 from app.config import FLASK_SECRET
 from app.db import Session
 from app.email_utils import send_invalid_totp_login_email
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey
 
 
 @api_bp.route("/auth/mfa", methods=["POST"])
+@limiter.limit("10/minute")
 @parallel_limiter.lock(name="mfa_auth")
 def auth_mfa():
     """
