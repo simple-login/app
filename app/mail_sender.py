@@ -189,6 +189,7 @@ class MailSender:
             newrelic.agent.record_custom_metric(
                 "Custom/smtp_sending_time", time.time() - start
             )
+            newrelic.agent.record_custom_event("SmtpError", {"error": e.__class__})
             if retries > 0:
                 LOG.warning(
                     f"Retrying sending email due to error {e}. {retries} retries left. Will wait {0.3*retries} seconds."
