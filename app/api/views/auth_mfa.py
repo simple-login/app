@@ -3,6 +3,7 @@ from flask import jsonify, request
 from flask_login import login_user
 from itsdangerous import Signer
 
+from app import parallel_limiter
 from app.api.base import api_bp
 from app.config import FLASK_SECRET
 from app.db import Session
@@ -14,6 +15,7 @@ from app.models import User, ApiKey
 
 @api_bp.route("/auth/mfa", methods=["POST"])
 @limiter.limit("10/minute")
+@parallel_limiter.lock(name="mfa_auth")
 def auth_mfa():
     """
     Validate the OTP Token
