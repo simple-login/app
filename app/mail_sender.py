@@ -143,8 +143,8 @@ class MailSender:
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
+        start = time.time()
         try:
-            start = time.time()
             with SMTP(
                 config.POSTFIX_SERVER,
                 config.POSTFIX_PORT,
@@ -186,6 +186,10 @@ class MailSender:
             ConnectionRefusedError,
             TimeoutError,
         ) as e:
+            newrelic.agent.record_custom_metric(
+                "Custom/smtp_sending_time", time.time() - start
+            )
+            newrelic.agent.record_custom_event("SmtpError", {"error": e.__class__})
             if retries > 0:
                 LOG.warning(
                     f"Retrying sending email due to error {e}. {retries} retries left. Will wait {0.3*retries} seconds."
