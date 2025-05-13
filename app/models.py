@@ -2900,9 +2900,9 @@ class Mailbox(Base, ModelMixin):
             if self.email.endswith(f"@{proton_email_domain}"):
                 return True
 
-        from app.email_utils import get_email_local_part
+        from app.email_utils import get_email_domain_part
 
-        mx_domains = get_mx_domains(get_email_local_part(self.email))
+        mx_domains = get_mx_domains(get_email_domain_part(self.email))
 
         proton_mx_domains = config.PROTON_MX_SERVERS
         # Proton is the first domain

@@ -1,6 +1,6 @@
 from app import config
 from app.dns_utils import set_global_dns_client, InMemoryDNSClient
-from app.email_utils import get_email_local_part
+from app.email_utils import get_email_domain_part
 from app.models import Mailbox
 from tests.utils import create_new_user, random_email
 
@@ -28,10 +28,10 @@ def test_is_proton_with_email_domain():
 def test_is_proton_with_mx_domain():
     email = random_email()
     dns_client.set_mx_records(
-        get_email_local_part(email), {10: config.PROTON_MX_SERVERS}
+        get_email_domain_part(email), {10: config.PROTON_MX_SERVERS}
     )
     user = create_new_user()
     mailbox = Mailbox.create(user_id=user.id, email=email)
     assert mailbox.is_proton()
-    dns_client.set_mx_records(get_email_local_part(email), {10: ["nowhere.net"]})
+    dns_client.set_mx_records(get_email_domain_part(email), {10: ["nowhere.net"]})
     assert not mailbox.is_proton()
