@@ -686,3 +686,8 @@ AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
 ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
 ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
 MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
+
+MASTER_ENC_KEY = bytes.fromhex(os.environ.get("MASTER_ENC_KEY_HEX"))
+MAC_KEY = bytes.fromhex(os.environ.get("MAC_KEY_HEX"))
+HKDF_INFO_TEMPLATE = os.environ.get("HKDF_INFO_TEMPLATE")
+AEAD_AAD_DATA = os.environ.get("AEAD_AAD_DATA")

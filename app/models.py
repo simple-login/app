@@ -360,7 +360,7 @@ class Fido(Base, ModelMixin):
 class AbuserData(Base, ModelMixin):
     __tablename__ = "abuser_data"
 
-    user_id = sa.Column(sa.Integer, nullable=False)
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
     encrypted_bundle = sa.Column(sa.LargeBinary(), nullable=False)
 
     __table_args__ = (sa.Index("ix_abuser_data_id", "id"),)
@@ -369,16 +369,33 @@ class AbuserData(Base, ModelMixin):
 class AbuserLookup(Base, ModelMixin):
     __tablename__ = "abuser_lookup"
 
-    hashed_address = sa.Column(sa.String(), nullable=False)
-    blob_id = sa.Column(
-        sa.ForeignKey("abuser_data.id", ondelete="cascade"), nullable=False
+    hashed_address = sa.Column(sa.String(64), nullable=False, index=True)
+    abuser_data_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("abuser_data.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
     )
-    encrypted_k_bundle = sa.Column(sa.LargeBinary(), nullable=False)
 
     __table_args__ = (
         sa.Index(
-            "ix_abuser_lookup_hashed_address_blob_id", "hashed_address", "blob_id"
+            "ix_abuser_lookup_hashed_address_abuser_data_id",
+            "hashed_address",
+            "abuser_data_id",
         ),
+    )
+
+
+class AbuserAuditLog(Base, ModelMixin):
+    __tablename__ = "abuser_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_abuser_audit_log_user_id", "user_id"),
+        sa.Index("ix_abuser_audit_log_created_at", "created_at"),
     )
 
 

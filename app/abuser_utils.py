@@ -1,109 +1,121 @@
+import hmac
 import json
 import secrets
 from hashlib import sha256
-from typing import List, Dict
+from typing import List, Dict, Optional
 
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes as crypto_hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+from app import config
 from app.db import Session
+from app.log import LOG
 from app.models import User, Alias, Mailbox, AbuserData, AbuserLookup
 
 
-def check_if_abuser_email(new_address: str) -> bool:
+def _derive_encryption_key(master_key: bytes, user_id: int) -> bytes:
+    if user_id is None or not isinstance(user_id, int) or user_id <= 0:
+        raise ValueError("User ID must be a valid positive integer for key derivation.")
+
+    hkdf_info = (config.HKDF_INFO_TEMPLATE % str(user_id)).encode("utf-8")
+    hkdf = HKDF(
+        algorithm=crypto_hashes.SHA256(),
+        length=32,
+        salt=None,
+        info=hkdf_info,
+        backend=default_backend(),
+    )
+
+    return hkdf.derive(master_key)
+
+
+def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     """
     Returns False, if the given address (after hashing) is found in abuser_lookup.
     """
-    # Compute SHA-256 hash of the input address, encoded as UTF-8
-    check_hash = sha256(new_address.encode("utf-8")).hexdigest()
-    found = (
-        AbuserLookup.filter(AbuserLookup.hashed_address == check_hash).limit(1).first()
-    )
+    mac_key_bytes = config.MAC_KEY
+    check_hmac = hmac.new(
+        mac_key_bytes, new_address.encode("utf-8"), sha256
+    ).hexdigest()
 
-    return found
+    return (
+        AbuserLookup.filter(AbuserLookup.hashed_address == check_hmac).limit(1).first()
+    )
 
 
 def archive_abusive_user(user: User) -> None:
     """
     Archive the given abusive user's data and update blocklist/lookup tables.
     """
-    # assert user.email, "User must have a primary email"
+    if not user.email:
+        raise ValueError(f"User ID {user.id} must have a primary email to be archived.")
 
     try:
         primary_email: str = user.email
         aliases: List[Alias] = Alias.filter_by(user_id=user.id).all()
         mailboxes: List[Mailbox] = Mailbox.filter_by(user_id=user.id).all()
-
-        # Create Bundle
         bundle = {
             "account_id": user.id,
             "email": primary_email,
-            "created_at": user.created_at.isoformat(),
+            "user_created_at": user.created_at.isoformat() if user.created_at else None,
             "aliases": [
                 {
                     "address": alias.email,
-                    "created_at": alias.created_at.isoformat(),
+                    "created_at": alias.created_at.isoformat()
+                    if alias.created_at
+                    else None,
                 }
                 for alias in aliases
             ],
             "mailboxes": [
                 {
                     "address": mailbox.email,
-                    "created_at": mailbox.created_at.isoformat(),
+                    "created_at": mailbox.created_at.isoformat()
+                    if mailbox.created_at
+                    else None,
                 }
                 for mailbox in mailboxes
             ],
         }
-        bundle_json = json.dumps(bundle).encode("utf-8")
-
-        # Generate Bundle Key
-        k_bundle = AESGCM.generate_key(bit_length=256)
-        aesgcm = AESGCM(k_bundle)
+        bundle_json_bytes = json.dumps(bundle, sort_keys=True).encode("utf-8")
+        derived_enc_key = _derive_encryption_key(config.MASTER_ENC_KEY, user.id)
+        aesgcm = AESGCM(derived_enc_key)
         nonce = secrets.token_bytes(12)
+        aad_bytes = config.AEAD_AAD_DATA.encode("utf-8")
+        encrypted_bundle_data = nonce + aesgcm.encrypt(
+            nonce, bundle_json_bytes, aad_bytes
+        )
+        abuser_data_entry = AbuserData(
+            user_id=user.id, encrypted_bundle=encrypted_bundle_data
+        )
 
-        # Encrypt Bundle
-        encrypted_bundle = nonce + aesgcm.encrypt(nonce, bundle_json, None)
-
-        # Store Encrypted Bundle
-        abuser_data = AbuserData(user_id=user.id, encrypted_bundle=encrypted_bundle)
-        Session.add(abuser_data)
+        Session.add(abuser_data_entry)
         Session.flush()
 
-        # Get Bundle ID
-        blob_id = abuser_data.id
-
-        # Process Each Identifier (Primary Email + All Aliases)
-        all_addresses = (
+        blob_id = abuser_data_entry.id
+        all_identifiers = (
             [primary_email] + [a.email for a in aliases] + [m.email for m in mailboxes]
         )
-        seen = set()
+        seen_identifiers = set()
+        mac_key_bytes = config.MAC_KEY
 
-        for address in all_addresses:
-            if address in seen:
+        for identifier_address in all_identifiers:
+            if not identifier_address or identifier_address in seen_identifiers:
                 continue
 
-            seen.add(address)
+            seen_identifiers.add(identifier_address)
 
-            # a. Hash Address
-            hashed_address = sha256(address.encode("utf-8")).hexdigest()
-
-            # b. Derive Key from Address
-            k_addr = sha256(address.encode("utf-8")).digest()
-
-            # c. Encrypt Bundle Key
-            aesgcm_addr = AESGCM(k_addr)
-            nonce_enc = secrets.token_bytes(12)
-            encrypted_k_bundle = nonce_enc + aesgcm_addr.encrypt(
-                nonce_enc, k_bundle, None
+            identifier_hmac = hmac.new(
+                mac_key_bytes, identifier_address.lower().encode("utf-8"), sha256
+            ).hexdigest()
+            abuser_lookup_entry = AbuserLookup(
+                hashed_address=identifier_hmac, abuser_data_id=blob_id
             )
 
-            # d. Store Lookup Entry
-            abuser_lookup = AbuserLookup(
-                hashed_address=hashed_address,
-                blob_id=blob_id,
-                encrypted_k_bundle=encrypted_k_bundle,
-            )
-
-            Session.add(abuser_lookup)
+            Session.add(abuser_lookup_entry)
 
         Session.commit()
     except Exception:
@@ -116,67 +128,70 @@ def unarchive_abusive_user(user_id: int) -> None:
     Fully remove abuser archive and lookup data for a given user_id.
     This reverses the effects of archive_abusive_user().
     """
-    abuser_data = AbuserData.get_by(user_id=user_id)
+    abuser_data_entry = AbuserData.filter_by(user_id=user_id).first()
 
-    if not abuser_data:
+    if not abuser_data_entry:
+        LOG.e("No abuser data found for user %s", user_id)
         return
 
-    # I'm relying here on cascade removal
-    Session.delete(abuser_data)
+    Session.delete(abuser_data_entry)
     Session.commit()
 
 
-def get_abuser_bundles_for_address(address: str) -> List[Dict]:
+def get_abuser_bundles_for_address(target_address: str) -> List[Dict]:
     """
     Given a target address (email, alias, or mailbox address),
     return all decrypted bundle_json's that reference this address.
     """
-    # Hash Target Address
-    search_hash = sha256(address.encode("utf-8")).hexdigest()
-
-    # Lookup Entries
-    lookup_entries = AbuserLookup.query().filter_by(hashed_address=search_hash).all()
-
-    if not lookup_entries:
-        # If no rows are found
+    if not target_address:
         return []
 
-    # Derive Key for Decryption
-    k_addr = sha256(address.encode("utf-8")).digest()
-    aesgcm_k = AESGCM(k_addr)
+    mac_key_bytes = config.MAC_KEY
+    master_key_bytes = config.MASTER_ENC_KEY
 
-    results = []
+    target_hmac = hmac.new(
+        mac_key_bytes, target_address.encode("utf-8"), sha256
+    ).hexdigest()
 
-    # For each retrieved row
+    lookup_entries: List[AbuserLookup] = AbuserLookup.filter(
+        AbuserLookup.hashed_address == target_hmac
+    ).all()
+
+    if not lookup_entries:
+        return []
+
+    decrypted_bundles: List[Dict] = []
+    aad_bytes = config.AEAD_AAD_DATA.encode("utf-8")
+
     for entry in lookup_entries:
-        encrypted_k_bundle = entry.encrypted_k_bundle
-        blob_id = entry.blob_id
+        blob_id = entry.abuser_data_id
+        abuser_data_record: Optional[AbuserData] = AbuserData.filter_by(
+            id=blob_id
+        ).first()
 
-        try:
-            # Decrypt Bundle Key
-            nonce_k = encrypted_k_bundle[:12]
-            ciphertext_k = encrypted_k_bundle[12:]
-            k_bundle = aesgcm_k.decrypt(nonce_k, ciphertext_k, None)
-
-            # Fetch Encrypted Bundle
-            abuser_data = AbuserData.get_by(id=blob_id)
-            if not abuser_data:
-                # Something wrong with decryption, I need to log it somehow
-                continue
-
-            # Decrypt Bundle
-            encrypted_bundle = abuser_data.encrypted_bundle
-            nonce_bundle = encrypted_bundle[:12]
-            ciphertext_bundle = encrypted_bundle[12:]
-
-            aesgcm_bundle = AESGCM(k_bundle)
-            bundle_json = aesgcm_bundle.decrypt(nonce_bundle, ciphertext_bundle, None)
-            bundle = json.loads(bundle_json.decode("utf-8"))
-
-            results.append(bundle)
-
-        except Exception:
-            # Log decryption error
+        if not abuser_data_record:
+            LOG.e(f"Error: No AbuserData found for blob_id {blob_id}")
             continue
 
-    return results
+        owner_user_id = abuser_data_record.user_id
+        encrypted_bundle_data = abuser_data_record.encrypted_bundle
+
+        try:
+            derived_enc_key = _derive_encryption_key(master_key_bytes, owner_user_id)
+            nonce = encrypted_bundle_data[:12]
+            ciphertext = encrypted_bundle_data[12:]
+            aesgcm = AESGCM(derived_enc_key)
+            decrypted_bundle_json_bytes = aesgcm.decrypt(nonce, ciphertext, aad_bytes)
+            bundle = json.loads(decrypted_bundle_json_bytes.decode("utf-8"))
+            decrypted_bundles.append(bundle)
+        except InvalidTag:
+            LOG.e(f"Error: AEAD decryption failed for blob_id {blob_id}. InvalidTag.")
+            continue
+        except ValueError as ve:
+            LOG.e(f"Error: Decryption ValueError for blob_id {blob_id}: {ve}")
+            continue
+        except Exception as e:
+            LOG.e(f"Error: General decryption exception for blob_id {blob_id}: {e}")
+            continue
+
+    return decrypted_bundles
