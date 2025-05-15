@@ -3,9 +3,10 @@ from flask import url_for
 
 # Need to import directly from config to allow modification from the tests
 from app import config
+from app.alias_delete import move_alias_to_trash
 from app.db import Session
 from app.email_utils import is_reverse_alias
-from app.models import User, Alias, Contact, EmailLog, Mailbox
+from app.models import User, Alias, Contact, EmailLog, Mailbox, AliasDeleteReason
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login, random_domain
 
@@ -692,3 +693,35 @@ def test_get_aliases_disabled_account(flask_client):
         headers={"Authentication": api_key.code},
     )
     assert r.status_code == 403
+
+
+def test_get_aliases_does_not_return_trashed_aliases(flask_client):
+    user, api_key = get_new_user_and_api_key()
+
+    alias = Alias.create_new_random(user)
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    aliases = r.json["aliases"]
+    assert len(aliases) == 2  # Newsletter + our own
+
+    assert aliases[0]["id"] == alias.id
+
+    newsletter_alias_id = aliases[1]["id"]
+    assert newsletter_alias_id != alias.id
+
+    move_alias_to_trash(alias, user, AliasDeleteReason.ManualAction, commit=True)
+
+    r = flask_client.get(
+        "/api/v2/aliases?page_id=0",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 200
+
+    aliases = r.json["aliases"]
+    assert len(aliases) == 1  # Newsletter
+    assert aliases[0]["id"] == newsletter_alias_id
