@@ -20,6 +20,7 @@ from app.config import (
     ALIAS_RANDOM_SUFFIX_LENGTH,
     CONNECT_WITH_PROTON,
 )
+from app.custom_domain_utils import sanitize_domain, can_blocked_domain_be_used
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
@@ -40,6 +41,7 @@ from app.models import (
     PartnerUser,
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
+    BlockedDomain,
     UserAliasDeleteAction,
 )
 from app.proton.proton_partner import get_proton_partner
@@ -99,6 +101,12 @@ def setting():
         pending_email = email_change.new_email
     else:
         pending_email = None
+
+    blocked_domains = (
+        BlockedDomain.filter_by(user_id=current_user.id)
+        .order_by(BlockedDomain.created_at.desc())
+        .all()
+    )
 
     if request.method == "POST":
         if not csrf_form.validate():
@@ -290,6 +298,33 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
             return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "blocked-domains-add":
+            domain = request.form.get("domain-name")
+            new_domain = sanitize_domain(domain)
+            domain_forbidden_cause = can_blocked_domain_be_used(
+                current_user, new_domain
+            )
+
+            if domain_forbidden_cause:
+                flash(domain_forbidden_cause.message(new_domain), "error")
+                return redirect(url_for("dashboard.setting"))
+
+            BlockedDomain.create(user_id=current_user.id, domain=new_domain)
+
+            Session.commit()
+            flash(f"Added blocked domain [{domain}]", "success")
+            return redirect(url_for("dashboard.setting"))
+        elif request.form.get("form-name") == "blocked-domains-remove":
+            domain_id = request.form.get("domain_id")
+            domain_name = request.form.get("domain_name")
+
+            domain = BlockedDomain.get(domain_id)
+
+            BlockedDomain.delete(domain.id)
+
+            Session.commit()
+            flash(f"Deleted blocked domain [{domain_name}]", "success")
+            return redirect(url_for("dashboard.setting"))
         elif request.form.get("form-name") == "alias-delete-action":
             action = request.form.get("alias-delete-action")
             if action == str(UserAliasDeleteAction.MoveToTrash.value):
@@ -340,4 +375,5 @@ def setting():
         connect_with_proton=CONNECT_WITH_PROTON,
         proton_linked_account=proton_linked_account,
         can_unlink_proton_account=can_unlink_proton_account(current_user),
+        blocked_domains=blocked_domains,
     )
