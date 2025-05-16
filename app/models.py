@@ -376,6 +376,7 @@ class AbuserLookup(Base, ModelMixin):
         nullable=False,
         index=True,
     )
+    bundle_k = sa.Column(sa.LargeBinary(), nullable=False)
 
     __table_args__ = (
         sa.Index(

@@ -1,21 +1,22 @@
 from enum import Enum
-from typing import Optional
 
 from app.models import User, AbuserAuditLog
 
 
 class AbuserAuditLogAction(Enum):
-    CreateUser = "create_user"
+    MarkAbuser = "mark_abuser"
+    UnmarkAbuser = "unmark_abuser"
+    GetAbuserBundles = "get_abuser_bundles"
 
 
 def emit_abuser_audit_log(
-    user: Optional[User],
+    user: User,
     action: AbuserAuditLogAction,
     message: str,
     commit: bool = False,
 ) -> None:
     AbuserAuditLog.create(
-        user_id=user.id if user else -1,
+        user_id=user.id,
         action=action.value,
         message=message,
         commit=commit,

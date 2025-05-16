@@ -10,7 +10,7 @@ def test_emit_abuser_audit_log_for_random_data():
     user = create_new_user()
 
     message = random_string()
-    action = AbuserAuditLogAction.CreateUser
+    action = AbuserAuditLogAction.MarkAbuser
     emit_abuser_audit_log(
         user=user,
         action=action,

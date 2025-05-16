@@ -1,29 +1,26 @@
+import hashlib
 import hmac
-import json
 import secrets
-from hashlib import sha256
 
 import pytest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes as crypto_hashes
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from app.abuser_utils import (
-    archive_abusive_user,
+    mark_as_abusive_user,
     check_if_abuser_email,
     get_abuser_bundles_for_address,
-    unarchive_abusive_user,
-    _derive_encryption_key,
+    unmark_as_abusive_user,
+    _derive_key_for_identifier,
 )
+from app import constants
 from app.db import Session
 from app.models import AbuserLookup, AbuserData, Alias, Mailbox, User
 from tests.utils import random_email, create_new_user
 
 MOCK_MASTER_ENC_KEY = secrets.token_bytes(32)
 MOCK_MAC_KEY = secrets.token_bytes(32)
-MOCK_HKDF_INFO_TEMPLATE = "test_hkdf_info.shtepan.com:user_id:%s"
-MOCK_AEAD_AAD_DATA = "test_aead_data.shtepan.com"
 
 
 @pytest.fixture(autouse=True)
@@ -31,22 +28,28 @@ def mock_app_config(monkeypatch):
     class MockConfig:
         MASTER_ENC_KEY = MOCK_MASTER_ENC_KEY
         MAC_KEY = MOCK_MAC_KEY
-        HKDF_INFO_TEMPLATE = MOCK_HKDF_INFO_TEMPLATE
-        AEAD_AAD_DATA = MOCK_AEAD_AAD_DATA
 
     monkeypatch.setattr("app.abuser_utils.config", MockConfig)
 
 
+@pytest.fixture(autouse=True)
+def actor_user() -> User:
+    return create_new_user()
+
+
 def calculate_hmac(address: str) -> str:
+    normalized_address = address.lower()
+
     return hmac.new(
-        MOCK_MAC_KEY,
-        address.lower().encode("utf-8"),  # Normalize to lowercase
-        sha256,
+        MOCK_MAC_KEY, normalized_address.encode("utf-8"), hashlib.sha256
     ).hexdigest()
 
 
-def helper_derive_key_for_test(user_id: int) -> bytes:
-    hkdf_info_bytes = (MOCK_HKDF_INFO_TEMPLATE % str(user_id)).encode("utf-8")
+def helper_derive_kek_for_identifier_test(identifier_address: str) -> bytes:
+    normalized_identifier = identifier_address.lower()
+    hkdf_info_bytes = (constants.HKDF_INFO_TEMPLATE % normalized_identifier).encode(
+        "utf-8"
+    )
     hkdf = HKDF(
         algorithm=crypto_hashes.SHA256(),
         length=32,
@@ -58,21 +61,9 @@ def helper_derive_key_for_test(user_id: int) -> bytes:
     return hkdf.derive(MOCK_MASTER_ENC_KEY)
 
 
-def helper_decrypt_bundle_for_test(
-    encrypted_bundle_data: bytes, owner_user_id: int
-) -> dict:
-    derived_key = helper_derive_key_for_test(owner_user_id)
-    aesgcm = AESGCM(derived_key)
-    nonce = encrypted_bundle_data[:12]
-    ciphertext = encrypted_bundle_data[12:]
-    aad_bytes = MOCK_AEAD_AAD_DATA.encode("utf-8")
-    decrypted_json_bytes = aesgcm.decrypt(nonce, ciphertext, aad_bytes)
-
-    return json.loads(decrypted_json_bytes.decode("utf-8"))
-
-
 def get_lookup_count_for_address(address: str) -> int:
-    identifier_hmac = calculate_hmac(address.lower())
+    identifier_hmac = calculate_hmac(address)
+
     return (
         Session.query(AbuserLookup)
         .filter(AbuserLookup.hashed_address == identifier_hmac)
@@ -81,25 +72,31 @@ def get_lookup_count_for_address(address: str) -> int:
 
 
 def test_blocked_address_is_denied(flask_client, monkeypatch):
-    user = create_new_user(email="spam@shtepan.com")
-    Session.add(user)
-    Session.commit()
-    bad_address = "troll@shtepan.com"
-    identifier_hmac = calculate_hmac(bad_address)
+    owner_user_email = random_email()
+    owner_user = create_new_user(email=owner_user_email)
+
+    if not owner_user.id:
+        Session.flush()
+
+    bad_address_to_block = "troll@shtepan.com"
+    identifier_hmac = calculate_hmac(bad_address_to_block)
+
     a_data = AbuserData.create(
-        user_id=user.id,
-        encrypted_bundle=secrets.token_bytes(32),
+        user_id=owner_user.id,
+        encrypted_bundle=secrets.token_bytes(64),
         commit=True,
     )
     AbuserLookup.create(
         hashed_address=identifier_hmac,
         abuser_data_id=a_data.id,
+        bundle_k=secrets.token_bytes(48),
         commit=True,
     )
 
-    assert check_if_abuser_email(bad_address.lower())
+    assert check_if_abuser_email(bad_address_to_block) is not None
 
-    User.delete(user.id)
+    Session.delete(a_data)
+    Session.delete(owner_user)
     Session.commit()
 
 
@@ -111,15 +108,27 @@ def test_non_blocked_address_is_allowed(flask_client, monkeypatch):
         AbuserLookup.filter(AbuserLookup.hashed_address == identifier_hmac).first()
         is None
     )
-    assert not check_if_abuser_email(safe_address)
+    assert check_if_abuser_email(safe_address) is None
 
 
-def test_archive_basic_user(flask_client, monkeypatch):
+def test_archive_basic_user(flask_client, monkeypatch, actor_user):
     user = create_new_user()
-    user_email_lower = user.email.lower()
-    alias1_email = random_email().lower()
+    user_primary_email_normalized = user.email.lower()
+
+    if not user.default_mailbox_id:
+        mb = Mailbox.create(
+            user_id=user.id,
+            email=random_email().lower(),
+            verified=True,
+            commit=True,
+        )
+        user.default_mailbox_id = mb.id
+        Session.add(user)
+        Session.commit()
+
+    alias1_email_normalized = random_email().lower()
     Alias.create(
-        email=alias1_email,
+        email=alias1_email_normalized,
         user_id=user.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
@@ -128,133 +137,137 @@ def test_archive_basic_user(flask_client, monkeypatch):
 
     assert mailbox1 is not None
 
-    mailbox1_email_lower = mailbox1.email.lower()
+    mailbox1_email_normalized = mailbox1.email.lower()
     Session.commit()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data is not None
     assert ab_data.encrypted_bundle is not None
 
-    decrypted_bundle = helper_decrypt_bundle_for_test(ab_data.encrypted_bundle, user.id)
+    all_identifiers_to_check = {
+        user_primary_email_normalized,
+        alias1_email_normalized,
+        mailbox1_email_normalized,
+    }
 
-    assert decrypted_bundle["account_id"] == user.id
-    assert decrypted_bundle["email"] == user_email_lower
-    assert len(decrypted_bundle["aliases"]) == 2
-    assert any(a["address"] == alias1_email for a in decrypted_bundle["aliases"])
-    assert any(
-        "simplelogin-newsletter" in a["address"] for a in decrypted_bundle["aliases"]
-    )
+    for identifier_str in all_identifiers_to_check:
+        if not identifier_str:
+            continue
 
-    all_identifiers_to_check = {user_email_lower, alias1_email, mailbox1_email_lower}
-    newsletter_alias = Alias.filter_by(
-        user_id=user.id, id=user.newsletter_alias_id
-    ).first()
+        identifier_hmac = calculate_hmac(identifier_str)
+        lookup_entry = AbuserLookup.filter_by(
+            hashed_address=identifier_hmac, abuser_data_id=ab_data.id
+        ).first()
 
-    if newsletter_alias:
-        all_identifiers_to_check.add(newsletter_alias.email.lower())
+        assert lookup_entry is not None, f"Lookup entry missing for {identifier_str}"
+        assert lookup_entry.bundle_k is not None
 
-    for address in all_identifiers_to_check:
-        identifier_hmac = calculate_hmac(address)
-        entry = AbuserLookup.filter_by(hashed_address=identifier_hmac).first()
+        retrieved_bundles = get_abuser_bundles_for_address(identifier_str, actor_user)
 
-        assert entry is not None, f"Lookup entry missing for {address}"
-        assert entry.abuser_data_id == ab_data.id
+        assert (
+            len(retrieved_bundles) == 1
+        ), f"Could not retrieve bundle for identifier: {identifier_str}"
+
+        bundle = retrieved_bundles[0]
+
+        assert bundle["account_id"] == str(user.id)
+        assert bundle["email"] == user_primary_email_normalized
+        assert any(
+            a["address"] == alias1_email_normalized for a in bundle.get("aliases", [])
+        )
 
 
-def test_archive_user_with_no_aliases_or_mailboxes(flask_client, monkeypatch):
+def test_archive_user_with_no_aliases_or_mailboxes(
+    flask_client, monkeypatch, actor_user
+):
     user = create_new_user()
-    user_default_mailbox = Mailbox.get(user.default_mailbox_id)
-
+    user_primary_email_normalized = user.email.lower()
     Alias.filter_by(user_id=user.id).delete(synchronize_session=False)
     Session.commit()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data is not None
 
-    decrypted_bundle = helper_decrypt_bundle_for_test(ab_data.encrypted_bundle, user.id)
+    retrieved_bundles = get_abuser_bundles_for_address(
+        user_primary_email_normalized, actor_user
+    )
 
-    assert decrypted_bundle["account_id"] == user.id
-    assert decrypted_bundle["email"] == user.email.lower()
-    assert len(decrypted_bundle["aliases"]) == 0
+    assert len(retrieved_bundles) == 1
 
-    if user_default_mailbox:
-        assert len(decrypted_bundle["mailboxes"]) >= 0
+    bundle = retrieved_bundles[0]
+
+    assert bundle["account_id"] == str(user.id)
+    assert bundle["email"] == user_primary_email_normalized
+    assert len(bundle.get("aliases", [])) == 0
+    assert "mailboxes" in bundle
 
 
-def test_duplicate_addresses_do_not_create_duplicate_lookups(flask_client, monkeypatch):
+def test_duplicate_addresses_do_not_create_duplicate_lookups(
+    flask_client, monkeypatch, actor_user
+):
     user = create_new_user()
-    duplicate_email_base = random_email()
+    duplicate_email_normalized = random_email().lower()
 
     if not user.default_mailbox_id:
         mb = Mailbox.create(
-            user_id=user.id,
-            email=random_email().lower(),
-            verified=True,
-            commit=True,
+            user_id=user.id, email=random_email().lower(), verified=True, commit=True
         )
         user.default_mailbox_id = mb.id
         Session.add(user)
         Session.commit()
 
     Alias.create(
-        email=duplicate_email_base.lower(),
+        email=duplicate_email_normalized,
         user_id=user.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
     )
-    user_primary_email_orig = user.email
-    user.email = random_email().lower()
-    Session.add(user)
-    Session.commit()
-
     default_mb = Mailbox.get(user.default_mailbox_id)
 
     assert default_mb is not None
 
-    default_mb.email = duplicate_email_base.lower()
+    default_mb.email = duplicate_email_normalized
     Session.add(default_mb)
     Session.commit()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
+    identifier_hmac_duplicate = calculate_hmac(duplicate_email_normalized)
+    ab_data = AbuserData.filter_by(user_id=user.id).first()
 
-    identifier_hmac_duplicate = calculate_hmac(duplicate_email_base)
+    assert ab_data is not None
+
     matches_count_duplicate = AbuserLookup.filter_by(
-        hashed_address=identifier_hmac_duplicate
+        hashed_address=identifier_hmac_duplicate, abuser_data_id=ab_data.id
     ).count()
 
     assert matches_count_duplicate == 1
 
-    identifier_hmac_primary = calculate_hmac(user.email)
-    matches_count_primary = AbuserLookup.filter_by(
-        hashed_address=identifier_hmac_primary
-    ).count()
 
-    assert matches_count_primary == 1
-
-    user.email = user_primary_email_orig
-    Session.add(user)
-    Session.commit()
-
-
-def test_invalid_user_fails_gracefully(flask_client, monkeypatch):
-    invalid_user_for_kdf = User(id=0, email="bohdan@shtepan.com")
+def test_invalid_user_or_identifier_fails_gracefully(
+    flask_client, monkeypatch, actor_user
+):
+    with pytest.raises(
+        ValueError, match="Identifier address must be a non-empty string"
+    ):
+        _derive_key_for_identifier(MOCK_MASTER_ENC_KEY, None)
 
     with pytest.raises(
-        ValueError, match="User ID must be a valid positive integer for key derivation."
+        ValueError, match="Identifier address must be a non-empty string"
     ):
-        _derive_encryption_key(MOCK_MASTER_ENC_KEY, invalid_user_for_kdf.id)
+        _derive_key_for_identifier(MOCK_MASTER_ENC_KEY, "")
 
     user_obj_no_email = User(id=99999, email=None)
 
     with pytest.raises(
-        ValueError,
-        match=f"User ID {user_obj_no_email.id} must have a primary email to be archived.",
+        ValueError, match=f"User ID {user_obj_no_email.id} must have a primary email"
     ):
-        archive_abusive_user(user_obj_no_email)
+        mark_as_abusive_user(user_obj_no_email, actor_user)
 
 
-def test_can_decrypt_bundle_for_all_identifiers(flask_client, monkeypatch):
+def test_can_decrypt_bundle_for_all_valid_identifiers(
+    flask_client, monkeypatch, actor_user
+):
     user = create_new_user()
 
     if not user.default_mailbox_id:
@@ -268,9 +281,9 @@ def test_can_decrypt_bundle_for_all_identifiers(flask_client, monkeypatch):
         Session.add(user)
         Session.commit()
 
-    alias1_email = random_email().lower()
-    alias1 = Alias.create(
-        email=alias1_email,
+    alias1_email_normalized = random_email().lower()
+    Alias.create(
+        email=alias1_email_normalized,
         user_id=user.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
@@ -279,49 +292,46 @@ def test_can_decrypt_bundle_for_all_identifiers(flask_client, monkeypatch):
 
     assert mailbox1 is not None
 
+    mailbox1_email_normalized = mailbox1.email.lower()
     Session.commit()
-
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data is not None
 
-    decrypted_bundle = helper_decrypt_bundle_for_test(ab_data.encrypted_bundle, user.id)
-
-    assert decrypted_bundle["account_id"] == user.id
-    assert decrypted_bundle["email"] == user.email.lower()
-
     all_identifiers_to_check = {
         user.email.lower(),
-        alias1.email.lower(),
-        mailbox1.email.lower(),
+        alias1_email_normalized,
+        mailbox1_email_normalized,
     }
 
-    for addr in all_identifiers_to_check:
-        if not addr:
+    for identifier_str in all_identifiers_to_check:
+        if not identifier_str:
             continue
 
-        identifier_hmac = calculate_hmac(addr)
-        entry = AbuserLookup.filter_by(
-            hashed_address=identifier_hmac, abuser_data_id=ab_data.id
-        ).first()
+        retrieved_bundles = get_abuser_bundles_for_address(identifier_str, actor_user)
 
-        assert entry is not None, f"No lookup entry for address: {addr}"
+        assert len(retrieved_bundles) == 1, f"Failed for identifier: {identifier_str}"
+
+        bundle = retrieved_bundles[0]
+
+        assert bundle["account_id"] == str(user.id)
+        assert bundle["email"] == user.email.lower()
 
 
-def test_db_rollback_on_error(monkeypatch, flask_client):
+def test_db_rollback_on_error(monkeypatch, flask_client, actor_user):
     user = create_new_user()
     original_commit = Session.commit
 
     def mock_commit_failure():
-        raise RuntimeError("Simulated DB failure")
+        raise RuntimeError("Simulated DB failure during commit")
 
     monkeypatch.setattr(Session, "commit", mock_commit_failure)
 
-    with pytest.raises(RuntimeError, match="Simulated DB failure"):
-        archive_abusive_user(user)
+    with pytest.raises(RuntimeError, match="Simulated DB failure during commit"):
+        mark_as_abusive_user(user, actor_user)
 
-    monkeypatch.setattr(Session, "commit", original_commit)
+    monkeypatch.setattr(Session, "commit", original_commit)  # Restore
     Session.rollback()
 
     assert AbuserData.filter_by(user_id=user.id).first() is None
@@ -331,33 +341,34 @@ def test_db_rollback_on_error(monkeypatch, flask_client):
     assert AbuserLookup.filter_by(hashed_address=identifier_hmac).count() == 0
 
 
-def test_unarchive_abusive_user_removes_data(flask_client, monkeypatch):
+def test_unarchive_abusive_user_removes_data(flask_client, monkeypatch, actor_user):
     user = create_new_user()
-    email = user.email.lower()
-    archive_abusive_user(user)
+    email_normalized = user.email.lower()
+    mark_as_abusive_user(user, actor_user)
 
     assert AbuserData.filter_by(user_id=user.id).first() is not None
-    assert get_lookup_count_for_address(email) > 0
+    assert get_lookup_count_for_address(email_normalized) > 0
 
-    unarchive_abusive_user(user.id)
+    unmark_as_abusive_user(user.id, actor_user)
 
     assert AbuserData.filter_by(user_id=user.id).first() is None
-    assert get_lookup_count_for_address(email) == 0
+
+    assert get_lookup_count_for_address(email_normalized) == 0
 
 
-def test_unarchive_idempotent_on_missing_data(flask_client, monkeypatch):
+def test_unarchive_idempotent_on_missing_data(flask_client, monkeypatch, actor_user):
     user = create_new_user()
 
     assert AbuserData.filter_by(user_id=user.id).first() is None
 
-    unarchive_abusive_user(user.id)
+    unmark_as_abusive_user(user.id, actor_user)
 
     assert AbuserData.filter_by(user_id=user.id).first() is None
 
 
-def test_abuser_data_deletion_cascades_to_lookup(flask_client, monkeypatch):
+def test_abuser_data_deletion_cascades_to_lookup(flask_client, monkeypatch, actor_user):
     user = create_new_user()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data is not None
@@ -372,78 +383,83 @@ def test_abuser_data_deletion_cascades_to_lookup(flask_client, monkeypatch):
     assert AbuserLookup.filter_by(abuser_data_id=abuser_data_pk_id).count() == 0
 
 
-def test_archive_then_unarchive_then_rearchive_is_consistent(flask_client, monkeypatch):
+def test_archive_then_unarchive_then_rearchive_is_consistent(
+    flask_client, monkeypatch, actor_user
+):
     user = create_new_user()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data1 = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data1 is not None
 
-    unarchive_abusive_user(user.id)
+    unmark_as_abusive_user(user.id, actor_user)
 
     assert AbuserData.filter_by(user_id=user.id).first() is None
 
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
     ab_data2 = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data2 is not None
     assert ab_data2.id != ab_data1.id
 
 
-def test_get_abuser_bundles_returns_bundle(flask_client, monkeypatch):
+def test_get_abuser_bundles_returns_bundle_for_primary_email(
+    flask_client, monkeypatch, actor_user
+):
     user = create_new_user()
-    email = user.email.lower()
-    archive_abusive_user(user)
-    bundles = get_abuser_bundles_for_address(email)
+    email_normalized = user.email.lower()
+    mark_as_abusive_user(user, actor_user)
+    bundles = get_abuser_bundles_for_address(email_normalized, actor_user)
 
     assert len(bundles) == 1
 
     bundle = bundles[0]
 
-    assert bundle["email"] == email
-    assert bundle["account_id"] == user.id
+    assert bundle["email"] == email_normalized
+    assert bundle["account_id"] == str(user.id)
     assert "aliases" in bundle
     assert "mailboxes" in bundle
 
 
-def test_get_abuser_bundles_no_match_returns_empty(flask_client, monkeypatch):
-    bundles = get_abuser_bundles_for_address("bohdan@shtepan.com")
+def test_get_abuser_bundles_no_match_returns_empty(
+    flask_client, monkeypatch, actor_user
+):
+    bundles = get_abuser_bundles_for_address("bohdan@shtepan.com", actor_user)
     assert bundles == []
 
 
-def test_get_abuser_bundles_from_alias_address(flask_client, monkeypatch):
+def test_get_abuser_bundles_from_alias_address(flask_client, monkeypatch, actor_user):
     user = create_new_user()
 
     if not user.default_mailbox_id:
         mb = Mailbox.create(
-            user_id=user.id,
-            email=random_email().lower(),
-            verified=True,
-            commit=True,
+            user_id=user.id, email=random_email().lower(), verified=True, commit=True
         )
         user.default_mailbox_id = mb.id
         Session.add(user)
         Session.commit()
 
-    alias_email = random_email().lower()
-    alias = Alias.create(
-        email=alias_email,
+    alias_email_normalized = random_email().lower()
+    Alias.create(
+        email=alias_email_normalized,
         user_id=user.id,
         mailbox_id=user.default_mailbox_id,
         commit=True,
     )
-    archive_abusive_user(user)
-    results = get_abuser_bundles_for_address(alias.email)
+    mark_as_abusive_user(user, actor_user)
+    results = get_abuser_bundles_for_address(alias_email_normalized, actor_user)
 
     assert len(results) == 1
 
     bundle = results[0]
 
     assert bundle["email"] == user.email.lower()
-    assert any(a["address"] == alias.email for a in bundle["aliases"])
+    assert any(
+        a["address"] == alias_email_normalized for a in bundle.get("aliases", [])
+    )
 
 
-def test_get_abuser_bundles_from_mailbox_address(flask_client, monkeypatch):
+def test_get_abuser_bundles_from_mailbox_address(flask_client, monkeypatch, actor_user):
     user = create_new_user()
     mailbox = Mailbox.get(user.default_mailbox_id) if user.default_mailbox_id else None
 
@@ -461,6 +477,7 @@ def test_get_abuser_bundles_from_mailbox_address(flask_client, monkeypatch):
             )
             Session.flush()
             user.default_mailbox_id = mailbox.id
+
         Session.add(mailbox)
 
         if not user.default_mailbox_id:
@@ -468,53 +485,74 @@ def test_get_abuser_bundles_from_mailbox_address(flask_client, monkeypatch):
 
         Session.commit()
 
-    current_mailbox_email = mailbox.email.lower()
-    archive_abusive_user(user)
+    current_mailbox_email_normalized = mailbox.email.lower()
+    mark_as_abusive_user(user, actor_user)
 
-    results = get_abuser_bundles_for_address(current_mailbox_email)
+    results = get_abuser_bundles_for_address(
+        current_mailbox_email_normalized, actor_user
+    )
 
     assert len(results) == 1
 
     bundle = results[0]
 
     assert bundle["email"] == user.email.lower()
-    assert any(m["address"] == current_mailbox_email for m in bundle["mailboxes"])
+    assert any(
+        m["address"] == current_mailbox_email_normalized
+        for m in bundle.get("mailboxes", [])
+    )
 
 
-def test_get_abuser_bundles_with_corrupt_bundle_data_is_skipped(
-    flask_client, monkeypatch
+def test_get_abuser_bundles_with_corrupt_encrypted_k_bundle_is_skipped(
+    flask_client, monkeypatch, actor_user
 ):
     user = create_new_user()
-    archive_abusive_user(user)
+    mark_as_abusive_user(user, actor_user)
+    identifier_hmac = calculate_hmac(user.email)
+    lookup_entry = AbuserLookup.filter_by(hashed_address=identifier_hmac).first()
+
+    assert lookup_entry is not None
+
+    original_key_data = lookup_entry.bundle_k
+    corrupted_key_data = secrets.token_bytes(len(original_key_data))
+    lookup_entry.bundle_k = corrupted_key_data
+    Session.add(lookup_entry)
+    Session.commit()
+    bundles = get_abuser_bundles_for_address(user.email, actor_user)
+
+    assert bundles == []
+
+    lookup_entry.bundle_k = original_key_data
+    Session.add(lookup_entry)
+    Session.commit()
+
+
+def test_get_abuser_bundles_with_corrupt_main_bundle_is_skipped(
+    flask_client, monkeypatch, actor_user
+):
+    user = create_new_user()
+    mark_as_abusive_user(user, actor_user)
     ab_data = AbuserData.filter_by(user_id=user.id).first()
 
     assert ab_data is not None
 
-    original_bundle = ab_data.encrypted_bundle
+    original_main_bundle = ab_data.encrypted_bundle
+    corrupted_main_bundle = secrets.token_bytes(len(original_main_bundle))
+    ab_data.encrypted_bundle = corrupted_main_bundle
 
-    if len(original_bundle) > 12 + 16:
-        corrupted_bundle = (
-            original_bundle[:12]
-            + secrets.token_bytes(len(original_bundle) - 12 - 16)
-            + original_bundle[-15:]
-        )
-    else:
-        corrupted_bundle = secrets.token_bytes(30)
-
-    ab_data.encrypted_bundle = corrupted_bundle
     Session.add(ab_data)
     Session.commit()
 
-    bundles = get_abuser_bundles_for_address(user.email.lower())
+    bundles = get_abuser_bundles_for_address(user.email, actor_user)
 
     assert bundles == []
 
-    ab_data.encrypted_bundle = original_bundle
+    ab_data.encrypted_bundle = original_main_bundle
     Session.add(ab_data)
     Session.commit()
 
 
-def test_archive_and_fetch_flow(flask_client, monkeypatch):
+def test_archive_and_fetch_flow_end_to_end(flask_client, monkeypatch, actor_user):
     user = create_new_user()
     mailbox = Mailbox.get(user.default_mailbox_id) if user.default_mailbox_id else None
 
@@ -530,10 +568,9 @@ def test_archive_and_fetch_flow(flask_client, monkeypatch):
         Session.add(user)
         Session.commit()
 
-    current_mailbox_email = mailbox.email.lower()
-    archive_abusive_user(user)
-
-    bundles = get_abuser_bundles_for_address(user.email.lower())
+    current_mailbox_email_normalized = mailbox.email.lower()
+    mark_as_abusive_user(user, actor_user)
+    bundles = get_abuser_bundles_for_address(user.email, actor_user)
 
     assert len(bundles) == 1
 
@@ -541,5 +578,8 @@ def test_archive_and_fetch_flow(flask_client, monkeypatch):
 
     assert data is not None
     assert data["email"] == user.email.lower()
-    assert data["account_id"] == user.id
-    assert any(mb["address"] == current_mailbox_email for mb in data["mailboxes"])
+    assert data["account_id"] == str(user.id)
+    assert any(
+        mb["address"] == current_mailbox_email_normalized
+        for mb in data.get("mailboxes", [])
+    )

@@ -689,5 +689,3 @@ MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS"
 
 MASTER_ENC_KEY = bytes.fromhex(os.environ.get("MASTER_ENC_KEY_HEX"))
 MAC_KEY = bytes.fromhex(os.environ.get("MAC_KEY_HEX"))
-HKDF_INFO_TEMPLATE = os.environ.get("HKDF_INFO_TEMPLATE")
-AEAD_AAD_DATA = os.environ.get("AEAD_AAD_DATA")

@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: aa40f1c6fa50
+Revision ID: 2a87c1af1ff9
 Revises: 87da368d282b
-Create Date: 2025-05-14 20:58:42.618276
+Create Date: 2025-05-16 15:39:53.965405
 
 """
 import sqlalchemy_utils
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'aa40f1c6fa50'
+revision = '2a87c1af1ff9'
 down_revision = '87da368d282b'
 branch_labels = None
 depends_on = None
@@ -46,6 +46,7 @@ def upgrade():
     sa.Column('updated_at', sqlalchemy_utils.types.arrow.ArrowType(), nullable=True),
     sa.Column('hashed_address', sa.String(length=64), nullable=False),
     sa.Column('abuser_data_id', sa.Integer(), nullable=False),
+    sa.Column('bundle_k', sa.LargeBinary(), nullable=False),
     sa.ForeignKeyConstraint(['abuser_data_id'], ['abuser_data.id'], ondelete='cascade'),
     sa.PrimaryKeyConstraint('id')
     )

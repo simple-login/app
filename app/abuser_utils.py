@@ -10,17 +10,21 @@ from cryptography.hazmat.primitives import hashes as crypto_hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from app import config
+from app import config, constants
+from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.db import Session
 from app.log import LOG
 from app.models import User, Alias, Mailbox, AbuserData, AbuserLookup
 
 
-def _derive_encryption_key(master_key: bytes, user_id: int) -> bytes:
-    if user_id is None or not isinstance(user_id, int) or user_id <= 0:
-        raise ValueError("User ID must be a valid positive integer for key derivation.")
+def _derive_key_for_identifier(master_key: bytes, identifier_address: str) -> bytes:
+    if not identifier_address or not isinstance(identifier_address, str):
+        raise ValueError(
+            "Identifier address must be a non-empty string for key derivation."
+        )
 
-    hkdf_info = (config.HKDF_INFO_TEMPLATE % str(user_id)).encode("utf-8")
+    normalized_identifier = identifier_address.lower()
+    hkdf_info = (constants.HKDF_INFO_TEMPLATE % normalized_identifier).encode("utf-8")
     hkdf = HKDF(
         algorithm=crypto_hashes.SHA256(),
         length=32,
@@ -34,11 +38,12 @@ def _derive_encryption_key(master_key: bytes, user_id: int) -> bytes:
 
 def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     """
-    Returns False, if the given address (after hashing) is found in abuser_lookup.
+    Returns AbuserLookup, if the given address (after hashing) is found in abuser_lookup.
     """
     mac_key_bytes = config.MAC_KEY
+    normalized_address = new_address.lower()
     check_hmac = hmac.new(
-        mac_key_bytes, new_address.encode("utf-8"), sha256
+        mac_key_bytes, normalized_address.encode("utf-8"), sha256
     ).hexdigest()
 
     return (
@@ -46,7 +51,7 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def archive_abusive_user(user: User) -> None:
+def mark_as_abusive_user(user: User, actor: User) -> None:
     """
     Archive the given abusive user's data and update blocklist/lookup tables.
     """
@@ -54,39 +59,46 @@ def archive_abusive_user(user: User) -> None:
         raise ValueError(f"User ID {user.id} must have a primary email to be archived.")
 
     try:
-        primary_email: str = user.email
-        aliases: List[Alias] = Alias.filter_by(user_id=user.id).all()
+        primary_email: str = user.email.lower()
+        aliases: List[Alias] = (
+            Alias.filter_by(user_id=user.id)
+            .enable_eagerloads(False)
+            .yield_per(500)
+            .all()
+        )
         mailboxes: List[Mailbox] = Mailbox.filter_by(user_id=user.id).all()
         bundle = {
-            "account_id": user.id,
+            "account_id": str(user.id),
             "email": primary_email,
             "user_created_at": user.created_at.isoformat() if user.created_at else None,
             "aliases": [
                 {
-                    "address": alias.email,
+                    "address": alias.email.lower() if alias.email else None,
                     "created_at": alias.created_at.isoformat()
                     if alias.created_at
                     else None,
                 }
                 for alias in aliases
+                if alias.email
             ],
             "mailboxes": [
                 {
-                    "address": mailbox.email,
+                    "address": mailbox.email.lower() if mailbox.email else None,
                     "created_at": mailbox.created_at.isoformat()
                     if mailbox.created_at
                     else None,
                 }
                 for mailbox in mailboxes
+                if mailbox.email
             ],
         }
         bundle_json_bytes = json.dumps(bundle, sort_keys=True).encode("utf-8")
-        derived_enc_key = _derive_encryption_key(config.MASTER_ENC_KEY, user.id)
-        aesgcm = AESGCM(derived_enc_key)
-        nonce = secrets.token_bytes(12)
-        aad_bytes = config.AEAD_AAD_DATA.encode("utf-8")
-        encrypted_bundle_data = nonce + aesgcm.encrypt(
-            nonce, bundle_json_bytes, aad_bytes
+        k_bundle_random = AESGCM.generate_key(bit_length=256)
+        aesgcm_bundle_enc = AESGCM(k_bundle_random)
+        nonce_bundle = secrets.token_bytes(12)
+        aad_bytes = constants.AEAD_AAD_DATA.encode("utf-8")
+        encrypted_bundle_data = nonce_bundle + aesgcm_bundle_enc.encrypt(
+            nonce_bundle, bundle_json_bytes, aad_bytes
         )
         abuser_data_entry = AbuserData(
             user_id=user.id, encrypted_bundle=encrypted_bundle_data
@@ -96,34 +108,61 @@ def archive_abusive_user(user: User) -> None:
         Session.flush()
 
         blob_id = abuser_data_entry.id
-        all_identifiers = (
-            [primary_email] + [a.email for a in aliases] + [m.email for m in mailboxes]
+        all_identifiers_raw = (
+            [primary_email]
+            + [a.email for a in aliases if a.email]
+            + [m.email for m in mailboxes if m.email]
         )
-        seen_identifiers = set()
+        seen_normalized_identifiers = set()
         mac_key_bytes = config.MAC_KEY
+        master_key_bytes = config.MASTER_ENC_KEY
 
-        for identifier_address in all_identifiers:
-            if not identifier_address or identifier_address in seen_identifiers:
+        for raw_identifier_address in all_identifiers_raw:
+            if not raw_identifier_address:
                 continue
 
-            seen_identifiers.add(identifier_address)
+            normalized_identifier = raw_identifier_address.lower()
 
+            if normalized_identifier in seen_normalized_identifiers:
+                continue
+
+            seen_normalized_identifiers.add(normalized_identifier)
             identifier_hmac = hmac.new(
-                mac_key_bytes, identifier_address.lower().encode("utf-8"), sha256
+                mac_key_bytes, normalized_identifier.encode("utf-8"), sha256
             ).hexdigest()
+
+            k_identifier_derived = _derive_key_for_identifier(
+                master_key_bytes, normalized_identifier
+            )
+            aesgcm_key_enc = AESGCM(k_identifier_derived)
+            nonce_key_encryption = secrets.token_bytes(12)
+            encrypted_k_bundle_for_this_identifier = (
+                nonce_key_encryption
+                + aesgcm_key_enc.encrypt(
+                    nonce_key_encryption, k_bundle_random, aad_bytes
+                )
+            )
             abuser_lookup_entry = AbuserLookup(
-                hashed_address=identifier_hmac, abuser_data_id=blob_id
+                hashed_address=identifier_hmac,
+                abuser_data_id=blob_id,
+                bundle_k=encrypted_k_bundle_for_this_identifier,
             )
 
             Session.add(abuser_lookup_entry)
 
         Session.commit()
+        emit_abuser_audit_log(
+            user=actor,
+            action=AbuserAuditLogAction.MarkAbuser,
+            message=f"An user {user.id} was marked as abuser.",
+        )
     except Exception:
         Session.rollback()
+        LOG.exception("Error during archive_abusive_user")
         raise
 
 
-def unarchive_abusive_user(user_id: int) -> None:
+def unmark_as_abusive_user(user_id: int, actor: User) -> None:
     """
     Fully remove abuser archive and lookup data for a given user_id.
     This reverses the effects of archive_abusive_user().
@@ -136,9 +175,14 @@ def unarchive_abusive_user(user_id: int) -> None:
 
     Session.delete(abuser_data_entry)
     Session.commit()
+    emit_abuser_audit_log(
+        user=actor,
+        action=AbuserAuditLogAction.UnmarkAbuser,
+        message=f"An user {user_id} was unmarked as abuser.",
+    )
 
 
-def get_abuser_bundles_for_address(target_address: str) -> List[Dict]:
+def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dict]:
     """
     Given a target address (email, alias, or mailbox address),
     return all decrypted bundle_json's that reference this address.
@@ -146,13 +190,13 @@ def get_abuser_bundles_for_address(target_address: str) -> List[Dict]:
     if not target_address:
         return []
 
+    normalized_target_address = target_address.lower()
     mac_key_bytes = config.MAC_KEY
     master_key_bytes = config.MASTER_ENC_KEY
 
     target_hmac = hmac.new(
-        mac_key_bytes, target_address.encode("utf-8"), sha256
+        mac_key_bytes, normalized_target_address.encode("utf-8"), sha256
     ).hexdigest()
-
     lookup_entries: List[AbuserLookup] = AbuserLookup.filter(
         AbuserLookup.hashed_address == target_hmac
     ).all()
@@ -161,37 +205,68 @@ def get_abuser_bundles_for_address(target_address: str) -> List[Dict]:
         return []
 
     decrypted_bundles: List[Dict] = []
-    aad_bytes = config.AEAD_AAD_DATA.encode("utf-8")
+    aad_bytes = constants.AEAD_AAD_DATA.encode("utf-8")
+
+    try:
+        k_target_address_derived = _derive_key_for_identifier(
+            master_key_bytes, normalized_target_address
+        )
+        aesgcm_key_dec = AESGCM(k_target_address_derived)
+    except ValueError as ve_derive:
+        LOG.e(
+            f"Error deriving key for target_address '{normalized_target_address}': {ve_derive}"
+        )
+        return []
 
     for entry in lookup_entries:
         blob_id = entry.abuser_data_id
+        encrypted_k_bundle_from_entry = entry.bundle_k
         abuser_data_record: Optional[AbuserData] = AbuserData.filter_by(
             id=blob_id
         ).first()
 
         if not abuser_data_record:
-            LOG.e(f"Error: No AbuserData found for blob_id {blob_id}")
+            LOG.e(
+                f"Error: No AbuserData found for blob_id {blob_id} linked to target_address '{normalized_target_address}'. Skipping."
+            )
             continue
 
-        owner_user_id = abuser_data_record.user_id
-        encrypted_bundle_data = abuser_data_record.encrypted_bundle
+        encrypted_main_bundle_data = abuser_data_record.encrypted_bundle
 
         try:
-            derived_enc_key = _derive_encryption_key(master_key_bytes, owner_user_id)
-            nonce = encrypted_bundle_data[:12]
-            ciphertext = encrypted_bundle_data[12:]
-            aesgcm = AESGCM(derived_enc_key)
-            decrypted_bundle_json_bytes = aesgcm.decrypt(nonce, ciphertext, aad_bytes)
+            nonce_k_decryption = encrypted_k_bundle_from_entry[:12]
+            ciphertext_k_decryption = encrypted_k_bundle_from_entry[12:]
+            plaintext_k_bundle = aesgcm_key_dec.decrypt(
+                nonce_k_decryption, ciphertext_k_decryption, aad_bytes
+            )
+            aesgcm_bundle_dec = AESGCM(plaintext_k_bundle)
+            nonce_main_bundle = encrypted_main_bundle_data[:12]
+            ciphertext_main_bundle = encrypted_main_bundle_data[12:]
+            decrypted_bundle_json_bytes = aesgcm_bundle_dec.decrypt(
+                nonce_main_bundle, ciphertext_main_bundle, aad_bytes
+            )
             bundle = json.loads(decrypted_bundle_json_bytes.decode("utf-8"))
             decrypted_bundles.append(bundle)
         except InvalidTag:
-            LOG.e(f"Error: AEAD decryption failed for blob_id {blob_id}. InvalidTag.")
+            LOG.e(
+                f"Error: AEAD decryption failed for blob_id {blob_id} (either K_bundle or main bundle). InvalidTag. Target address: '{normalized_target_address}'."
+            )
             continue
         except ValueError as ve:
-            LOG.e(f"Error: Decryption ValueError for blob_id {blob_id}: {ve}")
+            LOG.e(
+                f"Error: Decryption ValueError for blob_id {blob_id}: {ve}. Target address: '{normalized_target_address}'."
+            )
             continue
-        except Exception as e:
-            LOG.e(f"Error: General decryption exception for blob_id {blob_id}: {e}")
+        except Exception:
+            LOG.e(
+                f"Error: General decryption exception for blob_id {blob_id}. Target address: '{normalized_target_address}'."
+            )
             continue
+
+    emit_abuser_audit_log(
+        user=actor,
+        action=AbuserAuditLogAction.GetAbuserBundles,
+        message="The abuser bundle was requested.",
+    )
 
     return decrypted_bundles
