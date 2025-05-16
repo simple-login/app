@@ -28,7 +28,7 @@ def _derive_key_for_identifier(master_key: bytes, identifier_address: str) -> by
     hkdf = HKDF(
         algorithm=crypto_hashes.SHA256(),
         length=32,
-        salt=None,
+        salt=config.ABUSER_HKDF_SALT,
         info=hkdf_info,
         backend=default_backend(),
     )
@@ -51,7 +51,22 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def mark_as_abusive_user(user: User, actor: User) -> None:
+def mark_user_as_abuser(
+    abuse_user: User, note: str, admin: Optional[User] = None
+) -> None:
+    abuse_user.disabled = True
+
+    emit_abuser_audit_log(
+        user=abuse_user,
+        action=AbuserAuditLogAction.MarkAbuser,
+        message=note,
+        admin=admin,
+    )
+    Session.commit()
+    _store_abuse_data(abuse_user)
+
+
+def _store_abuse_data(user: User) -> None:
     """
     Archive the given abusive user's data and update blocklist/lookup tables.
     """
@@ -96,9 +111,10 @@ def mark_as_abusive_user(user: User, actor: User) -> None:
         k_bundle_random = AESGCM.generate_key(bit_length=256)
         aesgcm_bundle_enc = AESGCM(k_bundle_random)
         nonce_bundle = secrets.token_bytes(12)
-        aad_bytes = constants.AEAD_AAD_DATA.encode("utf-8")
         encrypted_bundle_data = nonce_bundle + aesgcm_bundle_enc.encrypt(
-            nonce_bundle, bundle_json_bytes, aad_bytes
+            nonce_bundle,
+            bundle_json_bytes,
+            f"{constants.AEAD_AAD_DATA}.bundle".encode("utf-8"),
         )
         abuser_data_entry = AbuserData(
             user_id=user.id, encrypted_bundle=encrypted_bundle_data
@@ -139,7 +155,9 @@ def mark_as_abusive_user(user: User, actor: User) -> None:
             encrypted_k_bundle_for_this_identifier = (
                 nonce_key_encryption
                 + aesgcm_key_enc.encrypt(
-                    nonce_key_encryption, k_bundle_random, aad_bytes
+                    nonce_key_encryption,
+                    k_bundle_random,
+                    f"{constants.AEAD_AAD_DATA}.key".encode("utf-8"),
                 )
             )
             abuser_lookup_entry = AbuserLookup(
@@ -151,11 +169,6 @@ def mark_as_abusive_user(user: User, actor: User) -> None:
             Session.add(abuser_lookup_entry)
 
         Session.commit()
-        emit_abuser_audit_log(
-            user=actor,
-            action=AbuserAuditLogAction.MarkAbuser,
-            message=f"An user {user.id} was marked as abuser.",
-        )
     except Exception:
         Session.rollback()
         LOG.exception("Error during archive_abusive_user")
@@ -167,19 +180,22 @@ def unmark_as_abusive_user(user_id: int, actor: User) -> None:
     Fully remove abuser archive and lookup data for a given user_id.
     This reverses the effects of archive_abusive_user().
     """
+    LOG.i(f"Removing user {user_id} as an abuser.")
     abuser_data_entry = AbuserData.filter_by(user_id=user_id).first()
 
-    if not abuser_data_entry:
-        LOG.e("No abuser data found for user %s", user_id)
-        return
+    if abuser_data_entry:
+        Session.delete(abuser_data_entry)
 
-    Session.delete(abuser_data_entry)
-    Session.commit()
+    user = User.get(user_id)
+    user.disabled = False
+
     emit_abuser_audit_log(
-        user=actor,
+        user=user,
+        admin=actor,
         action=AbuserAuditLogAction.UnmarkAbuser,
         message=f"An user {user_id} was unmarked as abuser.",
     )
+    Session.commit()
 
 
 def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dict]:
@@ -205,7 +221,6 @@ def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dic
         return []
 
     decrypted_bundles: List[Dict] = []
-    aad_bytes = constants.AEAD_AAD_DATA.encode("utf-8")
 
     try:
         k_target_address_derived = _derive_key_for_identifier(
@@ -237,13 +252,17 @@ def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dic
             nonce_k_decryption = encrypted_k_bundle_from_entry[:12]
             ciphertext_k_decryption = encrypted_k_bundle_from_entry[12:]
             plaintext_k_bundle = aesgcm_key_dec.decrypt(
-                nonce_k_decryption, ciphertext_k_decryption, aad_bytes
+                nonce_k_decryption,
+                ciphertext_k_decryption,
+                f"{constants.AEAD_AAD_DATA}.key".encode("utf-8"),
             )
             aesgcm_bundle_dec = AESGCM(plaintext_k_bundle)
             nonce_main_bundle = encrypted_main_bundle_data[:12]
             ciphertext_main_bundle = encrypted_main_bundle_data[12:]
             decrypted_bundle_json_bytes = aesgcm_bundle_dec.decrypt(
-                nonce_main_bundle, ciphertext_main_bundle, aad_bytes
+                nonce_main_bundle,
+                ciphertext_main_bundle,
+                f"{constants.AEAD_AAD_DATA}.bundle".encode("utf-8"),
             )
             bundle = json.loads(decrypted_bundle_json_bytes.decode("utf-8"))
             decrypted_bundles.append(bundle)

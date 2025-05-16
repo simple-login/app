@@ -10,7 +10,6 @@ from itsdangerous import Signer
 from app import email_utils
 from app.api.base import api_bp
 from app.abuser_utils import check_if_abuser_email
-from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
@@ -116,11 +115,8 @@ def auth_register():
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
     if check_if_abuser_email(email):
-        # TODO: do I need to call RegisterEvent in here?
-        emit_abuser_audit_log(
-            None,
-            AbuserAuditLogAction.CreateUser,
-            "An attempt to register a previously banned email",
+        LOG.warn(
+            f"User with email {email} that was marked as abuser tried to register again"
         )
         return jsonify(error=f"cannot use {email} as it was previously banned"), 400
 

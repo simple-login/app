@@ -1,3 +1,4 @@
+import base64
 import os
 import random
 import socket
@@ -689,3 +690,4 @@ MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS"
 
 MASTER_ENC_KEY = bytes.fromhex(os.environ.get("MASTER_ENC_KEY_HEX"))
 MAC_KEY = bytes.fromhex(os.environ.get("MAC_KEY_HEX"))
+ABUSER_HKDF_SALT = base64.b64decode(os.environ.get("ABUSER_HKDF_SALT"))

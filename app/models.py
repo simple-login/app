@@ -378,26 +378,14 @@ class AbuserLookup(Base, ModelMixin):
     )
     bundle_k = sa.Column(sa.LargeBinary(), nullable=False)
 
-    __table_args__ = (
-        sa.Index(
-            "ix_abuser_lookup_hashed_address_abuser_data_id",
-            "hashed_address",
-            "abuser_data_id",
-        ),
-    )
-
 
 class AbuserAuditLog(Base, ModelMixin):
     __tablename__ = "abuser_audit_log"
 
-    user_id = sa.Column(sa.Integer, nullable=False)
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    admin_id = sa.Column(sa.Integer, nullable=True)
     action = sa.Column(sa.String(255), nullable=False)
     message = sa.Column(sa.Text, default=None, nullable=True)
-
-    __table_args__ = (
-        sa.Index("ix_abuser_audit_log_user_id", "user_id"),
-        sa.Index("ix_abuser_audit_log_created_at", "created_at"),
-    )
 
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
