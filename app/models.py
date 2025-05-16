@@ -357,6 +357,37 @@ class Fido(Base, ModelMixin):
     __table_args__ = (sa.Index("ix_fido_user_id", "user_id"),)
 
 
+class AbuserData(Base, ModelMixin):
+    __tablename__ = "abuser_data"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    encrypted_bundle = sa.Column(sa.LargeBinary(), nullable=False)
+
+    __table_args__ = (sa.Index("ix_abuser_data_id", "id"),)
+
+
+class AbuserLookup(Base, ModelMixin):
+    __tablename__ = "abuser_lookup"
+
+    hashed_address = sa.Column(sa.String(64), nullable=False, index=True)
+    abuser_data_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("abuser_data.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+    bundle_k = sa.Column(sa.LargeBinary(), nullable=False)
+
+
+class AbuserAuditLog(Base, ModelMixin):
+    __tablename__ = "abuser_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    admin_id = sa.Column(sa.Integer, nullable=True)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
 
