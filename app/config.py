@@ -1,4 +1,3 @@
-import base64
 import os
 import random
 import socket
@@ -695,16 +694,10 @@ def read_hex_data(key: string, default: bytes) -> bytes:
     return bytes.fromhex(data) if data else default
 
 
-def read_b64_data(key: string, default: bytes) -> bytes:
-    data = os.environ.get(key)
-
-    return base64.b64decode(data) if data else default
-
-
 MASTER_ENC_KEY = read_hex_data(
     "MASTER_ENC_KEY_HEX", (FLASK_SECRET + "enckey").encode("utf-8")
 )
 MAC_KEY = read_hex_data("MAC_KEY_HEX", (FLASK_SECRET + "mackey").encode("utf-8"))
-ABUSER_HKDF_SALT = read_b64_data(
+ABUSER_HKDF_SALT = read_hex_data(
     "ABUSER_HKDF_SALT", (FLASK_SECRET + "absalt").encode("utf-8")
 )
