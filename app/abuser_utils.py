@@ -51,16 +51,14 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def mark_user_as_abuser(
-    abuse_user: User, note: str, admin: Optional[User] = None
-) -> None:
+def mark_user_as_abuser(abuse_user: User, admin_id: Optional[int] = None) -> None:
     abuse_user.disabled = True
 
     emit_abuser_audit_log(
-        user=abuse_user,
+        user_id=abuse_user.id,
         action=AbuserAuditLogAction.MarkAbuser,
-        message=note,
-        admin=admin,
+        message=f"An user {abuse_user.id} was marked as abuser.",
+        admin_id=admin_id,
     )
     Session.commit()
     _store_abuse_data(abuse_user)
@@ -175,7 +173,7 @@ def _store_abuse_data(user: User) -> None:
         raise
 
 
-def unmark_as_abusive_user(user_id: int, actor: User) -> None:
+def unmark_as_abusive_user(user_id: int, admin_id: Optional[int] = None) -> None:
     """
     Fully remove abuser archive and lookup data for a given user_id.
     This reverses the effects of archive_abusive_user().
@@ -190,15 +188,15 @@ def unmark_as_abusive_user(user_id: int, actor: User) -> None:
     user.disabled = False
 
     emit_abuser_audit_log(
-        user=user,
-        admin=actor,
+        user_id=user.id,
+        admin_id=admin_id,
         action=AbuserAuditLogAction.UnmarkAbuser,
         message=f"An user {user_id} was unmarked as abuser.",
     )
     Session.commit()
 
 
-def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dict]:
+def get_abuser_bundles_for_address(target_address: str, admin_id: int) -> List[Dict]:
     """
     Given a target address (email, alias, or mailbox address),
     return all decrypted bundle_json's that reference this address.
@@ -282,10 +280,11 @@ def get_abuser_bundles_for_address(target_address: str, actor: User) -> List[Dic
             )
             continue
 
-    emit_abuser_audit_log(
-        user=actor,
-        action=AbuserAuditLogAction.GetAbuserBundles,
-        message="The abuser bundle was requested.",
-    )
+        emit_abuser_audit_log(
+            user_id=abuser_data_record.user_id,
+            admin_id=admin_id,
+            action=AbuserAuditLogAction.GetAbuserBundles,
+            message="The abuser bundle was requested.",
+        )
 
     return decrypted_bundles

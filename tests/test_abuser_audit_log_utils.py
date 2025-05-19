@@ -12,7 +12,7 @@ def test_emit_abuser_audit_log_for_random_data():
     message = random_string()
     action = AbuserAuditLogAction.MarkAbuser
     emit_abuser_audit_log(
-        user=user,
+        user_id=user.id,
         action=action,
         message=message,
         commit=True,
