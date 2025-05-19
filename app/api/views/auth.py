@@ -9,6 +9,7 @@ from itsdangerous import Signer
 
 from app import email_utils
 from app.api.base import api_bp
+from app.abuser_utils import check_if_abuser_email
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
@@ -112,6 +113,12 @@ def auth_register():
             RegisterEvent.ActionType.invalid_email, RegisterEvent.Source.api
         ).send()
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
+
+    if check_if_abuser_email(email):
+        LOG.warn(
+            f"User with email {email} that was marked as abuser tried to register again"
+        )
+        return jsonify(error=f"cannot use {email} as it was previously banned"), 400
 
     if not password or len(password) < 8:
         RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()

@@ -686,3 +686,18 @@ AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
 ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
 ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
 MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
+
+
+def read_hex_data(key: string, default: bytes) -> bytes:
+    data = os.environ.get(key)
+
+    return bytes.fromhex(data) if data else default
+
+
+MASTER_ENC_KEY = read_hex_data(
+    "MASTER_ENC_KEY_HEX", (FLASK_SECRET + "enckey").encode("utf-8")
+)
+MAC_KEY = read_hex_data("MAC_KEY_HEX", (FLASK_SECRET + "mackey").encode("utf-8"))
+ABUSER_HKDF_SALT = read_hex_data(
+    "ABUSER_HKDF_SALT", (FLASK_SECRET + "absalt").encode("utf-8")
+)
