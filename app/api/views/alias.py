@@ -165,7 +165,8 @@ def delete_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_delete.delete_alias(alias, user, AliasDeleteReason.ManualAction)
+    LOG.i(f"User {user} is deleting alias {alias}")
+    alias_delete.delete_alias(alias, user, AliasDeleteReason.ManualAction, commit=True)
 
     return jsonify(deleted=True), 200
 
