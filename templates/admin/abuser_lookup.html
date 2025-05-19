@@ -1,0 +1,39 @@
+{% extends 'admin/master.html' %}
+
+{% macro show_bundles(bundles) -%}
+    <div class="flex gap-2">
+        {% for bundle in bundles %}
+            <div class="border border-grey p-2 hover:border-black">
+                {{ bundle }}
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% block body %}
+
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="get">
+      <div class="form-group">
+        <label for="email">Email address:</label>
+        <input type="email"
+               class="form-control"
+               name="email"
+               value="{{ query or '' }}" />
+      </div>
+      <button type="submit" class="btn btn-primary">Look up</button>
+    </form>
+  </div>
+  {% if data.no_match and query %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">No abuser data was found for the provided email address.</div>
+  {% endif %}
+  {% if data.bundles %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3 class="mb-3">Found abuser data for {{ data.email }}</h3>
+      {{ show_bundles(data.bundles) }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -44,6 +44,7 @@ from app.admin_model import (
     InvalidMailboxDomainAdmin,
     EmailSearchAdmin,
     CustomDomainSearchAdmin,
+    AbuserLookupAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -451,6 +452,9 @@ def init_admin(app):
         CustomDomainSearchAdmin(
             name="Custom domain search", endpoint="admin.custom_domain_search"
         )
+    )
+    admin.add_view(
+        AbuserLookupAdmin(name="Abuser Lookup", endpoint="admin.abuser_lookup")
     )
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
