@@ -161,7 +161,9 @@ class UserAdmin(SLModelView):
     )
     def action_disable_user(self, ids):
         for user in User.filter(User.id.in_(ids)):
-            mark_user_as_abuser(user, current_user.id)
+            mark_user_as_abuser(
+                user, f"An user {user.id} was marked as abuser.", current_user.id
+            )
 
             flash(f"Disabled user {user.id}")
             AdminAuditLog.disable_user(current_user.id, user.id)
@@ -175,7 +177,9 @@ class UserAdmin(SLModelView):
     )
     def action_enable_user(self, ids):
         for user in User.filter(User.id.in_(ids)):
-            unmark_as_abusive_user(user.id, current_user.id)
+            unmark_as_abusive_user(
+                user.id, f"An user {user.id} was unmarked as abuser.", current_user.id
+            )
 
             flash(f"Enabled user {user.id}")
             AdminAuditLog.enable_user(current_user.id, user.id)

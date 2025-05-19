@@ -51,13 +51,15 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def mark_user_as_abuser(abuse_user: User, admin_id: Optional[int] = None) -> None:
+def mark_user_as_abuser(
+    abuse_user: User, note: str, admin_id: Optional[int] = None
+) -> None:
     abuse_user.disabled = True
 
     emit_abuser_audit_log(
         user_id=abuse_user.id,
         action=AbuserAuditLogAction.MarkAbuser,
-        message=f"An user {abuse_user.id} was marked as abuser.",
+        message=note,
         admin_id=admin_id,
     )
     Session.commit()
@@ -173,7 +175,9 @@ def _store_abuse_data(user: User) -> None:
         raise
 
 
-def unmark_as_abusive_user(user_id: int, admin_id: Optional[int] = None) -> None:
+def unmark_as_abusive_user(
+    user_id: int, note: str, admin_id: Optional[int] = None
+) -> None:
     """
     Fully remove abuser archive and lookup data for a given user_id.
     This reverses the effects of archive_abusive_user().
@@ -191,7 +195,7 @@ def unmark_as_abusive_user(user_id: int, admin_id: Optional[int] = None) -> None
         user_id=user.id,
         admin_id=admin_id,
         action=AbuserAuditLogAction.UnmarkAbuser,
-        message=f"An user {user_id} was unmarked as abuser.",
+        message=note,
     )
     Session.commit()
 
