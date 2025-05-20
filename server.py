@@ -410,7 +410,11 @@ def jinja2_filter(app):
         dt = arrow.get(value)
         return dt.humanize()
 
+    def iterable_enumerate(iterable):
+        return enumerate(iterable)
+
     app.jinja_env.filters["dt"] = format_datetime
+    app.jinja_env.filters["enumerate"] = iterable_enumerate
 
     @app.context_processor
     def inject_stage_and_region():

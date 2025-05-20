@@ -56,6 +56,8 @@ from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_add
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
+from datetime import datetime
+import json
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -1135,9 +1137,31 @@ class AbuserLookupResult:
 
             return out
 
+        for bundle in bundles:
+            bundle_json = json.dumps(bundle)
+            bundle["json"] = bundle_json
+
+            user = User.get(int(bundle.get("account_id")))
+            bundle["user"] = user
+
+            AbuserLookupResult.convert_dt(bundle, "user_created_at")
+
+            for mailbox_item in bundle.get("mailboxes", []):
+                AbuserLookupResult.convert_dt(mailbox_item)
+
+            for alias_item in bundle.get("aliases", []):
+                AbuserLookupResult.convert_dt(alias_item)
+
         out.bundles = bundles
 
         return out
+
+    @staticmethod
+    def convert_dt(item: Dict, key: str = "created_at"):
+        raw_date = item.get(key, "")
+
+        if raw_date:
+            item[key] = datetime.fromisoformat(raw_date)
 
 
 class AbuserLookupAdmin(BaseView):
@@ -1151,8 +1175,6 @@ class AbuserLookupAdmin(BaseView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         query = request.args.get("email")
-
-        print("email", query)
 
         if query is None:
             result = AbuserLookupResult()
