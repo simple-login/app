@@ -108,7 +108,6 @@
   <script>
     $("#restore-all-btn").on("click", function (e) {
         let that = $(this);
-        console.log("Wtf");
 
         bootbox.confirm({
             message: "Are you sure you want to restore all aliases?",
@@ -123,7 +122,6 @@
                 }
             },
             callback: function (result) {
-                console.log("Wtf callback");
                 if (result) {
                     that.closest("form").submit();
                 }
