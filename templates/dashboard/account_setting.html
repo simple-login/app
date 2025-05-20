@@ -120,6 +120,46 @@
       </div>
     </div>
     <!-- END WebAuthn -->
+    <!-- Connect with Proton -->
+    {% if connect_with_proton and can_unlink_proton_account %}
+
+      <div class="card" id="connect-with-proton">
+        <div class="card-body">
+          <div class="card-title">Connect with Proton</div>
+          {% if proton_linked_account != None %}
+
+            <div class="mb-3">
+              Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
+              <br />
+            </div>
+            <form method="post"
+                  action="{{ url_for("dashboard.unlink_proton_account") }}">
+              {{ csrf_form.csrf_token }}
+              <button id="unlink-btn" class="btn btn-primary mt-2 proton-button">
+                <img class="mr-2" src="/static/images/proton.svg">
+                Unlink account
+              </button>
+            </form>
+          {% else %}
+            <div class="mb-3">
+              You can connect your Proton and SimpleLogin accounts.
+              <br>
+              You can then quickly log in to your SimpleLogin account using the Proton one.
+              <br>
+              If you have Proton Unlimited, Business or Visionary, you can have SimpleLogin premium for free.
+              <br />
+            </div>
+            <a class="btn btn-primary mt-2 proton-button"
+               href="{{ url_for("auth.proton_login", action="link") }}">
+              <img class="mr-2"
+                   src="{{ url_for('static', filename='images/proton.svg') }}" />
+              Connect with Proton
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- END Connect with Proton -->
     <!-- data export -->
     <div class="card">
       <div class="card-body">
@@ -159,6 +199,31 @@
         let anchor = window.location.hash;
         $(anchor).addClass("highlighted")
 
+
+        $("#unlink-btn").on("click", function (e) {
+            let that = $(this);
+
+            bootbox.confirm({
+                message: "All your aliases will be removed from Proton Pass. Are you sure?",
+                buttons: {
+                    confirm: {
+                        label: 'Unlink account',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-outline-primary'
+                    }
+                },
+                callback: function (result) {
+                    console.log(result)
+                    if (result) {
+                        that.closest("form").submit();
+                    }
+                }
+            });
+            return false;
+        });
 
   </script>
 {% endblock %}

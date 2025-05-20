@@ -295,4 +295,25 @@ def fake_data():
     PartnerSubscription.create(
         partner_user_id=pu.id, end_at=arrow.now().shift(years=1, days=1)
     )
+
+    user = User.create(
+        email="test2@proton.me",
+        name="Proton test 2",
+        password="password",
+        activated=True,
+        is_admin=False,
+        intro_shown=True,
+        from_partner=False,
+        flush=True,
+    )
+    pu = PartnerUser.create(
+        user_id=user.id,
+        partner_id=proton_partner.id,
+        partner_email="test2@proton.me",
+        external_user_id="DUMMY2",
+        flush=True,
+    )
+    PartnerSubscription.create(
+        partner_user_id=pu.id, end_at=arrow.now().shift(years=1, days=1)
+    )
     Session.commit()
