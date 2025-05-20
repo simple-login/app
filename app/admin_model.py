@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import arrow
 import sqlalchemy
@@ -15,7 +15,11 @@ from flask_login import current_user
 from markupsafe import Markup
 
 from app import models, s3, config
-from app.abuser_utils import mark_user_as_abuser, unmark_as_abusive_user
+from app.abuser_utils import (
+    mark_user_as_abuser,
+    unmark_as_abusive_user,
+    get_abuser_bundles_for_address,
+)
 from app.custom_domain_validation import (
     CustomDomainValidation,
     DomainValidationResult,
@@ -51,6 +55,9 @@ from app.models import (
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.utils import sanitize_email
+from datetime import datetime
+import json
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -1101,4 +1108,82 @@ class CustomDomainSearchAdmin(BaseView):
         flash("Scheduled deletion of custom domain", "success")
         return redirect(
             url_for("admin.custom_domain_search.index", user=domain_user_email)
+        )
+
+
+class AbuserLookupResult:
+    def __init__(self):
+        self.no_match: bool = False
+        self.email: Optional[str] = None
+        self.bundles: Optional[List[Dict]] = None
+
+    @staticmethod
+    def from_email(email: Optional[str]) -> AbuserLookupResult:
+        out = AbuserLookupResult()
+
+        if email is None or email == "":
+            out.no_match = True
+
+            return out
+
+        out.email = email
+        bundles = get_abuser_bundles_for_address(
+            target_address=email,
+            admin_id=current_user.id,
+        )
+
+        if not bundles:
+            out.no_match = True
+
+            return out
+
+        for bundle in bundles:
+            bundle_json = json.dumps(bundle)
+            bundle["json"] = bundle_json
+
+            user = User.get(int(bundle.get("account_id")))
+            bundle["user"] = user
+
+            AbuserLookupResult.convert_dt(bundle, "user_created_at")
+
+            for mailbox_item in bundle.get("mailboxes", []):
+                AbuserLookupResult.convert_dt(mailbox_item)
+
+            for alias_item in bundle.get("aliases", []):
+                AbuserLookupResult.convert_dt(alias_item)
+
+        out.bundles = bundles
+
+        return out
+
+    @staticmethod
+    def convert_dt(item: Dict, key: str = "created_at"):
+        raw_date = item.get(key, "")
+
+        if raw_date:
+            item[key] = datetime.fromisoformat(raw_date)
+
+
+class AbuserLookupAdmin(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("dashboard.index", next=request.url))
+
+    @expose("/", methods=["GET", "POST"])
+    def index(self):
+        query = request.args.get("email")
+
+        if query is None:
+            result = AbuserLookupResult()
+        else:
+            email = sanitize_email(query)
+            result = AbuserLookupResult.from_email(email)
+
+        return self.render(
+            "admin/abuser_lookup.html",
+            data=result,
+            query=query,
         )

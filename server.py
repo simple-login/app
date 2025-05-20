@@ -44,6 +44,7 @@ from app.admin_model import (
     InvalidMailboxDomainAdmin,
     EmailSearchAdmin,
     CustomDomainSearchAdmin,
+    AbuserLookupAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -409,7 +410,11 @@ def jinja2_filter(app):
         dt = arrow.get(value)
         return dt.humanize()
 
+    def iterable_enumerate(iterable):
+        return enumerate(iterable)
+
     app.jinja_env.filters["dt"] = format_datetime
+    app.jinja_env.filters["enumerate"] = iterable_enumerate
 
     @app.context_processor
     def inject_stage_and_region():
@@ -451,6 +456,9 @@ def init_admin(app):
         CustomDomainSearchAdmin(
             name="Custom domain search", endpoint="admin.custom_domain_search"
         )
+    )
+    admin.add_view(
+        AbuserLookupAdmin(name="Abuser Lookup", endpoint="admin.abuser_lookup")
     )
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
