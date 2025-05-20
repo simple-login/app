@@ -120,7 +120,7 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
     q = (
         Session.query(Alias)
         .options(joinedload(Alias.mailbox))
-        .filter(Alias.user_id == user.id)
+        .filter(Alias.user_id == user.id, Alias.delete_on == None)  # noqa: E711
         .order_by(Alias.created_at.desc())
     )
 

@@ -15,6 +15,7 @@ from flask_login import current_user
 from markupsafe import Markup
 
 from app import models, s3, config
+from app.abuser_utils import mark_user_as_abuser, unmark_as_abusive_user
 from app.custom_domain_validation import (
     CustomDomainValidation,
     DomainValidationResult,
@@ -160,7 +161,9 @@ class UserAdmin(SLModelView):
     )
     def action_disable_user(self, ids):
         for user in User.filter(User.id.in_(ids)):
-            user.disabled = True
+            mark_user_as_abuser(
+                user, f"An user {user.id} was marked as abuser.", current_user.id
+            )
 
             flash(f"Disabled user {user.id}")
             AdminAuditLog.disable_user(current_user.id, user.id)
@@ -174,7 +177,9 @@ class UserAdmin(SLModelView):
     )
     def action_enable_user(self, ids):
         for user in User.filter(User.id.in_(ids)):
-            user.disabled = False
+            unmark_as_abusive_user(
+                user.id, f"An user {user.id} was unmarked as abuser.", current_user.id
+            )
 
             flash(f"Enabled user {user.id}")
             AdminAuditLog.enable_user(current_user.id, user.id)
