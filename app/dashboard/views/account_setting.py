@@ -1,4 +1,5 @@
 import secrets
+from typing import Optional
 
 import arrow
 from flask import (
@@ -20,11 +21,13 @@ from app.config import (
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.dashboard.views.mailbox_detail import ChangeEmailForm
+from app.dashboard.views.setting import get_partner_subscription_and_name
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
+from app.errors import ProtonPartnerNotSetUp
 from app.extensions import limiter
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.log import LOG
@@ -38,13 +41,34 @@ from app.models import (
     AliasGeneratorEnum,
     SenderFormatEnum,
     UnsubscribeBehaviourEnum,
+    PartnerUser,
 )
-from app.proton.proton_unlink import perform_proton_account_unlink
+from app.proton.proton_partner import get_proton_partner
+from app.proton.proton_unlink import (
+    perform_proton_account_unlink,
+    can_unlink_proton_account,
+)
 from app.utils import (
     random_string,
     CSRFValidationForm,
     canonicalize_email,
 )
+
+
+def get_proton_linked_account() -> Optional[str]:
+    # Check if the current user has a partner_id
+    try:
+        proton_partner_id = get_proton_partner().id
+    except ProtonPartnerNotSetUp:
+        return None
+
+    # It has. Retrieve the information for the PartnerUser
+    proton_linked_account = PartnerUser.get_by(
+        user_id=current_user.id, partner_id=proton_partner_id
+    )
+    if proton_linked_account is None:
+        return None
+    return proton_linked_account.partner_email
 
 
 @dashboard_bp.route("/account_setting", methods=["GET", "POST"])
@@ -141,6 +165,12 @@ def account_setting():
     partner_sub = None
     partner_name = None
 
+    partner_sub_name = get_partner_subscription_and_name(current_user.id)
+    if partner_sub_name:
+        partner_sub, partner_name = partner_sub_name
+
+    proton_linked_account = get_proton_linked_account()
+
     return render_template(
         "dashboard/account_setting.html",
         csrf_form=csrf_form,
@@ -156,6 +186,8 @@ def account_setting():
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
         connect_with_proton=CONNECT_WITH_PROTON,
+        proton_linked_account=proton_linked_account,
+        can_unlink_proton_account=can_unlink_proton_account(current_user),
     )
 
 
@@ -201,12 +233,12 @@ def resend_email_change():
 
         send_change_email_confirmation(current_user, email_change)
         flash("A confirmation email is on the way, please check your inbox", "success")
-        return redirect(url_for("dashboard.setting"))
+        return redirect(url_for("dashboard.account_setting"))
     else:
         flash(
             "You have no pending email change. Redirect back to Setting page", "warning"
         )
-        return redirect(url_for("dashboard.setting"))
+        return redirect(url_for("dashboard.account_setting"))
 
 
 @dashboard_bp.route("/cancel_email_change", methods=["GET", "POST"])
@@ -222,12 +254,12 @@ def cancel_email_change():
         EmailChange.delete(email_change.id)
         Session.commit()
         flash("Your email change is cancelled", "success")
-        return redirect(url_for("dashboard.setting"))
+        return redirect(url_for("dashboard.account_setting"))
     else:
         flash(
             "You have no pending email change. Redirect back to Setting page", "warning"
         )
-        return redirect(url_for("dashboard.setting"))
+        return redirect(url_for("dashboard.account_setting"))
 
 
 @dashboard_bp.route("/unlink_proton_account", methods=["POST"])
@@ -243,4 +275,4 @@ def unlink_proton_account():
         flash("Account cannot be unlinked", "warning")
     else:
         flash("Your Proton account has been unlinked", "success")
-    return redirect(url_for("dashboard.setting"))
+    return redirect(url_for("dashboard.account_setting"))

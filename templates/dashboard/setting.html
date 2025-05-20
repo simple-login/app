@@ -143,46 +143,6 @@
         </form>
       </div>
       <!-- END change name & profile picture -->
-      <!-- Connect with Proton -->
-      {% if connect_with_proton and can_unlink_proton_account %}
-
-        <div class="card" id="connect-with-proton">
-          <div class="card-body">
-            <div class="card-title">Connect with Proton</div>
-            {% if proton_linked_account != None %}
-
-              <div class="mb-3">
-                Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
-                <br />
-              </div>
-              <form method="post"
-                    action="{{ url_for("dashboard.unlink_proton_account") }}">
-                {{ csrf_form.csrf_token }}
-                <button class="btn btn-primary mt-2 proton-button">
-                  <img class="mr-2" src="/static/images/proton.svg">
-                  Unlink account
-                </button>
-              </form>
-            {% else %}
-              <div class="mb-3">
-                You can connect your Proton and SimpleLogin accounts.
-                <br>
-                You can then quickly log in to your SimpleLogin account using the Proton one.
-                <br>
-                If you have Proton Unlimited, Business or Visionary, you can have SimpleLogin premium for free.
-                <br />
-              </div>
-              <a class="btn btn-primary mt-2 proton-button"
-                 href="{{ url_for("auth.proton_login", action="link") }}">
-                <img class="mr-2"
-                     src="{{ url_for('static', filename='images/proton.svg') }}" />
-                Connect with Proton
-              </a>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-      <!-- END Connect with Proton -->
       <!-- Random alias -->
       <div id="random-alias" class="card">
         <div class="card-body">
@@ -510,37 +470,33 @@
                   <!-- END Disabled alias/Blocked contact -->
                   <!-- START Alias delete action -->
                   <div class="card" id="alias-delete-action">
-                      <div class="card-body">
-                          <div class="card-title">Alias delete action</div>
-                          <div class="mb-3">
-                              You can choose between 2 options when deleting an alias:
-                            <ul>
-                              <li>
-                                <b>Move to Trash</b>: the alias will be permanently deleted in 30 days and can be restored in the meantime.
-                              </li>
-                              <li>
-                                <b>Delete immediately</b>: the alias will be permanently deleted immediately and can't be restored.
-                              </li>
-                            </ul>
-
-                          </div>
-                          <form method="post" action="#alias-delete-action" class="form-inline mb-3">
-                              {{ csrf_form.csrf_token }}
-                              <input type="hidden" name="form-name" value="alias-delete-action">
-                              <select class="form-control mr-sm-2" name="alias-delete-action">
-                                  <option value="{{ UserAliasDeleteAction.MoveToTrash.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.MoveToTrash.value %}selected="selected"{% endif %}>
-                                      Move to Trash
-                                  </option>
-                                  <option value="{{ UserAliasDeleteAction.DeleteImmediately.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.DeleteImmediately.value %}selected="selected"{% endif %}>
-                                      Delete immediately
-                                  </option>
-                              </select>
-                              <button class="btn btn-outline-primary">Update</button>
-                          </form>
-
-                          <a href="{{ url_for("dashboard.alias_trash") }}"
-                             class="btn btn-secondary">See alias trash</a>
+                    <div class="card-body">
+                      <div class="card-title">Alias delete action</div>
+                      <div class="mb-3">
+                        You can choose between 2 options when deleting an alias:
+                        <ul>
+                          <li>
+                            <b>Move to Trash</b>: the alias will be permanently deleted in 30 days and can be restored in the meantime.
+                          </li>
+                          <li>
+                            <b>Delete immediately</b>: the alias will be permanently deleted immediately and can't be restored.
+                          </li>
+                        </ul>
                       </div>
+                      <form method="post" action="#alias-delete-action" class="form-inline mb-3">
+                        {{ csrf_form.csrf_token }}
+                        <input type="hidden" name="form-name" value="alias-delete-action">
+                        <select class="form-control mr-sm-2" name="alias-delete-action">
+                          <option value="{{ UserAliasDeleteAction.MoveToTrash.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.MoveToTrash.value %}
+                            selected="selected"{% endif %}>Move to Trash</option>
+                          <option value="{{ UserAliasDeleteAction.DeleteImmediately.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.DeleteImmediately.value %}
+                            selected="selected"{% endif %}>Delete immediately</option>
+                        </select>
+                        <button class="btn btn-outline-primary">Update</button>
+                      </form>
+                      <a href="{{ url_for("dashboard.alias_trash") }}"
+                         class="btn btn-secondary">See alias trash</a>
+                    </div>
                   </div>
                   <!-- END Alias delete action -->
                   <div class="card" id="sender-header">
