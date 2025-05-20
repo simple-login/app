@@ -2,9 +2,11 @@
 import argparse
 from typing import List
 
-from app.abuser_utils import check_if_abuser_email, mark_user_as_abuser
+from sqlalchemy import func
+
+from app.abuser_utils import mark_user_as_abuser
 from app.db import Session
-from app.models import User
+from app.models import User, AbuserData
 
 parser = argparse.ArgumentParser(
     prog="Backfill abuser data",
@@ -14,28 +16,45 @@ args = parser.parse_args()
 
 print("I'm going to generate abuser bundle for disabled users.")
 
-disabled_users: List[User] = Session.query(User).filter(User.disabled == True).all()  # noqa: E712
+user_id_start: int = 0
+user_id_end: int = Session.query(func.max(User.id)).scalar()
+step = 1000
+total_disabled_users: int = 0
 archived_users: int = 0
 
-for disabled_user in disabled_users:
-    if not disabled_user.email:
-        print(f"Disabled user {disabled_user.id} has no email address. Skipping...")
-        continue
+for batch_start in range(user_id_start, user_id_end + 1, step):
+    users: List[User] = (
+        Session.query(User)
+        .filter(User.id >= batch_start, User.id < batch_start + step)
+        .all()
+    )
 
-    if check_if_abuser_email(disabled_user.email):
-        print(
-            f"Disabled user {disabled_user.id} has already been archived. Skipping..."
-        )
-        continue
+    for user in users:
+        if not user.disabled:
+            continue
 
-    try:
-        mark_user_as_abuser(
-            disabled_user, "User was archived by 'backfill abuser data' one-shot job."
+        total_disabled_users += 1
+
+        if not user.email:
+            print(f"Disabled user {user.id} has no email address. Skipping...")
+            continue
+
+        abuser_bundles_count: int = (
+            Session.query(AbuserData).filter(AbuserData.user_id == user.id).count()
         )
-        archived_users += 1
-    except Exception:
-        print(f"Failed to archive user {disabled_user.id}. Skipping...")
+
+        if abuser_bundles_count:
+            print(f"Disabled user {user.id} has already been archived. Skipping...")
+            continue
+
+        try:
+            mark_user_as_abuser(
+                user, "User was archived by 'backfill abuser data' one-shot job."
+            )
+            archived_users += 1
+        except Exception:
+            print(f"Failed to archive user {user.id}. Skipping...")
 
 print(
-    f"Finished generating abuser bundle for disabled users. Archived {archived_users} users out of {len(disabled_users)} disabled users."
+    f"Finished generating abuser bundle for disabled users. Archived {archived_users} users out of {total_disabled_users} disabled users."
 )
