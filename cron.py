@@ -64,8 +64,8 @@ from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
-from tasks.cleanup_alias import cleanup_alias
 from tasks.clean_user_audit_log import cleanup_user_audit_log
+from tasks.cleanup_alias import cleanup_alias
 from tasks.cleanup_old_imports import cleanup_old_imports
 from tasks.cleanup_old_jobs import cleanup_old_jobs
 from tasks.cleanup_old_notifications import cleanup_old_notifications
@@ -938,7 +938,11 @@ def check_custom_domain():
 
 def check_single_custom_domain(custom_domain: CustomDomain):
     mx_domains = get_mx_domains(custom_domain.domain)
-    validator = CustomDomainValidation(dkim_domain=config.EMAIL_DOMAIN)
+    validator = CustomDomainValidation(
+        dkim_domain=config.EMAIL_DOMAIN,
+        partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
+        partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
+    )
     expected_custom_domains = validator.get_expected_mx_records(custom_domain)
     if not is_mx_equivalent(mx_domains, expected_custom_domains):
         user = custom_domain.user
