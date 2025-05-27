@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, IntegerField
 
-from app.config import EMAIL_SERVERS_WITH_PRIORITY, EMAIL_DOMAIN
+from app import config
 from app.constants import DMARC_RECORD
 from app.custom_domain_utils import delete_custom_domain, set_custom_domain_mailboxes
 from app.custom_domain_validation import CustomDomainValidation
@@ -37,7 +37,11 @@ def domain_detail_dns(custom_domain_id):
         custom_domain.ownership_txt_token = random_string(30)
         Session.commit()
 
-    domain_validator = CustomDomainValidation(EMAIL_DOMAIN)
+    domain_validator = CustomDomainValidation(
+        dkim_domain=config.EMAIL_DOMAIN,
+        partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
+        partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
+    )
     csrf_form = CSRFValidationForm()
 
     mx_ok = spf_ok = dkim_ok = dmarc_ok = ownership_ok = True
@@ -96,7 +100,7 @@ def domain_detail_dns(custom_domain_id):
                 )
             else:
                 flash(
-                    f"SPF: {EMAIL_DOMAIN} is not included in your SPF record.",
+                    f"SPF: {config.EMAIL_DOMAIN} is not included in your SPF record.",
                     "warning",
                 )
                 spf_ok = False
@@ -136,7 +140,7 @@ def domain_detail_dns(custom_domain_id):
 
     return render_template(
         "dashboard/domain_detail/dns.html",
-        EMAIL_SERVERS_WITH_PRIORITY=EMAIL_SERVERS_WITH_PRIORITY,
+        EMAIL_SERVERS_WITH_PRIORITY=config.EMAIL_SERVERS_WITH_PRIORITY,
         ownership_records=domain_validator.get_ownership_verification_record(
             custom_domain
         ),
