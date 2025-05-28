@@ -1,3 +1,4 @@
+import uuid
 from time import time
 from typing import Optional
 
@@ -33,6 +34,8 @@ def after_login(user, next_url, login_from_proton: bool = False):
                 return redirect(url_for("auth.mfa"))
 
     LOG.d("log user %s in", user)
+    # Change session_id so that session cannot be re-used
+    session.session_id = str(uuid.uuid4())
     login_user(user)
     session["sudo_time"] = int(time())
 
