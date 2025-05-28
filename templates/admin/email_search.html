@@ -10,6 +10,7 @@
         <th scope="col">Email</th>
         <th scope="col">Verified</th>
         <th scope="col">Status</th>
+        <th scope="col">Pending deletion</th>
         <th scope="col">Paid</th>
         <th scope="col">Premium</th>
         <th>Subscription</th>
@@ -35,6 +36,12 @@
           <td class="text-danger">Disabled</td>
         {% else %}
           <td class="text-success">Enabled</td>
+        {% endif %}
+        {% if user.delete_on %}
+
+          <td class="text-danger">{{ user.delete_on }}</td>
+        {% else %}
+          <td class="text-success">None</td>
         {% endif %}
         <td>{{ "yes" if user.is_paid() else "No" }}</td>
         <td>{{ "yes" if user.is_premium() else "No" }}</td>
@@ -77,6 +84,7 @@
     </thead>
     <tbody>
       {% for mailbox in mboxes %}
+
         <tr>
           <td>{{ mailbox.id }}</td>
           <td>
