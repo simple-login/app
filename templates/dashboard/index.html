@@ -622,52 +622,27 @@
 
   {%  if current_user.enable_SMTP_aliases %}
     <script type="module">
-
-      import { nanoid } from "{{ url_for('static', filename='node_modules/nanoid/nanoid.js') }}"
-
       $(".enable-disable-smtp").change(async function () {
         let aliasId = $(this).data("alias");
         let alias = $(this).data("alias-email");
         const oldValue = !$(this).prop("checked");
         let newValue = !oldValue;
 
-        if(newValue) {
-          var smtpGeneratedPassword = nanoid(21);
-
-          var message = `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
-                        <br><br>Username (same as alias): ${alias}
-                        <br>Password: ${smtpGeneratedPassword}<br>
-                      `;
-        }
         try {
-          if(newValue) {
-            var res = await fetch(`/api/aliases/${aliasId}`, {
+          let res = await fetch(`/api/aliases/${aliasId}`, {
               method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: getHeaders(),
               body: JSON.stringify({
-                enable_SMTP: newValue,
-                smtp_password: smtpGeneratedPassword,
+                  enable_SMTP: newValue,
               }),
-            });
-          }
-          else {
-            var res = await fetch(`/api/aliases/${aliasId}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                enable_SMTP: newValue,
-              }),
-            });
-          }
+          });
           if (res.ok) {
             if (newValue) {
-              bootbox.alert({
+                bootbox.alert({
                 title: `SMTP Credentials for ${alias}`,
-                message: message,
+                message: `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
+                        <br><br>Username (same as alias): ${alias}
+                        <br>Password: ${res.smtp_password}<br>`,
                 size: 'large',
                 onEscape: false,
                 buttons: {
@@ -680,7 +655,6 @@
                   toastr.success(`SMTP Enabled for ${alias}`);
                 }
               });
-              smtpGeneratedPassword = null; // Clear the password.
             } else {
               toastr.info(`SMTP Disabled for ${alias}`);
             }

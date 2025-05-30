@@ -242,7 +242,7 @@ def update_alias(alias_id):
         name (optional): in body
         mailbox_id (optional): in body
         disable_pgp (optional): in body
-        enable_SMTP & SMTP_password (optional): in body
+        enable_SMTP (optional): in body
     Output:
         200
     """
@@ -322,24 +322,20 @@ def update_alias(alias_id):
     if "enable_SMTP" in data:
         enable_SMTP = data.get("enable_SMTP")
         if enable_SMTP:
-            if "smtp_password" in data:
-                smtp_password = data.get("smtp_password")
-                if (
-                    smtp_password and len(smtp_password) != 21
-                ):  # 21 is default password length set for nanoid.
-                    return jsonify(error="Invalid SMTP Password Length"), 400
-                smtp_cred = SMTPCredentials.create(alias_id=alias.id, password=smtp_password)
-                if not smtp_cred:
-                    return jsonify(error="Error Saving SMTP Password"), 400
-            else:
-                return jsonify(error="SMTP password not supplied"), 400
+            smtp_password = SMTPCredentials.create(alias_id=alias.id)
+            if not smtp_password:
+                return jsonify(error="Error Generating SMTP Password"), 400
         else:
             SMTPCredentials.delete_by_alias_id(alias_id=alias.id)
         alias.enable_SMTP = enable_SMTP
+        changed_fields.append("enable_SMTP")
         changed = True
 
     if changed:
         Session.commit()
+
+    if "enable_SMTP" in changed_fields:
+        return jsonify(ok=True, smtp_password=smtp_password), 200
 
     return jsonify(ok=True), 200
 

@@ -22,7 +22,6 @@
     "htmx.org": "^1.6.1",
     "intro.js": "^2.9.3",
     "multiple-select": "^1.5.2",
-    "nanoid": "^3.3.2",
     "parsleyjs": "^2.9.2",
     "qrious": "^4.0.2",
     "toastr": "^2.1.4",

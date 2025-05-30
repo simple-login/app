@@ -2584,21 +2584,19 @@ class SMTPCredentials(Base, ModelMixin, PasswordOracle):
     )
 
     # override  PasswordOracle.password, SMTP password should not be null
-    password = sa.Column(sa.String(128), nullable=False)
+    password = sa.Column(sa.String(256), nullable=False)
 
     alias = orm.relationship(Alias)
 
     @classmethod
-    def create(cls, alias_id, password, **kwargs):
-        if password and len(password) == 21:  # This is default length for nanoid
-            smtp_cred: SMTPCredentials = super(SMTPCredentials, cls).create(
-                alias_id=alias_id, **kwargs
-            )
-            smtp_cred.set_password(password)
-        else:
-            return None
+    def create(cls, alias_id, **kwargs):
+        password = random_string(21, include_digits=True)
+        smtp_cred: SMTPCredentials = super(SMTPCredentials, cls).create(
+            alias_id=alias_id, **kwargs
+        )
+        smtp_cred.set_password(password)
         Session.flush()
-        return smtp_cred
+        return password
 
     @classmethod
     def delete_by_alias_id(cls, alias_id, commit=False):
