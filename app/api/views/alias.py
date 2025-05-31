@@ -334,7 +334,7 @@ def update_alias(alias_id):
     if changed:
         Session.commit()
 
-    if "enable_SMTP" in changed_fields:
+    if "enable_SMTP" in changed_fields and alias.enable_SMTP:
         return jsonify(ok=True, smtp_password=smtp_password), 200
 
     return jsonify(ok=True), 200
