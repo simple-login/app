@@ -21,14 +21,19 @@ from sqlalchemy.exc import IntegrityError
 from email.message import Message
 from email.utils import formataddr, formatdate
 from init_app import load_pgp_public_keys
+
 from server import create_light_app
+from app import config
+from app.alias_utils import get_alias_recipient_name
+from app.errors import NonReverseAliasInReplyPhase
 from app.db import Session
 from app.log import LOG, set_message_id
 from app.email import status, headers
 from app.utils import sanitize_email
 from app.email.spam import get_spam_score
 from app.pgp_utils import PGPException
-from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox
+from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox, VerpType
+from app.email_validation import is_valid_email
 from app.config import (
     SMTP_SSL_KEY_FILEPATH,
     SMTP_SSL_CERT_FILEPATH,
@@ -55,8 +60,9 @@ from app.email_utils import (
     send_email,
     render,
     get_email_domain_part,
-    is_valid_email,
     generate_reply_email,
+    generate_verp_email,
+    replace
 )
 
 from email_handler import (
@@ -65,6 +71,7 @@ from email_handler import (
     prepare_pgp_message,
     replace_original_message_id,
     replace_header_when_reply,
+    notify_mailbox
 )
 
 
@@ -241,9 +248,48 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             # References and In-Reply-To are used for keeping the email thread
             headers.REFERENCES,
             headers.IN_REPLY_TO,
+            headers.SL_QUEUE_ID,
         ]
         + headers.MIME_HEADERS,
     )
+
+    orig_to = msg[headers.TO]
+    orig_cc = msg[headers.CC]
+
+    # replace the reverse-alias by the contact email in the email body
+    # as this is usually included when replying
+    # This can rarely happen in SMTP Stage, but it's better to check and replace
+    if user.replace_reverse_alias:
+        revese_alias_email = contact.reply_email
+        LOG.d("Replace reverse-alias %s by contact email %s", revese_alias_email, contact)
+        msg = replace(msg, revese_alias_email, contact.website_email)
+        LOG.d("Replace mailbox %s by alias email %s", mailbox.email, alias.email)
+        msg = replace(msg, mailbox.email, alias.email)
+
+        if config.ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+            start = time.time()
+            # MAX_NB_REVERSE_ALIAS_REPLACEMENT is there to limit potential attack
+            contact_query = (
+                Contact.query()
+                .filter(Contact.alias_id == alias.id)
+                .limit(config.MAX_NB_REVERSE_ALIAS_REPLACEMENT)
+            )
+
+            # replace reverse alias by real address for all contacts
+            for reply_email, website_email in contact_query.values(
+                    Contact.reply_email, Contact.website_email
+            ):
+                msg = replace(msg, reply_email, website_email)
+
+            elapsed = time.time() - start
+            LOG.d(
+                "Replace reverse alias by real address for %s contacts takes %s seconds",
+                contact_query.count(),
+                elapsed,
+            )
+            newrelic.agent.record_custom_metric(
+                "Custom/reverse_alias_replacement_time", elapsed
+            )
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
@@ -263,23 +309,11 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
 
     Session.commit()
 
-    # make the email comes from alias <- Can be kept for SMTP as well
-    from_header = alias.email
-    # add alias name from alias
-    if alias.name:
-        LOG.d("Put alias name %s in from header", alias.name)
-        from_header = formataddr((alias.name, alias.email))
-    elif alias.custom_domain:
-        # add alias name from domain
-        if alias.custom_domain.name:
-            LOG.d(
-                "Put domain default alias name %s in from header",
-                alias.custom_domain.name,
-            )
-            from_header = formataddr((alias.custom_domain.name, alias.email))
-
-    LOG.d("From header is %s", from_header)
-    add_or_replace_header(msg, headers.FROM, from_header)
+    recipient_name = get_alias_recipient_name(alias)
+    if recipient_name.message:
+        LOG.d(recipient_name.message)
+    LOG.d("From header is %s", recipient_name.name)
+    add_or_replace_header(msg, headers.FROM, recipient_name.name)
 
     replace_original_message_id(alias, email_log, msg)
 
@@ -302,18 +336,21 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     if should_add_dkim_signature(alias_domain):
         add_dkim_signature(msg, alias_domain)
 
-    # generate a mail_from for VERP <- Can be kept for SMTP as well
-    verp_mail_from = f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+{email_log.id}+@{alias_domain}"
-
     try:
         sl_sendmail(
-            verp_mail_from,
+            generate_verp_email(VerpType.bounce_reply, email_log.id, alias_domain),
             contact.website_email,
             msg,
             envelope.mail_options,
             envelope.rcpt_options,
             is_forward=False,
         )
+
+        # if alias belongs to several mailboxes, notify other mailboxes about this email
+        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
+        for mb in other_mailboxes:
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
         EmailLog.delete(email_log.id, commit=True)
@@ -358,7 +395,7 @@ class SMTPAuthenticator:
 
         alias = Alias.get_by(email=username)
         if not alias:
-            LOG.e("alias %s does not exist.", alias.email)
+            LOG.e("alias %s does not exist.", username)
             return self.fail_nothandled(status.E502)
 
         user = alias.user
@@ -419,7 +456,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
-        if rcpt_to == NOREPLY:
+        if rcpt_to in config.NOREPLIES:
             LOG.i("email sent to {} address from {}".format(NOREPLY, mail_from))
             send_no_reply_response(mail_from, msg)
             return status.E200
@@ -439,8 +476,13 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     # to know whether both successful and unsuccessful deliveries can happen at the same time
     nb_success = len([is_success for (is_success, smtp_status) in res if is_success])
+    # ignore E518 which is a normal condition
     nb_non_success = len(
-        [is_success for (is_success, smtp_status) in res if not is_success]
+        [
+            is_success
+            for (is_success, smtp_status) in res
+            if not is_success and smtp_status != status.E518
+        ]
     )
 
     if nb_success > 0 and nb_non_success > 0:
@@ -541,7 +583,7 @@ class SMTPHandler:
 def main(port: int):
     """Use aiosmtpd Controller"""
     handler = SMTPHandler()
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILEPATH, keyfile=SMTP_SSL_KEY_FILEPATH)
     controller = Controller(
         handler,
