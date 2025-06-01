@@ -71,57 +71,9 @@ from email_handler import (
     prepare_pgp_message,
     replace_original_message_id,
     replace_header_when_reply,
-    notify_mailbox
+    notify_mailbox,
+    get_or_create_contact
 )
-
-
-def get_or_create_contact_for_SMTP_phase(mail_from: str, alias: Alias) -> Contact:
-    """
-    Create Contact for SMTP phase
-    """
-    contact_email = mail_from
-
-    if not is_valid_email(contact_email):
-        LOG.w(
-            "invalid contact email %s.",
-            contact_email,
-        )
-        # either reuse a contact with empty email or create a new contact with empty email
-        contact_email = ""
-
-    contact_email = sanitize_email(contact_email, not_lower=True)
-
-    contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-    if not contact:
-        try:
-            contact = Contact.create(
-                user_id=alias.user_id,
-                alias_id=alias.id,
-                website_email=contact_email,
-                mail_from=mail_from,
-                reply_email=generate_reply_email(contact_email, alias.user)
-                if is_valid_email(contact_email)
-                else NOREPLY,
-                automatic_created=True,
-            )
-            if not contact_email:
-                LOG.d("Create a contact with invalid email for %s", alias)
-                contact.invalid_email = True
-
-            LOG.d(
-                "create contact %s for %s, reverse alias:%s",
-                contact_email,
-                alias,
-                contact.reply_email,
-            )
-
-            Session.commit()
-        except IntegrityError:
-            LOG.w("Contact %s %s already exist", alias, contact_email)
-            Session.rollback()
-            contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-
-    return contact
 
 
 def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
@@ -170,7 +122,7 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
         LOG.d(f"No contact with {website_email} as website email")
     try:
         LOG.d("Create or get contact for website_email:%s", website_email)
-        contact = get_or_create_contact_for_SMTP_phase(website_email, alias)
+        contact = get_or_create_contact(website_email, website_email, alias) # Function expects 3 args
     except ObjectDeletedError:
         LOG.d("maybe alias was deleted in the meantime")
         alias = Alias.get_by(email=alias_address)
