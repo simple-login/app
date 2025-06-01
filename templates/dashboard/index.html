@@ -637,13 +637,15 @@
               }),
           });
           if (res.ok) {
+              let res_json = await res.json();
             if (newValue) {
                 bootbox.alert({
                 title: `SMTP Credentials for ${alias}`,
                 message: `SMTP credentials for alias (<b>This will be visible only once, so please save it</b>):
                         <br><br>Username (same as alias): ${alias}
-                        <br>Password: ${res.smtp_password}<br>`,
+                        <br>Password: ${res_json.smtp_password}<br>`,
                 size: 'large',
+                backdrop: false,
                 onEscape: false,
                 buttons: {
                   ok: {
