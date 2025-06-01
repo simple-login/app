@@ -532,14 +532,14 @@ class SMTPHandler:
             return ret
 
 
-def main(port: int):
+def main(host:str = "0.0.0.0", port: int = 465, daemon: bool = False):
     """Use aiosmtpd Controller"""
     handler = SMTPHandler()
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILEPATH, keyfile=SMTP_SSL_KEY_FILEPATH)
     controller = Controller(
         handler,
-        hostname="0.0.0.0",
+        hostname=host,
         port=port,
         ssl_context=ssl_context,  # Implicit SSL/TLS
         authenticator=SMTPAuthenticator(),
@@ -555,16 +555,23 @@ def main(port: int):
         LOG.w("LOAD PGP keys")
         load_pgp_public_keys()
 
-    while True:
-        time.sleep(2)
+    if not daemon:
+        while True:
+            time.sleep(2)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-H", "--host", help="SMTP host to listen for", type=str, default="0.0.0.0"
+    )
+    parser.add_argument(
         "-p", "--port", help="SMTP port to listen for", type=int, default=465
+    )
+    parser.add_argument(
+        "-d", "--daemon", help="Run in Background", type=bool, default=False
     )
     args = parser.parse_args()
 
     LOG.i("Listen for port %s", args.port)
-    main(port=args.port)
+    main(host=args.host, port=args.port, daemon=args.daemon)
