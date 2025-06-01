@@ -416,7 +416,7 @@ class SMTPAuthenticator:
                 "Credentials Mismatch for alias %s",
                 username,
             )
-            return self.fail_nothandled("535 5.7.8 Authentication credentials invalid")
+            return self.fail_nothandled()
 
         return AuthResult(success=True, auth_data=auth_data)
 
