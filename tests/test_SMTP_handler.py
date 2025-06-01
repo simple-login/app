@@ -13,36 +13,17 @@ from tests.utils import create_new_user
 from app.models import Alias, SMTPCredentials
 from app.db import Session
 
-from SMTP_handler import SMTPHandler, SMTPAuthenticator
+import SMTP_handler
 
 from app.config import (
     SMTP_HOST,
     SMTP_PORT,
     SMTP_INTERNAL_HOST,
     SMTP_INTERNAL_PORT,
-    SMTP_SSL_CERT_FILEPATH,
-    SMTP_SSL_KEY_FILEPATH,
     EMAIL_DOMAIN
 )
 
-def start_SMTP_handler():
-    """Use aiosmtpd Controller"""
-    handler = SMTPHandler()
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILEPATH, keyfile=SMTP_SSL_KEY_FILEPATH)
-    controller = Controller(
-        handler,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        ssl_context=ssl_context,  # Implicit SSL/TLS
-        authenticator=SMTPAuthenticator(),
-        auth_required=True,
-        # Below param needs to be set in case of implicit SSL/TLS as per (https://github.com/aio-libs/aiosmtpd/issues/281)
-        auth_require_tls=False,
-    )
-    controller.start()
-
-start_SMTP_handler()
+SMTP_handler.main(SMTP_HOST, SMTP_PORT, daemon=True)
 
 @pytest.fixture
 def ssl_context():
