@@ -140,8 +140,8 @@ class HttpProtonClient(ProtonClient):
         status = res.status_code
         as_json = res.json()
         if status != HTTPStatus.OK:
-            raise HttpProtonClient.__handle_response_not_ok(
-                status=status, body=as_json, text=res.text
+            raise Exception(
+                f"Unexpected status code. Wanted 200 and got {status}: " + res.text
             )
         res_code = as_json.get("Code")
         if not res_code or res_code != 1000:
