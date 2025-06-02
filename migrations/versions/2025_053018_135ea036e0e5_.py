@@ -1,18 +1,18 @@
 """empty message
 
-Revision ID: 6dff9b5f827a
-Revises: b500363567e3
-Create Date: 2022-04-14 23:31:57.185111
+Revision ID: 135ea036e0e5
+Revises: e38002759d8f
+Create Date: 2025-05-30 18:45:22.717915
 
 """
 import sqlalchemy_utils
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+
 
 # revision identifiers, used by Alembic.
-revision = '6dff9b5f827a'
-down_revision = 'b500363567e3'
+revision = '135ea036e0e5'
+down_revision = 'e38002759d8f'
 branch_labels = None
 depends_on = None
 
@@ -24,17 +24,11 @@ def upgrade():
     sa.Column('created_at', sqlalchemy_utils.types.arrow.ArrowType(), nullable=False),
     sa.Column('updated_at', sqlalchemy_utils.types.arrow.ArrowType(), nullable=True),
     sa.Column('alias_id', sa.Integer(), nullable=False),
-    sa.Column('password', sa.String(length=128), nullable=False),
+    sa.Column('password', sa.String(length=256), nullable=False),
     sa.ForeignKeyConstraint(['alias_id'], ['alias.id'], ondelete='cascade'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_SMTP_credentials_alias_id'), 'SMTP_credentials', ['alias_id'], unique=True)
-    op.alter_column('admin_audit_log', 'data',
-               existing_type=postgresql.JSONB(astext_type=sa.Text()),
-               nullable=True)
-    op.drop_index('admin_audit_log_admin_user_id_idx', table_name='admin_audit_log')
-    op.drop_constraint('admin_audit_log_admin_user_id_fkey', 'admin_audit_log', type_='foreignkey')
-    op.create_foreign_key(None, 'admin_audit_log', 'users', ['admin_user_id'], ['id'])
     op.add_column('alias', sa.Column('enable_SMTP', sa.Boolean(), server_default='0', nullable=False))
     op.add_column('email_log', sa.Column('is_SMTP', sa.Boolean(), nullable=False))
     op.add_column('users', sa.Column('enable_SMTP_aliases', sa.Boolean(), server_default='0', nullable=False))
@@ -46,12 +40,6 @@ def downgrade():
     op.drop_column('users', 'enable_SMTP_aliases')
     op.drop_column('email_log', 'is_SMTP')
     op.drop_column('alias', 'enable_SMTP')
-    op.drop_constraint(None, 'admin_audit_log', type_='foreignkey')
-    op.create_foreign_key('admin_audit_log_admin_user_id_fkey', 'admin_audit_log', 'users', ['admin_user_id'], ['id'], ondelete='CASCADE')
-    op.create_index('admin_audit_log_admin_user_id_idx', 'admin_audit_log', ['admin_user_id'], unique=False)
-    op.alter_column('admin_audit_log', 'data',
-               existing_type=postgresql.JSONB(astext_type=sa.Text()),
-               nullable=False)
     op.drop_index(op.f('ix_SMTP_credentials_alias_id'), table_name='SMTP_credentials')
     op.drop_table('SMTP_credentials')
     # ### end Alembic commands ###
