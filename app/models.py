@@ -1683,6 +1683,7 @@ class Alias(Base, ModelMixin):
     # Enable SMTP for alias
     enable_SMTP = sa.Column(
         sa.Boolean(), default=False, nullable=False, server_default="0"
+    )
 
     last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
 
