@@ -35,8 +35,6 @@ from app.pgp_utils import PGPException
 from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox, VerpType
 from app.email_validation import is_valid_email
 from app.config import (
-    SMTP_SSL_KEY_FILEPATH,
-    SMTP_SSL_CERT_FILEPATH,
     NOREPLY,
     ENABLE_SPAM_ASSASSIN,
     SPAMASSASSIN_HOST,
@@ -328,6 +326,18 @@ def handle_SMTP(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     # return 250 even if error as user is already informed of the incident and can retry sending the email
     return True, status.E200
 
+def auth_SMTP_helper(username: str, password: str, mechanism: str):
+    """
+    This is a helper function for Nginx mail proxy. It checks if the username and password are correct.
+    It uses the same authenticator as the SMTP handler.
+    """
+    res = SMTPAuthenticator()(None, None, None,
+                            mechanism.upper(),
+                            LoginPassword(username.encode("utf-8"), password.encode("utf-8"))
+                            )
+    if res.success:
+        return True
+    return False
 
 class SMTPAuthenticator:
     def fail_nothandled(self, message=None) -> AuthResult:
@@ -535,16 +545,13 @@ class SMTPHandler:
 def main(host:str = "0.0.0.0", port: int = 465, daemon: bool = False):
     """Use aiosmtpd Controller"""
     handler = SMTPHandler()
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    ssl_context.load_cert_chain(certfile=SMTP_SSL_CERT_FILEPATH, keyfile=SMTP_SSL_KEY_FILEPATH)
     controller = Controller(
         handler,
         hostname=host,
         port=port,
-        ssl_context=ssl_context,  # Implicit SSL/TLS
         authenticator=SMTPAuthenticator(),
         auth_required=True,
-        # Below param needs to be set in case of implicit SSL/TLS as per (https://github.com/aio-libs/aiosmtpd/issues/281)
+        # Below param needs to be set as encryption is handled by nginx
         auth_require_tls=False,
     )
 
@@ -566,7 +573,7 @@ if __name__ == "__main__":
         "-H", "--host", help="SMTP host to listen for", type=str, default="0.0.0.0"
     )
     parser.add_argument(
-        "-p", "--port", help="SMTP port to listen for", type=int, default=465
+        "-p", "--port", help="SMTP port to listen for", type=int, default=20465
     )
     parser.add_argument(
         "-d", "--daemon", help="Run in Background", type=bool, default=False

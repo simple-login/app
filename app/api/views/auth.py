@@ -1,7 +1,6 @@
 import secrets
 import string
 
-import facebook
 import google.oauth2.credentials
 import googleapiclient.discovery
 from flask import jsonify, request
@@ -10,8 +9,15 @@ from itsdangerous import Signer
 
 from app import email_utils
 from app.api.base import api_bp
-from app.config import FLASK_SECRET, DISABLE_REGISTRATION
-from app.dashboard.views.setting import send_reset_password_email
+from app.abuser_utils import check_if_abuser_email
+from app.config import (
+    FLASK_SECRET,
+    DISABLE_REGISTRATION,
+    SMTP_INTERNAL_ACCESS_SECRET,
+    SMTP_INTERNAL_HOST_IP,
+    SMTP_INTERNAL_PORT
+)
+from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
@@ -19,10 +25,12 @@ from app.email_utils import (
     send_email,
     render,
 )
+from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation
-from app.utils import sanitize_email
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.utils import sanitize_email, canonicalize_email
 
 
 @api_bp.route("/auth/login", methods=["POST"])
@@ -48,23 +56,38 @@ def auth_login():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = sanitize_email(data.get("email"))
     password = data.get("password")
     device = data.get("device")
 
-    user = User.filter_by(email=email).first()
+    email = data.get("email")
+    if not email:
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return jsonify(error="Email or password incorrect"), 400
+    email = sanitize_email(email)
+    canonical_email = canonicalize_email(email)
+
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if not user or not user.check_password(password):
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
+        LoginEvent(LoginEvent.ActionType.disabled_login, LoginEvent.Source.api).send()
         return jsonify(error="Account disabled"), 400
+    elif user.delete_on is not None:
+        LoginEvent(
+            LoginEvent.ActionType.scheduled_to_be_deleted, LoginEvent.Source.api
+        ).send()
+        return jsonify(error="Account scheduled for deletion"), 400
     elif not user.activated:
+        LoginEvent(LoginEvent.ActionType.not_activated, LoginEvent.Source.api).send()
         return jsonify(error="Account not activated"), 422
     elif user.fido_enabled():
         # allow user who has TOTP enabled to continue using the mobile app
         if not user.enable_otp:
             return jsonify(error="Currently we don't support FIDO on mobile yet"), 403
 
+    LoginEvent(LoginEvent.ActionType.success, LoginEvent.Source.api).send()
     return jsonify(**auth_payload(user, device)), 200
 
 
@@ -84,22 +107,35 @@ def auth_register():
     if not data:
         return jsonify(error="request body cannot be empty"), 400
 
-    email = sanitize_email(data.get("email"))
+    dirty_email = data.get("email")
+    email = canonicalize_email(dirty_email)
     password = data.get("password")
 
     if DISABLE_REGISTRATION:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="registration is closed"), 400
     if not email_can_be_used_as_mailbox(email) or personal_email_already_used(email):
+        RegisterEvent(
+            RegisterEvent.ActionType.invalid_email, RegisterEvent.Source.api
+        ).send()
         return jsonify(error=f"cannot use {email} as personal inbox"), 400
 
+    if check_if_abuser_email(email):
+        LOG.warn(
+            f"User with email {email} that was marked as abuser tried to register again"
+        )
+        return jsonify(error=f"cannot use {email} as it was previously banned"), 400
+
     if not password or len(password) < 8:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="password too short"), 400
 
     if len(password) > 100:
+        RegisterEvent(RegisterEvent.ActionType.failed, RegisterEvent.Source.api).send()
         return jsonify(error="password too long"), 400
 
     LOG.d("create user %s", email)
-    user = User.create(email=email, name="", password=password)
+    user = User.create(email=email, name=dirty_email, password=password)
     Session.flush()
 
     # create activation code
@@ -110,10 +146,11 @@ def auth_register():
     send_email(
         email,
         "Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt.jinja2", code=code),
-        render("transactional/code-activation.html", code=code),
+        render("transactional/code-activation.txt.jinja2", user=user, code=code),
+        render("transactional/code-activation.html", user=user, code=code),
     )
 
+    RegisterEvent(RegisterEvent.ActionType.success, RegisterEvent.Source.api).send()
     return jsonify(msg="User needs to confirm their account"), 200
 
 
@@ -136,9 +173,10 @@ def auth_activate():
         return jsonify(error="request body cannot be empty"), 400
 
     email = sanitize_email(data.get("email"))
+    canonical_email = canonicalize_email(data.get("email"))
     code = data.get("code")
 
-    user = User.get_by(email=email)
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
@@ -162,6 +200,11 @@ def auth_activate():
 
     LOG.d("activate user %s", user)
     user.activated = True
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.ActivateUser,
+        message=f"User has been activated: {user.email}",
+    )
     AccountActivation.delete(account_activation.id)
     Session.commit()
 
@@ -184,7 +227,9 @@ def auth_reactivate():
         return jsonify(error="request body cannot be empty"), 400
 
     email = sanitize_email(data.get("email"))
-    user = User.get_by(email=email)
+    canonical_email = canonicalize_email(data.get("email"))
+
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
@@ -203,8 +248,8 @@ def auth_reactivate():
     send_email(
         email,
         "Just one more step to join SimpleLogin",
-        render("transactional/code-activation.txt.jinja2", code=code),
-        render("transactional/code-activation.html", code=code),
+        render("transactional/code-activation.txt.jinja2", user=user, code=code),
+        render("transactional/code-activation.html", user=user, code=code),
     )
 
     return jsonify(msg="User needs to confirm their account"), 200
@@ -228,6 +273,8 @@ def auth_facebook():
         }
 
     """
+    import facebook
+
     data = request.get_json()
     if not data:
         return jsonify(error="request body cannot be empty"), 400
@@ -339,7 +386,7 @@ def auth_payload(user, device) -> dict:
 
 
 @api_bp.route("/auth/forgot_password", methods=["POST"])
-@limiter.limit("10/minute")
+@limiter.limit("2/minute")
 def forgot_password():
     """
     User forgot password
@@ -355,10 +402,82 @@ def forgot_password():
         return jsonify(error="request body must contain email"), 400
 
     email = sanitize_email(data.get("email"))
+    canonical_email = canonicalize_email(data.get("email"))
 
-    user = User.get_by(email=email)
+    user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if user:
         send_reset_password_email(user)
 
     return jsonify(ok=True)
+
+
+def error_response(error, error_code):
+    return jsonify(error=error), error_code, {"Auth-Status": error}
+
+@api_bp.route("/auth/smtp")
+@limiter.limit("10/minute")
+def auth_smtp():
+    """
+    SMTP Authentication helper for Nginx mail proxy
+    Input Headers:
+        X-Secret: <internal-secret>
+        Auth-Method:
+        Auth-User:
+        Auth-Pass:
+        Auth-Protocol:
+    Output:
+        Success Headers:
+        Auth-Status: OK
+        Auth-Server: <internal-SMTP-Handler-hostname>
+        Auth-Port: <internal-SMTP-Handler-port>
+
+        Failure Headers: (Send only one header for failure)
+        Auth-Status: <error-message>
+
+    The data in the response body is ignored, the information is passed only in the headers.
+
+    Reference: https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html
+    """
+
+    # Only allow access from nginx.
+    x_secret = request.headers.get("X-Secret")
+    if not x_secret and x_secret != SMTP_INTERNAL_ACCESS_SECRET:
+        error = "Request Forbidden"
+        return error_response(error, 403)
+
+    auth_method = request.headers.get("Auth-Method")
+    auth_user = request.headers.get("Auth-User")
+    auth_pass = request.headers.get("Auth-Pass")
+    auth_protocol = request.headers.get("Auth-Protocol")
+
+    if not auth_method or not auth_user or not auth_pass or not auth_protocol:
+        error = "Invalid request headers"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 400)
+
+    auth_method = auth_method.upper() if auth_method else None
+    if auth_method not in ["PLAIN", "LOGIN"]:
+        error = f"Auth-Method must be PLAIN or LOGIN, got {auth_method}"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 401)
+
+    if auth_protocol != "smtp":
+        error = f"Auth-Protocol must be smtp, got {auth_protocol}"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 401)
+
+    from SMTP_handler import auth_SMTP_helper
+    auth_result = auth_SMTP_helper(auth_user, auth_pass, auth_method)
+    if auth_result:
+        resp_headers = {
+            "Auth-Status": "OK",
+            "Auth-Server": SMTP_INTERNAL_HOST_IP,
+            "Auth-Port": SMTP_INTERNAL_PORT,
+        }
+        LoginEvent(LoginEvent.ActionType.success, LoginEvent.Source.api).send()
+        return jsonify(auth_status="OK"), 200, resp_headers
+
+    error = "Authentication credentials invalid"
+    LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+    return error_response(error, 401)
