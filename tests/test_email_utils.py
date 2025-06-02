@@ -1,12 +1,15 @@
 import email
 import os
 from email.message import EmailMessage
+from email.utils import formataddr
 
 import arrow
 import pytest
 
-from app.config import MAX_ALERT_24H, EMAIL_DOMAIN, BOUNCE_EMAIL, ROOT_DIR
+from app import config
+from app.config import MAX_ALERT_24H, ROOT_DIR
 from app.db import Session
+from app.email import headers
 from app.email_utils import (
     get_email_domain_part,
     can_create_directory_for_address,
@@ -14,14 +17,10 @@ from app.email_utils import (
     delete_header,
     add_or_replace_header,
     send_email_with_rate_control,
-    copy,
     get_spam_from_header,
     get_header_from_bounce,
-    is_valid_email,
     add_header,
-    to_bytes,
     generate_reply_email,
-    normalize_reply_email,
     get_encoding,
     encode_text,
     EmailEncoding,
@@ -36,21 +35,41 @@ from app.email_utils import (
     get_orig_message_from_bounce,
     get_mailbox_bounce_info,
     is_invalid_mailbox_domain,
-    get_spamd_result,
+    generate_verp_email,
+    get_verp_info_from_email,
+    sl_formataddr,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
 from app.models import (
-    User,
     CustomDomain,
     Alias,
     Contact,
     EmailLog,
     IgnoreBounceSender,
     InvalidMailboxDomain,
-    DmarcCheckResult,
+    VerpType,
+    AliasGeneratorEnum,
+    SLDomain,
+    Mailbox,
 )
 
 # flake8: noqa: E101, W191
-from tests.utils import login, load_eml_file
+from tests.utils import (
+    login,
+    load_eml_file,
+    create_new_user,
+    random_email,
+    random_domain,
+    random_token,
+)
+
+
+def setup_module(module):
+    config.SKIP_MX_LOOKUP_ON_CHECK = True
+
+
+def teardown_module(module):
+    config.SKIP_MX_LOOKUP_ON_CHECK = False
 
 
 def test_get_email_domain_part():
@@ -59,41 +78,61 @@ def test_get_email_domain_part():
 
 def test_email_belongs_to_alias_domains():
     # default alias domain
-    assert can_create_directory_for_address("ab@sl.local")
-    assert not can_create_directory_for_address("ab@not-exist.local")
+    assert can_create_directory_for_address("ab@sl.lan")
+    assert not can_create_directory_for_address("ab@not-exist.lan")
 
-    assert can_create_directory_for_address("hey@d1.test")
-    assert not can_create_directory_for_address("hey@d3.test")
+    assert can_create_directory_for_address("hey@d1.lan")
+    assert not can_create_directory_for_address("hey@d3.lan")
 
 
-@pytest.mark.skipif(
-    "GITHUB_ACTIONS_TEST" in os.environ,
-    reason="this test requires DNS lookup that does not work on Github CI",
-)
 def test_can_be_used_as_personal_email(flask_client):
     # default alias domain
-    assert not email_can_be_used_as_mailbox("ab@sl.local")
-    assert not email_can_be_used_as_mailbox("hey@d1.test")
+    assert not email_can_be_used_as_mailbox("ab@sl.lan")
+    assert not email_can_be_used_as_mailbox("hey@d1.lan")
 
-    # custom domain
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
+    # custom domain as SL domain
+    domain = random_domain()
+    user = create_new_user()
+    domain_obj = CustomDomain.create(
+        user_id=user.id, domain=domain, verified=True, is_sl_subdomain=True, flush=True
     )
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
-    assert not email_can_be_used_as_mailbox("hey@ab.cd")
+    assert not email_can_be_used_as_mailbox(f"hey@{domain}")
+
+    # custom domain is NOT SL domain
+    domain_obj.is_sl_subdomain = False
+    Session.flush()
+    assert email_can_be_used_as_mailbox(f"hey@{domain}")
 
     # disposable domain
-    assert not email_can_be_used_as_mailbox("abcd@10minutesmail.fr")
-    assert not email_can_be_used_as_mailbox("abcd@temp-mail.com")
+    disposable_domain = random_domain()
+    InvalidMailboxDomain.create(domain=disposable_domain, commit=True)
+    assert not email_can_be_used_as_mailbox(f"abcd@{disposable_domain}")
     # subdomain will not work
-    assert not email_can_be_used_as_mailbox("abcd@sub.temp-mail.com")
+    assert not email_can_be_used_as_mailbox("abcd@sub.{disposable_domain}")
     # valid domains should not be affected
     assert email_can_be_used_as_mailbox("abcd@protonmail.com")
     assert email_can_be_used_as_mailbox("abcd@gmail.com")
+
+
+def test_disabled_user_prevents_email_from_being_used_as_mailbox():
+    email = f"user_{random_token(10)}@mailbox.lan"
+    assert email_can_be_used_as_mailbox(email)
+    user = create_new_user(email)
+    user.disabled = True
+    Session.flush()
+    assert not email_can_be_used_as_mailbox(email)
+
+
+def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_mailbox():
+    email = f"user_{random_token(10)}@mailbox.lan"
+    assert email_can_be_used_as_mailbox(email)
+    user = create_new_user()
+    Mailbox.create(user_id=user.id, email=email)
+    Session.flush()
+    assert email_can_be_used_as_mailbox(email)
+    user.disabled = True
+    Session.flush()
+    assert not email_can_be_used_as_mailbox(email)
 
 
 def test_delete_header():
@@ -155,35 +194,16 @@ def test_parse_full_address():
 
 
 def test_send_email_with_rate_control(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
+    email = random_email()
 
     for _ in range(MAX_ALERT_24H):
         assert send_email_with_rate_control(
-            user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
+            user, "test alert type", email, "subject", "plaintext"
         )
     assert not send_email_with_rate_control(
-        user, "test alert type", "abcd@gmail.com", "subject", "plaintext"
+        user, "test alert type", email, "subject", "plaintext"
     )
-
-
-def test_copy():
-    email_str = """
-    From: abcd@gmail.com
-    To: hey@example.org
-    Subject: subject
-
-    Body
-    """
-    msg = email.message_from_string(email_str)
-    msg2 = copy(msg)
-    assert to_bytes(msg) == to_bytes(msg2)
-
-    msg = email.message_from_string("👌")
-    msg2 = copy(msg)
-    assert to_bytes(msg) == to_bytes(msg2)
 
 
 def test_get_spam_from_header():
@@ -342,6 +362,33 @@ def test_is_valid_email():
     assert not is_valid_email("emoji👌@gmail.com")
 
 
+def test_add_subject_prefix():
+    msg = email.message_from_string(
+        """Subject: Potato
+Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST] Potato"
+
+
+def test_add_subject_prefix_with_no_header():
+    msg = email.message_from_string(
+        """Content-Transfer-Encoding: 7bit
+
+hello
+"""
+    )
+    new_msg = add_header(msg, "text header", "html header", subject_prefix="[TEST]")
+    assert "text header" in new_msg.as_string()
+    assert "html header" not in new_msg.as_string()
+    assert new_msg[headers.SUBJECT] == "[TEST]"
+
+
 def test_add_header_plain_text():
     msg = email.message_from_string(
         """Content-Type: text/plain; charset=us-ascii
@@ -484,60 +531,69 @@ Content-Type: text/html;	charset=us-ascii
     assert "old" not in new_msg.as_string()
 
 
-def test_to_bytes():
-    msg = email.message_from_string("☕️ emoji")
-    assert to_bytes(msg)
-    # \n is appended when message is converted to bytes
-    assert to_bytes(msg).decode() == "\n☕️ emoji"
-
-    msg = email.message_from_string("ascii")
-    assert to_bytes(msg) == b"\nascii"
-
-    msg = email.message_from_string("éèà€")
-    assert to_bytes(msg).decode() == "\néèà€"
+def test_replace_str():
+    msg = "a string"
+    new_msg = replace(msg, "a", "still a")
+    assert new_msg == "still a string"
 
 
 def test_generate_reply_email(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-    )
-    reply_email = generate_reply_email("test@example.org", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    user = create_new_user()
+    alias = Alias.create_new_random(user, AliasGeneratorEnum.uuid.value)
+    Session.commit()
+    reply_email = generate_reply_email("test@example.org", alias)
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
-    reply_email = generate_reply_email("", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    reply_email = generate_reply_email("", alias)
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
+
+
+def test_generate_reply_email_with_default_reply_domain(flask_client):
+    domain = SLDomain.create(domain=random_domain(), use_as_reverse_alias=False)
+    user = create_new_user()
+    alias = Alias.create(
+        user_id=user.id,
+        email=f"test@{domain.domain}",
+        mailbox_id=user.default_mailbox_id,
+    )
+    Session.commit()
+    reply_email = generate_reply_email("test@example.org", alias)
+    domain = get_email_domain_part(reply_email)
+    assert domain == config.EMAIL_DOMAIN
 
 
 def test_generate_reply_email_include_sender_in_reverse_alias(flask_client):
     # user enables include_sender_in_reverse_alias
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        include_sender_in_reverse_alias=True,
-    )
-    reply_email = generate_reply_email("test@example.org", user)
-    assert reply_email.startswith("test.at.example.org")
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    user = create_new_user()
+    alias = Alias.create_new_random(user, AliasGeneratorEnum.uuid.value)
+    Session.commit()
+    user.include_sender_in_reverse_alias = True
 
-    reply_email = generate_reply_email("", user)
-    assert reply_email.endswith(EMAIL_DOMAIN)
+    reply_email = generate_reply_email("test@example.org", alias)
+    assert reply_email.startswith("test_at_example_org")
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
 
-    reply_email = generate_reply_email("👌汉字@example.org", user)
-    assert reply_email.startswith("yizi.at.example.org")
+    reply_email = generate_reply_email("", alias)
+    domain = get_email_domain_part(alias.email)
+    assert reply_email.endswith(domain)
+
+    reply_email = generate_reply_email("👌汉字@example.org", alias)
+    assert reply_email.startswith("yizi_at_example_org")
 
     # make sure reply_email only contain lowercase
-    reply_email = generate_reply_email("TEST@example.org", user)
-    assert reply_email.startswith("test.at.example.org")
+    reply_email = generate_reply_email("TEST@example.org", alias)
+    assert reply_email.startswith("test_at_example_org")
+
+    reply_email = generate_reply_email("test.dot@example.org", alias)
+    assert reply_email.startswith("test_dot_at_example_org")
 
 
 def test_normalize_reply_email(flask_client):
-    assert normalize_reply_email("re+abcd@sl.local") == "re+abcd@sl.local"
-    assert normalize_reply_email('re+"ab cd"@sl.local') == "re+_ab_cd_@sl.local"
+    assert normalize_reply_email("re+abcd@sl.lan") == "re+abcd@sl.lan"
+    assert normalize_reply_email('re+"ab cd"@sl.lan') == "re+_ab_cd_@sl.lan"
 
 
 def test_get_encoding():
@@ -602,13 +658,7 @@ def test_decode_text():
 
 
 def test_should_disable(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        include_sender_in_reverse_alias=True,
-    )
+    user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
 
@@ -619,7 +669,7 @@ def test_should_disable(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     for _ in range(20):
@@ -652,7 +702,7 @@ def test_should_disable_bounces_every_day(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
     for i in range(9):
@@ -680,7 +730,7 @@ def test_should_disable_bounces_account(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -708,7 +758,7 @@ def test_should_disable_bounce_consecutive_days(flask_client):
         user_id=user.id,
         alias_id=alias.id,
         website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        reply_email="rep@sl.lan",
         commit=True,
     )
 
@@ -739,15 +789,23 @@ def test_should_disable_bounce_consecutive_days(flask_client):
 def test_parse_id_from_bounce():
     assert parse_id_from_bounce("bounces+1234+@local") == 1234
     assert parse_id_from_bounce("anything+1234+@local") == 1234
-    assert parse_id_from_bounce(BOUNCE_EMAIL.format(1234)) == 1234
 
 
-def test_get_queue_id():
+def test_get_queue_id_esmtps():
+    for id_type in ["SMTP", "ESMTP", "ESMTPA", "ESMTPS"]:
+        msg = email.message_from_string(
+            f"Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with {id_type} id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+        )
+
+        assert get_queue_id(msg) == "4FxQmw1DXdz2vK2", f"Failed for {id_type}"
+
+
+def test_get_queue_id_postfix():
     msg = email.message_from_string(
-        "Received: from mail-wr1-x434.google.com (mail-wr1-x434.google.com [IPv6:2a00:1450:4864:20::434])\r\n\t(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\tby mx1.simplelogin.co (Postfix) with ESMTPS id 4FxQmw1DXdz2vK2\r\n\tfor <jglfdjgld@alias.com>; Fri,  4 Jun 2021 14:55:43 +0000 (UTC)"
+        "Received: by mailin001.somewhere.net (Postfix)\r\n\tid 4Xz5pb2nMszGrqpL; Wed, 27 Nov 2024 17:21:59 +0000 (UTC)'] by mailin001.somewhere.net (Postfix)"
     )
 
-    assert get_queue_id(msg) == "4FxQmw1DXdz2vK2"
+    assert get_queue_id(msg) == "4Xz5pb2nMszGrqpL"
 
 
 def test_get_queue_id_from_double_header():
@@ -786,40 +844,64 @@ def test_get_mailbox_bounce_info():
 
 
 def test_is_invalid_mailbox_domain(flask_client):
-    InvalidMailboxDomain.create(domain="ab.cd", commit=True)
+    domain = random_domain()
+    InvalidMailboxDomain.create(domain=domain, commit=True)
 
-    assert is_invalid_mailbox_domain("ab.cd")
-    assert is_invalid_mailbox_domain("sub.ab.cd")
-    assert is_invalid_mailbox_domain("sub1.sub2.ab.cd")
+    assert is_invalid_mailbox_domain(domain)
+    assert is_invalid_mailbox_domain(f"sub.{domain}")
+    assert is_invalid_mailbox_domain(f"sub1.sub2.{domain}")
 
     assert not is_invalid_mailbox_domain("xy.zt")
 
 
-def test_dmarc_result_softfail():
-    msg = load_eml_file("dmarc_gmail_softfail.eml")
-    assert DmarcCheckResult.soft_fail == get_spamd_result(msg).dmarc
+@pytest.mark.parametrize("object_id", [10**i for i in range(0, 5)])
+def test_generate_verp_email(object_id):
+    generated_email = generate_verp_email(
+        VerpType.bounce_forward, object_id, "somewhere.net"
+    )
+    info = get_verp_info_from_email(generated_email.lower())
+    assert info[0] == VerpType.bounce_forward
+    assert info[1] == object_id
 
 
-def test_dmarc_result_quarantine():
-    msg = load_eml_file("dmarc_quarantine.eml")
-    assert DmarcCheckResult.quarantine == get_spamd_result(msg).dmarc
+def test_generate_verp_email_forward_reply_phase():
+    """make sure the verp type is taken into account in verp generation"""
+    for phase in [
+        VerpType.bounce_forward,
+        VerpType.bounce_reply,
+        VerpType.transactional,
+    ]:
+        verp = generate_verp_email(phase, 100)
+        verp_info = get_verp_info_from_email(verp)
+        assert verp_info[0] == phase
+        assert verp_info[1] == 100
 
 
-def test_dmarc_result_reject():
-    msg = load_eml_file("dmarc_reject.eml")
-    assert DmarcCheckResult.reject == get_spamd_result(msg).dmarc
+def test_add_header_multipart_with_invalid_part():
+    msg = load_eml_file("multipart_alternative.eml")
+    parts = msg.get_payload() + ["invalid"]
+    msg.set_payload(parts)
+    msg = add_header(msg, "INJECT", "INJECT")
+    for i, part in enumerate(msg.get_payload()):
+        if i < 2:
+            assert part.get_payload().index("INJECT") > -1
+        else:
+            assert part.get_payload() == "invalid"
 
 
-def test_dmarc_result_allow():
-    msg = load_eml_file("dmarc_allow.eml")
-    assert DmarcCheckResult.allow == get_spamd_result(msg).dmarc
+def test_sl_formataddr():
+    # when the name part (first element in the tuple) is empty, formataddr() returns a Header
+    # this makes sure sl_formataddr always returns str
+    assert sl_formataddr(("", "a@b.c")) == "a@b.c"
+
+    assert sl_formataddr(("é", "è@ç.à")) == "=?utf-8?b?w6k=?= <è@ç.à>"
+    # test that the same name-address can't be handled by the built-in formataddr
+    with pytest.raises(UnicodeEncodeError):
+        formataddr(("é", "è@ç.à"))
 
 
-def test_dmarc_result_na():
-    msg = load_eml_file("dmarc_na.eml")
-    assert DmarcCheckResult.not_available == get_spamd_result(msg).dmarc
-
-
-def test_dmarc_result_bad_policy():
-    msg = load_eml_file("dmarc_bad_policy.eml")
-    assert DmarcCheckResult.bad_policy == get_spamd_result(msg).dmarc
+def test_add_header_to_invalid_multipart():
+    msg = load_eml_file("add_header_multipart.eml")
+    msg = add_header(msg, "test", "test")
+    data = msg.as_string()
+    assert data != ""

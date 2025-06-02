@@ -1,51 +1,62 @@
 {% extends "single.html" %}
 
-{% block title %}
-  Login
-{% endblock %}
-
+{% block title %}Login{% endblock %}
 {% block single_content %}
 
   {% if show_resend_activation %}
+
     <div class="text-center text-muted small mb-4">
       You haven't received the activation email?
-      <a href="{{ url_for('auth.resend_activation') }}">Resend</a>
+      <a href="{{ url_for("auth.resend_activation") }}">Resend</a>
     </div>
   {% endif %}
-
-  <form class="card" style="border-radius: 2%" method="post">
-    {{ form.csrf_token }}
+  <div class="card" style="border-radius: 2%">
     <div class="card-body p-6">
       <h1 class="card-title">Welcome back!</h1>
-      <div class="form-group">
-        <label class="form-label">Email address</label>
-        {{ form.email(class="form-control", type="email", autofocus="true") }}
-        {{ render_field_errors(form.email) }}
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">
-          Password
-        </label>
-        {{ form.password(class="form-control", type="password") }}
-        {{ render_field_errors(form.password) }}
-        <div class="text-muted">
-          <a href="{{ url_for('auth.forgot_password') }}" class="small">
-            I forgot my password
-          </a>
+      <form method="post">
+        {{ form.csrf_token }}
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          {{ form.email(class="form-control", type="email", autofocus="true") }}
+          {{ render_field_errors(form.email) }}
         </div>
-      </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          {{ form.password(class="form-control", type="password") }}
+          {{ render_field_errors(form.password) }}
+          <div class="text-muted">
+            <a href="{{ url_for("auth.forgot_password") }}" class="small">I forgot my password</a>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </div>
+      </form>
+      {% if connect_with_proton %}
 
-      <div class="form-footer">
-        <button type="submit" class="btn btn-primary btn-block">Log in</button>
-      </div>
+        <div class="text-center my-2 text-gray">
+          <span>or</span>
+        </div>
+        <a class="btn btn-primary btn-block mt-2 proton-button"
+           href="{{ url_for('auth.proton_login', next=next_url) }}">
+          <img class="mr-2" src="/static/images/proton.svg" />
+          Log in with Proton
+        </a>
+      {% endif %}
+      {% if connect_with_oidc %}
 
-
+        <div class="text-center my-2 text-gray">
+          <span>or</span>
+        </div>
+        <a class="btn btn-primary btn-block mt-2 btn-social"
+           href="{{ url_for('auth.oidc_login', next=next_url) }}">
+          <i class="fa {{ connect_with_oidc_icon }}"></i> Log in with SSO
+        </a>
+      {% endif %}
     </div>
-  </form>
-
-  <div class="text-center text-muted mt-2">
-    Don't have an account yet? <a href="{{ url_for('auth.register') }}">Sign up</a>
   </div>
-
+  <div class="text-center text-muted mt-2">
+    Don't have an account yet?
+    <a href="{{ url_for("auth.register") }}">Sign up</a>
+  </div>
 {% endblock %}

@@ -1,14 +1,15 @@
-from flask import url_for, g
+from flask import url_for
 
+from app import config
 from app.models import (
     Alias,
 )
-from tests.utils import login
+from tests.utils import fix_rate_limit_after_request, login
 
 
 def test_create_random_alias_success(flask_client):
-    login(flask_client)
-    assert Alias.count() == 1
+    user = login(flask_client)
+    assert Alias.filter(Alias.user_id == user.id).count() == 1
 
     r = flask_client.post(
         url_for("dashboard.index"),
@@ -16,10 +17,11 @@ def test_create_random_alias_success(flask_client):
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert Alias.count() == 2
+    assert Alias.filter(Alias.user_id == user.id).count() == 2
 
 
 def test_too_many_requests(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     login(flask_client)
 
     # can't create more than 5 aliases in 1 minute
@@ -32,7 +34,7 @@ def test_too_many_requests(flask_client):
 
         # to make flask-limiter work with unit test
         # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
-        g._rate_limiting_complete = False
+        fix_rate_limit_after_request()
     else:
         # last request
         assert r.status_code == 429

@@ -1,88 +1,104 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi") }}
 
+  {{ render_text("Hi") }}
   {% call text() %}
     Son from SimpleLogin here. I hope you are doing well and are staying at home in this difficult time. By the way I'm
-    writing this newsletter from my couch with my cats proofreading the text :). <br>
-    Please find below some of our latest news. <br>
-
+    writing this newsletter from my couch with my cats proofreading the text :).
+    <br />
+    Please find below some of our latest news.
+    <br />
   {% endcall %}
 
   {% call text() %}
-    1) <b>Mobile apps</b> <br><br>
-
-    <img src="https://simplelogin.io/blog/devices.png" style="max-width: 100%"> <br><br>
-
+    1) <b>Mobile apps</b>
+    <br />
+    <br />
+    <img src="https://simplelogin.io/blog/devices.png" style="max-width: 100%">
+    <br />
+    <br />
     Now you can quickly create aliases on-the-go with SimpleLogin Android and iOS app,
-    thanks to our mobile guy Thanh-Nhon! <br>
-
+    thanks to our mobile guy Thanh-Nhon!
+    <br />
     Download the Android app on
-    <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Play Store</a> and the iOS app on
-    <a href="https://apps.apple.com/app/id1494359858">App Store</a>. <br>
-
-    With the release of the mobile apps, SimpleLogin now covers most major platforms: <br>
-
-    - Desktop with SimpleLogin web app or Chrome, Firefox and Safari extension <br>
-    - Mobile with Android and iOS app <br>
-
-    The code is of course open-source and available on our <a href="http://github.com/simple-login/">Github</a>
-
+    <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Play Store</a>
+    and the iOS app on
+    <a href="https://apps.apple.com/app/id1494359858">App Store</a>
+    .
+    <br />
+    With the release of the mobile apps, SimpleLogin now covers most major platforms:
+    <br />
+    - Desktop with SimpleLogin web app or Chrome, Firefox and Safari extension
+    <br />
+    - Mobile with Android and iOS app
+    <br />
+    The code is of course open-source and available on our
+    <a href="https://github.com/simple-login/">Github</a>
   {% endcall %}
 
   {% call text() %}
-    2) <b>Dark mode</b> <br><br>
-
-    <img src="https://simplelogin.io/blog/dark-mode.gif" style="width: 100%"> <br><br>
-
-    You have asked for it and now the dark mode is finally available, kudos to Dung - our full-stack guy. <br>
+    2) <b>Dark mode</b>
+    <br />
+    <br />
+    <img src="https://simplelogin.io/blog/dark-mode.gif" style="width: 100%">
+    <br />
+    <br />
+    You have asked for it and now the dark mode is finally available, kudos to Dung - our full-stack guy.
+    <br />
     You can finally enjoy using SimpleLogin in the dark.
   {% endcall %}
 
   {% call text() %}
-    3) <b>Alias name, new UI, security page, new policy privacy</b> <br><br>
-
-    <img src="https://simplelogin.io/blog/new-ui.gif" style="width: 100%"> <br><br>
-
+    3) <b>Alias name, new UI, security page, new policy privacy</b>
+    <br />
+    <br />
+    <img src="https://simplelogin.io/blog/new-ui.gif" style="width: 100%">
+    <br />
+    <br />
     You might have noticed that the web UI is now more compact: the web app has undergone a remake
-    to make it more responsive for usual actions like enabling/disabling an alias, updating alias note, etc. <br>
-
-    You can set a name for your alias too: this name is used when you send emails or reply from your alias.<br>
-
-    We have also created a new <a href="https://simplelogin.io/security/">security page</a> that goes into the technical
+    to make it more responsive for usual actions like enabling/disabling an alias, updating alias note, etc.
+    <br />
+    You can set a name for your alias too: this name is used when you send emails or reply from your alias.
+    <br />
+    We have also created a new
+    <a href="https://simplelogin.io/security/">security page</a>
+    that goes into the technical
     details of SimpleLogin.
-    Our <a href="https://simplelogin.io/privacy/">privacy page</a> is also rewritten from scratch: nothing changes about
+    Our
+    <a href="https://simplelogin.io/privacy/">privacy page</a>
+    is also rewritten from scratch: nothing changes about
     your data protection
     but the page is more clear and detailed now.
-
   {% endcall %}
 
   {% call text() %}
-    4) <b>Facebook, Google, Github login deprecation</b> <br>
-    We have decided to deprecate those social login options because of several reasons: <br>
-
+    4) <b>Facebook, Google, Github login deprecation</b>
+    <br />
+    We have decided to deprecate those social login options because of several reasons:
+    <br />
     - Privacy: every time you sign in using one of these methods, the respective company knows and
-    we have no information on what they do with this data. <br>
+    we have no information on what they do with this data.
+    <br />
     - Not fully open-standard compatible: these platforms enjoy their monopolies and
     don't play well with open standards like OAuth2/OpenID: in fact, implementations on mobile of these social login
-    require their SDK that we refuse to add because of privacy concern. <br>
+    require their SDK that we refuse to add because of privacy concern.
+    <br />
     - Uniform experiences for all users: to have these social login in our iOS app, we need to support "Sign in with
     Apple" that isn't broadly available for Android users.
-    Again, another big tech enjoying its monopoly. <br>
-
+    Again, another big tech enjoying its monopoly.
+    <br />
     If you happen to use one of these social login options, please create a password for your account on the
-    <a href="{{URL}}/dashboard/setting">Setting page</a> <br>
-
+    <a href="{{ URL }}/dashboard/setting">Setting page</a>
+    <br />
     You can still sign in using these social login until 2020-05-31. After this date, they will be removed.
   {% endcall %}
 
   {% call text() %}
-    5) <b>WebAuthn (Beta)</b> <br>
-
+    5) <b>WebAuthn (Beta)</b>
+    <br />
     Thanks to Raymond, a user of SimpleLogin, the WebAuthn is now available in Beta.
     Please reply to this email if you want to try this out.
-
   {% endcall %}
 
   {% call text() %}
@@ -90,25 +106,29 @@
     On behalf of the team, I want to say thank you to all users who have helped to improve SimpleLogin code
     and even contribute important features.
     That means a lot to us as SimpleLogin is after all an open-source project.
-
   {% endcall %}
 
   {% call text() %}
     That's all for today. If you want to follow all our latest features, you can follow our
-    <a href="https://twitter.com/simple_login">Twitter</a> or join our
+    <a href="https://twitter.com/simplelogin">Twitter</a>
+    or join our
     <a href="https://www.reddit.com/r/Simplelogin/">Reddit</a>
-    or subscribe to our <a href="https://feed43.com/simplelogin.xml">RSS feed</a>. <br>
+    or subscribe to our
+    <a href="https://feed43.com/simplelogin.xml">RSS feed</a>
+    .
+    <br />
     Now back to coding :).
   {% endcall %}
 
   {% call text() %}
-    Best, <br>
+    Best,
+    <br />
     Son.
   {% endcall %}
 
 {% endblock %}
-
 {% block footer %}
+
   This email is sent to {{ user.email }}. Unsubscribe on
-  <a href="{{URL}}/dashboard/setting#notification">Settings</a>
+  <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}

@@ -1,15 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text('This is an automated email from SimpleLogin.') }}
 
+  {{ render_text("This is an automated email from SimpleLogin.") }}
   {{ render_text("We have recorded an attempt to send an email from your email <b>" + sender + "</b> to <b>" + reply_email + "</b>.") }}
-
   {{ render_text(reply_email + ' is a special email address that only receives emails from its authorized user.') }}
-
-  {{ render_text('This user has been also informed of this incident.') }}
-
+  {{ render_text("This user has been also informed of this incident.") }}
   {{ render_text('If you have any question, you can contact us by replying to this email or consult our website at ' ~ LANDING_PAGE_URL ~ '.') }}
-
-  {{ render_text('Regards, <br />SimpleLogin Team.') }}
+  {{ render_text('Regards,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}

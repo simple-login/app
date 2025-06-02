@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
     <h1>
-      Your mailbox {{ mailbox.email }} and alias {{alias.email}} <b>cannot</b> have the same domain.
+      Your mailbox {{ mailbox.email }} and alias {{ alias.email }} <b>cannot</b> have the same domain.
     </h1>
   {% endcall %}
 
@@ -17,19 +18,20 @@
   {% endcall %}
 
   {% call text() %}
-    Please either: <br>
+    Please either:
+    <br />
     <ul>
-    <li>update the mailbox to a final email address on {{ mailbox_url }}</li>
-    <li>remove {{alias.email}} domain from your custom domains</li>
+      <li>update the mailbox to a final email address on {{ mailbox_url }}</li>
+      <li>remove {{ alias.email }} domain from your custom domains</li>
     </ul>
   {% endcall %}
 
   {% call text() %}
-    Feel free reply to this email if you have any question. <br>
-    Best, <br>
+    Feel free reply to this email if you have any question.
+    <br />
+    Best,
+    <br />
     SimpleLogin team.
   {% endcall %}
 
 {% endblock %}
-
-

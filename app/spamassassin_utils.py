@@ -1,6 +1,7 @@
 """Inspired from
 https://github.com/petermat/spamassassin_client
 """
+
 import logging
 import socket
 from io import BytesIO

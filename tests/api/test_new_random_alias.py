@@ -1,11 +1,12 @@
 import uuid
 
-from flask import url_for, g
+from flask import url_for
 
+from app import config
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.db import Session
 from app.models import Alias, CustomDomain, AliasUsedOn
-from tests.utils import login
+from tests.utils import fix_rate_limit_after_request, login, random_domain
 
 
 def test_with_hostname(flask_client):
@@ -16,7 +17,7 @@ def test_with_hostname(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"].endswith("d1.test")
+    assert r.json["alias"].endswith("d1.lan")
 
     # make sure alias starts with the suggested prefix
     assert r.json["alias"].startswith("test")
@@ -33,15 +34,16 @@ def test_with_hostname(flask_client):
     assert "enabled" in res
     assert "note" in res
 
-    alias_used_on: AliasUsedOn = AliasUsedOn.first()
+    alias_used_on: AliasUsedOn = AliasUsedOn.order_by(AliasUsedOn.id.desc()).first()
     assert alias_used_on.hostname == "www.test.com"
     assert alias_used_on.alias_id == res["id"]
 
 
 def test_with_custom_domain(flask_client):
     user = login(flask_client)
+    domain = random_domain()
     CustomDomain.create(
-        user_id=user.id, domain="ab.cd", ownership_verified=True, commit=True
+        user_id=user.id, domain=domain, ownership_verified=True, commit=True
     )
 
     r = flask_client.post(
@@ -49,8 +51,8 @@ def test_with_custom_domain(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == "test@ab.cd"
-    assert Alias.count() == 2
+    assert r.json["alias"] == f"test@{domain}"
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
     # call the endpoint again, should return the same alias
     r = flask_client.post(
@@ -58,9 +60,9 @@ def test_with_custom_domain(flask_client):
     )
 
     assert r.status_code == 201
-    assert r.json["alias"] == "test@ab.cd"
+    assert r.json["alias"] == f"test@{domain}"
     # no new alias is created
-    assert Alias.count() == 2
+    assert Alias.filter_by(user_id=user.id).count() == 2
 
 
 def test_without_hostname(flask_client):
@@ -121,6 +123,7 @@ def test_out_of_quota(flask_client):
 
 
 def test_too_many_requests(flask_client):
+    config.DISABLE_RATE_LIMIT = False
     login(flask_client)
 
     # can't create more than 5 aliases in 1 minute
@@ -130,7 +133,7 @@ def test_too_many_requests(flask_client):
         )
         # to make flask-limiter work with unit test
         # https://github.com/alisaifee/flask-limiter/issues/147#issuecomment-642683820
-        g._rate_limiting_complete = False
+        fix_rate_limit_after_request()
     else:
         # last request
         assert r.status_code == 429

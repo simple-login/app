@@ -120,7 +120,7 @@ def get_alias_infos_with_pagination(user, page_id=0, query=None) -> [AliasInfo]:
     q = (
         Session.query(Alias)
         .options(joinedload(Alias.mailbox))
-        .filter(Alias.user_id == user.id)
+        .filter(Alias.user_id == user.id, Alias.delete_on == None)  # noqa: E711
         .order_by(Alias.created_at.desc())
     )
 
@@ -193,20 +193,13 @@ def get_alias_infos_with_pagination_v3(
         q = q.order_by(Alias.email.desc())
     else:
         # default sorting
-        latest_activity = case(
-            [
-                (Alias.created_at > EmailLog.created_at, Alias.created_at),
-                (Alias.created_at < EmailLog.created_at, EmailLog.created_at),
-            ],
-            else_=Alias.created_at,
-        )
         q = q.order_by(Alias.pinned.desc())
-        q = q.order_by(latest_activity.desc())
+        q = q.order_by(func.greatest(Alias.created_at, EmailLog.created_at).desc())
 
-    q = list(q.limit(page_limit).offset(page_id * page_size))
+    q = q.limit(page_limit).offset(page_id * page_size)
 
     ret = []
-    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in q:
+    for alias, contact, email_log, nb_reply, nb_blocked, nb_forward in list(q):
         ret.append(
             AliasInfo(
                 alias=alias,
@@ -360,18 +353,9 @@ def construct_alias_query(user: User):
                     else_=0,
                 )
             ).label("nb_forward"),
-            func.max(EmailLog.created_at).label("latest_email_log_created_at"),
         )
         .join(EmailLog, Alias.id == EmailLog.alias_id, isouter=True)
-        .filter(Alias.user_id == user.id)
-        .group_by(Alias.id)
-        .subquery()
-    )
-
-    alias_contact_subquery = (
-        Session.query(Alias.id, func.max(Contact.id).label("max_contact_id"))
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .filter(Alias.user_id == user.id)
+        .filter(Alias.user_id == user.id, Alias.delete_on == None)  # noqa: E711
         .group_by(Alias.id)
         .subquery()
     )
@@ -387,23 +371,7 @@ def construct_alias_query(user: User):
         )
         .options(joinedload(Alias.hibp_breaches))
         .options(joinedload(Alias.custom_domain))
-        .join(Contact, Alias.id == Contact.alias_id, isouter=True)
-        .join(EmailLog, Contact.id == EmailLog.contact_id, isouter=True)
+        .join(EmailLog, Alias.last_email_log_id == EmailLog.id, isouter=True)
+        .join(Contact, EmailLog.contact_id == Contact.id, isouter=True)
         .filter(Alias.id == alias_activity_subquery.c.id)
-        .filter(Alias.id == alias_contact_subquery.c.id)
-        .filter(
-            or_(
-                EmailLog.created_at
-                == alias_activity_subquery.c.latest_email_log_created_at,
-                and_(
-                    # no email log yet for this alias
-                    alias_activity_subquery.c.latest_email_log_created_at.is_(None),
-                    # to make sure only 1 contact is returned in this case
-                    or_(
-                        Contact.id == alias_contact_subquery.c.max_contact_id,
-                        alias_contact_subquery.c.max_contact_id.is_(None),
-                    ),
-                ),
-            )
-        )
     )

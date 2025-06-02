@@ -5,7 +5,5 @@ Hi {{name}}
 
 This is a test to make sure that you receive emails sent to your alias {{alias}}.
 
-If you have any questions, feel free to reply to this email.
-
 {% endblock %}
 

@@ -1,19 +1,15 @@
 from flask import url_for
 
+from app import config
 from app.db import Session
-from app.models import User, ApiKey
-from tests.utils import login
+from app.models import User, PartnerUser
+from app.proton.proton_partner import get_proton_partner
+from tests.api.utils import get_new_user_and_api_key
+from tests.utils import login, random_token, random_email
 
 
 def test_user_in_trial(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     r = flask_client.get(
         url_for("api.user_info"), headers={"Authentication": api_key.code}
@@ -23,10 +19,57 @@ def test_user_in_trial(flask_client):
     assert r.json == {
         "is_premium": True,
         "name": "Test User",
-        "email": "a@b.c",
+        "email": user.email,
         "in_trial": True,
         "profile_picture_url": None,
+        "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
+        "connected_proton_address": None,
+        "can_create_reverse_alias": True,
     }
+
+
+def test_user_linked_to_proton(flask_client):
+    config.CONNECT_WITH_PROTON = True
+    user, api_key = get_new_user_and_api_key()
+    partner = get_proton_partner()
+    partner_email = random_email()
+    PartnerUser.create(
+        user_id=user.id,
+        partner_id=partner.id,
+        external_user_id=random_token(),
+        partner_email=partner_email,
+        commit=True,
+    )
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert r.json == {
+        "is_premium": True,
+        "name": "Test User",
+        "email": user.email,
+        "in_trial": True,
+        "profile_picture_url": None,
+        "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
+        "connected_proton_address": partner_email,
+        "can_create_reverse_alias": user.can_create_contacts(),
+    }
+
+
+def test_cannot_create_reverse_alias(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    user.trial_end = None
+    Session.flush()
+    config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = True
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert not r.json["can_create_reverse_alias"]
 
 
 def test_wrong_api_key(flask_client):
@@ -40,16 +83,7 @@ def test_wrong_api_key(flask_client):
 
 
 def test_create_api_key(flask_client):
-    # create user, user is activated
-    User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    Session.commit()
-
-    # login user
-    flask_client.post(
-        url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
-        follow_redirects=True,
-    )
+    login(flask_client)
 
     # create api key
     r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
@@ -59,16 +93,7 @@ def test_create_api_key(flask_client):
 
 
 def test_logout(flask_client):
-    # create user, user is activated
-    User.create(email="a@b.c", password="password", name="Test User", activated=True)
-    Session.commit()
-
-    # login user
-    flask_client.post(
-        url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
-        follow_redirects=True,
-    )
+    login(flask_client)
 
     # logout
     r = flask_client.get(
@@ -121,3 +146,12 @@ def test_change_name(flask_client):
     assert r.json["name"] == "new name"
 
     assert user.name == "new name"
+
+
+def test_stats(flask_client):
+    login(flask_client)
+
+    r = flask_client.get("/api/stats")
+
+    assert r.status_code == 200
+    assert r.json == {"nb_alias": 1, "nb_block": 0, "nb_forward": 0, "nb_reply": 0}

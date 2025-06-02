@@ -1,24 +1,68 @@
 ## API
 
 [Account endpoints](#account-endpoints)
+- [POST /api/auth/login](#post-apiauthlogin): Authentication
+- [POST /api/auth/mfa](#post-apiauthmfa): 2FA authentication
+- [POST /api/auth/facebook](#post-apiauthfacebook) (deprecated)
+- [POST /api/auth/google](#post-apiauthgoogle) (deprecated)
+- [POST /api/auth/register](#post-apiauthregister): Register a new account.
+- [POST /api/auth/activate](#post-apiauthactivate): Activate new account.
+- [POST /api/auth/reactivate](##post-apiauthreactivate): Request a new activation code.
+- [POST /api/auth/forgot_password](#post-apiauthforgot_password): Request reset password link.
+- [GET /api/user_info](#get-apiuser_info): Get user's information.
+- [PATCH /api/sudo](#patch-apisudo): Enable sudo mode.
+- [DELETE /api/user](#delete-apiuser): Delete the current user.
+- [GET /api/user/cookie_token](#get-apiusercookie_token): Get a one time use token to exchange it for a valid cookie
+- [PATCH /api/user_info](#patch-apiuser_info): Update user's information.
+- [POST /api/api_key](#post-apiapi_key): Create a new API key.
+- [GET /api/stats](#get-apistats): Get user's stats.
+- [GET /api/logout](#get-apilogout): Log out.
 
 [Alias endpoints](#alias-endpoints)
+- [GET /api/v5/alias/options](#get-apiv5aliasoptions): Get alias options. Used by create alias process.
+- [POST /api/v3/alias/custom/new](#post-apiv3aliascustomnew): Create new alias.
+- [POST /api/alias/random/new](#post-apialiasrandomnew): Random an alias.
+- [GET /api/v2/aliases](#get-apiv2aliases): Get user's aliases.
+- [GET /api/aliases/:alias_id](#get-apialiasesalias_id): Get alias information.
+- [DELETE /api/aliases/:alias_id](#delete-apialiasesalias_id): Delete an alias.
+- [POST /api/aliases/:alias_id/toggle](#post-apialiasesalias_idtoggle): Enable/disable an alias.
+- [GET /api/aliases/:alias_id/activities](#get-apialiasesalias_idactivities): Get alias activities.
+- [PATCH /api/aliases/:alias_id](#patch-apialiasesalias_id): Update alias information.
+- [GET /api/aliases/:alias_id/contacts](#get-apialiasesalias_idcontacts): Get alias contacts.
+- [POST /api/aliases/:alias_id/contacts](#post-apialiasesalias_idcontacts): Create a new contact for an alias.
 
 [Mailbox endpoints](#mailbox-endpoints)
+- [POST /api/mailboxes](#post-apimailboxes): Create a new mailbox.
+- [DELETE /api/mailboxes/:mailbox_id](#delete-apimailboxesmailbox_id): Delete a mailbox.
+- [PUT /api/mailboxes/:mailbox_id](#put-apimailboxesmailbox_id): Update a mailbox.
 
 [Custom domain endpoints](#custom-domain-endpoints)
+- [GET /api/custom_domains](#get-apicustom_domains): Get custom domains.
+- [PATCH /api/custom_domains/:custom_domain_id](#patch-apicustom_domainscustom_domain_id): Update custom domain's information.
+- [GET /api/custom_domains/:custom_domain_id/trash](#get-apicustom_domainscustom_domain_idtrash): Get deleted aliases of a custom domain.
 
 [Contact endpoints](#contact-endpoints)
+- [DELETE /api/contacts/:contact_id](#delete-apicontactscontact_id): Delete a contact.
+- [POST /api/contacts/:contact_id/toggle](#post-apicontactscontact_idtoggle): Block/unblock a contact.
 
 [Notification endpoints](#notification-endpoints)
+- [GET /api/notifications](#get-apinotifications): Get notifications.
+- [POST /api/notifications/:notification_id](#post-apinotificationsnotification_id): Mark as read a notification.
 
 [Settings endpoints](#settings-endpoints)
+- [GET /api/setting](#get-apisetting): Get user's settings.
+- [PATCH /api/setting](#patch-apisetting): Update user's settings.
+- [GET /api/v2/setting/domains](#get-apiv2settingdomains): Get domains that user can use to create random alias.
 
 [Import and export endpoints](#import-and-export-endpoints)
+- [GET /api/export/data](#get-apiexportdata): Export user's data.
+- [GET /api/export/aliases](#get-apiexportaliases): Export aliases into a CSV.
 
 [MISC endpoints](#misc-endpoints)
+- [POST /api/apple/process_payment](#post-apiappleprocess_payment): Process Apple's receipt.
 
 [Phone endpoints](#phone-endpoints)
+- [GET /api/phone/reservations/:reservation_id](#get-apiphonereservationsreservation_id): Get messages received during a reservation.
 
 ---
 
@@ -165,7 +209,8 @@ Output: if api key is correct, return a json with user name and whether user is 
   "is_premium": false,
   "email": "john@wick.com",
   "in_trial": true,
-  "profile_picture_url": "https://profile.png"
+  "profile_picture_url": "https://profile.png",
+  "max_alias_free_plan": 5,
 }
 ```
 
@@ -181,6 +226,70 @@ Input:
 - name
 
 Output: same as GET /api/user_info
+
+#### GET /api/stats
+
+Given the API Key, return stats about the number of aliases, number of emails forwarded/replied/blocked
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output: if api key is correct, return a json with the following fields:
+
+```json
+{"nb_alias": 1, "nb_block": 0, "nb_forward": 0, "nb_reply": 0}
+```
+
+If api key is incorrect, return 401.
+
+#### PATCH /api/sudo
+
+Enable sudo mode
+
+Input:
+
+- `Authentication` header that contains the api key
+- password: User password to validate the user presence and enter sudo mode
+
+```json
+{
+  "password": "yourpassword"
+}
+```
+
+Output:
+
+- 200 with ```{"ok": true}``` if sudo mode has been enabled.
+- 403 with ```{"error": "Some error"}``` if there is an error.
+
+#### DELETE /api/user
+
+Delete the current user. It requires sudo mode.
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output:
+
+- 200 with ```{"ok": true}``` if account is scheduled to be deleted.
+- 440 with ```{"error": "Need sudo"}``` if sudo mode is not enabled.
+- 403 with ```{"error": "Some error"}``` if there is an error.
+
+
+#### GET /api/user/cookie_token
+
+Get a one time use cookie to exchange it for a valid cookie in the web app
+
+Input:
+
+- `Authentication` header that contains the api key
+
+Output:
+
+- 200 with ```{"token": "token value"}```
+- 403 with ```{"error": "Some error"}``` if there is an error.
 
 #### POST /api/api_key
 
@@ -231,7 +340,8 @@ Input:
 Output: a json with the following field:
 
 - can_create: boolean. Whether user can create new alias
-- suffixes: list of dictionary with `suffix` and `signed-suffix`. List of alias `suffix` that user can use.
+- suffixes: list of alias suffix that user can use.
+  Each item is a dictionary with `suffix`, `signed-suffix`, `is_custom`, `is_premium` as keys.
   The `signed-suffix` is necessary to avoid request tampering.
 - prefix_suggestion: string. Suggestion for the `alias prefix`. Usually this is the website name extracted
   from `hostname`. If no `hostname`, then the `prefix_suggestion` is empty.
@@ -248,15 +358,21 @@ For ex:
   "suffixes": [
     {
       "signed_suffix": ".cat@d1.test.X6_7OQ.0e9NbZHE_bQvuAapT6NdBml9m6Q",
-      "suffix": ".cat@d1.test"
+      "suffix": ".cat@d1.test",
+      "is_custom": true,
+      "is_premium": false
     },
     {
       "signed_suffix": ".chat@d2.test.X6_7OQ.TTgCrfqPj7UmlY723YsDTHhkess",
-      "suffix": ".chat@d2.test"
+      "suffix": ".chat@d2.test",
+      "is_custom": false,
+      "is_premium": false
     },
     {
-      "signed_suffix": ".yeah@sl.local.X6_7OQ.i8XL4xsMsn7dxDEWU8eF-Zap0qo",
-      "suffix": ".yeah@sl.local"
+      "signed_suffix": ".yeah@sl.lan.X6_7OQ.i8XL4xsMsn7dxDEWU8eF-Zap0qo",
+      "suffix": ".yeah@sl.lan",
+      "is_custom": true,
+      "is_premium": false
     }
   ]
 }
@@ -272,7 +388,7 @@ Input:
 - (Optional but recommended) `hostname` passed in query string
 - Request Message Body in json (`Content-Type` is `application/json`)
     - alias_prefix: string. The first part of the alias that user can choose.
-    - signed_suffix: should be one of the suffixes returned in the `GET /api/v4/alias/options` endpoint.
+    - signed_suffix: should be one of the suffixes returned in the `GET /api/v5/alias/options` endpoint.
     - mailbox_ids: list of mailbox_id that "owns" this alias
     - (Optional) note: alias note
     - (Optional) name: alias name
@@ -288,7 +404,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - (Optional but recommended) `hostname` passed in query string
-- (Optional) mode: either `uuid` or `word`. By default, use the user setting when creating new random alias.
+- (Optional) mode: either `uuid` or `word` passed in query string. By default, use the user setting when creating new random alias.
 - Request Message Body in json (`Content-Type` is `application/json`)
     - (Optional) note: alias note
 
@@ -305,6 +421,9 @@ Input:
 - `page_id` in query. Used for the pagination. The endpoint returns maximum 20 aliases for each page. `page_id` starts
   at 0.
 - (Optional) `pinned` in query. If set, only pinned aliases are returned.
+- (Optional) `disabled` in query. If set, only disabled aliases are returned.
+- (Optional) `enabled` in query. If set, only enabled aliases are returned.
+  Please note `pinned`, `disabled`, `enabled` are exclusive, i.e. only one can be present.
 - (Optional) query: included in request body. Some frameworks might prevent GET request having a non-empty body, in this
   case this endpoint also supports POST.
 
@@ -346,7 +465,7 @@ Here's an example:
     {
       "creation_date": "2020-04-06 17:57:14+00:00",
       "creation_timestamp": 1586195834,
-      "email": "prefix1.cat@sl.local",
+      "email": "prefix1.cat@sl.lan",
       "name": "A Name",
       "enabled": true,
       "id": 3,
@@ -399,7 +518,7 @@ Alias info, use the same format as in /api/v2/aliases. For example:
 {
   "creation_date": "2020-04-06 17:57:14+00:00",
   "creation_timestamp": 1586195834,
-  "email": "prefix1.cat@sl.local",
+  "email": "prefix1.cat@sl.lan",
   "name": "A Name",
   "enabled": true,
   "id": 3,
@@ -489,7 +608,7 @@ If success, 200 with the list of activities, for example:
   "activities": [
     {
       "action": "reply",
-      "from": "yes_meo_chat@sl.local",
+      "from": "yes_meo_chat@sl.lan",
       "timestamp": 1580903760,
       "to": "marketing@example.com",
       "reverse_alias": "\"marketing at example.com\" <reply@a.b>",
@@ -584,9 +703,17 @@ Return 200 and `existed=true` if contact is already added.
   "creation_timestamp": 1584186761,
   "last_email_sent_date": null,
   "last_email_sent_timestamp": null,
-  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.local>",
+  "reverse_alias": "First Last first@example.com <ra+qytyzjhrumrreuszrbjxqjlkh@sl.lan>",
   "reverse_alias_address": "reply+bzvpazcdedcgcpztehxzgjgzmxskqa@sl.co",
   "existed": false
+}
+```
+
+It can return 403 with an error if the user cannot create reverse alias.
+
+```json
+{
+  "error": "Please upgrade to create a reverse-alias"
 }
 ```
 
@@ -626,6 +753,7 @@ List of mailboxes. Each mailbox has id, email, default, creation_timestamp field
 }
 ```
 
+## Mailbox endpoints
 #### POST /api/mailboxes
 
 Create a new mailbox
@@ -653,6 +781,7 @@ Input:
 
 - `Authentication` header that contains the api key
 - `mailbox_id`: in url
+- (optional) `transfer_aliases_to`: in body as json. id of the new mailbox for the aliases. If omitted or set to -1, the aliases will be delete with the mailbox.
 
 Output:
 
@@ -730,7 +859,7 @@ List of custom domains.
 
 #### PATCH /api/custom_domains/:custom_domain_id
 
-Update alias info.
+Update custom domain's information
 
 Input:
 
@@ -863,7 +992,7 @@ Return user setting.
 {
   "alias_generator": "word",
   "notification": true,
-  "random_alias_default_domain": "sl.local",
+  "random_alias_default_domain": "sl.lan",
   "sender_format": "AT",
   "random_alias_suffix": "random_string"
 }
@@ -900,7 +1029,7 @@ Return domains that user can use to create random alias
     "is_custom": false
   },
   {
-    "domain": "sl.local",
+    "domain": "sl.lan",
     "is_custom": false
   },
   {

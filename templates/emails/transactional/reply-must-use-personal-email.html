@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
     <h1>
       An attempt to send an email from your alias <b>{{ alias.email }}</b> using <b>{{ sender }}</b> is blocked.
@@ -21,14 +22,11 @@
   {% endcall %}
 
   {{ render_button("Allow " + sender, authorize_address_link) }}
-
   {% call text() %}
-    Best, <br/>
+    Best,
+    <br />
     SimpleLogin Team.
   {% endcall %}
 
   {{ raw_url(authorize_address_link) }}
-
 {% endblock %}
-
-

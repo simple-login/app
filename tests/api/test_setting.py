@@ -4,7 +4,7 @@ from app.models import (
     SenderFormatEnum,
     AliasSuffixEnum,
 )
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_get_setting(flask_client):
@@ -15,9 +15,9 @@ def test_get_setting(flask_client):
     assert r.json == {
         "alias_generator": "word",
         "notification": True,
-        "random_alias_default_domain": "sl.local",
+        "random_alias_default_domain": "sl.lan",
         "sender_format": "AT",
-        "random_alias_suffix": "random_string",
+        "random_alias_suffix": "word",
     }
 
 
@@ -44,7 +44,10 @@ def test_update_settings_alias_generator(flask_client):
 
 def test_update_settings_random_alias_default_domain(flask_client):
     user = login(flask_client)
-    assert user.default_random_alias_domain() == "sl.local"
+    custom_domain = CustomDomain.create(
+        domain=random_domain(), verified=True, user_id=user.id, flush=True
+    )
+    assert user.default_random_alias_domain() == "sl.lan"
 
     r = flask_client.patch(
         "/api/setting", json={"random_alias_default_domain": "invalid"}
@@ -52,10 +55,16 @@ def test_update_settings_random_alias_default_domain(flask_client):
     assert r.status_code == 400
 
     r = flask_client.patch(
-        "/api/setting", json={"random_alias_default_domain": "d1.test"}
+        "/api/setting", json={"random_alias_default_domain": "d1.lan"}
     )
     assert r.status_code == 200
-    assert user.default_random_alias_domain() == "d1.test"
+    assert user.default_random_alias_domain() == "d1.lan"
+
+    r = flask_client.patch(
+        "/api/setting", json={"random_alias_default_domain": custom_domain.domain}
+    )
+    assert r.status_code == 200
+    assert user.default_random_alias_domain() == custom_domain.domain
 
 
 def test_update_settings_sender_format(flask_client):
@@ -76,7 +85,8 @@ def test_update_settings_sender_format(flask_client):
 
 def test_get_setting_domains(flask_client):
     user = login(flask_client)
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    domain = random_domain()
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
 
     r = flask_client.get("/api/setting/domains")
     assert r.status_code == 200
@@ -84,7 +94,8 @@ def test_get_setting_domains(flask_client):
 
 def test_get_setting_domains_v2(flask_client):
     user = login(flask_client)
-    CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True, commit=True)
+    domain = random_domain()
+    CustomDomain.create(user_id=user.id, domain=domain, verified=True, commit=True)
 
     r = flask_client.get("/api/v2/setting/domains")
     assert r.status_code == 200
@@ -93,11 +104,13 @@ def test_get_setting_domains_v2(flask_client):
 def test_update_settings_random_alias_suffix(flask_client):
     user = login(flask_client)
     # default random_alias_suffix is random_string
-    assert user.random_alias_suffix == AliasSuffixEnum.random_string.value
+    assert user.random_alias_suffix == AliasSuffixEnum.word.value
 
     r = flask_client.patch("/api/setting", json={"random_alias_suffix": "invalid"})
     assert r.status_code == 400
 
-    r = flask_client.patch("/api/setting", json={"random_alias_suffix": "word"})
+    r = flask_client.patch(
+        "/api/setting", json={"random_alias_suffix": "random_string"}
+    )
     assert r.status_code == 200
-    assert user.random_alias_suffix == AliasSuffixEnum.word.value
+    assert user.random_alias_suffix == AliasSuffixEnum.random_string.value

@@ -1,0 +1,229 @@
+{% extends "default.html" %}
+
+{% set active_page = "setting" %}
+{% block title %}Settings{% endblock %}
+{% block head %}
+
+  <style>
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .highlighted{
+            border: solid 2px #5675E2;
+        }
+        li {
+            margin-top: 8px;
+        }
+
+  </style>
+{% endblock %}
+{% block default_content %}
+
+  <div class="col pb-3">
+    <!-- Change email -->
+    <div class="card">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="form-name" value="update-email">
+          {{ change_email_form.csrf_token }}
+          <div class="card-title">Account Email</div>
+          <div class="mb-3">
+            This email address is used to log in to SimpleLogin.
+            <br />
+            If you want to change the mailbox that emails are forwarded to, use the
+            <a href="{{ url_for("dashboard.mailbox_route") }}">
+              <i class="fe fe-inbox"></i> Mailboxes page
+            </a>
+            instead.
+          </div>
+          <div class="form-group mt-2">
+            <!-- Not allow user to change email if there's a pending change -->
+            {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
+            {{ render_field_errors(change_email_form.email) }}
+          </div>
+          <button class="btn btn-outline-primary">Change Email</button>
+        </form>
+        {% if pending_email %}
+
+          <div class="mt-2">
+            <span class="text-danger float-left">Pending email change: {{ pending_email }}</span>
+            <form method="POST"
+                  action="{{ url_for("dashboard.resend_email_change") }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Resend confirmation email</a>
+            </form>
+            <form method="POST"
+                  action="{{ url_for("dashboard.cancel_email_change") }}"
+                  class="float-left ml-2">
+              {{ change_email_form.csrf_token }}
+              <a onclick="this.closest('form').submit()"
+                 class="btn btn-secondary btn-sm">Cancel email change</a>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <!-- END Change email -->
+    <!-- Change password -->
+    <div class="card" id="change_password">
+      <div class="card-body">
+        <div class="card-title">Password</div>
+        <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
+        <form method="post">
+          {{ csrf_form.csrf_token }}
+          <input type="hidden" name="form-name" value="change-password">
+          <button class="btn btn-outline-primary">Change password</button>
+        </form>
+      </div>
+    </div>
+    <!-- END Change password -->
+    <!-- TOTP -->
+    <div class="card" id="totp">
+      <div class="card-body">
+        <div class="card-title">Two Factor Authentication</div>
+        <div class="mb-3">
+          Secure your account with 2FA, you'll be asked for a code generated through an app when you login.
+          <br />
+        </div>
+        {% if not current_user.enable_otp %}
+
+          <a href="{{ url_for("dashboard.mfa_setup") }}"
+             class="btn btn-outline-primary">Setup TOTP</a>
+        {% else %}
+          <a href="{{ url_for("dashboard.mfa_cancel") }}"
+             class="btn btn-outline-danger">Disable TOTP</a>
+        {% endif %}
+      </div>
+    </div>
+    <!-- END TOTP -->
+    <!-- WebAuthn -->
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Security Key (WebAuthn)</div>
+        <div class="mb-3">
+          You can secure your account by linking either your FIDO-supported physical key such as Yubikey, Google
+          Titan,
+          or a device with appropriate hardware to your account.
+        </div>
+        {% if current_user.fido_uuid is none %}
+
+          <a href="{{ url_for("dashboard.fido_setup") }}"
+             class="btn btn-outline-primary">Setup WebAuthn</a>
+        {% else %}
+          <a href="{{ url_for("dashboard.fido_manage") }}"
+             class="btn btn-outline-info">Manage WebAuthn</a>
+        {% endif %}
+      </div>
+    </div>
+    <!-- END WebAuthn -->
+    <!-- Connect with Proton -->
+    {% if connect_with_proton and can_unlink_proton_account %}
+
+      <div class="card" id="connect-with-proton">
+        <div class="card-body">
+          <div class="card-title">Connect with Proton</div>
+          {% if proton_linked_account != None %}
+
+            <div class="mb-3">
+              Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
+              <br />
+            </div>
+            <form method="post"
+                  action="{{ url_for("dashboard.unlink_proton_account") }}">
+              {{ csrf_form.csrf_token }}
+              <button id="unlink-btn" class="btn btn-primary mt-2 proton-button">
+                <img class="mr-2" src="/static/images/proton.svg">
+                Unlink account
+              </button>
+            </form>
+          {% else %}
+            <div class="mb-3">
+              You can connect your Proton and SimpleLogin accounts.
+              <br>
+              You can then quickly log in to your SimpleLogin account using the Proton one.
+              <br>
+              If you have Proton Unlimited, Business or Visionary, you can have SimpleLogin premium for free.
+              <br />
+            </div>
+            <a class="btn btn-primary mt-2 proton-button"
+               href="{{ url_for("auth.proton_login", action="link") }}">
+              <img class="mr-2"
+                   src="{{ url_for('static', filename='images/proton.svg') }}" />
+              Connect with Proton
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- END Connect with Proton -->
+    <!-- data export -->
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">SimpleLogin data export</div>
+        <div class="mb-3">
+          As per GDPR (General Data Protection Regulation) law, you can request a copy of your data which are stored on
+          SimpleLogin.
+          A zip file that contains all information will be sent to your SimpleLogin account address.
+        </div>
+        <div class="d-flex">
+          <div>
+            <form method="post">
+              {{ csrf_form.csrf_token }}
+              <input type="hidden" name="form-name" value="send-full-user-report">
+              <button class="btn btn-outline-info">Request your data</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END data export -->
+    <!-- Delete account -->
+    <div class="card">
+      <div class="card-body">
+        <div class="card-title">Account Deletion</div>
+        <div class="mb-3">If SimpleLogin isn't the right fit for you, you can simply delete your account.</div>
+        <a href="{{ url_for("dashboard.delete_account") }}"
+           class="btn btn-outline-danger">Delete account</a>
+      </div>
+    </div>
+    <!-- END Delete account -->
+  </div>
+{% endblock %}
+{% block script %}
+
+  <script>
+        let anchor = window.location.hash;
+        $(anchor).addClass("highlighted")
+
+
+        $("#unlink-btn").on("click", function (e) {
+            let that = $(this);
+
+            bootbox.confirm({
+                message: "All your aliases will be removed from Proton Pass. Are you sure?",
+                buttons: {
+                    confirm: {
+                        label: 'Unlink account',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-outline-primary'
+                    }
+                },
+                callback: function (result) {
+                    console.log(result)
+                    if (result) {
+                        that.closest("form").submit();
+                    }
+                }
+            });
+            return false;
+        });
+
+  </script>
+{% endblock %}

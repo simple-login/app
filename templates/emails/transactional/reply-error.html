@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{ render_text("Hi") }}
 
+  {{ render_text("Hi") }}
   {% call text() %}
     Your email cannot be sent to <b>{{ contact.email }}</b> from your alias <b>{{ alias.email }}</b>.
   {% endcall %}
@@ -20,11 +20,11 @@
   {% endcall %}
 
   {% call text() %}
-    Please let us know if you have any question. <br>
-    Best, <br>
+    Please let us know if you have any question.
+    <br />
+    Best,
+    <br />
     SimpleLogin team.
   {% endcall %}
 
 {% endblock %}
-
-

@@ -7,7 +7,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import ActivationCode
-from app.utils import sanitize_next_url
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 @auth_bp.route("/activate", methods=["GET", "POST"])
@@ -47,6 +47,11 @@ def activate():
 
     user = activation_code.user
     user.activated = True
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.ActivateUser,
+        message=f"User has been activated: {user.email}",
+    )
     login_user(user)
 
     # activation code is to be used only once
@@ -58,10 +63,5 @@ def activate():
     email_utils.send_welcome_email(user)
 
     # The activation link contains the original page, for ex authorize page
-    if "next" in request.args:
-        next_url = sanitize_next_url(request.args.get("next"))
-        LOG.d("redirect user to %s", next_url)
-        return redirect(next_url)
-    else:
-        LOG.d("redirect user to dashboard")
-        return redirect(url_for("dashboard.index"))
+    LOG.d("redirect user to dashboard")
+    return redirect(url_for("dashboard.index"))

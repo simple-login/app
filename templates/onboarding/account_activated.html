@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  <div class="flex-fill align-items-center mt-8">
+    <!-- Image container -->
+    <div class="mt-4 mb-4 text-center" style="display:block;">
+      <a href="{{ url_for("dashboard.index") }}">
+        <picture>
+          <source media="(max-width: 650px)" srcset="/static/logo.svg">
+          <img src="/static/logo.svg" style="width: 12rem" alt="logo">
+        </picture>
+      </a>
+    </div>
+    <!-- Text container -->
+    <div class="my-6 text-center">
+      <h2 style="color:black;font-size:2rem">Welcome!</h2>
+    </div>
+    <div class="px-8" style="width:675px;margin:auto;">
+      <div class="my-6">
+        <p style="font-size: 1.2em;">Quickly create aliases everywhere using our {{ browser_name }} extension</p>
+        <a class="px-4 py-3 mt-4 text-decoration-none text-center"
+           style="background:black;
+                  color:white;
+                  display:block;
+                  width:50%"
+           href="{{ extension_link }}">Install {{ browser_name }} extension</a>
+      </div>
+      <hr style="margin-top: 75px">
+      <div style="margin-top: 75px">
+        <p style="font-size: 1.2em;">Or install the extension later and start discovering our features on our web app</p>
+        <a class="px-4 py-3 mt-4 text-decoration-none text-center"
+           style="background:white;
+                  color:black;
+                  border-radius: 2px;
+                  border:1px solid black;
+                  display:block;
+                  width:50%"
+           href="{{ url_for("dashboard.index") }}">Continue to our web app</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

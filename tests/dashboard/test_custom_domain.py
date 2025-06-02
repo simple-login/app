@@ -1,8 +1,9 @@
 from flask import url_for
 
 from app.db import Session
+from app.email_utils import get_email_domain_part
 from app.models import Mailbox
-from tests.utils import login
+from tests.utils import login, random_domain
 
 
 def test_add_domain_success(flask_client):
@@ -10,14 +11,15 @@ def test_add_domain_success(flask_client):
     user.lifetime = True
     Session.commit()
 
+    domain = random_domain()
     r = flask_client.post(
         url_for("dashboard.custom_domain"),
-        data={"form-name": "create", "domain": "ab.cd"},
+        data={"form-name": "create", "domain": domain},
         follow_redirects=True,
     )
 
     assert r.status_code == 200
-    assert b"New domain ab.cd is created" in r.data
+    assert f"New domain {domain} is created".encode() in r.data
 
 
 def test_add_domain_same_as_user_email(flask_client):
@@ -28,7 +30,7 @@ def test_add_domain_same_as_user_email(flask_client):
 
     r = flask_client.post(
         url_for("dashboard.custom_domain"),
-        data={"form-name": "create", "domain": "b.c"},  # user email is a@b.c
+        data={"form-name": "create", "domain": get_email_domain_part(user.email)},
         follow_redirects=True,
     )
 

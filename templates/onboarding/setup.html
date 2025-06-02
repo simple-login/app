@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  <div class="flex-fill align-items-center mt-8">
+    <!-- Image container -->
+    <div class="mt-4 mb-4 text-center" style="display:block;">
+      <a href="{{ url_for("dashboard.index") }}">
+        <picture>
+          <source media="(max-width: 650px)" srcset="/static/logo.svg">
+          <img src="/static/logo.svg" style="width: 12rem" alt="logo">
+        </picture>
+      </a>
+    </div>
+    <!-- Text container -->
+    <div class="mt-8 mb-4 text-center">
+      <h2 class="text-dark" style="font-size:2rem">Let's take back control of your inbox!</h2>
+    </div>
+    <div class="mt-8 text-center">
+      {% if current_user != None and current_user.is_authenticated %}
+
+        <h2 class="text-black-50" style="font-size:2rem">
+          Automatically performing extension setup.
+          If the setup doesn't start in a couple seconds click <a onclick="sendSetupMessage()" class="text-primary">here</a>
+        </h2>
+      {% else %}
+        <a class="mx-6 p-4 text-decoration-none"
+           style="background:black;
+                  color:white"
+           href="{{ url_for('auth.register', next=url_for('onboarding.setup_done') ) }}">Create a new account</a>
+        <a class="mx-6 p-4 text-decoration-none"
+           style="background:white;
+                  color:black;
+                  border-radius: 2px;
+                  border:1px solid black"
+           href="{{ url_for('auth.login', next=url_for('onboarding.setup_done') ) }}">I already have an account</a>
+      {% endif %}
+    </div>
+  </div>
+  {% if current_user != None and current_user.is_authenticated %}
+
+    <script type="text/javascript">
+    function sendSetupMessage(){
+        const data = { tag: "PERFORM_EXTENSION_SETUP" };
+        window.postMessage(data, "/");
+    }
+        let counterIterations = 5;
+        let extensionSetupIntervalId = setInterval(function() {
+            counterIterations--;
+            if (counterIterations === 0) {
+                clearInterval(extensionSetupIntervalId);
+                return;
+            }
+            sendSetupMessage()
+        }, 300); // Send it many times, in case the extension had not registered the listener yet
+    </script>
+  {% endif %}
+{% endblock %}

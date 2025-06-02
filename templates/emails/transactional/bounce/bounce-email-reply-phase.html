@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Email cannot be sent to {{ contact.email }} from your alias {{ alias.email }}
-    </h1>
+    <h1>Email cannot be sent to {{ contact.email }} from your alias {{ alias.email }}</h1>
   {% endcall %}
 
   {% call text() %}
@@ -17,13 +16,13 @@
   {% endcall %}
 
   {{ render_button("View the original email", refused_email_url) }}
-
   {% call text() %}
     This email is automatically deleted in 7 days.
   {% endcall %}
 
   {% call text() %}
-    Best, <br/>
+    Best,
+    <br />
     SimpleLogin Team.
   {% endcall %}
 

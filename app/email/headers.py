@@ -1,4 +1,5 @@
 """Email headers"""
+
 MESSAGE_ID = "Message-ID"
 IN_REPLY_TO = "In-Reply-To"
 REFERENCES = "References"
@@ -18,7 +19,11 @@ CC = "Cc"
 DKIM_SIGNATURE = "DKIM-Signature"
 X_SPAM_STATUS = "X-Spam-Status"
 LIST_UNSUBSCRIBE = "List-Unsubscribe"
+LIST_ID = "List-Id"
 LIST_UNSUBSCRIBE_POST = "List-Unsubscribe-Post"
+RETURN_PATH = "Return-Path"
+AUTHENTICATION_RESULTS = "Authentication-Results"
+SL_QUEUE_ID = "X-SL-Queue-Id"
 
 # headers used to DKIM sign in order of preference
 DKIM_HEADERS = [
@@ -31,8 +36,12 @@ DKIM_HEADERS = [
 SL_DIRECTION = "X-SimpleLogin-Type"
 SL_EMAIL_LOG_ID = "X-SimpleLogin-EmailLog-ID"
 SL_ENVELOPE_FROM = "X-SimpleLogin-Envelope-From"
+SL_ORIGINAL_FROM = "X-SimpleLogin-Original-From"
 SL_ENVELOPE_TO = "X-SimpleLogin-Envelope-To"
 SL_CLIENT_IP = "X-SimpleLogin-Client-IP"
+SL_ORIGINAL_LIST_UNSUBSCRIBE = "X-SimpleLogin-Original-List-Unsubscribe"
+SL_ORIGINAL_LIST_UNSUBSCRIBE_POST = "X-SimpleLogin-Original-List-Unsubscribe-Post"
+SL_ORIGINAL_LIST_ID = "X-SimpleLogin-Original-List-Id"
 
 # to let Rspamd know that the message should be signed
 SL_WANT_SIGNING = "X-SimpleLogin-Want-Signing"
@@ -50,3 +59,6 @@ MIME_HEADERS = [h.lower() for h in MIME_HEADERS]
 # according to https://datatracker.ietf.org/doc/html/rfc3834#section-3.1.7, this header should be set to  "auto-replied"
 # however on hotmail, this is set to "auto-generated"
 AUTO_SUBMITTED = "Auto-Submitted"
+
+# Yahoo complaint specific header
+YAHOO_ORIGINAL_RECIPIENT = "original-rcpt-to"

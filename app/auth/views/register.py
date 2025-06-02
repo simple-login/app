@@ -5,17 +5,20 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
 from app import email_utils, config
+from app.abuser_utils import check_if_abuser_email
 from app.auth.base import auth_bp
 from app.auth.views.login_utils import get_referral
+from app.config import CONNECT_WITH_PROTON, CONNECT_WITH_OIDC_ICON
 from app.config import URL, HCAPTCHA_SECRET, HCAPTCHA_SITEKEY
 from app.db import Session
 from app.email_utils import (
     email_can_be_used_as_mailbox,
     personal_email_already_used,
 )
+from app.events.auth_event import RegisterEvent
 from app.log import LOG
-from app.models import User, ActivationCode
-from app.utils import random_string, encode_url, sanitize_email
+from app.models import User, ActivationCode, DailyMetric
+from app.utils import random_string, encode_url, sanitize_email, canonicalize_email
 
 
 class RegisterForm(FlaskForm):
@@ -60,6 +63,7 @@ def register():
                     hcaptcha_res,
                 )
                 flash("Wrong Captcha", "error")
+                RegisterEvent(RegisterEvent.ActionType.catpcha_failed).send()
                 return render_template(
                     "auth/register.html",
                     form=form,
@@ -67,18 +71,24 @@ def register():
                     HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
                 )
 
-        email = sanitize_email(form.email.data)
+        email = canonicalize_email(form.email.data)
         if not email_can_be_used_as_mailbox(email):
             flash("You cannot use this email address as your personal inbox.", "error")
-
+            RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
+        elif check_if_abuser_email(email):
+            flash("The email address provided is banned from registration.", "error")
         else:
-            if personal_email_already_used(email):
+            sanitized_email = sanitize_email(form.email.data)
+            if personal_email_already_used(email) or personal_email_already_used(
+                sanitized_email
+            ):
                 flash(f"Email {email} already used", "error")
+                RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
             else:
                 LOG.d("create user %s", email)
                 user = User.create(
                     email=email,
-                    name="",
+                    name=form.email.data,
                     password=form.password.data,
                     referral=get_referral(),
                 )
@@ -86,8 +96,12 @@ def register():
 
                 try:
                     send_activation_email(user, next_url)
+                    RegisterEvent(RegisterEvent.ActionType.success).send()
+                    DailyMetric.get_or_create_today_metric().nb_new_web_non_proton_user += 1
+                    Session.commit()
                 except Exception:
                     flash("Invalid email, are you sure the email is correct?", "error")
+                    RegisterEvent(RegisterEvent.ActionType.invalid_email).send()
                     return redirect(url_for("auth.register"))
 
                 return render_template("auth/register_waiting_activation.html")
@@ -97,11 +111,15 @@ def register():
         form=form,
         next_url=next_url,
         HCAPTCHA_SITEKEY=HCAPTCHA_SITEKEY,
+        connect_with_proton=CONNECT_WITH_PROTON,
+        connect_with_oidc=config.OIDC_CLIENT_ID is not None,
+        connect_with_oidc_icon=CONNECT_WITH_OIDC_ICON,
     )
 
 
 def send_activation_email(user, next_url):
-    # the activation code is valid for 1h
+    # the activation code is valid for 1h and delete all previous codes
+    Session.query(ActivationCode).filter(ActivationCode.user_id == user.id).delete()
     activation = ActivationCode.create(user_id=user.id, code=random_string(30))
     Session.commit()
 
@@ -111,4 +129,4 @@ def send_activation_email(user, next_url):
         LOG.d("redirect user to %s after activation", next_url)
         activation_link = activation_link + "&next=" + encode_url(next_url)
 
-    email_utils.send_activation_email(user.email, activation_link)
+    email_utils.send_activation_email(user, activation_link)

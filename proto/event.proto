@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package simplelogin_events;
+
+message UserPlanChanged {
+  uint32 plan_end_time = 1;
+  bool lifetime = 2;
+}
+
+message UserDeleted {
+}
+
+message AliasCreated {
+  uint32 id = 1;
+  string email = 2;
+  string note = 3;
+  bool enabled = 4;
+  uint32 created_at = 5;
+}
+
+message AliasStatusChanged {
+  uint32 id = 1;
+  string email = 2;
+  bool enabled = 3;
+  uint32 created_at = 4;
+}
+
+message AliasDeleted {
+  uint32 id = 1;
+  string email = 2;
+}
+
+message AliasCreatedList {
+  repeated AliasCreated events = 1;
+}
+
+message UserUnlinked {
+}
+
+message EventContent {
+  oneof content {
+    UserPlanChanged user_plan_change = 1;
+    UserDeleted user_deleted = 2;
+    AliasCreated alias_created = 3;
+    AliasStatusChanged alias_status_change = 4;
+    AliasDeleted alias_deleted = 5;
+    AliasCreatedList alias_create_list = 6;
+    UserUnlinked user_unlinked = 7;
+  }
+}
+
+message Event {
+  uint32 user_id = 1;
+  string external_user_id = 2;
+  uint32 partner_id = 3;
+  EventContent content = 4;
+}

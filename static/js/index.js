@@ -1,49 +1,5 @@
 $('.mailbox-select').multipleSelect();
 
-function confirmDeleteAlias() {
-  let that = $(this);
-  let alias = that.data("alias-email");
-  let aliasDomainTrashUrl = that.data("custom-domain-trash-url");
-
-  let message = `Maybe you want to disable the alias instead? Please note once deleted, it <b>can't</b> be restored.`;
-  if (aliasDomainTrashUrl !== undefined) {
-    message = `Maybe you want to disable the alias instead? When it's deleted, it's moved to the domain 
-    <a href="${aliasDomainTrashUrl}">trash</a>`;
-  }
-
-  bootbox.dialog({
-    title: `Delete ${alias}`,
-    message: message,
-    size: 'large',
-    onEscape: true,
-    backdrop: true,
-    buttons: {
-      disable: {
-        label: 'Disable it',
-        className: 'btn-primary',
-        callback: function () {
-          that.closest("form").find('input[name="form-name"]').val("disable-alias");
-          that.closest("form").submit();
-        }
-      },
-
-      delete: {
-        label: "Delete it, I don't need it anymore",
-        className: 'btn-outline-danger',
-        callback: function () {
-          that.closest("form").submit();
-        }
-      },
-
-      cancel: {
-        label: 'Cancel',
-        className: 'btn-outline-primary'
-      },
-
-    }
-  });
-}
-
 $(".enable-disable-alias").change(async function () {
   let aliasId = $(this).data("alias");
   let alias = $(this).data("alias-email");
@@ -51,14 +7,19 @@ $(".enable-disable-alias").change(async function () {
   await disableAlias(aliasId, alias);
 });
 
+function getHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "X-Sl-Allowcookies": 'allow',
+  }
+}
+
 async function disableAlias(aliasId, alias) {
   let oldValue;
   try {
     let res = await fetch(`/api/aliases/${aliasId}/toggle`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      }
+      headers: getHeaders()
     });
 
     if (res.ok) {
@@ -94,9 +55,7 @@ $(".enable-disable-pgp").change(async function (e) {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         disable_pgp: oldValue,
       }),
@@ -129,9 +88,7 @@ $(".pin-alias").change(async function () {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+        headers: getHeaders(),
       body: JSON.stringify({
         pinned: newValue,
       }),
@@ -155,43 +112,40 @@ $(".pin-alias").change(async function () {
   }
 });
 
-$(".save-note").on("click", async function () {
-  let oldValue;
-  let aliasId = $(this).data("alias");
-  let note = $(`#note-${aliasId}`).val();
+async function handleNoteChange(aliasId, aliasEmail) {
+  const note = document.getElementById(`note-${aliasId}`).value;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         note: note,
       }),
     });
 
     if (res.ok) {
-      toastr.success(`Saved`);
+      toastr.success(`Description saved for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-      // reset to the original value
-      oldValue = !$(this).prop("checked");
-      $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-    // reset to the original value
-    oldValue = !$(this).prop("checked");
-    $(this).prop("checked", oldValue);
   }
 
-});
+}
 
-$(".save-mailbox").on("click", async function () {
-  let oldValue;
-  let aliasId = $(this).data("alias");
-  let mailbox_ids = $(`#mailbox-${aliasId}`).val();
+function handleNoteFocus(aliasId) {
+  document.getElementById(`note-focus-message-${aliasId}`).classList.remove('d-none');
+}
+
+function handleNoteBlur(aliasId) {
+  document.getElementById(`note-focus-message-${aliasId}`).classList.add('d-none');
+}
+
+async function handleMailboxChange(aliasId, aliasEmail) {
+  const selectedOptions = document.getElementById(`mailbox-${aliasId}`).selectedOptions;
+  const mailbox_ids = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
 
   if (mailbox_ids.length === 0) {
     toastr.error("You must select at least a mailbox", "Error");
@@ -201,48 +155,37 @@ $(".save-mailbox").on("click", async function () {
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         mailbox_ids: mailbox_ids,
       }),
     });
 
     if (res.ok) {
-      toastr.success(`Mailbox Updated`);
+      toastr.success(`Mailbox updated for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-      // reset to the original value
-      oldValue = !$(this).prop("checked");
-      $(this).prop("checked", oldValue);
     }
   } catch (e) {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
-    // reset to the original value
-    oldValue = !$(this).prop("checked");
-    $(this).prop("checked", oldValue);
   }
 
-});
+}
 
-$(".save-alias-name").on("click", async function () {
-  let aliasId = $(this).data("alias");
-  let name = $(`#alias-name-${aliasId}`).val();
+async function handleDisplayNameChange(aliasId, aliasEmail) {
+  const name = document.getElementById(`alias-name-${aliasId}`).value;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify({
         name: name,
       }),
     });
 
     if (res.ok) {
-      toastr.success(`Alias Name Saved`);
+      toastr.success(`Display name saved for ${aliasEmail}`);
     } else {
       toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
     }
@@ -250,24 +193,41 @@ $(".save-alias-name").on("click", async function () {
     toastr.error("Sorry for the inconvenience! Could you refresh the page & retry please?", "Unknown Error");
   }
 
-});
+}
 
+function handleDisplayNameFocus(aliasId) {
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.remove('d-none');
+}
+
+function handleDisplayNameBlur(aliasId) {
+  document.getElementById(`display-name-focus-message-${aliasId}`).classList.add('d-none');
+}
 
 new Vue({
   el: '#filter-app',
   delimiters: ["[[", "]]"], // necessary to avoid conflict with jinja
   data: {
-    showFilter: false
+    showFilter: false,
+    showStats: false
   },
   methods: {
     async toggleFilter() {
       let that = this;
       that.showFilter = !that.showFilter;
       store.set('showFilter', that.showFilter);
+    },
+
+    async toggleStats() {
+      let that = this;
+      that.showStats = !that.showStats;
+      store.set('showStats', that.showStats);
     }
   },
   async mounted() {
     if (store.get("showFilter"))
       this.showFilter = true;
+
+    if (store.get("showStats"))
+      this.showStats = true;
   }
 });

@@ -1,52 +1,48 @@
 {% extends "single.html" %}
 
-
-{% block title %}
-  Social Login
-{% endblock %}
-
-
+{% block title %}Social Login{% endblock %}
 {% block single_content %}
+
   <div class="card">
     <div class="card-body p-6">
-      <div class="card-title text-center">Social login
-      </div>
-
+      <div class="card-title text-center">Social login</div>
       {% if GITHUB_CLIENT_ID %}
-      <a href="{{ url_for('auth.github_login', next=next_url) }}"
-         class="btn btn-block btn-social btn-github">
-        <i class="fa fa-github"></i> Sign in with GitHub
-      </a>
-      {% endif %}
 
+        <a href="{{ url_for('auth.github_login', next=next_url) }}"
+           class="btn btn-block btn-social btn-github">
+          <i class="fa fa-github"></i> Sign in with GitHub
+        </a>
+      {% endif %}
       {% if GOOGLE_CLIENT_ID %}
-      <a href="{{ url_for('auth.google_login', next=next_url) }}"
-         class="btn btn-block btn-social btn-google">
-        <i class="fa fa-google"></i> Sign in with Google
-      </a>
-      {% endif %}
 
+        <a href="{{ url_for('auth.google_login', next=next_url) }}"
+           class="btn btn-block btn-social btn-google">
+          <i class="fa fa-google"></i> Sign in with Google
+        </a>
+      {% endif %}
       {% if FACEBOOK_CLIENT_ID %}
-      <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
-         class="btn btn-block btn-social btn-facebook">
-        <i class="fa fa-facebook"></i> Sign in with Facebook
-      </a>
+
+        <a href="{{ url_for('auth.facebook_login', next=next_url) }}"
+           class="btn btn-block btn-social btn-facebook">
+          <i class="fa fa-facebook"></i> Sign in with Facebook
+        </a>
       {% endif %}
     </div>
-    <div class="text-center p-3" style="font-size: 12px; font-weight: 300; margin: auto">
+    <div class="text-center p-3"
+         style="font-size: 12px;
+                font-weight: 300;
+                margin: auto">
       <span class="badge badge-warning">Warning</span>
-      Please note that social login is now <b>deprecated</b>. <br><br>
-
+      Please note that social login is now <b>deprecated</b>.
+      <br />
+      <br />
       Though practical, these social providers do not respect your privacy and therefore we recommend using
       email/password.
     </div>
   </div>
-
   <div class="text-center text-muted mt-2">
-    <a href="{{ url_for('auth.register') }}">Sign up</a> / <a href="{{ url_for('auth.login') }}">Login</a>
+    <a href="{{ url_for("auth.register") }}">Sign up</a>
+    /
+    <a href="{{ url_for("auth.login") }}">Login</a>
   </div>
-
-
-
-
 {% endblock %}

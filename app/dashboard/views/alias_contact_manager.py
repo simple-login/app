@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from operator import or_
+from typing import Optional
 
 from flask import render_template, request, redirect, flash
 from flask import url_for
@@ -8,17 +9,22 @@ from flask_wtf import FlaskForm
 from sqlalchemy import and_, func, case
 from wtforms import StringField, validators, ValidationError
 
-from app.config import PAGE_LIMIT
+# Need to import directly from config to allow modification from the tests
+from app import config, parallel_limiter, contact_utils
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
+from app.contact_utils import ContactCreateError
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.email_utils import (
-    is_valid_email,
-    generate_reply_email,
-    parse_full_address,
+from app.email_validation import is_valid_email
+from app.errors import (
+    CannotCreateContactForReverseAlias,
+    ErrContactErrorUpgradeNeeded,
+    ErrAddressInvalid,
+    ErrContactAlreadyExists,
 )
-from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Alias, Contact, EmailLog
+from app.utils import CSRFValidationForm
 
 
 def email_validator():
@@ -42,6 +48,37 @@ def email_validator():
             raise ValidationError(message)
 
     return _check
+
+
+def create_contact(alias: Alias, contact_address: str) -> Contact:
+    """
+    Create a contact for a user. Can be restricted for new free users by enabling DISABLE_CREATE_CONTACTS_FOR_FREE_USERS.
+    Can throw exceptions:
+     - ErrAddressInvalid
+     - ErrContactAlreadyExists
+     - ErrContactUpgradeNeeded - If DISABLE_CREATE_CONTACTS_FOR_FREE_USERS this exception will be raised for new free users
+    """
+    if not contact_address:
+        raise ErrAddressInvalid("Empty address")
+    output = contact_utils.create_contact(email=contact_address, alias=alias)
+    if output.error == ContactCreateError.InvalidEmail:
+        raise ErrAddressInvalid(contact_address)
+    elif output.error == ContactCreateError.NotAllowed:
+        raise ErrContactErrorUpgradeNeeded()
+    elif output.error is not None:
+        raise ErrAddressInvalid("Invalid address")
+    elif not output.created:
+        raise ErrContactAlreadyExists(output.contact)
+
+    contact = output.contact
+    LOG.d(
+        "create reverse-alias for %s %s, reverse alias:%s",
+        contact_address,
+        alias,
+        contact.reply_email,
+    )
+
+    return contact
 
 
 class NewContactForm(FlaskForm):
@@ -135,7 +172,11 @@ def get_contact_infos(
         ],
         else_=Contact.created_at,
     )
-    q = q.order_by(latest_activity.desc()).limit(PAGE_LIMIT).offset(page * PAGE_LIMIT)
+    q = (
+        q.order_by(latest_activity.desc())
+        .limit(config.PAGE_LIMIT)
+        .offset(page * config.PAGE_LIMIT)
+    )
 
     ret = []
     for contact, latest_email_log, nb_reply, nb_forward in q:
@@ -150,18 +191,46 @@ def get_contact_infos(
     return ret
 
 
-@dashboard_bp.route("/alias_contact_manager/<alias_id>/", methods=["GET", "POST"])
+def delete_contact(alias: Alias, contact_id: int):
+    contact: Optional[Contact] = Contact.get(contact_id)
+
+    if not contact:
+        flash("Unknown error. Refresh the page", "warning")
+    elif contact.alias_id != alias.id:
+        flash("You cannot delete reverse-alias", "warning")
+    else:
+        delete_contact_email = contact.website_email
+        emit_alias_audit_log(
+            alias=alias,
+            action=AliasAuditLogAction.DeleteContact,
+            message=f"Delete contact {contact_id} ({contact.email})",
+        )
+        Contact.delete(contact_id)
+        Session.commit()
+
+        flash(f"Reverse-alias for {delete_contact_email} has been deleted", "success")
+
+
+@dashboard_bp.route("/alias_contact_manager/<int:alias_id>/", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(name="contact_creation")
 def alias_contact_manager(alias_id):
     highlight_contact_id = None
     if request.args.get("highlight_contact_id"):
-        highlight_contact_id = int(request.args.get("highlight_contact_id"))
+        try:
+            highlight_contact_id = int(request.args.get("highlight_contact_id"))
+        except ValueError:
+            flash("Invalid contact id", "error")
+            return redirect(url_for("dashboard.index"))
 
     alias = Alias.get(alias_id)
 
     page = 0
     if request.args.get("page"):
-        page = int(request.args.get("page"))
+        try:
+            page = int(request.args.get("page"))
+        except ValueError:
+            pass
 
     query = request.args.get("query") or ""
 
@@ -175,49 +244,26 @@ def alias_contact_manager(alias_id):
         return redirect(url_for("dashboard.index"))
 
     new_contact_form = NewContactForm()
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create":
             if new_contact_form.validate():
-                contact_addr = new_contact_form.email.data.strip()
-
+                contact_address = new_contact_form.email.data.strip()
                 try:
-                    contact_name, contact_email = parse_full_address(contact_addr)
-                except Exception:
-                    flash(f"{contact_addr} is invalid", "error")
+                    contact = create_contact(alias, contact_address)
+                except (
+                    ErrContactErrorUpgradeNeeded,
+                    ErrAddressInvalid,
+                    ErrContactAlreadyExists,
+                    CannotCreateContactForReverseAlias,
+                ) as excp:
+                    flash(excp.error_for_user(), "error")
                     return redirect(request.url)
-
-                if not is_valid_email(contact_email):
-                    flash(f"{contact_email} is invalid", "error")
-                    return redirect(request.url)
-
-                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
-                # already been added
-                if contact:
-                    flash(f"{contact_email} is already added", "error")
-                    return redirect(request.url)
-
-                try:
-                    contact = Contact.create(
-                        user_id=alias.user_id,
-                        alias_id=alias.id,
-                        website_email=contact_email,
-                        name=contact_name,
-                        reply_email=generate_reply_email(contact_email, current_user),
-                    )
-                except CannotCreateContactForReverseAlias:
-                    flash("You can't create contact for a reverse alias", "error")
-                    return redirect(request.url)
-
-                LOG.d(
-                    "create reverse-alias for %s %s, reverse alias:%s",
-                    contact_addr,
-                    alias,
-                    contact.reply_email,
-                )
-                Session.commit()
-                flash(f"Reverse alias for {contact_addr} is created", "success")
-
+                flash(f"Reverse alias for {contact_address} is created", "success")
                 return redirect(
                     url_for(
                         "dashboard.alias_contact_manager",
@@ -227,27 +273,7 @@ def alias_contact_manager(alias_id):
                 )
         elif request.form.get("form-name") == "delete":
             contact_id = request.form.get("contact-id")
-            contact = Contact.get(contact_id)
-
-            if not contact:
-                flash("Unknown error. Refresh the page", "warning")
-                return redirect(
-                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
-                )
-            elif contact.alias_id != alias.id:
-                flash("You cannot delete reverse-alias", "warning")
-                return redirect(
-                    url_for("dashboard.alias_contact_manager", alias_id=alias_id)
-                )
-
-            delete_contact_email = contact.website_email
-            Contact.delete(contact_id)
-            Session.commit()
-
-            flash(
-                f"Reverse-alias for {delete_contact_email} has been deleted", "success"
-            )
-
+            delete_contact(alias, contact_id)
             return redirect(
                 url_for("dashboard.alias_contact_manager", alias_id=alias_id)
             )
@@ -264,7 +290,7 @@ def alias_contact_manager(alias_id):
             )
 
     contact_infos = get_contact_infos(alias, page, query=query)
-    last_page = len(contact_infos) < PAGE_LIMIT
+    last_page = len(contact_infos) < config.PAGE_LIMIT
     nb_contact = Contact.filter(Contact.alias_id == alias.id).count()
 
     # if highlighted contact isn't included, fetch it
@@ -286,4 +312,6 @@ def alias_contact_manager(alias_id):
         last_page=last_page,
         query=query,
         nb_contact=nb_contact,
+        can_create_contacts=current_user.can_create_contacts(),
+        csrf_form=csrf_form,
     )

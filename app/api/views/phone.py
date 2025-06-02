@@ -9,7 +9,7 @@ from app.models import (
 )
 
 
-@api_bp.route("/phone/reservations/<reservation_id>", methods=["GET", "POST"])
+@api_bp.route("/phone/reservations/<int:reservation_id>", methods=["GET", "POST"])
 @require_api_auth
 def phone_messages(reservation_id):
     """

@@ -11,7 +11,7 @@ Chrome: https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmg
 
 Firefox: https://addons.mozilla.org/firefox/addon/simplelogin/
 
-Safari: https://apps.apple.com/app/id1494051017
+Safari: https://apps.apple.com/app/id6475835429
 
 You can also manage your aliases using SimpleLogin mobile apps, available at
 - Play Store https://play.google.com/store/apps/details?id=io.simplelogin.android

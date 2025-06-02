@@ -4,9 +4,10 @@ from wtforms import StringField, validators
 
 from app.auth.base import auth_bp
 from app.auth.views.register import send_activation_email
+from app.extensions import limiter
 from app.log import LOG
 from app.models import User
-from app.utils import sanitize_email
+from app.utils import sanitize_email, canonicalize_email
 
 
 class ResendActivationForm(FlaskForm):
@@ -14,11 +15,14 @@ class ResendActivationForm(FlaskForm):
 
 
 @auth_bp.route("/resend_activation", methods=["GET", "POST"])
+@limiter.limit("10/hour")
 def resend_activation():
     form = ResendActivationForm(request.form)
 
     if form.validate_on_submit():
-        user = User.filter_by(email=sanitize_email(form.email.data)).first()
+        email = sanitize_email(form.email.data)
+        canonical_email = canonicalize_email(email)
+        user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
         if not user:
             flash("There is no such email", "warning")

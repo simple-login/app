@@ -1,34 +1,35 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Download SimpleLogin browser extensions and mobile apps to create aliases on-the-fly.
-    </h1>
+    <h1>Download SimpleLogin browser extensions and mobile apps to create aliases on-the-fly.</h1>
   {% endcall %}
 
   {% call text() %}
     If you want to quickly create aliases <b>without</b> going to SimpleLogin website, you can do that with SimpleLogin
     <a href="https://chrome.google.com/webstore/detail/dphilobhebphkdjbpfohgikllaljmgbn">Chrome</a>
     (or other Chromium-based browsers like Brave or Vivaldi),
-    <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox</a> and
-    <a href="https://apps.apple.com/app/id1494051017
-">Safari</a> extension.
+    <a href="https://addons.mozilla.org/firefox/addon/simplelogin/">Firefox</a>
+    and
+    <a href="https://apps.apple.com/app/id6475835429 ">Safari</a>
+    extension.
   {% endcall %}
 
   {% call text() %}
     You can also manage your aliases using SimpleLogin
     <a href="https://play.google.com/store/apps/details?id=io.simplelogin.android">Android App</a>
-    or <a href="https://apps.apple.com/app/id1494359858">iOS app</a>.
+    or
+    <a href="https://apps.apple.com/app/id1494359858">iOS app</a>
+    .
   {% endcall %}
 
-  <img src="https://simplelogin.io/images/everywhere.png" alt="Available Everywhere"
-       style="max-width: 100%;">
-
-
+  <img src="https://simplelogin.io/images/everywhere.png"
+       alt="Available Everywhere"
+       style="max-width: 100%">
 {% endblock %}
-
 {% block footer %}
+
   This email is sent to {{ to_email }} and is part of our onboarding series. Unsubscribe on
   <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}

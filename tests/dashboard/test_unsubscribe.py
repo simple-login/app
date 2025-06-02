@@ -1,3 +1,4 @@
+from app.db import Session
 from app.models import (
     Alias,
     Contact,
@@ -6,8 +7,9 @@ from tests.utils import login
 
 
 def test_disable_alias(flask_client):
-    login(flask_client)
-    alias = Alias.first()
+    user = login(flask_client)
+    alias = Alias.create_new_random(user)
+    Session.commit()
 
     assert alias.enabled
     flask_client.post(f"/dashboard/unsubscribe/{alias.id}")

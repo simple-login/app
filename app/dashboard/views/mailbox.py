@@ -1,23 +1,23 @@
-import arrow
+import base64
+import binascii
+import json
+from typing import Optional
+
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from itsdangerous import Signer
-from wtforms import validators
+from itsdangerous import TimestampSigner
+from wtforms import validators, IntegerField
 from wtforms.fields.html5 import EmailField
 
-from app.config import MAILBOX_SECRET, URL, JOB_DELETE_MAILBOX
+from app import parallel_limiter, mailbox_utils, user_settings
+from app.config import MAILBOX_SECRET
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.email_utils import (
-    email_can_be_used_as_mailbox,
-    mailbox_already_used,
-    render,
-    send_email,
-    is_valid_email,
-)
 from app.log import LOG
-from app.models import Mailbox, Job
+from app.models import Mailbox
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.utils import CSRFValidationForm
 
 
 class NewMailboxForm(FlaskForm):
@@ -26,8 +26,16 @@ class NewMailboxForm(FlaskForm):
     )
 
 
+class DeleteMailboxForm(FlaskForm):
+    mailbox_id = IntegerField(
+        validators=[validators.DataRequired()],
+    )
+    transfer_mailbox_id = IntegerField()
+
+
 @dashboard_bp.route("/mailbox", methods=["GET", "POST"])
 @login_required
+@parallel_limiter.lock(only_when=lambda: request.method == "POST")
 def mailbox_route():
     mailboxes = (
         Mailbox.filter_by(user_id=current_user.id)
@@ -36,169 +44,138 @@ def mailbox_route():
     )
 
     new_mailbox_form = NewMailboxForm()
+    csrf_form = CSRFValidationForm()
+    delete_mailbox_form = DeleteMailboxForm()
 
     if request.method == "POST":
         if request.form.get("form-name") == "delete":
-            mailbox_id = request.form.get("mailbox-id")
-            mailbox = Mailbox.get(mailbox_id)
-
-            if not mailbox or mailbox.user_id != current_user.id:
-                flash("Unknown error. Refresh the page", "warning")
+            if not delete_mailbox_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            try:
+                mailbox = mailbox_utils.delete_mailbox(
+                    current_user,
+                    delete_mailbox_form.mailbox_id.data,
+                    delete_mailbox_form.transfer_mailbox_id.data,
+                )
+            except mailbox_utils.MailboxError as e:
+                flash(e.msg, "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
-
-            if mailbox.id == current_user.default_mailbox_id:
-                flash("You cannot delete default mailbox", "error")
-                return redirect(url_for("dashboard.mailbox_route"))
-
-            # Schedule delete account job
-            LOG.w("schedule delete mailbox job for %s", mailbox)
-            Job.create(
-                name=JOB_DELETE_MAILBOX,
-                payload={"mailbox_id": mailbox.id},
-                run_at=arrow.now(),
-                commit=True,
-            )
-
             flash(
                 f"Mailbox {mailbox.email} scheduled for deletion."
                 f"You will receive a confirmation email when the deletion is finished",
                 "success",
             )
-
             return redirect(url_for("dashboard.mailbox_route"))
+
         if request.form.get("form-name") == "set-default":
-            mailbox_id = request.form.get("mailbox-id")
-            mailbox = Mailbox.get(mailbox_id)
-
-            if not mailbox or mailbox.user_id != current_user.id:
-                flash("Unknown error. Refresh the page", "warning")
+            if not csrf_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            try:
+                mailbox_id = request.form.get("mailbox_id")
+                mailbox = user_settings.set_default_mailbox(current_user, mailbox_id)
+            except user_settings.CannotSetMailbox as e:
+                flash(e.msg, "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            if mailbox.id == current_user.default_mailbox_id:
-                flash("This mailbox is already default one", "error")
-                return redirect(url_for("dashboard.mailbox_route"))
-
-            if not mailbox.verified:
-                flash("Cannot set unverified mailbox as default", "error")
-                return redirect(url_for("dashboard.mailbox_route"))
-
-            current_user.default_mailbox_id = mailbox.id
-            Session.commit()
             flash(f"Mailbox {mailbox.email} is set as Default Mailbox", "success")
 
             return redirect(url_for("dashboard.mailbox_route"))
 
         elif request.form.get("form-name") == "create":
-            if not current_user.is_premium():
-                flash("Only premium plan can add additional mailbox", "warning")
+            if not new_mailbox_form.validate():
+                flash("Invalid request", "warning")
+                return redirect(request.url)
+            mailbox_email = new_mailbox_form.email.data.lower().strip().replace(" ", "")
+            try:
+                mailbox = mailbox_utils.create_mailbox(
+                    current_user, mailbox_email
+                ).mailbox
+            except mailbox_utils.MailboxError as e:
+                flash(e.msg, "warning")
                 return redirect(url_for("dashboard.mailbox_route"))
 
-            if new_mailbox_form.validate():
-                mailbox_email = (
-                    new_mailbox_form.email.data.lower().strip().replace(" ", "")
+            flash(
+                f"You are going to receive an email to confirm {mailbox.email}.",
+                "success",
+            )
+
+            return redirect(
+                url_for(
+                    "dashboard.mailbox_detail_route",
+                    mailbox_id=mailbox.id,
                 )
-
-                if not is_valid_email(mailbox_email):
-                    flash(f"{mailbox_email} invalid", "error")
-                elif mailbox_already_used(mailbox_email, current_user):
-                    flash(f"{mailbox_email} already used", "error")
-                elif not email_can_be_used_as_mailbox(mailbox_email):
-                    flash(f"You cannot use {mailbox_email}.", "error")
-                else:
-                    new_mailbox = Mailbox.create(
-                        email=mailbox_email, user_id=current_user.id
-                    )
-                    Session.commit()
-
-                    send_verification_email(current_user, new_mailbox)
-
-                    flash(
-                        f"You are going to receive an email to confirm {mailbox_email}.",
-                        "success",
-                    )
-
-                    return redirect(
-                        url_for(
-                            "dashboard.mailbox_detail_route", mailbox_id=new_mailbox.id
-                        )
-                    )
+            )
 
     return render_template(
         "dashboard/mailbox.html",
         mailboxes=mailboxes,
         new_mailbox_form=new_mailbox_form,
-    )
-
-
-def delete_mailbox(mailbox_id: int):
-    from server import create_light_app
-
-    with create_light_app().app_context():
-        mailbox = Mailbox.get(mailbox_id)
-        if not mailbox:
-            return
-
-        mailbox_email = mailbox.email
-        user = mailbox.user
-
-        Mailbox.delete(mailbox_id)
-        Session.commit()
-        LOG.d("Mailbox %s %s deleted", mailbox_id, mailbox_email)
-
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases are deleted successfully.
-
-Regards,
-SimpleLogin team.
-        """,
-        )
-
-
-def send_verification_email(user, mailbox):
-    s = Signer(MAILBOX_SECRET)
-    mailbox_id_signed = s.sign(str(mailbox.id)).decode()
-    verification_url = (
-        URL + "/dashboard/mailbox_verify" + f"?mailbox_id={mailbox_id_signed}"
-    )
-    send_email(
-        mailbox.email,
-        f"Please confirm your email {mailbox.email}",
-        render(
-            "transactional/verify-mailbox.txt",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-        ),
-        render(
-            "transactional/verify-mailbox.html",
-            user=user,
-            link=verification_url,
-            mailbox_email=mailbox.email,
-        ),
+        delete_mailbox_form=delete_mailbox_form,
+        csrf_form=csrf_form,
     )
 
 
 @dashboard_bp.route("/mailbox_verify")
+@login_required
 def mailbox_verify():
-    s = Signer(MAILBOX_SECRET)
     mailbox_id = request.args.get("mailbox_id")
+    if not mailbox_id:
+        LOG.i("Missing mailbox_id")
+        flash("You followed an invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+
+    code = request.args.get("code")
+    if not code:
+        # Old way
+        return verify_with_signed_secret(mailbox_id)
 
     try:
-        r_id = int(s.unsign(mailbox_id))
+        mailbox = mailbox_utils.verify_mailbox_code(current_user, mailbox_id, code)
+    except mailbox_utils.MailboxError as e:
+        LOG.i(f"Cannot verify mailbox {mailbox_id} because of {e}")
+        flash(f"Cannot verify mailbox: {e.msg}", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    LOG.d("Mailbox %s is verified", mailbox)
+    return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
+
+
+def verify_with_signed_secret(request: str):
+    s = TimestampSigner(MAILBOX_SECRET)
+    mailbox_verify_request = request.args.get("mailbox_id")
+    try:
+        mailbox_raw_data = s.unsign(mailbox_verify_request, max_age=900)
     except Exception:
         flash("Invalid link. Please delete and re-add your mailbox", "error")
         return redirect(url_for("dashboard.mailbox_route"))
-    else:
-        mailbox = Mailbox.get(r_id)
-        if not mailbox:
-            flash("Invalid link", "error")
-            return redirect(url_for("dashboard.mailbox_route"))
+    try:
+        decoded_data = base64.urlsafe_b64decode(mailbox_raw_data)
+    except binascii.Error:
+        flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_data = json.loads(decoded_data)
+    if not isinstance(mailbox_data, list) or len(mailbox_data) != 2:
+        flash("Invalid link. Please delete and re-add your mailbox", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_id = mailbox_data[0]
+    mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
+    if not mailbox:
+        flash("Invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+    mailbox_email = mailbox_data[1]
+    if mailbox_email != mailbox.email:
+        flash("Invalid link", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
 
-        mailbox.verified = True
-        Session.commit()
+    mailbox.verified = True
+    emit_user_audit_log(
+        user=current_user,
+        action=UserAuditLogAction.VerifyMailbox,
+        message=f"Verified mailbox {mailbox.id} ({mailbox.email})",
+    )
+    Session.commit()
 
-        LOG.d("Mailbox %s is verified", mailbox)
+    LOG.d("Mailbox %s is verified", mailbox)
 
-        return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)
+    return render_template("dashboard/mailbox_validation.html", mailbox=mailbox)

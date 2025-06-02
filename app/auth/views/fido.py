@@ -1,5 +1,6 @@
 import json
 import secrets
+from time import time
 
 import webauthn
 from flask import (
@@ -61,7 +62,7 @@ def fido():
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
             login_user(user)
-            flash(f"Welcome back!", "success")
+            flash("Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
         else:
@@ -107,8 +108,9 @@ def fido():
             Session.commit()
             del session[MFA_USER_ID]
 
+            session["sudo_time"] = int(time())
             login_user(user)
-            flash(f"Welcome back!", "success")
+            flash("Welcome back!", "success")
 
             # Redirect user to correct page
             response = make_response(redirect(next_url or url_for("dashboard.index")))
@@ -153,6 +155,13 @@ def fido():
         webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
+    try:
+        # HACK: We need to upgrade to webauthn > 1 so it can support specifying the transports
+        for credential in webauthn_assertion_options["allowCredentials"]:
+            del credential["transports"]
+    except KeyError:
+        # Should never happen but...
+        pass
 
     return render_template(
         "auth/fido.html",

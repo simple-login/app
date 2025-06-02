@@ -1,10 +1,9 @@
-{% extends 'default.html' %}
-{% set active_page = "setting" %}
-{% block title %}
-  Recovery Codes
-{% endblock %}
+{% extends "default.html" %}
 
+{% set active_page = "setting" %}
+{% block title %}Recovery Codes{% endblock %}
 {% block default_content %}
+
   <div class="card">
     <div class="card-body">
       <h1 class="h3">Recovery codes</h1>
@@ -13,34 +12,15 @@
         your account again.
         Each code can only be used once, make sure to store them in a safe place.
       </p>
-
+      <p class="alert alert-warning">
+        <strong>
+          If you had recovery codes before, they have been invalidated.
+          Store these codes in a safe place. You won't be able to retrieve them again!
+        </strong>
+      </p>
       <ul>
-        {% for recovery_code in recovery_codes %}
-          {% if recovery_code.used %}
-            <li>
-              <span style="text-decoration: line-through">{{ recovery_code.code }}</span>.
-              Used {{ recovery_code.used_at | dt }}.
-            </li>
-          {% else %}
-            <li>
-              {{ recovery_code.code }}
-            </li>
-          {% endif %}
-        {% endfor %}
+        {% for recovery_code in recovery_codes %}<li>{{ recovery_code }}</li>{% endfor %}
       </ul>
-
-      <form method="post" class="mt-6">
-        <input type="submit" class="btn btn-outline-primary" value="Generate New Codes">
-      </form>
-      <div class="small-text">
-        Warning: Generating new codes will invalidate the older ones.
-      </div>
-
-    <hr>
-
-      <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-lg"> Back to the home page </a>
-
-
     </div>
   </div>
 {% endblock %}

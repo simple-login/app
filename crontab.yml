@@ -5,64 +5,113 @@ jobs:
     schedule: "0 0 * * *"
     captureStderr: true
 
-  - name: SimpleLogin Notify Trial Ends
-    command: python /code/cron.py -j notify_trial_end
-    shell: /bin/bash
-    schedule: "0 8 * * *"
-    captureStderr: true
-
-  - name: SimpleLogin Notify Manual Subscription Ends
-    command: python /code/cron.py -j notify_manual_subscription_end
-    shell: /bin/bash
-    schedule: "0 9 * * *"
-    captureStderr: true
-
-  - name: SimpleLogin Notify Premium Ends
-    command: python /code/cron.py -j notify_premium_end
-    shell: /bin/bash
-    schedule: "0 10 * * *"
-    captureStderr: true
-
-  - name: SimpleLogin Delete Logs
-    command: python /code/cron.py -j delete_logs
-    shell: /bin/bash
-    schedule: "0 11 * * *"
-    captureStderr: true
-
-  - name: SimpleLogin Poll Apple Subscriptions
-    command: python /code/cron.py -j poll_apple_subscription
-    shell: /bin/bash
-    schedule: "0 12 * * *"
-    captureStderr: true
-
-  - name: SimpleLogin Sanity Check
-    command: python /code/cron.py -j sanity_check
-    shell: /bin/bash
-    schedule: "0 2 * * *"
-    captureStderr: true
-
   - name: SimpleLogin Delete Old Monitoring records
     command: python /code/cron.py -j delete_old_monitoring
     shell: /bin/bash
-    schedule: "0 14 * * *"
+    schedule: "15 1 * * *"
     captureStderr: true
 
   - name: SimpleLogin Custom Domain check
     command: python /code/cron.py -j check_custom_domain
     shell: /bin/bash
-    schedule: "0 15 * * *"
+    schedule: "15 */4 * * *"
     captureStderr: true
+    concurrencyPolicy: Forbid
+    onFailure:
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
   - name: SimpleLogin HIBP check
     command: python /code/cron.py -j check_hibp
     shell: /bin/bash
-    schedule: "0 18 * * *"
+    schedule: "13 */4 * * *"
     captureStderr: true
     concurrencyPolicy: Forbid
+    onFailure:
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
   - name: SimpleLogin Notify HIBP breaches
     command: python /code/cron.py -j notify_hibp
     shell: /bin/bash
-    schedule: "0 19 * * *"
+    schedule: "15 4 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+
+  - name: SimpleLogin Delete Logs
+    command: python /code/cron.py -j delete_logs
+    shell: /bin/bash
+    schedule: "15 5 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Delete Old data
+    command: python /code/cron.py -j delete_old_data
+    shell: /bin/bash
+    schedule: "30 5 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Poll Apple Subscriptions
+    command: python /code/cron.py -j poll_apple_subscription
+    shell: /bin/bash
+    schedule: "15 6 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Notify Trial Ends
+    command: python /code/cron.py -j notify_trial_end
+    shell: /bin/bash
+    schedule: "15 8 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Notify Manual Subscription Ends
+    command: python /code/cron.py -j notify_manual_subscription_end
+    shell: /bin/bash
+    schedule: "15 9 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin Notify Premium Ends
+    command: python /code/cron.py -j notify_premium_end
+    shell: /bin/bash
+    schedule: "15 10 * * *"
+    captureStderr: true
+
+  - name: SimpleLogin delete users scheduled to be deleted
+    command: python /code/cron.py -j delete_scheduled_users
+    shell: /bin/bash
+    schedule: "15 11 * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin send unsent emails
+    command: python /code/cron.py -j send_undelivered_mails
+    shell: /bin/bash
+    schedule: "*/5 * * * *"
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear alias_audit_log old entries
+    command: python /code/cron.py -j clear_alias_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear user_audit_log old entries
+    command: python /code/cron.py -j clear_user_audit_log
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear alias pending to be deleted
+    command: python /code/cron.py -j clear_alias_delete_on
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
     captureStderr: true
     concurrencyPolicy: Forbid

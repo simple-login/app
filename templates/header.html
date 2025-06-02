@@ -1,86 +1,98 @@
 <div class="header">
   <div class="container">
     <div class="d-flex">
-      <a class="header-brand" href="{{ url_for('dashboard.index') }}">
-        <img src="/static/logo.svg" class="header-brand-img" style="max-width: 8rem" alt="logo">
+      <a class="header-brand" href="{{ url_for("dashboard.index") }}">
+        <picture>
+          <source media="(max-width: 650px)" srcset="/static/logo-without-text.svg">
+          <img src="/static/logo.svg"
+               class="header-brand-img"
+               style="max-width: 8rem"
+               alt="logo">
+        </picture>
       </a>
-
       <div class="d-flex order-lg-2 ml-auto">
-        <div class="nav-item" data-toggle="dark-mode" title='Toggle bright/dark mode'>
+        <div class="nav-item"
+             data-toggle="dark-mode"
+             title="Toggle bright/dark mode">
           <i class="fe fe-moon"></i>
         </div>
-
-
         <div class="nav-item">
-
-          <a onclick="startIntro()"
-             data-intro="Welcome to SimpleLogin! <br><br>
-  It seems that this is the first time you are here,
-  let's walk through some SimpleLogin features together! <br><br>
-             You can always show this tutorial again any time by clicking on this <i class='fe fe-help-circle'></i> icon above 👆"
-             data-step="1"
-          ><i class="fe fe-help-circle"></i></a>
+          <a onclick="startIntro()" data-intro="Welcome to SimpleLogin!
+            <br />
+            <br />
+            It seems that this is the first time you are here, let's walk through some SimpleLogin features together!
+            <br />
+            <br />
+            You can always show this tutorial again any time by clicking on this <i class=&quot;fe fe-help-circle&quot;></i> icon above 👆" data-step="1">
+            <i class="fe fe-help-circle"></i>
+          </a>
         </div>
-
-
-        <div id="notification-app" class="dropdown d-none d-md-flex" v-if="showNotification">
-          <a class="nav-link icon" data-toggle="collapse" href="#notifications" style="height: 100%">
+        <div id="notification-app"
+             class="dropdown d-none d-md-flex"
+             v-if="showNotification">
+          <a class="nav-link icon"
+             data-toggle="collapse"
+             href="#notifications"
+             style="height: 100%">
             <i class="fe fe-bell"></i>
             <span v-if="has_non_read_notification" class="nav-unread"></span>
             <span v-else class="nav-read"></span>
           </a>
-
-          <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse" id="notifications">
+          <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow collapse"
+               id="notifications">
             <div v-if="loading">Loading ...</div>
-            <a href="{{ url_for('dashboard.notifications_route') }}" class="mr-5 mb-2 float-right">
-              See all notifications ➡
-            </a>
-
+            <a href="{{ url_for("dashboard.notifications_route") }}"
+               class="mr-5 mb-2 float-right">See all notifications ➡</a>
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
-
                 <div v-html="notification.title || notification.message"
                      :class="!notification.read && 'font-weight-bold'"
-                     style="width: 40em; word-wrap:break-word; white-space: normal; overflow: hidden;"></div>
-
-
+                     style="width: 40em;
+                            word-wrap:break-word;
+                            white-space: normal;
+                            overflow: hidden"></div>
                 <div v-if="notification.title">
                   <a :href="'/dashboard/notification/' + notification.id">More</a>
                 </div>
-
-
-                <div class="small text-muted">
-                  [[notification.created_at]]
-                </div>
+                <div class="small text-muted">[[notification.created_at]]</div>
               </div>
-
               <div v-if="!notification.read">
                 <i class="fe fe-check"
                    @click="markAsRead(notification)"
-                   data-toggle="tooltip" title="mark as read"></i>
+                   data-toggle="tooltip"
+                   title="mark as read"></i>
               </div>
             </div>
-
             <div class="text-center">
               <button v-if="canLoadMore" @click="loadMore()" class="btn btn-link">Load more</button>
             </div>
-
           </div>
-
         </div>
-
         {% if ZENDESK_ENABLED %}
-          <div class="dropdown nav-item d-flex align-items-center">
+
+          <div id="help-btn" class="dropdown nav-item align-items-center">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Help</a>
             <div class="dropdown-menu dropdown-menu-left dropdown-menu-arrow">
               <div class="dropdown-item">
-                <a href="https://simplelogin.io/docs/" target="_blank">
+                <a href="https://simplelogin.io/docs/"
+                   target="_blank"
+                   rel="noopener noreferrer">
                   Docs
                   <i class="fa fa-external-link" aria-hidden="true"></i>
                 </a>
               </div>
               <div class="dropdown-item">
-                <a href="https://github.com/simple-login/app/discussions" target="_blank">
+                <a href="https://github.com/simple-login/app/"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Github repo
+                  <i class="fa fa-external-link" aria-hidden="true"></i>
+                </a>
+              </div>
+              <div class="dropdown-item">
+                <a href="https://github.com/simple-login/app/discussions"
+                   target="_blank"
+                   rel="noopener noreferrer">
                   Forum
                   <i class="fa fa-external-link" aria-hidden="true"></i>
                 </a>
@@ -92,73 +104,75 @@
           </div>
         {% else %}
           <div class="nav-item">
-            <a href="https://simplelogin.io/docs/" target="_blank">
+            <a href="https://simplelogin.io/docs/"
+               target="_blank"
+               rel="noopener noreferrer">
               Docs
               <i class="fa fa-external-link" aria-hidden="true"></i>
             </a>
-
           </div>
         {% endif %}
-
         {% if current_user.should_show_upgrade_button() %}
+
           <div class="nav-item">
-            <a href="{{ url_for('dashboard.pricing') }}" class="btn btn-sm btn-outline-primary">Upgrade</a>
+            <a href="{{ url_for("dashboard.pricing") }}"
+               class="btn btn-sm btn-outline-primary">Upgrade</a>
           </div>
         {% endif %}
-
         <div class="dropdown">
           <a href="#" class="nav-link pr-0 leading-none" data-toggle="dropdown">
             {% if current_user.profile_picture_id %}
-              <span class="avatar" style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
+
+              <span class="avatar"
+                    style="background-image: url('{{ current_user.profile_picture_url() }}')"></span>
             {% else %}
               <span class="avatar avatar-blue">{{ current_user.get_name_initial() or "👻" }}</span>
             {% endif %}
-
             <span class="ml-2 d-none d-lg-block">
-							<span class="text-default">
-                {{ current_user.name }}
-              </span>
-
+              <span class="text-default text-break">{{ current_user.name or current_user.email }}</span>
               {% if current_user.in_trial() %}
-                <small class="text-success d-block mt-1">Premium expires {{ current_user.trial_end|dt }}
-                <i class="fe fe-info" data-toggle="tooltip"
-                   title="After you signed up you were given a free 7 day Premium trial, after this period your account will automatically be downgraded to the Free plan."></i>
+
+                <small class="text-success d-block mt-1"
+                       data-toggle="tooltip"
+                       title="When you signed up, you have a free 7-day Premium trial. After that your account will automatically be downgraded to the Free plan. During the trial, the only limit is you can't create more than {{ MAX_NB_EMAIL_FREE_PLAN }} aliases.">
+                  Premium expires {{ current_user.trial_end|dt }}
+                  <i class="fe fe-info"></i>
                 </small>
               {% elif current_user.is_premium() %}
-
-                <small class="text-success d-block mt-1">Premium
-                </small>
+                <small class="text-success d-block mt-1">Premium</small>
               {% endif %}
-
             </span>
           </a>
-
           <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-            <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+            <a class="dropdown-item mb-3" href="{{ url_for("dashboard.api_key") }}">
+              <i class="dropdown-icon fa fa-key"></i> API Keys
+            </a>
+            <a class="dropdown-item mb-3"
+               href="{{ url_for("dashboard.account_setting") }}">
+              <i class="dropdown-icon fa fa-user"></i> Account settings
+            </a>
+            <a class="dropdown-item" href="{{ url_for("auth.logout") }}">
               <i class="dropdown-icon fe fe-log-out"></i> Sign out
             </a>
-
           </div>
-
         </div>
       </div>
-
-      <a href="#" class="header-toggler d-lg-none ml-3 ml-lg-0" data-toggle="collapse"
+      <a href="#"
+         class="header-toggler d-lg-none ml-3 ml-lg-0"
+         data-toggle="collapse"
          data-target="#headerMenuCollapse">
         <span class="header-toggler-icon"></span>
       </a>
     </div>
   </div>
 </div>
-
 <div class="header collapse d-lg-flex p-0" id="headerMenuCollapse">
   <div class="container">
     <div class="row align-items-center">
       <div class="col-lg order-lg-first">
         {% include "menu.html" %}
+
       </div>
     </div>
   </div>
 </div>
-
-

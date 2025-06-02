@@ -1,10 +1,15 @@
-from app.config import SHA1
+from app.build_info import SHA1, VERSION
 from app.monitor.base import monitor_bp
 
 
 @monitor_bp.route("/git")
 def git_sha1():
     return SHA1
+
+
+@monitor_bp.route("/version")
+def version():
+    return VERSION
 
 
 @monitor_bp.route("/live")

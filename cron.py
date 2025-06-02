@@ -5,39 +5,30 @@ from typing import List, Tuple
 
 import arrow
 import requests
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc, or_, and_
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import ObjectDeletedError
-from sqlalchemy.sql import Insert
+from sqlalchemy.sql import Insert, text
 
-from app import s3
+from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
-from app.config import (
-    ADMIN_EMAIL,
-    MACAPP_APPLE_API_SECRET,
-    APPLE_API_SECRET,
-    EMAIL_SERVERS_WITH_PRIORITY,
-    URL,
-    AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-    HIBP_API_KEYS,
-    HIBP_SCAN_INTERVAL_DAYS,
-    MONITORING_EMAIL,
-)
+from app.custom_domain_validation import CustomDomainValidation, is_mx_equivalent
 from app.db import Session
-from app.dns_utils import get_mx_domains, is_mx_equivalent
+from app.dns_utils import get_mx_domains
 from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
     render,
     email_can_be_used_as_mailbox,
     send_email_with_rate_control,
-    normalize_reply_email,
-    is_valid_email,
     get_email_domain_part,
 )
+from app.email_validation import is_valid_email, normalize_reply_email
+from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
+from app.mail_sender import load_unsent_mails_from_fs_and_resend
 from app.models import (
     Subscription,
     User,
@@ -63,19 +54,35 @@ from app.models import (
     Directory,
     DeletedDirectory,
     DeletedSubdomain,
+    PartnerSubscription,
+    PartnerUser,
+    ApiToCookieToken,
 )
+from app.pgp_utils import load_public_key_and_check, PGPException
+from app.proton.proton_partner import get_proton_partner
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app
+from tasks.clean_alias_audit_log import cleanup_alias_audit_log
+from tasks.clean_user_audit_log import cleanup_user_audit_log
+from tasks.cleanup_alias import cleanup_alias
+from tasks.cleanup_old_imports import cleanup_old_imports
+from tasks.cleanup_old_jobs import cleanup_old_jobs
+from tasks.cleanup_old_notifications import cleanup_old_notifications
+
+DELETE_GRACE_DAYS = 30
 
 
 def notify_trial_end():
     for user in User.filter(
-        User.activated.is_(True), User.trial_end.isnot(None), User.lifetime.is_(False)
+        User.activated.is_(True),
+        User.trial_end.isnot(None),
+        User.trial_end >= arrow.now().shift(days=2),
+        User.trial_end < arrow.now().shift(days=3),
+        User.lifetime.is_(False),
     ).all():
         try:
-            if user.in_trial() and arrow.now().shift(
-                days=3
-            ) > user.trial_end >= arrow.now().shift(days=2):
+            if user.in_trial():
                 LOG.d("Send trial end email to user %s", user)
                 send_trial_end_soon_email(user)
         # happens if user has been deleted in the meantime
@@ -88,27 +95,49 @@ def delete_logs():
     delete_refused_emails()
     delete_old_monitoring()
 
-    for t in TransactionalEmail.filter(
+    for t_email in TransactionalEmail.filter(
         TransactionalEmail.created_at < arrow.now().shift(days=-7)
     ):
-        TransactionalEmail.delete(t.id)
+        TransactionalEmail.delete(t_email.id)
 
     for b in Bounce.filter(Bounce.created_at < arrow.now().shift(days=-7)):
         Bounce.delete(b.id)
 
     Session.commit()
 
-    LOG.d("Delete EmailLog older than 2 weeks")
+    LOG.d("Deleting EmailLog older than 2 weeks")
 
-    max_dt = arrow.now().shift(weeks=-2)
-    nb_deleted = EmailLog.filter(EmailLog.created_at < max_dt).delete()
-    Session.commit()
+    total_deleted = 0
+    batch_size = 500
+    Session.execute("set session statement_timeout=30000").rowcount
+    queries_done = 0
+    cutoff_time = arrow.now().shift(days=-14)
+    rows_to_delete = EmailLog.filter(EmailLog.created_at < cutoff_time).count()
+    expected_queries = int(rows_to_delete / batch_size)
+    sql = text(
+        "DELETE FROM email_log WHERE id IN (SELECT id FROM email_log WHERE created_at < :cutoff_time order by created_at limit :batch_size)"
+    )
+    str_cutoff_time = cutoff_time.isoformat()
+    while total_deleted < rows_to_delete:
+        deleted_count = Session.execute(
+            sql, {"cutoff_time": str_cutoff_time, "batch_size": batch_size}
+        ).rowcount
+        Session.commit()
+        total_deleted += deleted_count
+        queries_done += 1
+        LOG.i(
+            f"[{queries_done}/{expected_queries}] Deleted {total_deleted} EmailLog entries"
+        )
+        if deleted_count < batch_size:
+            break
 
-    LOG.i("Delete %s email logs", nb_deleted)
+    LOG.i("Deleted %s email logs", total_deleted)
 
 
 def delete_refused_emails():
-    for refused_email in RefusedEmail.filter_by(deleted=False).all():
+    for refused_email in (
+        RefusedEmail.filter_by(deleted=False).order_by(RefusedEmail.id).all()
+    ):
         if arrow.now().shift(days=1) > refused_email.delete_at >= arrow.now():
             LOG.d("Delete refused email %s", refused_email)
             if refused_email.path:
@@ -118,6 +147,7 @@ def delete_refused_emails():
 
             # do not set path and full_report_path to null
             # so we can check later that the files are indeed deleted
+            refused_email.delete_at = arrow.now()
             refused_email.deleted = True
             Session.commit()
 
@@ -141,7 +171,7 @@ def notify_premium_end():
 
             send_email(
                 user.email,
-                f"Your subscription will end soon",
+                "Your subscription will end soon",
                 render(
                     "transactional/subscription-end.txt",
                     user=user,
@@ -170,7 +200,7 @@ def notify_manual_sub_end():
             LOG.d("%s has a lifetime licence", user)
             continue
 
-        paddle_sub: Subscription = user.get_subscription()
+        paddle_sub: Subscription = user.get_paddle_subscription()
         if paddle_sub and not paddle_sub.cancelled:
             LOG.d("%s has an active Paddle subscription", user)
             continue
@@ -179,7 +209,7 @@ def notify_manual_sub_end():
             # user can have a (free) manual subscription but has taken a paid subscription via
             # Paddle, Coinbase or Apple since then
             if manual_sub.is_giveaway:
-                if user.get_subscription():
+                if user.get_paddle_subscription():
                     LOG.d("%s has a active Paddle subscription", user)
                     continue
 
@@ -198,7 +228,7 @@ def notify_manual_sub_end():
             LOG.d("Remind user %s that their manual sub is ending soon", user)
             send_email(
                 user.email,
-                f"Your subscription will end soon",
+                "Your subscription will end soon",
                 render(
                     "transactional/manual-subscription-end.txt",
                     user=user,
@@ -212,7 +242,7 @@ def notify_manual_sub_end():
                 retries=3,
             )
 
-    extend_subscription_url = URL + "/dashboard/coinbase_checkout"
+    extend_subscription_url = config.URL + "/dashboard/coinbase_checkout"
     for coinbase_subscription in CoinbaseSubscription.all():
         need_reminder = False
         if (
@@ -230,6 +260,9 @@ def notify_manual_sub_end():
 
         if need_reminder:
             user = coinbase_subscription.user
+            if user.lifetime:
+                continue
+
             LOG.d(
                 "Remind user %s that their coinbase subscription is ending soon", user
             )
@@ -238,11 +271,13 @@ def notify_manual_sub_end():
                 "Your SimpleLogin subscription will end soon",
                 render(
                     "transactional/coinbase/reminder-subscription.txt",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
                 render(
                     "transactional/coinbase/reminder-subscription.html",
+                    user=user,
                     coinbase_subscription=coinbase_subscription,
                     extend_subscription_url=extend_subscription_url,
                 ),
@@ -252,11 +287,25 @@ def notify_manual_sub_end():
 
 def poll_apple_subscription():
     """Poll Apple API to update AppleSubscription"""
-    # todo: only near the end of the subscription
-    for apple_sub in AppleSubscription.all():
+    for apple_sub in (
+        AppleSubscription.filter(
+            AppleSubscription.expires_date < arrow.now().shift(days=15)
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
+        if not apple_sub.is_valid():
+            # Subscription is not valid anymore and hasn't been renewed
+            continue
+        if not apple_sub.product_id:
+            LOG.d("Ignore %s", apple_sub)
+            continue
+
         user = apple_sub.user
-        verify_receipt(apple_sub.receipt_data, user, APPLE_API_SECRET)
-        verify_receipt(apple_sub.receipt_data, user, MACAPP_APPLE_API_SECRET)
+        if "io.simplelogin.macapp.subscription" in apple_sub.product_id:
+            verify_receipt(apple_sub.receipt_data, user, config.MACAPP_APPLE_API_SECRET)
+        else:
+            verify_receipt(apple_sub.receipt_data, user, config.APPLE_API_SECRET)
 
     LOG.d("Finish poll_apple_subscription")
 
@@ -266,15 +315,43 @@ def compute_metric2() -> Metric2:
     _24h_ago = now.shift(days=-1)
 
     nb_referred_user_paid = 0
-    for user in User.filter(User.referral_id.isnot(None)):
+    for user in (
+        User.filter(User.referral_id.isnot(None))
+        .yield_per(500)
+        .enable_eagerloads(False)
+    ):
         if user.is_paid():
             nb_referred_user_paid += 1
+
+    # compute nb_proton_premium, nb_proton_user
+    nb_proton_premium = nb_proton_user = 0
+    try:
+        proton_partner = get_proton_partner()
+        nb_proton_premium = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                PartnerSubscription.partner_user_id == PartnerUser.id,
+                PartnerUser.partner_id == proton_partner.id,
+                PartnerSubscription.end_at > now,
+            )
+            .count()
+        )
+        nb_proton_user = (
+            Session.query(PartnerUser)
+            .filter(
+                PartnerUser.partner_id == proton_partner.id,
+            )
+            .count()
+        )
+    except ProtonPartnerNotSetUp:
+        LOG.d("Proton partner not set up")
 
     return Metric2.create(
         date=now,
         # user stats
         nb_user=User.count(),
         nb_activated_user=User.filter_by(activated=True).count(),
+        nb_proton_user=nb_proton_user,
         # subscription stats
         nb_premium=Subscription.filter(Subscription.cancelled.is_(False)).count(),
         nb_cancelled_premium=Subscription.filter(
@@ -289,6 +366,7 @@ def compute_metric2() -> Metric2:
         nb_coinbase_premium=CoinbaseSubscription.filter(
             CoinbaseSubscription.end_at > now
         ).count(),
+        nb_proton_premium=nb_proton_premium,
         # referral stats
         nb_referred_user=User.filter(User.referral_id.isnot(None)).count(),
         nb_referred_user_paid=nb_referred_user_paid,
@@ -467,7 +545,7 @@ def alias_creation_report() -> List[Tuple[str, int]]:
 
 def stats():
     """send admin stats everyday"""
-    if not ADMIN_EMAIL:
+    if not config.ADMIN_EMAIL:
         LOG.w("ADMIN_EMAIL not set, nothing to do")
         return
 
@@ -484,11 +562,13 @@ def stats():
 Growth Stats for {today}
 
 nb_user: {stats_today.nb_user} - {increase_percent(stats_yesterday.nb_user, stats_today.nb_user)}
+nb_proton_user: {stats_today.nb_proton_user} - {increase_percent(stats_yesterday.nb_proton_user, stats_today.nb_proton_user)}
 nb_premium: {stats_today.nb_premium} - {increase_percent(stats_yesterday.nb_premium, stats_today.nb_premium)}
 nb_cancelled_premium: {stats_today.nb_cancelled_premium} - {increase_percent(stats_yesterday.nb_cancelled_premium, stats_today.nb_cancelled_premium)}
 nb_apple_premium: {stats_today.nb_apple_premium} - {increase_percent(stats_yesterday.nb_apple_premium, stats_today.nb_apple_premium)}
 nb_manual_premium: {stats_today.nb_manual_premium} - {increase_percent(stats_yesterday.nb_manual_premium, stats_today.nb_manual_premium)}
 nb_coinbase_premium: {stats_today.nb_coinbase_premium} - {increase_percent(stats_yesterday.nb_coinbase_premium, stats_today.nb_coinbase_premium)}
+nb_proton_premium: {stats_today.nb_proton_premium} - {increase_percent(stats_yesterday.nb_proton_premium, stats_today.nb_proton_premium)}
 nb_alias: {stats_today.nb_alias} - {increase_percent(stats_yesterday.nb_alias, stats_today.nb_alias)}
 
 nb_forward_last_24h: {stats_today.nb_forward_last_24h} - {increase_percent(stats_yesterday.nb_forward_last_24h, stats_today.nb_forward_last_24h)}
@@ -510,7 +590,7 @@ nb_referred_user_upgrade: {stats_today.nb_referred_user_paid} - {increase_percen
     LOG.d("growth_stats email: %s", growth_stats)
 
     send_email(
-        ADMIN_EMAIL,
+        config.ADMIN_EMAIL,
         subject=f"SimpleLogin Growth Stats for {today}",
         plaintext=growth_stats,
         retries=3,
@@ -530,21 +610,21 @@ nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_p
     """
 
     monitoring_report += "\n====================================\n"
-    monitoring_report += f"""
+    monitoring_report += """
 # Account bounce report:
 """
 
     for email, bounces in bounce_report():
         monitoring_report += f"{email}: {bounces}\n"
 
-    monitoring_report += f"""\n
+    monitoring_report += """\n
 # Alias creation report:
 """
 
     for email, nb_alias, date in alias_creation_report():
         monitoring_report += f"{email}, {date}: {nb_alias}\n"
 
-    monitoring_report += f"""\n
+    monitoring_report += """\n
 # Full bounce detail report:
 """
     monitoring_report += all_bounce_report()
@@ -552,7 +632,7 @@ nb_total_bounced_last_24h: {stats_today.nb_total_bounced_last_24h} - {increase_p
     LOG.d("monitoring_report email: %s", monitoring_report)
 
     send_email(
-        MONITORING_EMAIL,
+        config.MONITORING_EMAIL,
         subject=f"SimpleLogin Monitoring Report for {today}",
         plaintext=monitoring_report,
         retries=3,
@@ -705,6 +785,9 @@ def sanity_check():
     LOG.d("check mailbox valid domain")
     check_mailbox_valid_domain()
 
+    LOG.d("check mailbox valid PGP keys")
+    check_mailbox_valid_pgp_keys()
+
     LOG.d(
         """check if there's an email that starts with "\u200f" (right-to-left mark (RLM))"""
     )
@@ -729,7 +812,7 @@ def check_mailbox_valid_domain():
     )
     mailbox_ids = [e[0] for e in mailbox_ids]
     # iterate over id instead of mailbox directly
-    # as a mailbox can be deleted during the sleep time
+    # as a mailbox can be deleted in the meantime
     for mailbox_id in mailbox_ids:
         mailbox = Mailbox.get(mailbox_id)
         # a mailbox has been deleted
@@ -758,10 +841,12 @@ def check_mailbox_valid_domain():
                         f"Mailbox {mailbox.email} is disabled",
                         render(
                             "transactional/disable-mailbox-warning.txt.jinja2",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         render(
                             "transactional/disable-mailbox-warning.html",
+                            user=mailbox.user,
                             mailbox=mailbox,
                         ),
                         retries=3,
@@ -785,7 +870,63 @@ def check_mailbox_valid_domain():
         Session.commit()
 
 
+def check_mailbox_valid_pgp_keys():
+    mailbox_ids = (
+        Session.query(Mailbox.id)
+        .filter(
+            Mailbox.verified.is_(True),
+            Mailbox.pgp_public_key.isnot(None),
+            Mailbox.disable_pgp.is_(False),
+        )
+        .all()
+    )
+    mailbox_ids = [e[0] for e in mailbox_ids]
+    # iterate over id instead of mailbox directly
+    # as a mailbox can be deleted in the meantime
+    for mailbox_id in mailbox_ids:
+        mailbox = Mailbox.get(mailbox_id)
+        # a mailbox has been deleted
+        if not mailbox:
+            LOG.d(f"Mailbox {mailbox_id} not found")
+            continue
+
+        LOG.d(f"Checking PGP key for {mailbox}")
+
+        try:
+            load_public_key_and_check(mailbox.pgp_public_key)
+        except PGPException:
+            LOG.i(f"{mailbox} PGP key invalid")
+            send_email(
+                mailbox.user.email,
+                f"Mailbox {mailbox.email}'s PGP Key is invalid",
+                render(
+                    "transactional/invalid-mailbox-pgp-key.txt.jinja2",
+                    user=mailbox.user,
+                    mailbox=mailbox,
+                ),
+                retries=3,
+            )
+
+
 def check_custom_domain():
+    # Delete custom domains that haven't been verified in a month
+    for custom_domain in (
+        CustomDomain.filter(
+            CustomDomain.verified == False,  # noqa: E712
+            CustomDomain.created_at < arrow.now().shift(months=-1),
+        )
+        .enable_eagerloads(False)
+        .yield_per(100)
+    ):
+        alias_count = Alias.filter(Alias.custom_domain_id == custom_domain.id).count()
+        if alias_count > 0:
+            LOG.warning(
+                f"Custom Domain {custom_domain} has {alias_count} aliases. Won't delete"
+            )
+        else:
+            LOG.i(f"Deleting unverified old custom domain {custom_domain}")
+            CustomDomain.delete(custom_domain.id)
+
     LOG.d("Check verified domain for DNS issues")
 
     for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
@@ -795,9 +936,15 @@ def check_custom_domain():
             LOG.i("custom domain has been deleted")
 
 
-def check_single_custom_domain(custom_domain):
+def check_single_custom_domain(custom_domain: CustomDomain):
     mx_domains = get_mx_domains(custom_domain.domain)
-    if not is_mx_equivalent(mx_domains, EMAIL_SERVERS_WITH_PRIORITY):
+    validator = CustomDomainValidation(
+        dkim_domain=config.EMAIL_DOMAIN,
+        partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
+        partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
+    )
+    expected_custom_domains = validator.get_expected_mx_records(custom_domain)
+    if not is_mx_equivalent(mx_domains, expected_custom_domains):
         user = custom_domain.user
         LOG.w(
             "The MX record is not correctly set for %s %s %s",
@@ -810,15 +957,16 @@ def check_single_custom_domain(custom_domain):
 
         # send alert if fail for 5 consecutive days
         if custom_domain.nb_failed_checks > 5:
-            domain_dns_url = f"{URL}/dashboard/domains/{custom_domain.id}/dns"
+            domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
             LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
             send_email_with_rate_control(
                 user,
-                AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
+                config.AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
                 user.email,
                 f"Please update {custom_domain.domain} DNS on SimpleLogin",
                 render(
                     "transactional/custom-domain-dns-issue.txt.jinja2",
+                    user=user,
                     custom_domain=custom_domain,
                     domain_dns_url=domain_dns_url,
                 ),
@@ -844,12 +992,25 @@ def delete_old_monitoring():
     LOG.d("delete monitoring records older than %s, nb row %s", max_time, nb_row)
 
 
-async def _hibp_check(api_key, queue):
+def delete_expired_tokens():
+    """
+    Delete old tokens
+    """
+    max_time = arrow.now().shift(hours=-1)
+    nb_row = ApiToCookieToken.filter(ApiToCookieToken.created_at < max_time).delete()
+    Session.commit()
+    LOG.d("Delete api to cookie tokens older than %s, nb row %s", max_time, nb_row)
+
+
+async def _hibp_check(api_key: str, queue: asyncio.Queue):
     """
     Uses a single API key to check the queue as fast as possible.
 
     This function to be ran simultaneously (multiple _hibp_check functions with different keys on the same queue) to make maximum use of multiple API keys.
     """
+    default_rate_sleep = (60.0 / config.HIBP_RPM) + 0.1
+    rate_sleep = default_rate_sleep
+    rate_hit_counter = 0
     while True:
         try:
             alias_id = queue.get_nowait()
@@ -857,9 +1018,19 @@ async def _hibp_check(api_key, queue):
             return
 
         alias = Alias.get(alias_id)
-        # an alias can be deleted in the meantime
         if not alias:
-            return
+            continue
+        user = alias.user
+        if user.disabled or not user.is_premium():
+            # Mark it as hibp done to skip it as if it had been checked
+            alias.hibp_last_check = arrow.utcnow()
+            Session.commit()
+            continue
+        if alias.flags & Alias.FLAG_PARTNER_CREATED > 0:
+            # Mark as hibp done
+            alias.hibp_last_check = arrow.utcnow()
+            Session.commit()
+            continue
 
         LOG.d("Checking HIBP for %s", alias)
 
@@ -871,7 +1042,6 @@ async def _hibp_check(api_key, queue):
             f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(alias.email)}",
             headers=request_headers,
         )
-
         if r.status_code == 200:
             # Breaches found
             alias.hibp_breaches = [
@@ -879,20 +1049,27 @@ async def _hibp_check(api_key, queue):
             ]
             if len(alias.hibp_breaches) > 0:
                 LOG.w("%s appears in HIBP breaches %s", alias, alias.hibp_breaches)
+            if rate_hit_counter > 0:
+                rate_hit_counter -= 1
         elif r.status_code == 404:
             # No breaches found
             alias.hibp_breaches = []
         elif r.status_code == 429:
             # rate limited
             LOG.w("HIBP rate limited, check alias %s in the next run", alias)
-            await asyncio.sleep(1.6)
-            return
+            rate_hit_counter += 1
+            rate_sleep = default_rate_sleep + (0.2 * rate_hit_counter)
+            if rate_hit_counter > 10:
+                LOG.w(f"HIBP rate limited too many times stopping with alias {alias}")
+                return
+            # Just sleep for a while
+            asyncio.sleep(5)
         elif r.status_code > 500:
             LOG.w("HIBP server 5** error %s", r.status_code)
             return
         else:
             LOG.error(
-                "An error occured while checking alias %s: %s - %s",
+                "An error occurred while checking alias %s: %s - %s",
                 alias,
                 r.status_code,
                 r.text,
@@ -903,9 +1080,64 @@ async def _hibp_check(api_key, queue):
         Session.add(alias)
         Session.commit()
 
-        LOG.d("Updated breaches info for %s", alias)
+        LOG.d("Updated breach info for %s", alias)
+        await asyncio.sleep(rate_sleep)
 
-        await asyncio.sleep(1.6)
+
+def get_alias_to_check_hibp(
+    oldest_hibp_allowed: arrow.Arrow,
+    user_ids_to_skip: list[int],
+    min_alias_id: int,
+    max_alias_id: int,
+):
+    now = arrow.now()
+    alias_query = (
+        Session.query(Alias)
+        .join(User, User.id == Alias.user_id)
+        .join(Subscription, User.id == Subscription.user_id, isouter=True)
+        .join(ManualSubscription, User.id == ManualSubscription.user_id, isouter=True)
+        .join(AppleSubscription, User.id == AppleSubscription.user_id, isouter=True)
+        .join(
+            CoinbaseSubscription,
+            User.id == CoinbaseSubscription.user_id,
+            isouter=True,
+        )
+        .join(PartnerUser, User.id == PartnerUser.user_id, isouter=True)
+        .join(
+            PartnerSubscription,
+            PartnerSubscription.partner_user_id == PartnerUser.id,
+            isouter=True,
+        )
+        .filter(
+            or_(
+                Alias.hibp_last_check.is_(None),
+                Alias.hibp_last_check < oldest_hibp_allowed,
+            ),
+            Alias.user_id.notin_(user_ids_to_skip),
+            Alias.enabled,
+            Alias.delete_on == None,  # noqa: E711
+            Alias.id >= min_alias_id,
+            Alias.id < max_alias_id,
+            User.disabled == False,  # noqa: E712
+            User.enable_data_breach_check,
+            or_(
+                User.lifetime,
+                ManualSubscription.end_at > now,
+                Subscription.next_bill_date > now.date(),
+                AppleSubscription.expires_date > now,
+                CoinbaseSubscription.end_at > now,
+                PartnerSubscription.end_at > now,
+            ),
+        )
+    )
+    if config.HIBP_SKIP_PARTNER_ALIAS:
+        alias_query = alias_query.filter(
+            Alias.flags.op("&")(Alias.FLAG_PARTNER_CREATED) == 0
+        )
+    for alias in (
+        alias_query.order_by(Alias.id.asc()).enable_eagerloads(False).yield_per(500)
+    ):
+        yield alias
 
 
 async def check_hibp():
@@ -914,7 +1146,7 @@ async def check_hibp():
     """
     LOG.d("Checking HIBP API for aliases in breaches")
 
-    if len(HIBP_API_KEYS) == 0:
+    if len(config.HIBP_API_KEYS) == 0:
         LOG.e("No HIBP API keys")
         return
 
@@ -928,39 +1160,49 @@ async def check_hibp():
     Session.commit()
     LOG.d("Updated list of known breaches")
 
-    LOG.d("Preparing list of aliases to check")
+    LOG.d("Getting the list of users to skip")
+    query = "select u.id, count(a.id) from users u, alias a where a.user_id=u.id group by u.id having count(a.id) > :max_alias"
+    rows = Session.execute(query, {"max_alias": config.HIBP_MAX_ALIAS_CHECK})
+    user_ids = [row[0] for row in rows]
+    LOG.d("Got %d users to skip" % len(user_ids))
+
+    LOG.d("Checking aliases")
     queue = asyncio.Queue()
-    max_date = arrow.now().shift(days=-HIBP_SCAN_INTERVAL_DAYS)
-    for alias in (
-        Alias.filter(
-            or_(Alias.hibp_last_check.is_(None), Alias.hibp_last_check < max_date)
+    min_alias_id = 0
+    max_alias_id = Session.query(func.max(Alias.id)).scalar()
+    step = 10000
+    now = arrow.now()
+    oldest_hibp_allowed = now.shift(days=-config.HIBP_SCAN_INTERVAL_DAYS)
+    alias_checked = 0
+    for alias_batch_id in range(min_alias_id, max_alias_id, step):
+        for alias in get_alias_to_check_hibp(
+            oldest_hibp_allowed, user_ids, alias_batch_id, alias_batch_id + step
+        ):
+            await queue.put(alias.id)
+
+        alias_checked += queue.qsize()
+        LOG.d(
+            f"Need to check about {queue.qsize()} aliases in this loop {alias_batch_id}/{max_alias_id}"
         )
-        .filter(Alias.enabled)
-        .order_by(Alias.hibp_last_check.asc())
-        .all()
-    ):
-        await queue.put(alias.id)
 
-    LOG.d("Need to check about %s aliases", queue.qsize())
-
-    # Start one checking process per API key
-    # Each checking process will take one alias from the queue, get the info
-    # and then sleep for 1.5 seconds (due to HIBP API request limits)
-    checkers = []
-    for i in range(len(HIBP_API_KEYS)):
-        checker = asyncio.create_task(
-            _hibp_check(
-                HIBP_API_KEYS[i],
-                queue,
+        # Start one checking process per API key
+        # Each checking process will take one alias from the queue, get the info
+        # and then sleep for 1.5 seconds (due to HIBP API request limits)
+        checkers = []
+        for i in range(len(config.HIBP_API_KEYS)):
+            checker = asyncio.create_task(
+                _hibp_check(
+                    config.HIBP_API_KEYS[i],
+                    queue,
+                )
             )
-        )
-        checkers.append(checker)
+            checkers.append(checker)
 
-    # Wait until all checking processes are done
-    for checker in checkers:
-        await checker
+        # Wait until all checking processes are done
+        for checker in checkers:
+            await checker
 
-    LOG.d("Done checking HIBP API for aliases in breaches")
+    LOG.d(f"Done checking {alias_checked} HIBP API for aliases in breaches")
 
 
 def notify_hibp():
@@ -988,14 +1230,14 @@ def notify_hibp():
         )
 
         LOG.d(
-            f"Send new breaches found email to %s for %s breaches aliases",
+            "Send new breaches found email to %s for %s breaches aliases",
             user,
             len(breached_aliases),
         )
 
         send_email(
             user.email,
-            f"You were in a data breach",
+            "You were in a data breach",
             render(
                 "transactional/hibp-new-breaches.txt.jinja2",
                 user=user,
@@ -1015,6 +1257,50 @@ def notify_hibp():
         Session.commit()
 
 
+def clear_users_scheduled_to_be_deleted(dry_run=False):
+    users: List[User] = User.filter(
+        and_(
+            User.delete_on.isnot(None),
+            User.delete_on <= arrow.now().shift(days=-DELETE_GRACE_DAYS),
+        )
+    ).all()
+    for user in users:
+        LOG.i(
+            f"Scheduled deletion of user {user} with scheduled delete on {user.delete_on}"
+        )
+        if dry_run:
+            continue
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.DeleteUser,
+            message=f"Delete user {user.id} ({user.email})",
+        )
+        User.delete(user.id)
+        Session.commit()
+
+
+def delete_old_data():
+    oldest_valid = arrow.now().shift(days=-config.KEEP_OLD_DATA_DAYS)
+    cleanup_old_imports(oldest_valid)
+    cleanup_old_jobs(oldest_valid)
+    cleanup_old_notifications(oldest_valid)
+
+
+def clear_alias_audit_log():
+    oldest_valid = arrow.now().shift(days=-config.AUDIT_LOG_MAX_DAYS)
+    cleanup_alias_audit_log(oldest_valid)
+
+
+def clear_user_audit_log():
+    oldest_valid = arrow.now().shift(days=-config.AUDIT_LOG_MAX_DAYS)
+    cleanup_user_audit_log(oldest_valid)
+
+
+def clear_aliases_pending_to_be_deleted():
+    oldest_valid = arrow.now().shift(days=-config.ALIAS_TRASH_DAYS)
+    cleanup_alias(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1023,19 +1309,6 @@ if __name__ == "__main__":
         "--job",
         help="Choose a cron job to run",
         type=str,
-        choices=[
-            "stats",
-            "notify_trial_end",
-            "notify_manual_subscription_end",
-            "notify_premium_end",
-            "delete_logs",
-            "poll_apple_subscription",
-            "sanity_check",
-            "delete_old_monitoring",
-            "check_custom_domain",
-            "check_hibp",
-            "notify_hibp",
-        ],
     )
     args = parser.parse_args()
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
@@ -1055,6 +1328,9 @@ if __name__ == "__main__":
         elif args.job == "delete_logs":
             LOG.d("Deleted Logs")
             delete_logs()
+        elif args.job == "delete_old_data":
+            LOG.d("Delete old data")
+            delete_old_data()
         elif args.job == "poll_apple_subscription":
             LOG.d("Poll Apple Subscriptions")
             poll_apple_subscription()
@@ -1073,3 +1349,21 @@ if __name__ == "__main__":
         elif args.job == "notify_hibp":
             LOG.d("Notify users about HIBP breaches")
             notify_hibp()
+        elif args.job == "cleanup_tokens":
+            LOG.d("Cleanup expired tokens")
+            delete_expired_tokens()
+        elif args.job == "send_undelivered_mails":
+            LOG.d("Sending undelivered emails")
+            load_unsent_mails_from_fs_and_resend()
+        elif args.job == "delete_scheduled_users":
+            LOG.d("Deleting users scheduled to be deleted")
+            clear_users_scheduled_to_be_deleted()
+        elif args.job == "clear_alias_audit_log":
+            LOG.d("Clearing alias audit log")
+            clear_alias_audit_log()
+        elif args.job == "clear_user_audit_log":
+            LOG.d("Clearing user audit log")
+            clear_user_audit_log()
+        elif args.job == "clear_alias_delete_on":
+            LOG.d("Clearing aliases pending to be deleted")
+            clear_aliases_pending_to_be_deleted()

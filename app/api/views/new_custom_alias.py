@@ -1,7 +1,9 @@
+from email_validator import EmailNotValidError
 from flask import g
 from flask import jsonify, request
-from itsdangerous import SignatureExpired
 
+from app import parallel_limiter
+from app.alias_suffix import check_suffix_signature, verify_prefix_suffix
 from app.alias_utils import check_alias_prefix
 from app.api.base import api_bp, require_api_auth
 from app.api.serializer import (
@@ -9,7 +11,6 @@ from app.api.serializer import (
     get_alias_info_v2,
 )
 from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
-from app.dashboard.views.custom_alias import verify_prefix_suffix, signer
 from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
@@ -26,8 +27,9 @@ from app.utils import convert_to_id
 
 
 @api_bp.route("/v2/alias/custom/new", methods=["POST"])
-@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@limiter.limit(ALIAS_LIMIT)
+@parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v2():
     """
     Create a new custom alias
@@ -58,24 +60,36 @@ def new_custom_alias_v2():
 
     data = request.get_json()
     if not data:
+        LOG.i(f"User {user} tried to create an alias with empty data")
         return jsonify(error="request body cannot be empty"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
-    signed_suffix = data.get("signed_suffix", "").strip()
+    alias_prefix = data.get("alias_prefix", "")
+    if not isinstance(alias_prefix, str) or not alias_prefix:
+        LOG.i(f"User {user} tried to create alias with invalid prefix")
+        return jsonify(error="invalid value for alias_prefix"), 400
+
+    alias_prefix = alias_prefix.strip().lower().replace(" ", "")
+    signed_suffix = data.get("signed_suffix", "")
+    if not isinstance(signed_suffix, str) or not signed_suffix:
+        LOG.i(f"User {user} tried to create alias with invalid signed_suffix")
+        return jsonify(error="invalid value for signed_suffix"), 400
+
+    signed_suffix = signed_suffix.strip()
+
     note = data.get("note")
     alias_prefix = convert_to_id(alias_prefix)
 
-    # hypothesis: user will click on the button in the 600 secs
     try:
-        alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
-    except SignatureExpired:
-        LOG.w("Alias creation time expired for %s", user)
-        return jsonify(error="Alias creation time is expired, please retry"), 412
+        alias_suffix = check_suffix_signature(signed_suffix)
+        if not alias_suffix:
+            LOG.w("Alias creation time expired for %s", user)
+            return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
         LOG.w("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):
+        LOG.i(f"User {user} tried to use invalid prefix or suffix")
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
@@ -84,21 +98,26 @@ def new_custom_alias_v2():
         or DeletedAlias.get_by(email=full_alias)
         or DomainDeletedAlias.get_by(email=full_alias)
     ):
-        LOG.d("full alias already used %s", full_alias)
+        LOG.d(f"full alias already used {full_alias} for user {user}")
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
     if ".." in full_alias:
+        LOG.d(f"User {user} tried to create an alias with ..")
         return (
             jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
             400,
         )
 
-    alias = Alias.create(
-        user_id=user.id,
-        email=full_alias,
-        mailbox_id=user.default_mailbox_id,
-        note=note,
-    )
+    try:
+        alias = Alias.create(
+            user_id=user.id,
+            email=full_alias,
+            mailbox_id=user.default_mailbox_id,
+            note=note,
+        )
+    except EmailNotValidError:
+        LOG.d(f"User {user} tried to create an alias with invalid email {full_alias}")
+        return jsonify(error="Email is not valid"), 400
 
     Session.commit()
 
@@ -113,8 +132,9 @@ def new_custom_alias_v2():
 
 
 @api_bp.route("/v3/alias/custom/new", methods=["POST"])
-@limiter.limit(ALIAS_LIMIT)
 @require_api_auth
+@limiter.limit(ALIAS_LIMIT)
+@parallel_limiter.lock(name="alias_creation")
 def new_custom_alias_v3():
     """
     Create a new custom alias
@@ -147,13 +167,26 @@ def new_custom_alias_v3():
 
     data = request.get_json()
     if not data:
+        LOG.i(f"User {user} tried to create an alias with empty data")
         return jsonify(error="request body cannot be empty"), 400
 
-    if type(data) is not dict:
+    if not isinstance(data, dict):
+        LOG.i(f"User {user} tried to create an alias with invalid format")
         return jsonify(error="request body does not follow the required format"), 400
 
-    alias_prefix = data.get("alias_prefix", "").strip().lower().replace(" ", "")
+    alias_prefix_data = data.get("alias_prefix", "") or ""
+
+    if not isinstance(alias_prefix_data, str):
+        LOG.i(f"User {user} tried to create an alias with data as string")
+        return jsonify(error="request body does not follow the required format"), 400
+
+    alias_prefix = alias_prefix_data.strip().lower().replace(" ", "")
     signed_suffix = data.get("signed_suffix", "") or ""
+
+    if not isinstance(signed_suffix, str):
+        LOG.i(f"User {user} tried to create an alias with invalid signed_suffix")
+        return jsonify(error="request body does not follow the required format"), 400
+
     signed_suffix = signed_suffix.strip()
 
     mailbox_ids = data.get("mailbox_ids")
@@ -164,32 +197,39 @@ def new_custom_alias_v3():
     alias_prefix = convert_to_id(alias_prefix)
 
     if not check_alias_prefix(alias_prefix):
+        LOG.i(f"User {user} tried to create an alias with invalid prefix or too long")
         return jsonify(error="alias prefix invalid format or too long"), 400
 
     # check if mailbox is not tempered with
-    if type(mailbox_ids) is not list:
+    if not isinstance(mailbox_ids, list):
+        LOG.i(f"User {user} tried to create an alias with invalid mailbox array")
         return jsonify(error="mailbox_ids must be an array of id"), 400
     mailboxes = []
     for mailbox_id in mailbox_ids:
         mailbox = Mailbox.get(mailbox_id)
         if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
+            LOG.i(f"User {user} tried to create an alias with invalid mailbox")
             return jsonify(error="Errors with Mailbox"), 400
         mailboxes.append(mailbox)
 
     if not mailboxes:
+        LOG.i(f"User {user} tried to create an alias with missing mailbox")
         return jsonify(error="At least one mailbox must be selected"), 400
 
     # hypothesis: user will click on the button in the 600 secs
     try:
-        alias_suffix = signer.unsign(signed_suffix, max_age=600).decode()
-    except SignatureExpired:
-        LOG.w("Alias creation time expired for %s", user)
-        return jsonify(error="Alias creation time is expired, please retry"), 412
+        alias_suffix = check_suffix_signature(signed_suffix)
+        if not alias_suffix:
+            LOG.i(f"User {user} tried to create an alias with expired suffix")
+            LOG.w("Alias creation time expired for %s", user)
+            return jsonify(error="Alias creation time is expired, please retry"), 412
     except Exception:
+        LOG.i(f"User {user} tried to create an alias with tampered suffix")
         LOG.w("Alias suffix is tampered, user %s", user)
         return jsonify(error="Tampered suffix"), 400
 
     if not verify_prefix_suffix(user, alias_prefix, alias_suffix):
+        LOG.i(f"User {user} tried to create an alias with invalid prefix or suffix")
         return jsonify(error="wrong alias prefix or suffix"), 400
 
     full_alias = alias_prefix + alias_suffix
@@ -198,10 +238,11 @@ def new_custom_alias_v3():
         or DeletedAlias.get_by(email=full_alias)
         or DomainDeletedAlias.get_by(email=full_alias)
     ):
-        LOG.d("full alias already used %s", full_alias)
+        LOG.i(f"User {user} tried to create an alias with already used alias")
         return jsonify(error=f"alias {full_alias} already exists"), 409
 
     if ".." in full_alias:
+        LOG.i(f"User {user} tried to create an alias with ..")
         return (
             jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
             400,

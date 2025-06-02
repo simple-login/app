@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from flask import render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
@@ -20,6 +22,10 @@ def new_client():
 
     if form.validate_on_submit():
         client = Client.create_new(form.name.data, current_user.id)
+        parsed_url = urlparse(form.url.data)
+        if parsed_url.scheme != "https":
+            flash("Only https urls are allowed", "error")
+            return redirect(url_for("developer.new_client"))
         client.home_url = form.url.data
         Session.commit()
 

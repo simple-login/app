@@ -9,22 +9,54 @@ from typing import Optional, Dict
 import jinja2
 from flask import url_for
 
-from app.models import User
+from app.db import Session
+from app.models import User, PartnerUser, UserAliasDeleteAction
+from app.proton.proton_partner import get_proton_partner
+from app.utils import random_string
 
 
-def login(flask_client) -> User:
-    # create user, user is activated
+def create_new_user(
+    email: Optional[str] = None,
+    name: Optional[str] = None,
+    alias_delete_action: UserAliasDeleteAction = UserAliasDeleteAction.DeleteImmediately,
+) -> User:
+    if not email:
+        email = f"user_{random_token(10)}@mailbox.lan"
+    if not name:
+        name = "Test User"
+    # new user has a different email address
     user = User.create(
-        email="a@b.c",
+        email=email,
         password="password",
-        name="Test User",
+        name=name,
         activated=True,
-        commit=True,
+        flush=True,
     )
+    user.alias_delete_action = alias_delete_action
+    Session.flush()
+
+    return user
+
+
+def create_partner_linked_user() -> tuple[User, PartnerUser]:
+    user = create_new_user()
+    partner_user = PartnerUser.create(
+        partner_id=get_proton_partner().id,
+        user_id=user.id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+
+    return user, partner_user
+
+
+def login(flask_client, user: Optional[User] = None) -> User:
+    if not user:
+        user = create_new_user()
 
     r = flask_client.post(
         url_for("auth.login"),
-        data={"email": "a@b.c", "password": "password"},
+        data={"email": user.email, "password": "password"},
         follow_redirects=True,
     )
 
@@ -34,19 +66,12 @@ def login(flask_client) -> User:
     return user
 
 
+def random_domain() -> str:
+    return random_token() + ".lan"
+
+
 def random_token(length: int = 10) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-
-def create_random_user() -> User:
-    email = "{}@{}.com".format(random_token(), random_token())
-    return User.create(
-        email=email,
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
 
 
 def pretty(d):
@@ -66,4 +91,16 @@ def load_eml_file(
         if not template_values:
             template_values = {}
         rendered = template.render(**template_values)
-        return email.message_from_string(rendered)
+        return email.message_from_bytes(rendered.encode("utf-8"))
+
+
+def random_email() -> str:
+    return "{rand}@{rand}.com".format(rand=random_string(20))
+
+
+def fix_rate_limit_after_request():
+    from flask import g
+    from app.extensions import limiter
+
+    g._rate_limiting_complete = False
+    setattr(g, "%s_rate_limiting_complete" % limiter._key_prefix, False)

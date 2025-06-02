@@ -1,0 +1,106 @@
+{% extends 'admin/master.html' %}
+
+{% macro show_user_overview(bundle) -%}
+    <h5>Overview</h5>
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th scope="col">User ID</th>
+                <th scope="col">Primary email address</th>
+                <th scope="col">User created</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    {% if bundle.get('user', None) %}
+                        <a href="/admin/user/?search={{ bundle.get('user').id }}">{{ bundle.get('user').id }}</a>
+                    {% else %}
+                        {{ bundle.get('account_id') }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if bundle.get('user', None) %}
+                        <a href="/admin/admin.email_search/?query={{ bundle.get('user').email }}">{{ bundle.get('user').email }}</a>
+                    {% else %}
+                        {{ bundle.get('email', '') }}
+                    {% endif %}
+                </td>
+                <td>{{ bundle.get('user_created_at', '').strftime('%B %d, %Y %I:%M %p') }}</td>
+            </tr>
+        </tbody>
+    </table>
+{%- endmacro %}
+{% macro show_emails_table(emails) -%}
+    <table class="table table-striped table-bordered table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Email address</th>
+                <th scope="col">Date created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for idx, email in emails|enumerate %}
+                <tr>
+                    <th scope="row">{{ idx + 1 }}</th>
+                    <td>{{ email.get('address', '') }}</td>
+                    <td>{{ email.get('created_at', '').strftime('%B %d, %Y %I:%M %p') }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}
+{% macro show_bundle(no, bundle) -%}
+    <h3>Bundle #{{ no + 1 }}</h3>
+    {{ show_user_overview(bundle) }}
+    {% if bundle.get('aliases', []) %}
+        <h5>List of aliases</h5>
+        {{ show_emails_table(bundle.get('aliases', [])) }}
+    {% endif %}
+    {% if bundle.get('mailboxes', []) %}
+        <h5>List of mailboxes</h5>
+        {{ show_emails_table(bundle.get('mailboxes', [])) }}
+    {% endif %}
+    <div>
+        <button type="button" class="btn btn-secondary" onclick="navigator.clipboard.writeText('{{ bundle.get('json', '') }}');alert('The bundle data has been copied to your clipboard.');">Copy bundle</button>
+    </div>
+    <hr>
+{%- endmacro %}
+{% macro show_bundles(bundles) -%}
+    <div class="flex gap-2">
+        {% for idx, bundle in bundles|enumerate %}
+            <div>
+                {{ show_bundle(idx, bundle) }}
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% block body %}
+
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="get">
+      <div class="form-group">
+        <label for="email">Email address:</label>
+        <input type="email"
+               class="form-control"
+               name="email"
+               value="{{ query or '' }}" />
+      </div>
+      <button type="submit" class="btn btn-primary">Look up</button>
+    </form>
+  </div>
+  {% if data.no_match and query %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">No abuser data was found for the provided email address.</div>
+  {% endif %}
+  {% if data.bundles %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3 class="mb-3">Found abuser data for <code>{{ data.email }}</code></h3>
+      {{ show_bundles(data.bundles) }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

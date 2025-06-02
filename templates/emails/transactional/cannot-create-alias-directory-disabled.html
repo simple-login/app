@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Cannot create {{ alias }} on-the-fly
-    </h1>
+    <h1>Cannot create {{ alias }} on-the-fly</h1>
   {% endcall %}
 
   {% call text() %}
@@ -19,6 +18,7 @@
     If you aren't aware of this alias, that probably means someone has discovered about your directory and is abusing it.
   {% endcall %}
 
-
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}

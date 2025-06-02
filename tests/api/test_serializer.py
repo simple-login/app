@@ -1,25 +1,22 @@
-from app.api.serializer import get_alias_infos_with_pagination_v3
+from app.api.serializer import get_alias_infos_with_pagination_v3, AliasInfo
+from app.alias_delete import move_alias_to_trash
 from app.config import PAGE_LIMIT
 from app.db import Session
-from app.models import User, Alias, Mailbox, Contact
-from tests.utils import create_random_user
+from app.models import Alias, Mailbox, Contact, EmailLog
+from tests.utils import create_new_user, random_email
+
+from typing import List
 
 
-def test_get_alias_infos_with_pagination_v3(flask_client):
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+def test_get_alias_infos_with_pagination_v3():
+    user = create_new_user()
 
     # user has 1 alias that's automatically created when the account is created
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1
     alias_info = alias_infos[0]
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     assert alias_info.alias == alias
     assert alias_info.mailbox == user.default_mailbox
     assert alias_info.mailboxes == [user.default_mailbox]
@@ -30,17 +27,11 @@ def test_get_alias_infos_with_pagination_v3(flask_client):
     assert alias_info.latest_contact is None
 
 
-def test_get_alias_infos_with_pagination_v3_query_alias_email(flask_client):
+def test_get_alias_infos_with_pagination_v3_query_alias_email():
     """test the query on the alias email"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
 
     alias_infos = get_alias_infos_with_pagination_v3(user, query=alias.email)
     assert len(alias_infos) == 1
@@ -49,31 +40,19 @@ def test_get_alias_infos_with_pagination_v3_query_alias_email(flask_client):
     assert len(alias_infos) == 0
 
 
-def test_get_alias_infos_with_pagination_v3_query_alias_mailbox(flask_client):
+def test_get_alias_infos_with_pagination_v3_query_alias_mailbox():
     """test the query on the alias mailbox email"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
-    alias = Alias.first()
+    user = create_new_user()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias_infos = get_alias_infos_with_pagination_v3(user, mailbox_id=alias.mailbox_id)
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
+def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes():
     """test the query on the alias additional mailboxes"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
-    alias = Alias.first()
-    mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
+    user = create_new_user()
+    alias = Alias.filter_by(user_id=user.id).first()
+    mb = Mailbox.create(user_id=user.id, email=random_email())
     alias._mailboxes.append(mb)
     Session.commit()
 
@@ -84,17 +63,11 @@ def test_get_alias_infos_with_pagination_v3_query_alias_mailboxes(flask_client):
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
+def test_get_alias_infos_with_pagination_v3_query_alias_note():
     """test the query on the alias note"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias.note = "test note"
     Session.commit()
 
@@ -102,17 +75,11 @@ def test_get_alias_infos_with_pagination_v3_query_alias_note(flask_client):
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_with_pagination_v3_query_alias_name(flask_client):
+def test_get_alias_infos_with_pagination_v3_query_alias_name():
     """test the query on the alias name"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
-    alias = Alias.first()
+    alias = Alias.filter_by(user_id=user.id).first()
     alias.name = "Test Name"
     Session.commit()
 
@@ -120,20 +87,14 @@ def test_get_alias_infos_with_pagination_v3_query_alias_name(flask_client):
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_with_pagination_v3_no_duplicate(flask_client):
+def test_get_alias_infos_with_pagination_v3_no_duplicate():
     """When an alias belongs to multiple mailboxes, make sure get_alias_infos_with_pagination_v3
     returns no duplicates
     """
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     alias = Alias.first()
-    mb = Mailbox.create(user_id=user.id, email="mb@gmail.com")
+    mb = Mailbox.create(user_id=user.id, email=random_email())
     alias._mailboxes.append(mb)
     Session.commit()
 
@@ -141,48 +102,40 @@ def test_get_alias_infos_with_pagination_v3_no_duplicate(flask_client):
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_with_pagination_v3_no_duplicate_when_empty_contact(
-    flask_client,
-):
+def test_get_alias_infos_with_pagination_v3_no_duplicate_when_empty_contact():
     """
     Make sure an alias is returned once when it has 2 contacts that have no email log activity
     """
-    user = create_random_user()
+    user = create_new_user()
     alias = Alias.first()
 
     Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="contact@example.com",
-        reply_email="rep@sl.local",
+        website_email=random_email(),
+        reply_email="rep@sl.lan",
     )
 
     Contact.create(
         user_id=user.id,
         alias_id=alias.id,
-        website_email="contact2@example.com",
-        reply_email="rep2@sl.local",
+        website_email=random_email(),
+        reply_email="rep2@sl.lan",
     )
 
     alias_infos = get_alias_infos_with_pagination_v3(user)
     assert len(alias_infos) == 1
 
 
-def test_get_alias_infos_pinned_alias(flask_client):
+def test_get_alias_infos_pinned_alias():
     """Different scenarios with pinned alias"""
-    user = User.create(
-        email="a@b.c",
-        password="password",
-        name="Test User",
-        activated=True,
-        commit=True,
-    )
+    user = create_new_user()
 
     # to have 3 pages: 2*PAGE_LIMIT + the alias automatically created for a new account
     for _ in range(2 * PAGE_LIMIT):
         Alias.create_new_random(user)
 
-    first_alias = Alias.order_by(Alias.id).first()
+    first_alias = Alias.filter_by(user_id=user.id).order_by(Alias.id).first()
 
     # should return PAGE_LIMIT alias
     alias_infos = get_alias_infos_with_pagination_v3(user)
@@ -203,3 +156,57 @@ def test_get_alias_infos_pinned_alias(flask_client):
     # pinned alias isn't included in the search
     alias_infos = get_alias_infos_with_pagination_v3(user, query="no match")
     assert len(alias_infos) == 0
+
+
+def test_get_alias_infos_with_no_last_email_log():
+    user = create_new_user()
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+    row = alias_infos[0]
+    assert row.alias.id == user.newsletter_alias_id
+    assert row.latest_contact is None
+    assert row.latest_email_log is None
+
+
+def test_get_alias_infos_with_email_log_no_contact():
+    user = create_new_user()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        website_email=random_email(),
+        reply_email=random_email(),
+        flush=True,
+    )
+    Contact.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        website_email=random_email(),
+        reply_email=random_email(),
+        flush=True,
+    )
+    EmailLog.create(
+        user_id=user.id,
+        alias_id=user.newsletter_alias_id,
+        contact_id=contact.id,
+        commit=True,
+    )
+    alias_infos = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+    row = alias_infos[0]
+    assert row.alias.id == user.newsletter_alias_id
+    assert row.latest_contact is not None
+    assert row.latest_contact.id == contact.id
+    assert row.latest_email_log is not None
+    alias = Alias.get(id=user.newsletter_alias_id)
+    assert row.latest_email_log.id == alias.last_email_log_id
+
+
+def test_get_alias_infos_with_pagination_v3_does_not_include_trashed():
+    user = create_new_user()
+    trashed_alias = Alias.create_new_random(user)
+    move_alias_to_trash(trashed_alias, user, commit=True)
+
+    # user has 1 alias that's automatically created when the account is created
+    alias_infos: List[AliasInfo] = get_alias_infos_with_pagination_v3(user)
+    assert len(alias_infos) == 1
+    assert alias_infos[0].alias.id != trashed_alias.id

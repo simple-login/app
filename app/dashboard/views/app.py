@@ -1,14 +1,9 @@
-from app.db import Session
-
-"""
-List of apps that user has used via the "Sign in with SimpleLogin"
-"""
-
 from flask import render_template, request, flash, redirect
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.models import (
     ClientUser,
 )
@@ -17,6 +12,10 @@ from app.models import (
 @dashboard_bp.route("/app", methods=["GET", "POST"])
 @login_required
 def app_route():
+    """
+    List of apps that user has used via the "Sign in with SimpleLogin"
+    """
+
     client_users = (
         ClientUser.filter_by(user_id=current_user.id)
         .options(joinedload(ClientUser.client))

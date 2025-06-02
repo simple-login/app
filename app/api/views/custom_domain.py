@@ -2,8 +2,11 @@ from flask import g, request
 from flask import jsonify
 
 from app.api.base import api_bp, require_api_auth
+from app.custom_domain_utils import set_custom_domain_mailboxes
 from app.db import Session
-from app.models import CustomDomain, DomainDeletedAlias, Mailbox, DomainMailbox
+from app.extensions import limiter
+from app.log import LOG
+from app.models import CustomDomain, DomainDeletedAlias
 
 
 def custom_domain_to_dict(custom_domain: CustomDomain):
@@ -59,6 +62,7 @@ def get_custom_domain_trash(custom_domain_id: int):
 
 @api_bp.route("/custom_domains/<int:custom_domain_id>", methods=["PATCH"])
 @require_api_auth
+@limiter.limit("100/hour")
 def update_custom_domain(custom_domain_id):
     """
     Update alias note
@@ -100,23 +104,14 @@ def update_custom_domain(custom_domain_id):
 
     if "mailbox_ids" in data:
         mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
-        if mailbox_ids:
-            # check if mailbox is not tempered with
-            mailboxes = []
-            for mailbox_id in mailbox_ids:
-                mailbox = Mailbox.get(mailbox_id)
-                if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
-                    return jsonify(error="Forbidden"), 400
-                mailboxes.append(mailbox)
-
-            # first remove all existing domain-mailboxes links
-            DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
-            Session.flush()
-
-            for mailbox in mailboxes:
-                DomainMailbox.create(domain_id=custom_domain.id, mailbox_id=mailbox.id)
-
+        result = set_custom_domain_mailboxes(user.id, custom_domain, mailbox_ids)
+        if result.success:
             changed = True
+        else:
+            LOG.info(
+                f"Prevented from updating mailboxes [custom_domain_id={custom_domain.id}]: {result.reason.value}"
+            )
+            return jsonify(error="Forbidden"), 400
 
     if changed:
         Session.commit()

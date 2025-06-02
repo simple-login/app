@@ -2,10 +2,8 @@ import tldextract
 from flask import jsonify, request, g
 from sqlalchemy import desc
 
+from app.alias_suffix import get_alias_suffixes
 from app.api.base import api_bp, require_api_auth
-from app.dashboard.views.custom_alias import (
-    get_available_suffixes,
-)
 from app.db import Session
 from app.log import LOG
 from app.models import AliasUsedOn, Alias, User
@@ -68,7 +66,7 @@ def options_v4():
         prefix_suggestion = convert_to_id(prefix_suggestion)
         ret["prefix_suggestion"] = prefix_suggestion
 
-    suffixes = get_available_suffixes(user)
+    suffixes = get_alias_suffixes(user)
 
     # custom domain should be put first
     ret["suffixes"] = list([suffix.suffix, suffix.signed_suffix] for suffix in suffixes)
@@ -90,7 +88,9 @@ def options_v5():
         suffixes: [
             {
                 suffix: "suffix",
-                signed_suffix: "signed_suffix"
+                signed_suffix: "signed_suffix",
+                is_custom: true,
+                is_premium: false
             }
         ]
         prefix_suggestion: str
@@ -137,11 +137,16 @@ def options_v5():
         prefix_suggestion = convert_to_id(prefix_suggestion)
         ret["prefix_suggestion"] = prefix_suggestion
 
-    suffixes = get_available_suffixes(user)
+    suffixes = get_alias_suffixes(user)
 
     # custom domain should be put first
     ret["suffixes"] = [
-        {"suffix": suffix.suffix, "signed_suffix": suffix.signed_suffix}
+        {
+            "suffix": suffix.suffix,
+            "signed_suffix": suffix.signed_suffix,
+            "is_custom": suffix.is_custom,
+            "is_premium": suffix.is_premium,
+        }
         for suffix in suffixes
     ]
 

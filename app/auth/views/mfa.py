@@ -55,7 +55,7 @@ def mfa():
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
             login_user(user)
-            flash(f"Welcome back!", "success")
+            flash("Welcome back!", "success")
             # Redirect user to correct page
             return redirect(next_url or url_for("dashboard.index"))
         else:
@@ -67,13 +67,13 @@ def mfa():
 
         token = otp_token_form.token.data.replace(" ", "")
 
-        if totp.verify(token) and user.last_otp != token:
+        if totp.verify(token, valid_window=2) and user.last_otp != token:
             del session[MFA_USER_ID]
             user.last_otp = token
             Session.commit()
 
             login_user(user)
-            flash(f"Welcome back!", "success")
+            flash("Welcome back!", "success")
 
             # Redirect user to correct page
             response = make_response(redirect(next_url or url_for("dashboard.index")))

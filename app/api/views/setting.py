@@ -12,6 +12,7 @@ from app.models import (
     SenderFormatEnum,
     AliasSuffixEnum,
 )
+from app.proton.proton_unlink import perform_proton_account_unlink
 
 
 def setting_to_dict(user: User):
@@ -137,3 +138,12 @@ def get_available_domains_for_random_alias_v2():
     ]
 
     return jsonify(ret)
+
+
+@api_bp.route("/setting/unlink_proton_account", methods=["DELETE"])
+@require_api_auth
+def unlink_proton_account():
+    user = g.user
+    if not perform_proton_account_unlink(user):
+        return jsonify(error="The account cannot be unlinked"), 400
+    return jsonify({"ok": True})

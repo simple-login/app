@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam.
-    </h1>
+    <h1>An email sent from your alias {{ alias.email }} to  {{ website_email }} is detected as spam.</h1>
   {% endcall %}
 
   {% call text() %}
@@ -16,7 +15,6 @@
   {% endcall %}
 
   {{ render_button("View the email", refused_email_url) }}
-
   {% call text() %}
     The email is automatically deleted in 7 days.
   {% endcall %}
@@ -25,6 +23,8 @@
     Please let us know if you have any question by replying to this email.
   {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
   {{ raw_url(disable_alias_link) }}
 {% endblock %}

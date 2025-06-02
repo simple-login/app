@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
     <h1>
       Your subscription will end on <b>{{ manual_sub.end_at.format("YYYY-MM-DD") }}</b>
@@ -8,11 +9,11 @@
   {% endcall %}
 
   {% call text() %}
-    Please contact us at <a href="mailto:hi@simplelogin.io">hi@simplelogin.io</a> to renew your subscription.
+    Please <a href="https://app.simplelogin.io/dashboard/support">contact us</a>
+    to renew your subscription.
   {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
-
-
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}
-

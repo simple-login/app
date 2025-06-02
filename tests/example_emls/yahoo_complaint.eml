@@ -1,0 +1,157 @@
+X-SimpleLogin-Client-IP: 66.163.186.21
+Received-SPF: None (mailfrom) identity=mailfrom; client-ip=66.163.186.21;
+ helo=sonic326-46.consmr.mail.ne1.yahoo.com;
+ envelope-from=feedback@arf.mail.yahoo.com; receiver=<UNKNOWN>
+Received: from sonic326-46.consmr.mail.ne1.yahoo.com
+ (sonic326-46.consmr.mail.ne1.yahoo.com [66.163.186.21])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange ECDHE (P-256) server-signature RSA-PSS (2048 bits)
+ server-digest SHA256)
+	(No client certificate requested)
+	by prod4.simplelogin.co (Postfix) with ESMTPS id 160E19C47C
+	for <{{ postmaster }}>; Sun,  8 May 2022 13:31:32 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=arf.mail.yahoo.com;
+ s=arf; t=1652016690; bh=y3TXlG8d2nUmz+Mm6gBEX1p1y2rwlM+LRC89Bp+HwGo=;
+ h=Date:From:To:Subject:From:Subject:Reply-To;
+ b=HyuY58LSzfkdH9FynjNWEl6QJeeImKRbIzrnR64sY/ggFD6fF9w1/fpXDmJ8RHpB/72llGb8nkVJkn/TK+adBCZvw4Y0SC2m8qbn6BdaC5kvAWkN6VUxvQWFMWTptAmeX+UUxY2hjEXLZQwNUd4nvvhZkbdyzw5wFSpYX0hnxAA=
+X-SONIC-DKIM-SIGN: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s2048;
+ t=1652016690; bh=0SlXAOx+1D8SxkBJpASrTwUGjphtzchFZOSJr0X+U2m=;
+ h=X-Sonic-MF:Date:From:To:Subject:From:Subject;
+ b=smqcDrz5jxsmGycWk9tNncLBjcQIqBnZmsQzkJ6g8fyhQw2e30y05iTnsOBTr0S9qTPK3I2JBv0P73TH7vDAnZAnaewzj9Dymw7Z+UxXKdrPBf/tD8RGw9cX6C0eb7GUjHvbvXS03IkSGnvOPPCXLsTDXYOTflcU7A0A2L+cS9ogEBl/4AFwBf/z+lcMH20h2dZ6+wPtqPCgRY1Hf45cv4gfHrFG0a18n3BBq0doCA4cRTXeeuv06fqsUCk2GF6z0mm3YWu+umcUs16QmgjHKhy4SJHvTZfx4zFBxQEOM3hvBzriL5g0D3Rg71CdkI8TVqsyXS1YWVSQFakAw0hM+A==
+X-Sonic-MF: feedback@arf.mail.yahoo.com
+Received: from sonic.gate.mail.ne1.yahoo.com by
+ sonic326.consmr.mail.ne1.yahoo.com with HTTP; Sun, 8 May 2022 13:31:30 +0000
+Date: Sun, 8 May 2022 13:31:28 +0000 (UTC)
+From: Yahoo! Mail AntiSpam Feedback <feedback@arf.mail.yahoo.com>
+To: {{ postmaster }}
+Message-ID:
+ <1486688083.18136997.1652016688605@chakraconsumer2.asd.mail.ne1.yahoo.com>
+Subject: Original subject
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=feedback-report;
+	boundary="----=_Part_18136996_1734597748.1652016688604"
+X-Yahoo-Newman-Property: cfl
+X-Yahoo-Newman-Id: cfl-test
+X-Spamd-Result: default: False [-0.65 / 13.00];
+	DMARC_POLICY_ALLOW(-0.50)[yahoo.com,reject];
+	R_DKIM_ALLOW(-0.20)[arf.mail.yahoo.com:s=arf];
+	SUBJ_ALL_CAPS(0.15)[2];
+	MIME_GOOD(-0.10)[text/plain,multipart/alternative];
+	R_SPF_NA(0.00)[no SPF record];
+	FROM_EQ_ENVFROM(0.00)[];
+	MIME_TRACE(0.00)[0:~,1:+,2:~,3:+,4:~,5:+,6:+,7:~];
+	RCVD_TLS_LAST(0.00)[];
+	RCVD_IN_DNSWL_NONE(0.00)[66.163.186.21:from];
+	ASN(0.00)[asn:36646, ipnet:66.163.184.0/21, country:US];
+	ARC_NA(0.00)[];
+	DKIM_TRACE(0.00)[arf.mail.yahoo.com:+];
+	MID_RHS_MATCH_FROMTLD(0.00)[];
+	TO_MATCH_ENVRCPT_ALL(0.00)[];
+	FROM_HAS_DN(0.00)[];
+	RCVD_COUNT_TWO(0.00)[2];
+	TO_DN_NONE(0.00)[];
+	RCPT_COUNT_ONE(0.00)[1];
+	NEURAL_SPAM(0.00)[0.429];
+	DWL_DNSWL_NONE(0.00)[yahoo.com:dkim]
+X-Rspamd-Queue-Id: 160E19C47C
+X-Rspamd-Server: prod4
+Content-Transfer-Encoding: 7bit
+
+------=_Part_18136996_1734597748.1652016688604
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+This is an email abuse report for an email message from simplelogin.co on Sun, 8 May 2022 11:12:35 +0000
+
+------=_Part_18136996_1734597748.1652016688604
+Content-Type: message/feedback-report
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+Feedback-Type: abuse
+User-Agent: Yahoo!-Mail-Feedback/2.0
+Version: 0.1
+Original-Mail-From:
+ <{{ return_path }}>
+Original-Rcpt-To: {{ rcpt }}
+Received-Date: Sun, 8 May 2022 11:12:35 +0000
+Reported-Domain: simplelogin.co
+Authentication-Results: authentication result string is not available
+
+
+------=_Part_18136996_1734597748.1652016688604
+Content-Type: message/rfc822
+Content-Disposition: inline
+
+Received: from 10.217.151.74
+ by atlas316.free.mail.ne1.yahoo.com with HTTPS;
+ Sun, 8 May 2022 11:12:34 +0000
+Return-Path:
+ <{{ return_path }}>
+X-Originating-Ip: [176.129.238.160]
+Received-SPF: pass (domain of simplelogin.co designates 176.119.200.160 as
+ permitted sender)
+Authentication-Results: atlas316.free.mail.ne1.yahoo.com;
+ dkim=pass header.i=@simplelogin.co header.s=dkim;
+ spf=pass smtp.mailfrom=simplelogin.co;
+ dmarc=pass(p=QUARANTINE) header.from=simplelogin.co;
+X-Apparently-To: syn_flood91@yahoo.com; Sun, 8 May 2022 11:12:35 +0000
+X-YMailISG: 5XbMksQWLDvXV9CBjagtqIT6OTC44ku5XiuZJQp_W6hhWfR.
+ .wUIhFV6vRR_JeMUxC0ZAvugteAP2pe.bqk06ovvYnhJMg_HTvcmfVltbWxQ
+ tK7xNSs8D2PWQdyDDzB3rdFdIIfSrQnDTGjP2xpTAqLQk3IXSuUBX7s4f8uA
+ WUELPWj36_Xtqrwyj.ya4Ezw_ePzPhZGmMdCsbz2H5Jh45TLbk5HhL.TDDbH
+ 9Dz__HKLUC8acH0hu1vrPvo1ljzwbl_0cqlj10qMIChpB51XVDtyNA_WgWvE
+ QL1hFHS0tScfRT0xATM8w8FJv1eA0ODjakDtTRgmaWBTphzeoR.FyTBj14y5
+ burx6lkUqipfP7UZpNmcNDYHQdTEmdGa8JDZMX.lpM5IMOhkByIQuoTN4.Cx
+ 8qz9kb.o0DqxqNRgn4_fRRAoSn1xejDbzZMu.SWSvJ1KJwAfLtep37ISqNKl
+ yeBeDJFMnHUjRD8B2wBB46zq4ngHFWjBGkAGQVBssLzj594FXg13aO.TnJU7
+ WJ_cUSzoaH9HjgYDTi4.1x68jVxpZIEdhDe7pjLCUL2ugWdar9S7pFlyKWfa
+ iTH8yQ10NXtLCwGpJ.0kgZH2WXJgyJmrq0a3j63skib7WJYtKOXfsbHV8b9e
+ WxClOETCe03PtdD6G2sjEJSNFyTH_Qzzq6_21PO6kjmnEnBbibAnkiJbGhIJ
+ kOSqyp_vFqstpd38vtt7iLI8L3PkyZDQXS0hB1ZCOsZqBDGJXAoWFRBtxMSd
+ rMVkdvB6r8xJtn.1JrV1hpX4yRbCuEnCCPcwtGamlpyq5LG6YanKUVB868KF
+ UuZ4AHFwi.m_FYHalwtfCaArtWzYybl2nQQLjPbnXxqNvfwKt3ATKFEO40ZV
+ w1Ri7y.cO__09.eQHKIUNgMNeWgt.luD3thsEl0yz_ThzrCEkXDB1xAPNnLV
+ tb03RulEB0xNauYTuWgKR8WJzkO4LuXMlzNAAYBQLQy_t0GoezAs7Z4oq.CH
+ EfTK88cDJ7j7dXcXBi7q6g1NBZT3tyd9Bfn2DVdFaWAjWV9Lb8tir6J43MDP
+ byTrZ_zJxTWKgafhOxL0gZbd5xIEZ1eHHeQO5pVZlN6FR1awozFgS4NcZu5u
+ 5qRtn6zHo3zNe9ORwwxqlHAEJR_5I09WYSdmTxh2QkkDQLjSlwUNV4K8jxdH
+ L4ePIzNCQCt_bsGoG3uPXl8jtPD4sUWGY1lCeKAm.AHgZ.pSXXypMUpq4y14
+ NihY89H61y5ZXo4Zd77shda_
+Received: from 176.119.200.160 (EHLO mail-200160.simplelogin.co)
+ by 10.217.151.74 with SMTPs
+ (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256);
+ Sun, 08 May 2022 11:12:34 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=simplelogin.co;
+	s=dkim; t=1652008349; h=From:To:Subject:Message-ID:Date;
+	bh=9HnrBUpZUe8OSXqTw1qF667IwLtHI8DqiyD0yAovIO4=;
+	b=PsxiMydvEQveb20xgUvvq3DhxlLyqqoPW7sC8d/pAm8tj7T2O+7z5xxR6vVbgz823Bglzc
+	djb3pRvNLgHnTozC+FiFOF8nVlWGybosn5oRfmNGkF9bhr0bJmfcDhiuC/tOaZKkod2lbf
+	jQ8bqMZhCsN/xVpkMqJdNJefdkj3dP4=
+MIME-Version: 1.0
+Date: Sun, 8 May 2022 04:11:42 -0700
+Message-ID:
+ <CAKGh96GHg2kuwvm4biQ-PF-4-8SPZ6JyPj-=GpoYZ6njctoRtg@mail.gmail.com>
+Subject: MF
+Content-Type: multipart/alternative; boundary="0000000000006dd95f05de7e2a70"
+Content-Transfer-Encoding: 7bit
+X-SimpleLogin-Type: Forward
+X-SimpleLogin-EmailLog-ID: 41263490
+X-SimpleLogin-Envelope-From: {{ sender }}
+X-SimpleLogin-Envelope-To: {{ rcpt }}
+From: {{ sender }}
+To: {{ rcpt_comma_list }}
+List-Unsubscribe: <mailto:unsubscribe@simplelogin.co?subject=1231546=>
+X-SimpleLogin-Want-Signing: yes
+Content-Length: 473
+
+--0000000000006dd95f05de7e2a70
+Content-Type: text/plain; charset="UTF-8"
+
+Here goes the original email content
+
+--0000000000006dd95f05de7e2a70--
+
+
+------=_Part_18136996_1734597748.1652016688604--

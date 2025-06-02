@@ -1,0 +1,21 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi,
+
+This is SimpleLogin team.
+
+{{ provider }} has informed us about an email sent to {{ email }} that might have been considered as spam,
+either by you or by {{ provider }}.
+
+Please note that explicitly marking a SimpleLogin's forwarded email as Spam
+  affects SimpleLogin email delivery,
+  has a negative effect for all users and is a violation of our terms and condition.
+
+If somehow {{ provider }} considers a forwarded email as Spam, it helps us if you can move the email
+  out of the Spam folder. You can also set up a filter to avoid this
+  from happening in the future using this guide at
+  https://simplelogin.io/docs/getting-started/troubleshooting/
+
+Please don't put our emails into the Spam folder. This can end up in your account being disabled on SimpleLogin.
+{% endblock %}

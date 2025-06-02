@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% call text() %}
+    Hello,
+  {% endcall %}
+
+  {% call text() %}
+    You have tried to register multiple times to {{ service }}, and this is against the terms of service of SimpleLogin. Please don't do that anymore.
+  {% endcall %}
+
+  {% call text() %}
+    If you continue registering multiple accounts to a single service we will have to disable your account.
+  {% endcall %}
+
+{% endblock %}

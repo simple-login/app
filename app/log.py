@@ -10,7 +10,7 @@ from app.config import (
 
 # this format allows clickable link to code source in PyCharm
 _log_format = (
-    "%(asctime)s - %(name)s - %(levelname)s - %(process)d - "
+    "%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(request_id)s"
     '"%(pathname)s:%(lineno)d" - %(funcName)s() - %(message_id)s - %(message)s'
 )
 _log_formatter = logging.Formatter(_log_format)
@@ -37,6 +37,21 @@ class EmailHandlerFilter(logging.Filter):
         return _MESSAGE_ID
 
 
+class RequestIdFilter(logging.Filter):
+    """automatically add request-id to keep track of a request"""
+
+    def filter(self, record):
+        from flask import g, has_request_context
+
+        request_id = ""
+        if has_request_context() and hasattr(g, "request_id"):
+            ctx_request_id = getattr(g, "request_id")
+            if ctx_request_id:
+                request_id = f"{ctx_request_id} - "
+        record.request_id = request_id
+        return True
+
+
 def _get_console_handler():
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(_log_formatter)
@@ -54,6 +69,7 @@ def _get_logger(name) -> logging.Logger:
     logger.addHandler(_get_console_handler())
 
     logger.addFilter(EmailHandlerFilter())
+    logger.addFilter(RequestIdFilter())
 
     # no propagation to avoid propagating to root logger
     logger.propagate = False

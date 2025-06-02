@@ -1,4 +1,5 @@
 from io import BytesIO
+from urllib.parse import urlparse
 
 from flask import request, render_template, redirect, url_for, flash
 from flask_login import current_user, login_required
@@ -11,6 +12,7 @@ from app.config import ADMIN_EMAIL
 from app.db import Session
 from app.developer.base import developer_bp
 from app.email_utils import send_email
+from app.image_validation import detect_image_format, ImageFormat
 from app.log import LOG
 from app.models import Client, RedirectUri, File, Referral
 from app.utils import random_string
@@ -46,16 +48,25 @@ def client_detail(client_id):
         approval_form.description.data = client.description
 
     if action == "edit" and form.validate_on_submit():
+        parsed_url = urlparse(form.url.data)
+        if parsed_url.scheme != "https":
+            flash("Only https urls are allowed", "error")
+            return redirect(url_for("developer.index"))
         client.name = form.name.data
         client.home_url = form.url.data
 
         if form.icon.data:
-            # todo: remove current icon if any
-            # todo: handle remove icon
+            icon_data = form.icon.data.read(10240)
+            if detect_image_format(icon_data) == ImageFormat.Unknown:
+                flash("Unknown file format", "warning")
+                return redirect(url_for("developer.index"))
+            if client.icon:
+                s3.delete(client.icon_id)
+                File.delete(client.icon)
             file_path = random_string(30)
             file = File.create(path=file_path, user_id=client.user_id)
 
-            s3.upload_from_bytesio(file_path, BytesIO(form.icon.data.read()))
+            s3.upload_from_bytesio(file_path, BytesIO(icon_data))
 
             Session.flush()
             LOG.d("upload file %s to s3", file)
@@ -87,7 +98,7 @@ def client_detail(client_id):
         )
 
         flash(
-            f"Thanks for submitting, we are informed and will come back to you asap!",
+            "Thanks for submitting, we are informed and will come back to you asap!",
             "success",
         )
 

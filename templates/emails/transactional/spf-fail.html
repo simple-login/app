@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
     <h1>
       Attempt to send an email from your alias <b>{{ alias }}</b> from an unknown IP address
@@ -14,9 +15,12 @@
   {% endcall %}
 
   {% call text() %}
-    - From: <b>{{ alias }}</b> <br>
-    - To: <b>{{ to_email }}</b> <br>
-    - Subject: <b>{{ subject }}</b> <br>
+    - From: <b>{{ alias }}</b>
+    <br />
+    - To: <b>{{ to_email }}</b>
+    <br />
+    - Subject: <b>{{ subject }}</b>
+    <br />
     - Time: <b>{{ time.humanize() }}</b>
   {% endcall %}
 
@@ -33,5 +37,7 @@
     Please only turn this protection off this if you know what you're doing :).
   {% endcall %}
 
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}

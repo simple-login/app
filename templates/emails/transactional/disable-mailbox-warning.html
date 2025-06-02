@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Issues with {{ mailbox.email }}.
-    </h1>
+    <h1>Issues with {{ mailbox.email }}.</h1>
   {% endcall %}
 
   {% call text() %}
-    We have detected that your mailbox can't reliably receive emails from SimpleLogin for a consecutive period of time. <br>
+    We have detected that your mailbox can't reliably receive emails from SimpleLogin for a consecutive period of time.
+    <br />
     The mailbox will be disabled in 5 days if the problem isn't solved by then.
   {% endcall %}
 
@@ -21,11 +21,9 @@
   {% endcall %}
 
   {% call text() %}
-    Best, <br/>
+    Best,
+    <br />
     SimpleLogin Team.
   {% endcall %}
 
-
 {% endblock %}
-
-

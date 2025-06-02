@@ -13,7 +13,7 @@ from app.paddle_utils import cancel_subscription, change_plan
 @login_required
 def billing():
     # sanity check: make sure this page is only for user who has paddle subscription
-    sub: Subscription = current_user.get_subscription()
+    sub: Subscription = current_user.get_paddle_subscription()
 
     if not sub:
         flash("You don't have any active subscription", "warning")

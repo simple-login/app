@@ -1,24 +1,20 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
+
 {% set active_page = "setting" %}
-{% block title %}
-  Cancel MFA
-{% endblock %}
-
-
+{% block title %}Cancel MFA{% endblock %}
 {% block default_content %}
+
   <div class="card">
     <div class="card-body">
       <h1 class="h2">Two Factor Authentication</h1>
-
       <div>
         Disabling TOTP reduces the security of your account, please make sure to re-activate it later
         or use WebAuthn (FIDO).
       </div>
-
       <form method="post">
+        {{ csrf_form.csrf_token }}
         <button class="btn btn-danger mt-2">Disable TOTP</button>
       </form>
     </div>
-
   </div>
 {% endblock %}

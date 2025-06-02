@@ -1,31 +1,42 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
+
 {% set active_page = "setting" %}
-{% block title %}
-  SUDO MODE
-{% endblock %}
-
-
+{% block title %}SUDO MODE{% endblock %}
 {% block default_content %}
+
   <div class="card">
     <div class="card-body">
       <h1 class="h2">Entering Sudo Mode</h1>
-      <p>
-        You are trying to change sensitive settings
-      </p>
-      <p>
-        Please enter the password of your account so that we can ensure it's you.
-      </p>
-
+      <p>The next page contains security related setting.</p>
+      <p>Please enter your account password so that we can ensure it's you.</p>
       <form method="post">
         {{ password_check_form.csrf_token }}
-
         <div class="font-weight-bold mt-5">Password</div>
-
         {{ password_check_form.password(class="form-control", autofocus="true") }}
         {{ render_field_errors(password_check_form.password) }}
         <button class="btn btn-lg btn-danger mt-2">Submit</button>
       </form>
+      {% if connect_with_proton %}
 
+        <div class="my-3">
+          <p>Alternatively you can use your Proton credentials to ensure it's you.</p>
+        </div>
+        <a class="btn btn-primary btn-block mt-2 proton-button"
+           href="{{ url_for('auth.proton_login', next=next) }}"
+           style="max-width: 400px">
+          <img class="mr-2" src="/static/images/proton.svg" />
+          Authenticate with Proton
+        </a>
+      {% endif %}
+      {% if connect_with_oidc %}
+
+        <div class="my-3">
+          <p>Alternatively you can use your SSO credentials to ensure it's you.</p>
+          <a class="btn btn-primary btn-block mt-2 btn-social w-25"
+             href="{{ url_for('auth.oidc_login', next=next) }}">
+            <i class="fa {{ connect_with_oidc_icon }}"></i> Authenticate with SSO
+          </a>
+        {% endif %}
+      </div>
     </div>
-  </div>
-{% endblock %}
+  {% endblock %}

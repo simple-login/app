@@ -1,17 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Cannot create alias {{ alias }} on-the-fly
-    </h1>
+    <h1>Cannot create alias {{ alias }} on-the-fly</h1>
   {% endcall %}
 
   {{ render_text("An email has been sent to the alias <b>" + alias + "</b> that would be created automatically as you own the directory <b>" + directory + "</b>.") }}
-
   {{ render_text("However you have reached the alias limit in your current plan, this creation cannot happen.") }}
-
-  {{ render_text('Please upgrade to premium plan in order to use this feature.') }}
-
-  {{ render_text('Thanks, <br />SimpleLogin Team.') }}
+  {{ render_text("Please upgrade to premium plan in order to use this feature.") }}
+  {{ render_text('Thanks,
+    <br />
+    SimpleLogin Team.') }}
 {% endblock %}

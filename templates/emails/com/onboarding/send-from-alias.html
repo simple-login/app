@@ -1,38 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   {% call text() %}
-    <h1>
-      Send emails from your alias.
-    </h1>
+    <h1>Send emails from your alias.</h1>
   {% endcall %}
 
   {% call text() %}
     If you want to reply to an email, just hit "Reply"
     and the response will come from your alias. Your personal email address stays hidden.
-
   {% endcall %}
 
   {% call text() %}
     To send an email to a <b>new contact</b>, please follow the steps below.
-    You can also watch this <a href="https://youtu.be/GN060XMt6Pc">Youtube video</a>
+    You can also watch this
+    <a href="https://youtu.be/GN060XMt6Pc">Youtube video</a>
     that quickly walks you through the steps.
   {% endcall %}
 
   {% call text() %}
     1. Click the <b>Contacts</b> button on the alias you want to send emails from
-    <br>
-    <img src="https://simplelogin.io/docs/getting-started/send-email/contacts.png" style="max-width: 500px">
+    <br />
+    <img src="https://simplelogin.io/docs/getting-started/send-email/contacts.png"
+         style="max-width: 500px">
   {% endcall %}
 
   {% call text() %}
-    2. Enter your contact email, this will create a <b>reverse-alias</b> for the contact. <br>
-    <img src="https://simplelogin.io/docs/getting-started/send-email/new-contact.png" style="max-width: 500px">
+    2. Enter your contact email, this will create a <b>reverse-alias</b> for the contact.
+    <br />
+    <img src="https://simplelogin.io/docs/getting-started/send-email/new-contact.png"
+         style="max-width: 500px">
   {% endcall %}
 
   {% call text() %}
-    3. Send the email to this reverse-alias <b>instead of the contact email</b>. <br>
-    <img src="https://simplelogin.io/docs/getting-started/send-email/reverse-alias.png" style="max-width: 500px">
+    3. Send the email to this reverse-alias <b>instead of the contact email</b>.
+    <br />
+    <img src="https://simplelogin.io/docs/getting-started/send-email/reverse-alias.png"
+         style="max-width: 500px">
   {% endcall %}
 
   {% call text() %}
@@ -41,8 +45,8 @@
   {% endcall %}
 
 {% endblock %}
-
 {% block footer %}
+
   This email is sent to {{ to_email }} and is part of our onboarding series. Unsubscribe on
   <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
 {% endblock %}

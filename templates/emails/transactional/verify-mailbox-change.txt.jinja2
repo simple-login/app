@@ -1,0 +1,13 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+Hi
+
+You recently requested to change mailbox {{mailbox_email}} to {{mailbox_new_email}}
+
+To confirm, please click on this link:
+
+{{link}}
+
+This link will only be valid during the next 15 minutes.
+{% endblock %}

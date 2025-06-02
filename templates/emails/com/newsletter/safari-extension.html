@@ -1,26 +1,43 @@
 {% extends "base.html" %}
 
 {% block content %}
+
   <tr>
-    <td align="left" valign="top" style="border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%; width: 87.5%; font-size: 14px; font-weight: 400; line-height: 160%;
-			padding-top: 25px;
-			color: #000000;
-			font-family: sans-serif;" class="paragraph">
+    <td align="left"
+        valign="top"
+        style="border-collapse: collapse;
+               border-spacing: 0;
+               margin: 0;
+               padding: 0;
+               padding-left: 6.25%;
+               padding-right: 6.25%;
+               width: 87.5%;
+               font-size: 14px;
+               font-weight: 400;
+               line-height: 160%;
+               padding-top: 25px;
+               color: #000000;
+               font-family: sans-serif"
+        class="paragraph">
       This email is sent to {{ user.email }}.
-      Unsubscribe on <a href="{{URL}}/dashboard/setting#notification">Settings</a>
-      <hr>
+      Unsubscribe on
+      <a href="{{ URL }}/dashboard/setting#notification">Settings</a>
+      <hr />
     </td>
   </tr>
-
   {{ render_text("Hi") }}
   {{ render_text("If you use Safari on a MacBook or iMac, you should check out our new Safari extension.") }}
-  {{ render_text('It can be installed on <a href="https://apps.apple.com/app/id1494051017">App Store</a>. Its code is available on <a href="https://github.com/simple-login/mac-app">GitHub</a>.') }}
-
-  {{ render_text('<img src="https://static.simplelogin.io/safari-extension.png" style="max-width: 600px">') }}
-
-  {{ render_text('See our annoucement post for more information on this feature <a href="https://simplelogin.io/blog/safari-extension/">Introducing Safari extension</a>.') }}
-
+  {{ render_text('It can be installed on
+    <a href="https://apps.apple.com/app/id6475835429">App Store</a>
+    . Its code is available on
+    <a href="https://github.com/simple-login/mac-app">GitHub</a>
+    .') }}
+  {{ render_text('
+    <img src="https://static.simplelogin.io/safari-extension.png"
+         style="max-width: 600px">
+    ') }}
+  {{ render_text('See our annoucement post for more information on this feature
+    <a href="https://simplelogin.io/blog/safari-extension/">Introducing Safari extension</a>
+    .') }}
   {{ render_text("As usual, let me know if you have any question by replying to this email.") }}
-
 {% endblock %}
-

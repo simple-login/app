@@ -1,9 +1,15 @@
+from __future__ import annotations
+
+import base64
+import dataclasses
 import enum
+import hashlib
+import hmac
 import os
 import random
+import secrets
 import uuid
-from email.utils import formataddr
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Union
 
 import arrow
 import sqlalchemy as sa
@@ -13,37 +19,27 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment
-from sqlalchemy import orm
+from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import deferred
+from sqlalchemy.orm.exc import ObjectDeletedError
+from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
+from app import config, rate_limiter
 from app import s3
-from app.config import (
-    MAX_NB_EMAIL_FREE_PLAN,
-    URL,
-    AVATAR_URL_EXPIRATION,
-    JOB_ONBOARDING_1,
-    JOB_ONBOARDING_2,
-    JOB_ONBOARDING_4,
-    LANDING_PAGE_URL,
-    FIRST_ALIAS_DOMAIN,
-    DISABLE_ONBOARDING,
-    UNSUBSCRIBER,
-    ALIAS_RANDOM_SUFFIX_LENGTH,
-    MAX_NB_SUBDOMAIN,
-    MAX_NB_DIRECTORY,
-    ROOT_DIR,
-)
+from app.constants import JobType
 from app.db import Session
+from app.dns_utils import get_mx_domains
 from app.errors import (
     AliasInTrashError,
     DirectoryInTrashError,
     SubdomainInTrashError,
     CannotCreateContactForReverseAlias,
 )
+from app.handler.unsubscribe_encoder import UnsubscribeAction, UnsubscribeEncoder
 from app.log import LOG
 from app.oauth_models import Scope
 from app.pw_models import PasswordOracle
@@ -52,10 +48,12 @@ from app.utils import (
     random_string,
     random_words,
     sanitize_email,
-    random_word,
 )
 
 Base = declarative_base()
+
+PADDLE_SUBSCRIPTION_GRACE_DAYS = 14
+_PARTNER_SUBSCRIPTION_GRACE_DAYS = 14
 
 
 class TSVector(sa.types.TypeDecorator):
@@ -160,6 +158,8 @@ class File(Base, ModelMixin):
     path = sa.Column(sa.String(128), unique=True, nullable=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
+    __table_args__ = (sa.Index("ix_file_user_id", "user_id"),)
+
     def get_url(self, expires_in=3600):
         return s3.get_url(self.path, expires_in)
 
@@ -235,63 +235,82 @@ class AuditLogActionEnum(EnumE):
     disable_2fa = 5
     logged_as_user = 6
     extend_subscription = 7
+    download_provider_complaint = 8
+    disable_user = 9
+    enable_user = 10
+    stop_trial = 11
+    unlink_user = 12
+    delete_custom_domain = 13
 
 
-class DmarcCheckResult(EnumE):
-    allow = 0
-    soft_fail = 1
-    quarantine = 2
-    reject = 3
-    not_available = 4
-    bad_policy = 5
-
-    @staticmethod
-    def get_string_dict():
-        return {
-            "DMARC_POLICY_ALLOW": DmarcCheckResult.allow,
-            "DMARC_POLICY_SOFTFAIL": DmarcCheckResult.soft_fail,
-            "DMARC_POLICY_QUARANTINE": DmarcCheckResult.quarantine,
-            "DMARC_POLICY_REJECT": DmarcCheckResult.reject,
-            "DMARC_NA": DmarcCheckResult.not_available,
-            "DMARC_BAD_POLICY": DmarcCheckResult.bad_policy,
-        }
+class Phase(EnumE):
+    unknown = 0
+    forward = 1
+    reply = 2
 
 
-class SPFCheckResult(EnumE):
-    allow = 0
-    fail = 1
-    soft_fail = 1
-    neutral = 2
-    temp_error = 3
-    not_available = 4
-    perm_error = 5
-
-    @staticmethod
-    def get_string_dict():
-        return {
-            "R_SPF_ALLOW": SPFCheckResult.allow,
-            "R_SPF_FAIL": SPFCheckResult.fail,
-            "R_SPF_SOFTFAIL": SPFCheckResult.soft_fail,
-            "R_SPF_NEUTRAL": SPFCheckResult.neutral,
-            "R_SPF_DNSFAIL": SPFCheckResult.temp_error,
-            "R_SPF_NA": SPFCheckResult.not_available,
-            "R_SPF_PERMFAIL": SPFCheckResult.perm_error,
-        }
+class VerpType(EnumE):
+    bounce_forward = 0
+    bounce_reply = 1
+    transactional = 2
 
 
-class SpamdResult:
-    def __init__(self):
-        self.dmarc: DmarcCheckResult = DmarcCheckResult.not_available
-        self.spf: SPFCheckResult = SPFCheckResult.not_available
+class JobState(EnumE):
+    ready = 0
+    taken = 1
+    done = 2
+    error = 3
 
-    def set_dmarc_result(self, dmarc_result: DmarcCheckResult):
-        self.dmarc = dmarc_result
 
-    def set_spf_result(self, spf_result: SPFCheckResult):
-        self.spf = spf_result
+class UnsubscribeBehaviourEnum(EnumE):
+    DisableAlias = 0
+    BlockContact = 1
+    PreserveOriginal = 2
 
-    def event_data(self) -> Dict:
-        return {"header": "present", "dmarc": self.dmarc, "spf": self.spf}
+
+class AliasDeleteReason(EnumE):
+    Unspecified = 0
+    UserHasBeenDeleted = 1
+    ManualAction = 2
+    DirectoryDeleted = 3
+    MailboxDeleted = 4
+    CustomDomainDeleted = 5
+
+
+class UserAliasDeleteAction(EnumE):
+    MoveToTrash = 0
+    DeleteImmediately = 1
+
+
+class JobPriority(EnumE):
+    Low = 1
+    Default = 50
+    High = 100
+
+
+class IntEnumType(sa.types.TypeDecorator):
+    impl = sa.Integer
+
+    def __init__(self, enumtype, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._enum_type = enumtype
+
+    def process_bind_param(self, enum_obj, dialect):
+        if enum_obj is None:
+            return None
+        return enum_obj.value
+
+    def process_result_value(self, enum_value, dialect):
+        if enum_value is None:
+            return None
+        return self._enum_type(enum_value)
+
+
+@dataclasses.dataclass
+class AliasOptions:
+    show_sl_domains: bool = True
+    show_partner_domains: Optional[Partner] = None
+    show_partner_premium: Optional[bool] = None
 
 
 class Hibp(Base, ModelMixin):
@@ -312,10 +331,14 @@ class HibpNotifiedAlias(Base, ModelMixin):
     """
 
     __tablename__ = "hibp_notified_alias"
-    alias_id = sa.Column(sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey("alias.id", ondelete="cascade"), nullable=False, index=True
+    )
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
 
     notified_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
+
+    __table_args__ = (sa.Index("ix_hibp_notified_alias_user_id", "user_id"),)
 
 
 class Fido(Base, ModelMixin):
@@ -331,9 +354,48 @@ class Fido(Base, ModelMixin):
     name = sa.Column(sa.String(128), nullable=False, unique=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
 
+    __table_args__ = (sa.Index("ix_fido_user_id", "user_id"),)
+
+
+class AbuserData(Base, ModelMixin):
+    __tablename__ = "abuser_data"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    encrypted_bundle = sa.Column(sa.LargeBinary(), nullable=False)
+
+    __table_args__ = (sa.Index("ix_abuser_data_id", "id"),)
+
+
+class AbuserLookup(Base, ModelMixin):
+    __tablename__ = "abuser_lookup"
+
+    hashed_address = sa.Column(sa.String(64), nullable=False, index=True)
+    abuser_data_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("abuser_data.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+    bundle_k = sa.Column(sa.LargeBinary(), nullable=False)
+
+
+class AbuserAuditLog(Base, ModelMixin):
+    __tablename__ = "abuser_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    admin_id = sa.Column(sa.Integer, nullable=True)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
     __tablename__ = "users"
+
+    FLAG_FREE_DISABLE_CREATE_CONTACTS = 1 << 0
+    FLAG_CREATED_FROM_PARTNER = 1 << 1
+    FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
+    FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
+
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
     name = sa.Column(sa.String(128), nullable=True)
@@ -422,7 +484,10 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     )
 
     referral_id = sa.Column(
-        sa.ForeignKey("referral.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("referral.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     referral = orm.relationship("Referral", foreign_keys=[referral_id])
@@ -439,12 +504,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     # newsletter is sent to this address
     newsletter_alias_id = sa.Column(
-        sa.ForeignKey("alias.id", ondelete="SET NULL"), nullable=True, default=None
+        sa.ForeignKey("alias.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     # whether to include the sender address in reverse-alias
     include_sender_in_reverse_alias = sa.Column(
-        sa.Boolean, default=False, nullable=False, server_default="0"
+        sa.Boolean, default=True, nullable=False, server_default="0"
     )
 
     # whether to use random string or random word as suffix
@@ -453,7 +521,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     random_alias_suffix = sa.Column(
         sa.Integer,
         nullable=False,
-        default=AliasSuffixEnum.random_string.value,
+        default=AliasSuffixEnum.word.value,
         server_default=str(AliasSuffixEnum.random_string.value),
     )
 
@@ -522,24 +590,79 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         server_default=BlockBehaviourEnum.return_2xx.name,
     )
 
-    # to keep existing behavior, the server default is TRUE whereas for new user, the default value is FALSE
     include_header_email_header = sa.Column(
-        sa.Boolean, default=False, nullable=False, server_default="1"
+        sa.Boolean, default=True, nullable=False, server_default="1"
+    )
+
+    # user opted in for data breach check
+    enable_data_breach_check = sa.Column(
+        sa.Boolean, default=False, nullable=False, server_default="0"
+    )
+
+    # bitwise flags. Allow for future expansion
+    flags = sa.Column(
+        sa.BigInteger,
+        default=FLAG_FREE_DISABLE_CREATE_CONTACTS,
+        server_default="0",
+        nullable=False,
+    )
+
+    # Keep original unsub behaviour
+    unsub_behaviour = sa.Column(
+        IntEnumType(UnsubscribeBehaviourEnum),
+        default=UnsubscribeBehaviourEnum.PreserveOriginal,
+        server_default=str(UnsubscribeBehaviourEnum.DisableAlias.value),
+        nullable=False,
+    )
+
+    # Trigger hard deletion of the account at this time
+    delete_on = sa.Column(ArrowType, default=None)
+
+    # Action to perform when deleting an alias
+    alias_delete_action = sa.Column(
+        IntEnumType(UserAliasDeleteAction),
+        default=UserAliasDeleteAction.MoveToTrash,
+        server_default=str(UserAliasDeleteAction.MoveToTrash.value),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        sa.Index(
+            "ix_users_activated_trial_end_lifetime", activated, trial_end, lifetime
+        ),
+        sa.Index("ix_users_delete_on", delete_on),
+        sa.Index("ix_users_default_mailbox_id", default_mailbox_id),
+        sa.Index(
+            "ix_users_default_alias_custom_domain_id", default_alias_custom_domain_id
+        ),
+        sa.Index("ix_users_profile_picture_id", profile_picture_id),
+        sa.Index(
+            "idx_users_email_trgm",
+            "email",
+            postgresql_ops={"email": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
     @property
     def directory_quota(self):
         return min(
             self._directory_quota,
-            MAX_NB_DIRECTORY - Directory.filter_by(user_id=self.id).count(),
+            config.MAX_NB_DIRECTORY - Directory.filter_by(user_id=self.id).count(),
         )
 
     @property
     def subdomain_quota(self):
         return min(
             self._subdomain_quota,
-            MAX_NB_SUBDOMAIN
+            config.MAX_NB_SUBDOMAIN
             - CustomDomain.filter_by(user_id=self.id, is_sl_subdomain=True).count(),
+        )
+
+    @property
+    def created_by_partner(self):
+        return User.FLAG_CREATED_FROM_PARTNER == (
+            self.flags & User.FLAG_CREATED_FROM_PARTNER
         )
 
     @staticmethod
@@ -554,8 +677,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return str(self.id)
 
     @classmethod
-    def create(cls, email, name="", password=None, **kwargs):
-        user: User = super(User, cls).create(email=email, name=name, **kwargs)
+    def create(cls, email, name="", password=None, from_partner=False, **kwargs):
+        email = sanitize_email(email)
+        user: User = super(User, cls).create(email=email, name=name[:100], **kwargs)
 
         if password:
             user.set_password(password)
@@ -565,6 +689,33 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         mb = Mailbox.create(user_id=user.id, email=user.email, verified=True)
         Session.flush()
         user.default_mailbox_id = mb.id
+
+        # generate an alternative_id if needed
+        if "alternative_id" not in kwargs:
+            user.alternative_id = str(uuid.uuid4())
+
+        from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+
+        trail = ". Created from partner" if from_partner else ""
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.CreateUser,
+            message=f"Created user {email}{trail}",
+        )
+
+        # If the user is created from partner, do not notify
+        # nor give a trial
+        if from_partner:
+            user.flags = user.flags | User.FLAG_CREATED_FROM_PARTNER
+            user.notification = False
+            user.trial_end = None
+            Job.create(
+                name=JobType.SEND_PROTON_WELCOME_1.value,
+                payload={"user_id": user.id},
+                run_at=arrow.now(),
+            )
+            Session.flush()
+            return user
 
         # create a first alias mail to show user how to use when they login
         alias = Alias.create_new(
@@ -579,27 +730,23 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         user.newsletter_alias_id = alias.id
         Session.flush()
 
-        # generate an alternative_id if needed
-        if "alternative_id" not in kwargs:
-            user.alternative_id = str(uuid.uuid4())
-
-        if DISABLE_ONBOARDING:
+        if config.DISABLE_ONBOARDING:
             LOG.d("Disable onboarding emails")
             return user
 
         # Schedule onboarding emails
         Job.create(
-            name=JOB_ONBOARDING_1,
+            name=JobType.ONBOARDING_1.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=1),
         )
         Job.create(
-            name=JOB_ONBOARDING_2,
+            name=JobType.ONBOARDING_2.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=2),
         )
         Job.create(
-            name=JOB_ONBOARDING_4,
+            name=JobType.ONBOARDING_4.value,
             payload={"user_id": user.id},
             run_at=arrow.now().shift(days=3),
         )
@@ -607,53 +754,106 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
         return user
 
+    @classmethod
+    def delete(cls, obj_id, commit=False):
+        # Internal import to avoid global import cycles
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import UserDeleted, EventContent
+
+        user: User = cls.get(obj_id)
+        EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
+
+        # Manually delete all aliases for the user that is about to be deleted
+        from app.alias_delete import delete_alias
+
+        for alias in Alias.filter_by(user_id=user.id):
+            delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
+
+        res = super(User, cls).delete(obj_id)
+        if commit:
+            Session.commit()
+
+        return res
+
+    def get_active_subscription(
+        self, include_partner_subscription: bool = True
+    ) -> Optional[
+        Union[
+            Subscription
+            | AppleSubscription
+            | ManualSubscription
+            | CoinbaseSubscription
+            | PartnerSubscription
+        ]
+    ]:
+        sub: Subscription = self.get_paddle_subscription()
+        if sub:
+            return sub
+
+        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
+        if apple_sub and apple_sub.is_valid():
+            return apple_sub
+
+        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
+        if manual_sub and manual_sub.is_active():
+            return manual_sub
+
+        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
+            user_id=self.id
+        )
+        if coinbase_subscription and coinbase_subscription.is_active():
+            return coinbase_subscription
+
+        if include_partner_subscription:
+            partner_sub: PartnerSubscription = PartnerSubscription.find_by_user_id(
+                self.id
+            )
+            if partner_sub and partner_sub.is_active():
+                return partner_sub
+
+        return None
+
+    def get_active_subscription_end(
+        self, include_partner_subscription: bool = True
+    ) -> Optional[arrow.Arrow]:
+        sub = self.get_active_subscription(
+            include_partner_subscription=include_partner_subscription
+        )
+        if isinstance(sub, Subscription):
+            return arrow.get(sub.next_bill_date)
+        if isinstance(sub, AppleSubscription):
+            return sub.expires_date
+        if isinstance(sub, ManualSubscription):
+            return sub.end_at
+        if isinstance(sub, CoinbaseSubscription):
+            return sub.end_at
+        return None
+
     # region Billing
-    def lifetime_or_active_subscription(self) -> bool:
+    def lifetime_or_active_subscription(
+        self, include_partner_subscription: bool = True
+    ) -> bool:
         """True if user has lifetime licence or active subscription"""
         if self.lifetime:
             return True
 
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return True
-
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return True
-
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and manual_sub.is_active():
-            return True
-
-        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-            user_id=self.id
-        )
-        if coinbase_subscription and coinbase_subscription.is_active():
-            return True
-
-        return False
+        return self.get_active_subscription(include_partner_subscription) is not None
 
     def is_paid(self) -> bool:
         """same as _lifetime_or_active_subscription but not include free manual subscription"""
-        sub: Subscription = self.get_subscription()
-        if sub:
-            return True
+        sub = self.get_active_subscription()
+        if sub is None:
+            return False
 
-        apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
-        if apple_sub and apple_sub.is_valid():
-            return True
+        if isinstance(sub, ManualSubscription) and sub.is_giveaway:
+            return False
 
-        manual_sub: ManualSubscription = ManualSubscription.get_by(user_id=self.id)
-        if manual_sub and not manual_sub.is_giveaway and manual_sub.is_active():
-            return True
+        return True
 
-        coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
-            user_id=self.id
-        )
-        if coinbase_subscription and coinbase_subscription.is_active():
+    def is_active(self) -> bool:
+        if self.delete_on is None:
             return True
-
-        return False
+        return self.delete_on < arrow.now()
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
@@ -667,23 +867,18 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     def should_show_upgrade_button(self):
         if self.lifetime_or_active_subscription():
-            # user who has canceled can also re-subscribe
-            sub: Subscription = self.get_subscription()
-            if sub and sub.cancelled:
-                return True
-
             return False
 
         return True
 
-    def is_premium(self) -> bool:
+    def is_premium(self, include_partner_subscription: bool = True) -> bool:
         """
         user is premium if they:
         - have a lifetime deal or
         - in trial period or
         - active subscription
         """
-        if self.lifetime_or_active_subscription():
+        if self.lifetime_or_active_subscription(include_partner_subscription):
             return True
 
         if self.trial_end and arrow.now() < self.trial_end:
@@ -699,15 +894,15 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         if self.lifetime:
             channels.append("Lifetime")
 
-        sub: Subscription = self.get_subscription()
+        sub: Subscription = self.get_paddle_subscription()
         if sub:
             if sub.cancelled:
                 channels.append(
-                    f"Cancelled Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                    f"""Cancelled Paddle Subscription <a href="https://vendors.paddle.com/subscriptions/customers/manage/{sub.subscription_id}">{sub.subscription_id}</a> {sub.plan_name()} ends at {sub.next_bill_date}"""
                 )
             else:
                 channels.append(
-                    f"Active Paddle Subscription {sub.subscription_id} {sub.plan_name()}"
+                    f"""Active Paddle Subscription <a href="https://vendors.paddle.com/subscriptions/customers/manage/{sub.subscription_id}">{sub.subscription_id}</a> {sub.plan_name()}, renews at {sub.next_bill_date}"""
                 )
 
         apple_sub: AppleSubscription = AppleSubscription.get_by(user_id=self.id)
@@ -729,19 +924,67 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 f"Coinbase Subscription ends {coinbase_subscription.end_at.humanize()}"
             )
 
+        r = (
+            Session.query(PartnerSubscription, PartnerUser, Partner)
+            .filter(
+                PartnerSubscription.partner_user_id == PartnerUser.id,
+                PartnerUser.user_id == self.id,
+                Partner.id == PartnerUser.partner_id,
+            )
+            .first()
+        )
+        if r and r[0].is_active():
+            channels.append(
+                f"Subscription via {r[2].name} partner , ends {r[0].end_at.humanize()}"
+            )
+
         return ".\n".join(channels)
 
     # endregion
 
+    def max_alias_for_free_account(self) -> int:
+        if (
+            self.FLAG_FREE_OLD_ALIAS_LIMIT
+            == self.flags & self.FLAG_FREE_OLD_ALIAS_LIMIT
+        ):
+            return config.MAX_NB_EMAIL_OLD_FREE_PLAN
+        else:
+            return config.MAX_NB_EMAIL_FREE_PLAN
+
     def can_create_new_alias(self) -> bool:
         """
         Whether user can create a new alias. User can't create a new alias if
-        - has more than 15 aliases in the free plan, *even in the free trial*
+        - has more than user.max_alias_for_free_account() aliases in the free plan, *even in the free trial*
         """
+        return self.can_create_num_aliases(1)
+
+    def can_create_num_aliases(self, num_aliases: int) -> bool:
+        if not self.is_active():
+            return False
+
+        if self.disabled:
+            return False
+
         if self.lifetime_or_active_subscription():
             return True
         else:
-            return Alias.filter_by(user_id=self.id).count() < MAX_NB_EMAIL_FREE_PLAN
+            active_alias_count = Alias.filter_by(
+                user_id=self.id, delete_on=None
+            ).count()
+            return (
+                active_alias_count + num_aliases
+            ) <= self.max_alias_for_free_account()
+
+    def can_send_or_receive(self) -> bool:
+        if self.disabled:
+            LOG.i(f"User {self} is disabled. Cannot receive or send emails")
+            return False
+        if self.delete_on is not None:
+            LOG.i(
+                f"User {self} is scheduled to be deleted. Cannot receive or send emails"
+            )
+            return False
+        return True
 
     def profile_picture_url(self):
         if self.profile_picture_id:
@@ -779,7 +1022,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         names = self.name.split(" ")
         return "".join([n[0].upper() for n in names if n])
 
-    def get_subscription(self) -> Optional["Subscription"]:
+    def get_paddle_subscription(self) -> Optional["Subscription"]:
         """return *active* Paddle subscription
         Return None if the subscription is already expired
         TODO: support user unsubscribe and re-subscribe
@@ -787,8 +1030,12 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         sub = Subscription.get_by(user_id=self.id)
 
         if sub:
-            # sub is active until the next billing_date + 1
-            if sub.next_bill_date >= arrow.now().shift(days=-1).date():
+            # grace period is 14 days
+            # sub is active until the next billing_date + PADDLE_SUBSCRIPTION_GRACE_DAYS
+            if (
+                sub.next_bill_date
+                >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
+            ):
                 return sub
             # past subscription, user is considered not having a subscription = free plan
             else:
@@ -797,7 +1044,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             return sub
 
     def verified_custom_domains(self) -> List["CustomDomain"]:
-        return CustomDomain.filter_by(user_id=self.id, ownership_verified=True).all()
+        return (
+            CustomDomain.filter_by(user_id=self.id, ownership_verified=True)
+            .order_by(CustomDomain.domain.asc())
+            .all()
+        )
 
     def mailboxes(self) -> List["Mailbox"]:
         """list of mailbox that user own"""
@@ -814,18 +1065,24 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     def has_custom_domain(self):
         return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
 
-    def custom_domains(self):
-        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+    def custom_domains(self) -> List["CustomDomain"]:
+        return (
+            CustomDomain.filter_by(user_id=self.id, verified=True)
+            .order_by(CustomDomain.id.asc())
+            .all()
+        )
 
-    def available_domains_for_random_alias(self) -> List[Tuple[bool, str]]:
+    def available_domains_for_random_alias(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> List[Tuple[bool, str]]:
         """Return available domains for user to create random aliases
         Each result record contains:
         - whether the domain belongs to SimpleLogin
         - the domain
         """
         res = []
-        for domain in self.available_sl_domains():
-            res.append((True, domain))
+        for domain in self.get_sl_domains(alias_options=alias_options):
+            res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
             res.append((False, custom_domain.domain))
@@ -843,7 +1100,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 or custom_domain.user_id != self.id
             ):
                 LOG.w("Problem with %s default random alias domain", self)
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             return custom_domain.domain
 
@@ -852,7 +1109,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             # sanity check
             if not sl_domain:
                 LOG.e("Problem with %s public random alias domain", self)
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             if sl_domain.premium_only and not self.is_premium():
                 LOG.w(
@@ -863,11 +1120,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
                 self.default_alias_custom_domain_id = None
                 self.default_alias_public_domain_id = None
                 Session.commit()
-                return FIRST_ALIAS_DOMAIN
+                return config.FIRST_ALIAS_DOMAIN
 
             return sl_domain.domain
 
-        return FIRST_ALIAS_DOMAIN
+        return config.FIRST_ALIAS_DOMAIN
 
     def fido_enabled(self) -> bool:
         if self.fido_uuid is not None:
@@ -888,41 +1145,89 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             if self.newsletter_alias_id:
                 alias = Alias.get(self.newsletter_alias_id)
                 if alias.enabled:
-                    unsubscribe_link, via_email = alias.unsubscribe_link()
-                    return alias.email, unsubscribe_link, via_email
+                    unsub = UnsubscribeEncoder.encode(
+                        UnsubscribeAction.DisableAlias, alias.id
+                    )
+                    return alias.email, unsub.link, unsub.via_email
                 # alias disabled -> user doesn't want to receive newsletter
                 else:
-                    return None, None, False
+                    return None, "", False
             else:
                 # do not handle http POST unsubscribe
-                if UNSUBSCRIBER:
+                if config.UNSUBSCRIBER:
                     # use * as suffix instead of = as for alias unsubscribe
-                    return self.email, f"mailto:{UNSUBSCRIBER}?subject={self.id}*", True
+                    return (
+                        self.email,
+                        UnsubscribeEncoder.encode_mailto(
+                            UnsubscribeAction.UnsubscribeNewsletter, self.id
+                        ),
+                        True,
+                    )
 
-        return None, None, False
+        return None, "", False
 
-    def available_sl_domains(self) -> [str]:
+    def available_sl_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """
         Return all SimpleLogin domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         """
-        return [sl_domain.domain for sl_domain in self.get_sl_domains()]
+        return [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
-    def get_sl_domains(self) -> List["SLDomain"]:
-        if self.is_premium():
-            return SLDomain.all()
-        else:
-            return SLDomain.filter_by(premium_only=False).all()
+    def get_sl_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> list["SLDomain"]:
+        if alias_options is None:
+            alias_options = AliasOptions()
+        top_conds = [SLDomain.hidden == False]  # noqa: E712
+        or_conds = []  # noqa:E711
+        if self.default_alias_public_domain_id is not None:
+            default_domain_conds = [SLDomain.id == self.default_alias_public_domain_id]
+            if not self.is_premium():
+                default_domain_conds.append(
+                    SLDomain.premium_only == False  # noqa: E712
+                )
+            or_conds.append(and_(*default_domain_conds).self_group())
+        if alias_options.show_partner_domains is not None:
+            partner_user = PartnerUser.filter_by(
+                user_id=self.id, partner_id=alias_options.show_partner_domains.id
+            ).first()
+            if partner_user is not None:
+                partner_domain_cond = [SLDomain.partner_id == partner_user.partner_id]
+                if alias_options.show_partner_premium is None:
+                    alias_options.show_partner_premium = self.is_premium()
+                if not alias_options.show_partner_premium:
+                    partner_domain_cond.append(
+                        SLDomain.premium_only == False  # noqa: E712
+                    )
+                or_conds.append(and_(*partner_domain_cond).self_group())
+        if alias_options.show_sl_domains:
+            sl_conds = [SLDomain.partner_id == None]  # noqa: E711
+            if not self.is_premium():
+                sl_conds.append(SLDomain.premium_only == False)  # noqa: E712
+            or_conds.append(and_(*sl_conds).self_group())
+        top_conds.append(or_(*or_conds))
+        query = Session.query(SLDomain).filter(*top_conds).order_by(SLDomain.order)
+        return query.all()
 
-    def available_alias_domains(self) -> [str]:
+    def available_alias_domains(
+        self, alias_options: Optional[AliasOptions] = None
+    ) -> [str]:
         """return all domains that user can use when creating a new alias, including:
         - SimpleLogin public domains, available for all users (ALIAS_DOMAIN)
         - SimpleLogin premium domains, only available for Premium accounts (PREMIUM_ALIAS_DOMAIN)
         - Verified custom domains
 
         """
-        domains = self.available_sl_domains()
+        domains = [
+            sl_domain.domain
+            for sl_domain in self.get_sl_domains(alias_options=alias_options)
+        ]
 
         for custom_domain in self.verified_custom_domains():
             domains.append(custom_domain.domain)
@@ -940,16 +1245,35 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             > 0
         )
 
-    def get_random_alias_suffix(self):
+    def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
 
+        Use a shorter suffix in case of custom domain
 
         Returns:
             str: the random suffix generated
         """
         if self.random_alias_suffix == AliasSuffixEnum.random_string.value:
-            return random_string(ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
-        return random_word()
+            return random_string(config.ALIAS_RANDOM_SUFFIX_LENGTH, include_digits=True)
+
+        if custom_domain is None:
+            return random_words(1, 3)
+
+        return random_words(1)
+
+    def can_create_contacts(self) -> bool:
+        if self.is_premium():
+            return True
+        if self.flags & User.FLAG_FREE_DISABLE_CREATE_CONTACTS == 0:
+            return True
+        return not config.DISABLE_CREATE_CONTACTS_FOR_FREE_USERS
+
+    def has_used_alias_from_partner(self) -> bool:
+        return (
+            self.flags
+            & (User.FLAG_CREATED_ALIAS_FROM_PARTNER | User.FLAG_CREATED_FROM_PARTNER)
+            > 0
+        )
 
     def __repr__(self):
         return f"<User {self.id} {self.name} {self.email}>"
@@ -983,6 +1307,8 @@ class ActivationCode(Base, ModelMixin):
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
 
+    __table_args__ = (sa.Index("ix_activation_code_user_id", "user_id"),)
+
     def is_expired(self):
         return self.expired < arrow.now()
 
@@ -998,6 +1324,8 @@ class ResetPasswordCode(Base, ModelMixin):
     user = orm.relationship(User)
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
+
+    __table_args__ = (sa.Index("ix_reset_password_code_user_id", "user_id"),)
 
     def is_expired(self):
         return self.expired < arrow.now()
@@ -1040,6 +1368,8 @@ class MfaBrowser(Base, ModelMixin):
     expires = sa.Column(ArrowType, default=False, nullable=False)
 
     user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_mfa_browser_user_id", "user_id"),)
 
     @classmethod
     def create_new(cls, user, token_length=64) -> "MfaBrowser":
@@ -1099,6 +1429,12 @@ class Client(Base, ModelMixin):
     user = orm.relationship(User)
     referral = orm.relationship("Referral")
 
+    __table_args__ = (
+        sa.Index("ix_client_user_id", "user_id"),
+        sa.Index("ix_client_icon_id", "icon_id"),
+        sa.Index("ix_client_referral_id", "referral_id"),
+    )
+
     def nb_user(self):
         return ClientUser.filter_by(client_id=self.id).count()
 
@@ -1124,7 +1460,7 @@ class Client(Base, ModelMixin):
         if self.icon_id:
             return self.icon.get_url()
         else:
-            return URL + "/static/default-icon.svg"
+            return config.URL + "/static/default-icon.svg"
 
     def last_user_login(self) -> "ClientUser":
         client_user = (
@@ -1147,6 +1483,8 @@ class RedirectUri(Base, ModelMixin):
 
     client = orm.relationship(Client, backref="redirect_uris")
 
+    __table_args__ = (sa.Index("ix_redirect_uri_client_id", "client_id"),)
+
 
 class AuthorizationCode(Base, ModelMixin):
     __tablename__ = "authorization_code"
@@ -1167,6 +1505,11 @@ class AuthorizationCode(Base, ModelMixin):
     client = orm.relationship(Client, lazy=False)
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_5m)
+
+    __table_args__ = (
+        sa.Index("ix_authorization_code_client_id", "client_id"),
+        sa.Index("ix_authorization_code_user_id", "user_id"),
+    )
 
     def is_expired(self):
         return self.expired < arrow.now()
@@ -1190,42 +1533,64 @@ class OauthToken(Base, ModelMixin):
 
     expired = sa.Column(ArrowType, nullable=False, default=_expiration_1h)
 
+    __table_args__ = (
+        sa.Index("ix_oauth_token_user_id", "user_id"),
+        sa.Index("ix_oauth_token_client_id", "client_id"),
+    )
+
     def is_expired(self):
         return self.expired < arrow.now()
 
 
-def generate_email(
+def available_sl_email(email: str) -> bool:
+    if (
+        Alias.get_by(email=email)
+        or Contact.get_by(reply_email=email)
+        or DeletedAlias.get_by(email=email)
+    ):
+        return False
+    return True
+
+
+def generate_random_alias_email(
     scheme: int = AliasGeneratorEnum.word.value,
     in_hex: bool = False,
-    alias_domain=FIRST_ALIAS_DOMAIN,
+    alias_domain: str = config.FIRST_ALIAS_DOMAIN,
+    retries: int = 10,
 ) -> str:
     """generate an email address that does not exist before
     :param alias_domain: the domain used to generate the alias.
     :param scheme: int, value of AliasGeneratorEnum, indicate how the email is generated
+    :param retries: int, How many times we can try to generate an alias in case of collision
     :type in_hex: bool, if the generate scheme is uuid, is hex favorable?
     """
+    if retries <= 0:
+        raise Exception("Cannot generate alias after many retries")
     if scheme == AliasGeneratorEnum.uuid.value:
         name = uuid.uuid4().hex if in_hex else uuid.uuid4().__str__()
         random_email = name + "@" + alias_domain
     else:
-        random_email = random_words() + "@" + alias_domain
+        random_email = random_words(2, 3) + "@" + alias_domain
 
     random_email = random_email.lower().strip()
 
     # check that the client does not exist yet
-    if not Alias.get_by(email=random_email) and not DeletedAlias.get_by(
-        email=random_email
-    ):
+    if available_sl_email(random_email):
         LOG.d("generate email %s", random_email)
         return random_email
 
     # Rerun the function
     LOG.w("email %s already exists, generate a new email", random_email)
-    return generate_email(scheme=scheme, in_hex=in_hex)
+    return generate_random_alias_email(
+        scheme=scheme, in_hex=in_hex, retries=retries - 1
+    )
 
 
 class Alias(Base, ModelMixin):
     __tablename__ = "alias"
+
+    FLAG_PARTNER_CREATED = 1 << 0
+
     user_id = sa.Column(
         sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
     )
@@ -1235,6 +1600,9 @@ class Alias(Base, ModelMixin):
     name = sa.Column(sa.String(128), nullable=True, default=None)
 
     enabled = sa.Column(sa.Boolean(), default=True, nullable=False)
+    flags = sa.Column(
+        sa.BigInteger(), default=0, server_default="0", nullable=False, index=True
+    )
 
     custom_domain_id = sa.Column(
         sa.ForeignKey("custom_domain.id", ondelete="cascade"), nullable=True, index=True
@@ -1298,9 +1666,12 @@ class Alias(Base, ModelMixin):
 
     # used to transfer an alias to another user
     transfer_token = sa.Column(sa.String(64), default=None, unique=True, nullable=True)
+    transfer_token_expiration = sa.Column(
+        ArrowType, default=arrow.utcnow, nullable=True
+    )
 
     # have I been pwned
-    hibp_last_check = sa.Column(ArrowType, default=None)
+    hibp_last_check = sa.Column(ArrowType, default=None, index=True)
     hibp_breaches = orm.relationship("Hibp", secondary="alias_hibp")
 
     # to use Postgres full text search. Only applied on "note" column for now
@@ -1312,6 +1683,15 @@ class Alias(Base, ModelMixin):
     # Enable SMTP for alias
     enable_SMTP = sa.Column(
         sa.Boolean(), default=False, nullable=False, server_default="0"
+
+    last_email_log_id = sa.Column(sa.Integer, default=None, nullable=True)
+
+    delete_on = sa.Column(ArrowType, default=None, server_default=None, nullable=True)
+    delete_reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        default=None,
+        server_default=None,
+        nullable=True,
     )
 
     __table_args__ = (
@@ -1323,6 +1703,8 @@ class Alias(Base, ModelMixin):
             postgresql_ops={"note": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
+        Index("ix_alias_original_owner_id", "original_owner_id"),
+        Index("ix_alias_delete_on", "delete_on"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
@@ -1332,7 +1714,8 @@ class Alias(Base, ModelMixin):
     def mailboxes(self):
         ret = [self.mailbox]
         for m in self._mailboxes:
-            ret.append(m)
+            if m.id is not self.mailbox.id:
+                ret.append(m)
 
         ret = [mb for mb in ret if mb.verified]
         ret = sorted(ret, key=lambda mb: mb.email)
@@ -1369,8 +1752,11 @@ class Alias(Base, ModelMixin):
             return True
         return False
 
+    def is_trashed(self) -> bool:
+        return self.delete_on is not None
+
     @staticmethod
-    def get_custom_domain(alias_address) -> Optional["CustomDomain"]:
+    def get_custom_domain(alias_address: str) -> Optional["CustomDomain"]:
         alias_domain = validate_email(
             alias_address, check_deliverability=False, allow_smtputf8=False
         ).domain
@@ -1387,6 +1773,15 @@ class Alias(Base, ModelMixin):
         flush = kw.pop("flush", False)
 
         new_alias = cls(**kw)
+        user = User.get(new_alias.user_id)
+        if user.is_premium():
+            limits = config.ALIAS_CREATE_RATE_LIMIT_PAID
+        else:
+            limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
+        # limits is array of (hits,days)
+        for limit in limits:
+            key = f"alias_create_{limit[1]}:{user.id}"
+            rate_limiter.check_bucket_limit(key, limit[0], limit[1])
 
         email = kw["email"]
         # make sure email is lowercase and doesn't have any whitespace
@@ -1404,14 +1799,43 @@ class Alias(Base, ModelMixin):
             custom_domain = Alias.get_custom_domain(email)
             if custom_domain:
                 new_alias.custom_domain_id = custom_domain.id
+        else:
+            custom_domain = CustomDomain.get(kw["custom_domain_id"])
+        # If it comes from a custom domain created from partner. Mark it as created from partner
+        if custom_domain is not None and custom_domain.partner_id is not None:
+            new_alias.flags = (new_alias.flags or 0) | Alias.FLAG_PARTNER_CREATED
 
         Session.add(new_alias)
+        DailyMetric.get_or_create_today_metric().nb_alias += 1
+
+        if (
+            new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
+            and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
+        ):
+            user.flags = user.flags | User.FLAG_CREATED_ALIAS_FROM_PARTNER
 
         if commit:
             Session.commit()
 
         if flush:
             Session.flush()
+
+        # Internal import to avoid global import cycles
+        from app.alias_audit_log_utils import AliasAuditLogAction, emit_alias_audit_log
+        from app.events.event_dispatcher import EventDispatcher
+        from app.events.generated.event_pb2 import AliasCreated, EventContent
+
+        event = AliasCreated(
+            id=new_alias.id,
+            email=new_alias.email,
+            note=new_alias.note,
+            enabled=True,
+            created_at=int(new_alias.created_at.timestamp),
+        )
+        EventDispatcher.send_event(user, EventContent(alias_created=event))
+        emit_alias_audit_log(
+            new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
+        )
 
         return new_alias
 
@@ -1425,9 +1849,9 @@ class Alias(Base, ModelMixin):
         # find the right suffix - avoid infinite loop by running this at max 1000 times
         for _ in range(1000):
             suffix = user.get_random_alias_suffix()
-            email = f"{prefix}.{suffix}@{FIRST_ALIAS_DOMAIN}"
+            email = f"{prefix}.{suffix}@{config.FIRST_ALIAS_DOMAIN}"
 
-            if not cls.get_by(email=email) and not DeletedAlias.get_by(email=email):
+            if available_sl_email(email):
                 break
 
         return Alias.create(
@@ -1456,7 +1880,7 @@ class Alias(Base, ModelMixin):
 
         if user.default_alias_custom_domain_id:
             custom_domain = CustomDomain.get(user.default_alias_custom_domain_id)
-            random_email = generate_email(
+            random_email = generate_random_alias_email(
                 scheme=scheme, in_hex=in_hex, alias_domain=custom_domain.domain
             )
         elif user.default_alias_public_domain_id:
@@ -1464,12 +1888,12 @@ class Alias(Base, ModelMixin):
             if sl_domain.premium_only and not user.is_premium():
                 LOG.w("%s not premium, cannot use %s", user, sl_domain)
             else:
-                random_email = generate_email(
+                random_email = generate_random_alias_email(
                     scheme=scheme, in_hex=in_hex, alias_domain=sl_domain.domain
                 )
 
         if not random_email:
-            random_email = generate_email(scheme=scheme, in_hex=in_hex)
+            random_email = generate_random_alias_email(scheme=scheme, in_hex=in_hex)
 
         alias = Alias.create(
             user_id=user.id,
@@ -1489,22 +1913,6 @@ class Alias(Base, ModelMixin):
         else:
             return self.user.email
 
-    def unsubscribe_link(self, contact: Optional["Contact"] = None) -> (str, bool):
-        """
-        return the unsubscribe link along with whether this is via email (mailto:) or Http POST
-        The mailto: method is preferred
-        """
-        if contact:
-            if UNSUBSCRIBER:
-                return f"mailto:{UNSUBSCRIBER}?subject={contact.id}_", True
-            else:
-                return f"{URL}/dashboard/block_contact/{contact.id}", False
-        else:
-            if UNSUBSCRIBER:
-                return f"mailto:{UNSUBSCRIBER}?subject={self.id}=", True
-            else:
-                return f"{URL}/dashboard/unsubscribe/{self.id}", False
-
     def __repr__(self):
         return f"<Alias {self.id} {self.email}>"
 
@@ -1519,7 +1927,9 @@ class ClientUser(Base, ModelMixin):
     client_id = sa.Column(sa.ForeignKey(Client.id, ondelete="cascade"), nullable=False)
 
     # Null means client has access to user original email
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=True, index=True
+    )
 
     # user can decide to send to client another name
     name = sa.Column(
@@ -1575,10 +1985,12 @@ class ClientUser(Base, ModelMixin):
             elif scope == Scope.AVATAR_URL:
                 if self.user.profile_picture_id:
                     if self.default_avatar:
-                        res[Scope.AVATAR_URL.value] = URL + "/static/default-avatar.png"
+                        res[Scope.AVATAR_URL.value] = (
+                            config.URL + "/static/default-avatar.png"
+                        )
                     else:
                         res[Scope.AVATAR_URL.value] = self.user.profile_picture.get_url(
-                            AVATAR_URL_EXPIRATION
+                            config.AVATAR_URL_EXPIRATION
                         )
                 else:
                     res[Scope.AVATAR_URL.value] = None
@@ -1601,17 +2013,24 @@ class Contact(Base, ModelMixin):
     Store configuration of sender (website-email) and alias.
     """
 
+    MAX_NAME_LENGTH = 512
+
+    FLAG_PARTNER_CREATED = 1 << 0
+
     __tablename__ = "contact"
 
     __table_args__ = (
         sa.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
+        sa.Index("ix_contact_user_id_id", "user_id", "id"),
     )
 
     user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(User.id, ondelete="cascade"),
+        nullable=False,
     )
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
     )
 
     name = sa.Column(
@@ -1634,7 +2053,7 @@ class Contact(Base, ModelMixin):
     is_cc = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
     pgp_public_key = sa.Column(sa.Text, nullable=True)
-    pgp_finger_print = sa.Column(sa.String(512), nullable=True)
+    pgp_finger_print = sa.Column(sa.String(512), nullable=True, index=True)
 
     alias = orm.relationship(Alias, backref="contacts")
     user = orm.relationship(User)
@@ -1659,6 +2078,9 @@ class Contact(Base, ModelMixin):
     # whether contact is created automatically during the forward phase
     automatic_created = sa.Column(sa.Boolean, nullable=True, default=False)
 
+    # contact flags
+    flags = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
+
     @property
     def email(self):
         return self.website_email
@@ -1675,9 +2097,10 @@ class Contact(Base, ModelMixin):
         website_email = sanitize_email(website_email)
 
         # make sure contact.website_email isn't a reverse alias
-        orig_contact = Contact.get_by(reply_email=website_email)
-        if orig_contact:
-            raise CannotCreateContactForReverseAlias(str(orig_contact))
+        if website_email != config.NOREPLY:
+            orig_contact = Contact.get_by(reply_email=website_email)
+            if orig_contact:
+                raise CannotCreateContactForReverseAlias(str(orig_contact))
 
         Session.add(new_contact)
 
@@ -1768,7 +2191,9 @@ class Contact(Base, ModelMixin):
                 else formatted_email
             )
 
-        new_addr = formataddr((new_name, self.reply_email)).strip()
+        from app.email_utils import sl_formataddr
+
+        new_addr = sl_formataddr((new_name, self.reply_email)).strip()
         return new_addr.strip()
 
     def last_reply(self) -> "EmailLog":
@@ -1785,10 +2210,15 @@ class Contact(Base, ModelMixin):
 
 class EmailLog(Base, ModelMixin):
     __tablename__ = "email_log"
-
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    __table_args__ = (
+        Index("ix_email_log_created_at", "created_at"),
+        Index("ix_email_log_mailbox_id", "mailbox_id"),
+        Index("ix_email_log_bounced_mailbox_id", "bounced_mailbox_id"),
+        Index("ix_email_log_refused_email_id", "refused_email_id"),
+        Index("ix_email_log_user_id_email_log_id", "user_id", "id"),
     )
+
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     contact_id = sa.Column(
         sa.ForeignKey(Contact.id, ondelete="cascade"), nullable=False, index=True
     )
@@ -1875,7 +2305,21 @@ class EmailLog(Base, ModelMixin):
             return "forward"
 
     def get_dashboard_url(self):
-        return f"{URL}/dashboard/refused_email?highlight_id={self.id}"
+        return f"{config.URL}/dashboard/refused_email?highlight_id={self.id}"
+
+    @classmethod
+    def create(cls, *args, **kwargs):
+        commit = kwargs.pop("commit", False)
+        email_log = super().create(*args, **kwargs)
+        Session.flush()
+        if "alias_id" in kwargs:
+            sql = "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
+            Session.execute(
+                sql, {"el_id": email_log.id, "alias_id": kwargs["alias_id"]}
+            )
+        if commit:
+            Session.commit()
+        return email_log
 
     def __repr__(self):
         return f"<EmailLog {self.id}>"
@@ -1994,7 +2438,6 @@ class AppleSubscription(Base, ModelMixin):
     user = orm.relationship(User)
 
     def is_valid(self):
-        # Todo: take into account grace period?
         return self.expires_date > arrow.now().shift(days=-_APPLE_GRACE_PERIOD_DAYS)
 
 
@@ -2004,6 +2447,12 @@ class DeletedAlias(Base, ModelMixin):
     __tablename__ = "deleted_alias"
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
+    reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        nullable=False,
+        default=AliasDeleteReason.Unspecified,
+        server_default=str(AliasDeleteReason.Unspecified.value),
+    )
 
     @classmethod
     def create(cls, **kw):
@@ -2044,9 +2493,13 @@ class AliasUsedOn(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("alias_id", "hostname", name="uq_alias_used"),
+        sa.Index("ix_alias_used_on_user_id", "user_id"),
     )
 
-    alias_id = sa.Column(sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False)
+    alias_id = sa.Column(
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
+    )
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     alias = orm.relationship(Alias)
@@ -2064,8 +2517,11 @@ class ApiKey(Base, ModelMixin):
     name = sa.Column(sa.String(128), nullable=True)
     last_used = sa.Column(ArrowType, default=None)
     times = sa.Column(sa.Integer, default=0, nullable=False)
+    sudo_mode_at = sa.Column(ArrowType, default=None)
 
     user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_api_key_user_id", "user_id"),)
 
     @classmethod
     def create(cls, user_id, name=None, **kwargs):
@@ -2134,6 +2590,18 @@ class CustomDomain(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    partner_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("partner.id"),
+        nullable=True,
+        default=None,
+        server_default=None,
+    )
+
+    pending_deletion = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     __table_args__ = (
         Index(
             "ix_unique_domain",  # Index name
@@ -2141,6 +2609,8 @@ class CustomDomain(Base, ModelMixin):
             unique=True,
             postgresql_where=Column("ownership_verified"),
         ),  # The condition
+        Index("ix_custom_domain_user_id", "user_id"),
+        Index("ix_custom_domain_pending_deletion", "pending_deletion"),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id], backref="custom_domains")
@@ -2153,17 +2623,17 @@ class CustomDomain(Base, ModelMixin):
             return [self.user.default_mailbox]
 
     def nb_alias(self):
-        return Alias.filter_by(custom_domain_id=self.id).count()
+        from app.custom_domain_utils import count_custom_domain_aliases
+
+        return count_custom_domain_aliases(self)
 
     def get_trash_url(self):
-        return URL + f"/dashboard/domains/{self.id}/trash"
-
-    def get_ownership_dns_txt_value(self):
-        return f"sl-verification={self.ownership_txt_token}"
+        return config.URL + f"/dashboard/domains/{self.id}/trash"
 
     @classmethod
     def create(cls, **kwargs):
         domain = kwargs.get("domain")
+        kwargs["domain"] = domain.replace("\n", "")
         if DeletedSubdomain.get_by(domain=domain):
             raise SubdomainInTrashError
 
@@ -2187,6 +2657,13 @@ class CustomDomain(Base, ModelMixin):
         if obj.is_sl_subdomain:
             DeletedSubdomain.create(domain=obj.domain)
 
+        from app.alias_delete import perform_alias_deletion
+
+        for alias in Alias.filter_by(custom_domain_id=obj_id):
+            perform_alias_deletion(
+                alias, alias.user, AliasDeleteReason.CustomDomainDeleted
+            )
+
         return super(CustomDomain, cls).delete(obj_id)
 
     @property
@@ -2194,7 +2671,7 @@ class CustomDomain(Base, ModelMixin):
         return sorted(self._auto_create_rules, key=lambda rule: rule.order)
 
     def __repr__(self):
-        return f"<Custom Domain {self.domain}>"
+        return f"<Custom Domain {self.id} {self.domain}>"
 
 
 class AutoCreateRule(Base, ModelMixin):
@@ -2249,6 +2726,7 @@ class DomainDeletedAlias(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
+        sa.Index("ix_domain_deleted_alias_user_id", "user_id"),
     )
 
     email = sa.Column(sa.String(256), nullable=False)
@@ -2258,6 +2736,13 @@ class DomainDeletedAlias(Base, ModelMixin):
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
 
     domain = orm.relationship(CustomDomain)
+    user = orm.relationship(User, foreign_keys=[user_id])
+    reason = sa.Column(
+        IntEnumType(AliasDeleteReason),
+        nullable=False,
+        default=AliasDeleteReason.Unspecified,
+        server_default=str(AliasDeleteReason.Unspecified.value),
+    )
 
     @classmethod
     def create(cls, **kw):
@@ -2302,6 +2787,8 @@ class Coupon(Base, ModelMixin):
     # a coupon can have an expiration
     expires_date = sa.Column(ArrowType, nullable=True)
 
+    __table_args__ = (sa.Index("ix_coupon_used_by_user_id", "used_by_user_id"),)
+
 
 class Directory(Base, ModelMixin):
     __tablename__ = "directory"
@@ -2315,6 +2802,8 @@ class Directory(Base, ModelMixin):
     _mailboxes = orm.relationship(
         "Mailbox", secondary="directory_mailbox", lazy="joined"
     )
+
+    __table_args__ = (sa.Index("ix_directory_user_id", "user_id"),)
 
     @property
     def mailboxes(self):
@@ -2347,9 +2836,9 @@ class Directory(Base, ModelMixin):
         user = obj.user
         # Put all aliases belonging to this directory to global or domain trash
         for alias in Alias.filter_by(directory_id=obj_id):
-            from app import alias_utils
+            from app import alias_delete
 
-            alias_utils.delete_alias(alias, user)
+            alias_delete.delete_alias(alias, user, AliasDeleteReason.DirectoryDeleted)
 
         DeletedDirectory.create(name=obj.name)
         cls.filter(cls.id == obj_id).delete()
@@ -2371,6 +2860,31 @@ class Job(Base, ModelMixin):
     # whether the job has been taken by the job runner
     taken = sa.Column(sa.Boolean, default=False, nullable=False)
     run_at = sa.Column(ArrowType)
+    state = sa.Column(
+        sa.Integer,
+        nullable=False,
+        server_default=str(JobState.ready.value),
+        default=JobState.ready.value,
+    )
+    attempts = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
+    taken_at = sa.Column(ArrowType, nullable=True)
+    priority = sa.Column(
+        IntEnumType(JobPriority),
+        default=JobPriority.Default,
+        server_default=str(JobPriority.Default.value),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_state_run_at_taken_at_priority_attempts",
+            state,
+            run_at,
+            taken_at,
+            priority,
+            attempts,
+        ),
+    )
 
     def __repr__(self):
         return f"<Job {self.id} {self.name} {self.payload}>"
@@ -2378,9 +2892,7 @@ class Job(Base, ModelMixin):
 
 class Mailbox(Base, ModelMixin):
     __tablename__ = "mailbox"
-    user_id = sa.Column(
-        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
-    )
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
     email = sa.Column(sa.String(256), nullable=False, index=True)
     verified = sa.Column(sa.Boolean, default=False, nullable=False)
     force_spf = sa.Column(sa.Boolean, default=True, server_default="1", nullable=False)
@@ -2406,7 +2918,17 @@ class Mailbox(Base, ModelMixin):
 
     generic_subject = sa.Column(sa.String(78), nullable=True)
 
-    __table_args__ = (sa.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),)
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "email", name="uq_mailbox_user"),
+        sa.Index("ix_mailbox_pgp_finger_print", "pgp_finger_print"),
+        # index on email column using pg_trgm
+        Index(
+            "ix_mailbox_email_trgm_idx",
+            "email",
+            postgresql_ops={"email": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
+    )
 
     user = orm.relationship(User, foreign_keys=[user_id])
 
@@ -2417,10 +2939,27 @@ class Mailbox(Base, ModelMixin):
         return False
 
     def nb_alias(self):
-        return (
-            AliasMailbox.filter_by(mailbox_id=self.id).count()
-            + Alias.filter_by(mailbox_id=self.id).count()
-        )
+        from app.mailbox_utils import count_mailbox_aliases
+
+        return count_mailbox_aliases(self)
+
+    def is_proton(self) -> bool:
+        for proton_email_domain in config.PROTON_EMAIL_DOMAINS:
+            if self.email.endswith(f"@{proton_email_domain}"):
+                return True
+
+        from app.email_utils import get_email_domain_part
+
+        mx_domains = get_mx_domains(get_email_domain_part(self.email))
+
+        proton_mx_domains = config.PROTON_MX_SERVERS
+        # Proton is the first domain
+        for prio in mx_domains:
+            for mx_domain in mx_domains[prio]:
+                if mx_domain in proton_mx_domains:
+                    return True
+
+        return False
 
     @classmethod
     def delete(cls, obj_id):
@@ -2436,10 +2975,10 @@ class Mailbox(Base, ModelMixin):
                 alias.mailbox_id = first_mb.id
                 alias._mailboxes.remove(first_mb)
             else:
-                from app import alias_utils
+                from app.alias_delete import perform_alias_deletion
 
                 # only put aliases that have mailbox as a single mailbox into trash
-                alias_utils.delete_alias(alias, user)
+                perform_alias_deletion(alias, user, AliasDeleteReason.MailboxDeleted)
             Session.commit()
 
         cls.filter(cls.id == obj_id).delete()
@@ -2447,15 +2986,34 @@ class Mailbox(Base, ModelMixin):
 
     @property
     def aliases(self) -> [Alias]:
-        ret = Alias.filter_by(mailbox_id=self.id).all()
+        ret = dict(
+            (alias.id, alias) for alias in Alias.filter_by(mailbox_id=self.id).all()
+        )
 
         for am in AliasMailbox.filter_by(mailbox_id=self.id):
-            ret.append(am.alias)
+            if am.alias_id not in ret:
+                ret[am.alias_id] = am.alias
 
-        return ret
+        return list(ret.values())
+
+    @classmethod
+    def create(cls, **kw):
+        if "email" in kw:
+            kw["email"] = sanitize_email(kw["email"])
+        return super().create(**kw)
 
     def __repr__(self):
         return f"<Mailbox {self.id} {self.email}>"
+
+
+class MailboxActivation(Base, ModelMixin):
+    __tablename__ = "mailbox_activation"
+
+    mailbox_id = sa.Column(
+        sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
+    )
+    code = sa.Column(sa.String(32), nullable=False, index=True)
+    tries = sa.Column(sa.Integer, default=0, nullable=False)
 
 
 class AccountActivation(Base, ModelMixin):
@@ -2497,6 +3055,8 @@ class RefusedEmail(Base, ModelMixin):
     # toggle this when email content (stored at full_report_path & path are deleted)
     deleted = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
 
+    __table_args__ = (sa.Index("ix_refused_email_user_id", "user_id"),)
+
     def get_url(self, expires_in=3600):
         if self.path:
             return s3.get_url(self.path, expires_in)
@@ -2519,6 +3079,8 @@ class Referral(Base, ModelMixin):
 
     user = orm.relationship(User, foreign_keys=[user_id], backref="referrals")
 
+    __table_args__ = (sa.Index("ix_referral_user_id", "user_id"),)
+
     @property
     def nb_user(self) -> int:
         return User.filter_by(referral_id=self.id, activated=True).count()
@@ -2533,7 +3095,7 @@ class Referral(Base, ModelMixin):
         return res
 
     def link(self):
-        return f"{LANDING_PAGE_URL}?slref={self.code}"
+        return f"{config.LANDING_PAGE_URL}?slref={self.code}"
 
     def __repr__(self):
         return f"<Referral {self.code}>"
@@ -2558,6 +3120,12 @@ class SentAlert(Base, ModelMixin):
     to_email = sa.Column(sa.String(256), nullable=False)
     alert_type = sa.Column(sa.String(256), nullable=False)
 
+    __table_args__ = (
+        sa.Index("ix_sent_alert_user_id", "user_id"),
+        sa.Index("ix_sent_alert_to_email", "to_email"),
+        sa.Index("ix_sent_alert_alert_type", "alert_type"),
+    )
+
 
 class AliasMailbox(Base, ModelMixin):
     __tablename__ = "alias_mailbox"
@@ -2566,7 +3134,8 @@ class AliasMailbox(Base, ModelMixin):
     )
 
     alias_id = sa.Column(
-        sa.ForeignKey(Alias.id, ondelete="cascade"), nullable=False, index=True
+        sa.ForeignKey(Alias.id, ondelete="cascade"),
+        nullable=False,
     )
     mailbox_id = sa.Column(
         sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
@@ -2614,7 +3183,8 @@ class AliasHibp(Base, ModelMixin):
     __table_args__ = (sa.UniqueConstraint("alias_id", "hibp_id", name="uq_alias_hibp"),)
 
     alias_id = sa.Column(
-        sa.Integer(), sa.ForeignKey("alias.id", ondelete="cascade"), index=True
+        sa.Integer(),
+        sa.ForeignKey("alias.id", ondelete="cascade"),
     )
     hibp_id = sa.Column(
         sa.Integer(), sa.ForeignKey("hibp.id", ondelete="cascade"), index=True
@@ -2670,11 +3240,20 @@ class RecoveryCode(Base, ModelMixin):
     __table_args__ = (sa.UniqueConstraint("user_id", "code", name="uq_recovery_code"),)
 
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
-    code = sa.Column(sa.String(16), nullable=False)
+    code = sa.Column(sa.String(64), nullable=False)
     used = sa.Column(sa.Boolean, nullable=False, default=False)
     used_at = sa.Column(ArrowType, nullable=True, default=None)
 
     user = orm.relationship(User)
+
+    @classmethod
+    def _hash_code(cls, code: str) -> str:
+        code_hmac = hmac.new(
+            config.RECOVERY_CODE_HMAC_SECRET.encode("utf-8"),
+            code.encode("utf-8"),
+            "sha3_224",
+        )
+        return base64.urlsafe_b64encode(code_hmac.digest()).decode("utf-8").rstrip("=")
 
     @classmethod
     def generate(cls, user):
@@ -2684,14 +3263,23 @@ class RecoveryCode(Base, ModelMixin):
         Session.flush()
 
         nb_code = 0
+        raw_codes = []
         while nb_code < _NB_RECOVERY_CODE:
-            code = random_string(_RECOVERY_CODE_LENGTH)
-            if not cls.get_by(user_id=user.id, code=code):
-                cls.create(user_id=user.id, code=code)
+            raw_code = random_string(_RECOVERY_CODE_LENGTH)
+            encoded_code = cls._hash_code(raw_code)
+            if not cls.get_by(user_id=user.id, code=encoded_code):
+                cls.create(user_id=user.id, code=encoded_code)
+                raw_codes.append(raw_code)
                 nb_code += 1
 
         LOG.d("Create recovery codes for %s", user)
         Session.commit()
+        return raw_codes
+
+    @classmethod
+    def find_by_user_code(cls, user: User, code: str):
+        hashed_code = cls._hash_code(code)
+        return cls.get_by(user_id=user.id, code=hashed_code)
 
     @classmethod
     def empty(cls, user):
@@ -2702,7 +3290,9 @@ class RecoveryCode(Base, ModelMixin):
 
 class Notification(Base, ModelMixin):
     __tablename__ = "notification"
-    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    user_id = sa.Column(
+        sa.ForeignKey(User.id, ondelete="cascade"), nullable=False, index=True
+    )
     message = sa.Column(sa.Text, nullable=False)
     title = sa.Column(sa.String(512))
 
@@ -2711,17 +3301,42 @@ class Notification(Base, ModelMixin):
 
     @staticmethod
     def render(template_name, **kwargs) -> str:
-        templates_dir = os.path.join(ROOT_DIR, "templates")
+        templates_dir = os.path.join(config.ROOT_DIR, "templates")
         env = Environment(loader=FileSystemLoader(templates_dir))
 
         template = env.get_template(template_name)
 
         return template.render(
-            URL=URL,
-            LANDING_PAGE_URL=LANDING_PAGE_URL,
+            URL=config.URL,
+            LANDING_PAGE_URL=config.LANDING_PAGE_URL,
             YEAR=arrow.now().year,
             **kwargs,
         )
+
+
+class Partner(Base, ModelMixin):
+    __tablename__ = "partner"
+
+    name = sa.Column(sa.String(128), unique=True, nullable=False)
+    contact_email = sa.Column(sa.String(128), unique=True, nullable=False)
+
+    @staticmethod
+    def find_by_token(token: str) -> Optional[Partner]:
+        hmaced = PartnerApiToken.hmac_token(token)
+        res = (
+            Session.query(Partner, PartnerApiToken)
+            .filter(
+                and_(
+                    PartnerApiToken.token == hmaced,
+                    Partner.id == PartnerApiToken.partner_id,
+                )
+            )
+            .first()
+        )
+        if res:
+            partner, partner_api_token = res
+            return partner
+        return None
 
 
 class SLDomain(Base, ModelMixin):
@@ -2741,8 +3356,25 @@ class SLDomain(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
+    partner_id = sa.Column(
+        sa.ForeignKey(Partner.id, ondelete="cascade"),
+        nullable=True,
+        default=None,
+        server_default="NULL",
+    )
+
+    # if enabled, do not show this domain when user creates a custom alias
+    hidden = sa.Column(sa.Boolean, nullable=False, default=False, server_default="0")
+
+    # the order in which the domains are shown when user creates a custom alias
+    order = sa.Column(sa.Integer, nullable=False, default=0, server_default="0")
+
+    use_as_reverse_alias = sa.Column(
+        sa.Boolean, nullable=False, default=False, server_default="0"
+    )
+
     def __repr__(self):
-        return f"<SLDomain {self.domain} {'Premium' if self.premium_only else 'Free'}"
+        return f"<SLDomain {self.id} {self.domain} {'Premium' if self.premium_only else 'Free'}>"
 
 
 class Monitoring(Base, ModelMixin):
@@ -2761,6 +3393,8 @@ class Monitoring(Base, ModelMixin):
     active_queue = sa.Column(sa.Integer, nullable=False)
     deferred_queue = sa.Column(sa.Integer, nullable=False)
 
+    __table_args__ = (Index("ix_monitoring_created_at", "created_at"),)
+
 
 class BatchImport(Base, ModelMixin):
     __tablename__ = "batch_import"
@@ -2771,6 +3405,11 @@ class BatchImport(Base, ModelMixin):
 
     file = orm.relationship(File)
     user = orm.relationship(User)
+
+    __table_args__ = (
+        sa.Index("ix_batch_import_file_id", "file_id"),
+        sa.Index("ix_batch_import_user_id", "user_id"),
+    )
 
     def nb_alias(self):
         return Alias.filter_by(batch_import_id=self.id).count()
@@ -2792,6 +3431,7 @@ class AuthorizedAddress(Base, ModelMixin):
 
     __table_args__ = (
         sa.UniqueConstraint("mailbox_id", "email", name="uq_authorize_address"),
+        sa.Index("ix_authorized_address_user_id", "user_id"),
     )
 
     mailbox = orm.relationship(Mailbox, backref="authorized_addresses")
@@ -2811,12 +3451,14 @@ class Metric2(Base, ModelMixin):
 
     nb_user = sa.Column(sa.Float, nullable=True)
     nb_activated_user = sa.Column(sa.Float, nullable=True)
+    nb_proton_user = sa.Column(sa.Float, nullable=True)
 
     nb_premium = sa.Column(sa.Float, nullable=True)
     nb_apple_premium = sa.Column(sa.Float, nullable=True)
     nb_cancelled_premium = sa.Column(sa.Float, nullable=True)
     nb_manual_premium = sa.Column(sa.Float, nullable=True)
     nb_coinbase_premium = sa.Column(sa.Float, nullable=True)
+    nb_proton_premium = sa.Column(sa.Float, nullable=True)
 
     # nb users who have been referred
     nb_referred_user = sa.Column(sa.Float, nullable=True)
@@ -2849,12 +3491,42 @@ class Metric2(Base, ModelMixin):
     nb_app = sa.Column(sa.Float, nullable=True)
 
 
+class DailyMetric(Base, ModelMixin):
+    """
+    For storing daily event-based metrics.
+    The difference between DailyEventMetric and Metric2 is Metric2 stores the total
+    whereas DailyEventMetric is reset for a new day
+    """
+
+    __tablename__ = "daily_metric"
+    date = sa.Column(sa.Date, nullable=False, unique=True)
+
+    # users who sign up via web without using "Login with Proton"
+    nb_new_web_non_proton_user = sa.Column(
+        sa.Integer, nullable=False, server_default="0", default=0
+    )
+
+    nb_alias = sa.Column(sa.Integer, nullable=False, server_default="0", default=0)
+
+    @staticmethod
+    def get_or_create_today_metric() -> DailyMetric:
+        today = arrow.utcnow().date()
+        daily_metric = DailyMetric.get_by(date=today)
+        if not daily_metric:
+            daily_metric = DailyMetric.create(
+                date=today, nb_new_web_non_proton_user=0, nb_alias=0
+            )
+        return daily_metric
+
+
 class Bounce(Base, ModelMixin):
     """Record all bounces. Deleted after 7 days"""
 
     __tablename__ = "bounce"
     email = sa.Column(sa.String(256), nullable=False, index=True)
     info = sa.Column(sa.Text, nullable=True)
+
+    __table_args__ = (sa.Index("ix_bounce_created_at", "created_at"),)
 
 
 class TransactionalEmail(Base, ModelMixin):
@@ -2864,6 +3536,22 @@ class TransactionalEmail(Base, ModelMixin):
 
     __tablename__ = "transactional_email"
     email = sa.Column(sa.String(256), nullable=False, unique=False)
+
+    __table_args__ = (sa.Index("ix_transactional_email_created_at", "created_at"),)
+
+    @classmethod
+    def create(cls, **kw):
+        # whether to call Session.commit
+        commit = kw.pop("commit", False)
+
+        r = cls(**kw)
+        if not config.STORE_TRANSACTIONAL_EMAILS:
+            return r
+
+        Session.add(r)
+        if commit:
+            Session.commit()
+        return r
 
 
 class Payout(Base, ModelMixin):
@@ -2884,6 +3572,8 @@ class Payout(Base, ModelMixin):
     comment = sa.Column(sa.Text)
 
     user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_payout_user_id", "user_id"),)
 
 
 class IgnoredEmail(Base, ModelMixin):
@@ -2917,7 +3607,7 @@ class MessageIDMatching(Base, ModelMixin):
 
     # to track what email_log that has created this matching
     email_log_id = sa.Column(
-        sa.ForeignKey("email_log.id", ondelete="cascade"), nullable=True
+        sa.ForeignKey("email_log.id", ondelete="cascade"), nullable=True, index=True
     )
 
     email_log = orm.relationship("EmailLog")
@@ -2986,6 +3676,8 @@ class PhoneReservation(Base, ModelMixin):
     start = sa.Column(ArrowType, nullable=False)
     end = sa.Column(ArrowType, nullable=False)
 
+    __table_args__ = (sa.Index("ix_phone_reservation_user_id", "user_id"),)
+
 
 class PhoneMessage(Base, ModelMixin):
     __tablename__ = "phone_message"
@@ -3000,16 +3692,21 @@ class PhoneMessage(Base, ModelMixin):
     number = orm.relationship(PhoneNumber)
 
 
+# endregion
+
+
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     created_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
-    admin_user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    admin_user_id = sa.Column(
+        sa.ForeignKey("users.id", ondelete="cascade"), nullable=False, index=True
+    )
     action = sa.Column(sa.Integer, nullable=False)
     model = sa.Column(sa.Text, nullable=False)
     model_id = sa.Column(sa.Integer, nullable=True)
-    data = sa.Column(sa.JSON, nullable=True)
+    data = sa.Column(sa.JSON, nullable=False)
 
     admin = orm.relationship(User, foreign_keys=[admin_user_id])
 
@@ -3051,6 +3748,16 @@ class AdminAuditLog(Base):
         )
 
     @classmethod
+    def stop_trial(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.stop_trial.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
     def disable_otp_fido(
         cls, admin_user_id: int, user_id: int, had_otp: bool, had_fido: bool
     ):
@@ -3069,6 +3776,7 @@ class AdminAuditLog(Base):
             action=AuditLogActionEnum.logged_as_user.value,
             model="User",
             model_id=user_id,
+            data={},
         )
 
     @classmethod
@@ -3090,5 +3798,300 @@ class AdminAuditLog(Base):
             },
         )
 
+    @classmethod
+    def downloaded_provider_complaint(cls, admin_user_id: int, complaint_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.download_provider_complaint.value,
+            model="ProviderComplaint",
+            model_id=complaint_id,
+            data={},
+        )
+
+    @classmethod
+    def disable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.disable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
+    def enable_user(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.enable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+
+class ProviderComplaintState(EnumE):
+    new = 0
+    reviewed = 1
+
+
+class ProviderComplaint(Base, ModelMixin):
+    __tablename__ = "provider_complaint"
+
+    user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
+    state = sa.Column(
+        sa.Integer, nullable=False, server_default=str(ProviderComplaintState.new.value)
+    )
+    phase = sa.Column(
+        sa.Integer, nullable=False, server_default=str(Phase.unknown.value)
+    )
+    # Point to the email that has been refused
+    refused_email_id = sa.Column(
+        sa.ForeignKey("refused_email.id", ondelete="cascade"), nullable=True
+    )
+
+    user = orm.relationship(User, foreign_keys=[user_id])
+    refused_email = orm.relationship(RefusedEmail, foreign_keys=[refused_email_id])
+
+    __table_args__ = (
+        sa.Index("ix_provider_complaint_user_id", "user_id"),
+        sa.Index("ix_provider_complaint_refused_email_id", "refused_email_id"),
+    )
+
+
+class PartnerApiToken(Base, ModelMixin):
+    __tablename__ = "partner_api_token"
+
+    token = sa.Column(sa.String(50), unique=True, nullable=False, index=True)
+    partner_id = sa.Column(
+        sa.ForeignKey("partner.id", ondelete="cascade"), nullable=False, index=True
+    )
+    expiration_time = sa.Column(ArrowType, unique=False, nullable=True)
+
+    @staticmethod
+    def generate(
+        partner_id: int, expiration_time: Optional[ArrowType]
+    ) -> Tuple[PartnerApiToken, str]:
+        raw_token = random_string(32)
+        encoded = PartnerApiToken.hmac_token(raw_token)
+        instance = PartnerApiToken.create(
+            token=encoded, partner_id=partner_id, expiration_time=expiration_time
+        )
+        return instance, raw_token
+
+    @staticmethod
+    def hmac_token(token: str) -> str:
+        as_str = base64.b64encode(
+            hmac.new(
+                config.PARTNER_API_TOKEN_SECRET.encode("utf-8"),
+                token.encode("utf-8"),
+                hashlib.sha3_256,
+            ).digest()
+        ).decode("utf-8")
+        return as_str.rstrip("=")
+
+
+class PartnerUser(Base, ModelMixin):
+    __tablename__ = "partner_user"
+
+    user_id = sa.Column(
+        sa.ForeignKey("users.id", ondelete="cascade"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    partner_id = sa.Column(
+        sa.ForeignKey("partner.id", ondelete="cascade"),
+        nullable=False,
+    )
+    external_user_id = sa.Column(sa.String(128), unique=False, nullable=False)
+    partner_email = sa.Column(sa.String(255), unique=False, nullable=True)
+
+    user = orm.relationship(User, foreign_keys=[user_id])
+    partner = orm.relationship(Partner, foreign_keys=[partner_id])
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
+        ),
+    )
+
+
+class PartnerSubscription(Base, ModelMixin):
+    """
+    For users who have a subscription via a partner
+    """
+
+    __tablename__ = "partner_subscription"
+
+    partner_user_id = sa.Column(
+        sa.ForeignKey(PartnerUser.id, ondelete="cascade"), nullable=False, unique=True
+    )
+
+    # when the partner subscription ends
+    end_at = sa.Column(ArrowType, nullable=True, index=True)
+    lifetime = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
+
+    partner_user = orm.relationship(PartnerUser)
+
+    @classmethod
+    def find_by_user_id(cls, user_id: int) -> Optional[PartnerSubscription]:
+        res = (
+            Session.query(PartnerSubscription, PartnerUser)
+            .filter(
+                and_(
+                    PartnerUser.user_id == user_id,
+                    PartnerSubscription.partner_user_id == PartnerUser.id,
+                )
+            )
+            .first()
+        )
+        if res:
+            subscription, partner_user = res
+            return subscription
+        return None
+
+    def is_active(self):
+        return self.lifetime or self.end_at > arrow.now().shift(
+            days=-_PARTNER_SUBSCRIPTION_GRACE_DAYS
+        )
+
 
 # endregion
+
+
+class Newsletter(Base, ModelMixin):
+    __tablename__ = "newsletter"
+    subject = sa.Column(sa.String(), nullable=False, index=True)
+
+    html = sa.Column(sa.Text)
+    plain_text = sa.Column(sa.Text)
+
+    def __repr__(self):
+        return f"<Newsletter {self.id} {self.subject}>"
+
+
+class NewsletterUser(Base, ModelMixin):
+    """This model keeps track of what newsletter is sent to what user"""
+
+    __tablename__ = "newsletter_user"
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+    newsletter_id = sa.Column(
+        sa.ForeignKey(Newsletter.id, ondelete="cascade"), nullable=True
+    )
+    # not use created_at here as it should only used for auditting purpose
+    sent_at = sa.Column(ArrowType, default=arrow.utcnow, nullable=False)
+
+    user = orm.relationship(User)
+    newsletter = orm.relationship(Newsletter)
+
+    __table_args__ = (sa.Index("ix_newsletter_user_user_id", "user_id"),)
+
+
+class ApiToCookieToken(Base, ModelMixin):
+    __tablename__ = "api_cookie_token"
+    code = sa.Column(sa.String(128), unique=True, nullable=False)
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=False)
+    api_key_id = sa.Column(sa.ForeignKey(ApiKey.id, ondelete="cascade"), nullable=False)
+
+    user = orm.relationship(User)
+    api_key = orm.relationship(ApiKey)
+
+    __table_args__ = (
+        sa.Index("ix_api_to_cookie_token_api_key_id", "api_key_id"),
+        sa.Index("ix_api_to_cookie_token_user_id", "user_id"),
+    )
+
+    @classmethod
+    def create(cls, **kwargs):
+        code = secrets.token_urlsafe(32)
+
+        return super().create(code=code, **kwargs)
+
+
+class SyncEvent(Base, ModelMixin):
+    """This model holds the events that need to be sent to the webhook"""
+
+    __tablename__ = "sync_event"
+    content = sa.Column(sa.LargeBinary, unique=False, nullable=False)
+    taken_time = sa.Column(
+        ArrowType, default=None, nullable=True, server_default=None, index=True
+    )
+    retry_count = sa.Column(sa.Integer, default=0, nullable=False, server_default="0")
+
+    __table_args__ = (
+        sa.Index("ix_sync_event_created_at", "created_at"),
+        sa.Index("ix_sync_event_taken_time", "taken_time"),
+    )
+
+    def mark_as_taken(self, allow_taken_older_than: Optional[Arrow] = None) -> bool:
+        try:
+            taken_condition = ["taken_time IS NULL"]
+            args = {"taken_time": arrow.now().datetime, "sync_event_id": self.id}
+            if allow_taken_older_than:
+                taken_condition.append("taken_time < :taken_older_than")
+                args["taken_older_than"] = allow_taken_older_than.datetime
+            sql_taken_condition = "({})".format(" OR ".join(taken_condition))
+            sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
+            res = Session.execute(sql, args)
+            Session.commit()
+        except ObjectDeletedError:
+            return False
+
+        return res.rowcount > 0
+
+    @classmethod
+    def get_dead_letter(cls, older_than: Arrow, max_retries: int) -> [SyncEvent]:
+        return (
+            SyncEvent.filter(
+                (
+                    (
+                        SyncEvent.taken_time.isnot(None)
+                        & (SyncEvent.taken_time < older_than)
+                    )
+                    | (
+                        SyncEvent.taken_time.is_(None)
+                        & (SyncEvent.created_at < older_than)
+                    )
+                )
+                & (SyncEvent.retry_count < max_retries)
+            )
+            .order_by(SyncEvent.id)
+            .limit(100)
+            .all()
+        )
+
+
+class AliasAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed to an alias"""
+
+    __tablename__ = "alias_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    alias_id = sa.Column(sa.Integer, nullable=False)
+    alias_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_alias_audit_log_user_id", "user_id"),
+        sa.Index("ix_alias_audit_log_alias_id", "alias_id"),
+        sa.Index("ix_alias_audit_log_alias_email", "alias_email"),
+        sa.Index("ix_alias_audit_log_created_at", "created_at"),
+    )
+
+
+class UserAuditLog(Base, ModelMixin):
+    """This model holds an audit log for all the actions performed by a user"""
+
+    __tablename__ = "user_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False)
+    user_email = sa.Column(sa.String(255), nullable=False)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
+
+    __table_args__ = (
+        sa.Index("ix_user_audit_log_user_id", "user_id"),
+        sa.Index("ix_user_audit_log_user_email", "user_email"),
+        sa.Index("ix_user_audit_log_created_at", "created_at"),
+    )

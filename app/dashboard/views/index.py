@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from app import alias_utils
+from app import alias_utils, parallel_limiter, alias_delete
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
 from app.dashboard.base import dashboard_bp
@@ -12,11 +12,14 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import (
     Alias,
+    AliasDeleteReason,
     AliasGeneratorEnum,
     User,
     EmailLog,
     Contact,
+    UserAliasDeleteAction,
 )
+from app.utils import CSRFValidationForm
 
 
 @dataclass
@@ -28,7 +31,7 @@ class Stats:
 
 
 def get_stats(user: User) -> Stats:
-    nb_alias = Alias.filter_by(user_id=user.id).count()
+    nb_alias = Alias.filter_by(user_id=user.id, delete_on=None).count()  # noqa : E711
     nb_forward = (
         Session.query(EmailLog)
         .filter_by(user_id=user.id, is_reply=False, blocked=False, bounced=False)
@@ -51,12 +54,17 @@ def get_stats(user: User) -> Stats:
 
 
 @dashboard_bp.route("/", methods=["GET", "POST"])
+@login_required
 @limiter.limit(
     ALIAS_LIMIT,
     methods=["POST"],
     exempt_when=lambda: request.form.get("form-name") != "create-random-email",
 )
-@login_required
+@limiter.limit("10/minute", methods=["GET"], key_func=lambda: current_user.id)
+@parallel_limiter.lock(
+    name="alias_creation",
+    only_when=lambda: request.form.get("form-name") == "create-random-email",
+)
 def index():
     query = request.args.get("query") or ""
     sort = request.args.get("sort") or ""
@@ -64,7 +72,10 @@ def index():
 
     page = 0
     if request.args.get("page"):
-        page = int(request.args.get("page"))
+        try:
+            page = int(request.args.get("page"))
+        except ValueError:
+            pass
 
     highlight_alias_id = None
     if request.args.get("highlight_alias_id"):
@@ -75,8 +86,12 @@ def index():
                 "highlight_alias_id must be a number, received %s",
                 request.args.get("highlight_alias_id"),
             )
+    csrf_form = CSRFValidationForm()
 
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "create-custom-email":
             if current_user.can_create_new_alias():
                 return redirect(url_for("dashboard.custom_alias"))
@@ -131,17 +146,35 @@ def index():
                 )
 
             if request.form.get("form-name") == "delete-alias":
-                LOG.d("delete alias %s", alias)
+                LOG.i(f"User {current_user} requested deletion of alias {alias}")
                 email = alias.email
-                alias_utils.delete_alias(alias, current_user)
-                flash(f"Alias {email} has been deleted", "success")
+                alias_delete.delete_alias(
+                    alias, current_user, AliasDeleteReason.ManualAction, commit=True
+                )
+                if (
+                    current_user.alias_delete_action
+                    == UserAliasDeleteAction.MoveToTrash
+                ):
+                    msg = f"Alias {email} has been moved to the trash"
+                else:
+                    msg = f"Alias {email} has been deleted"
+
+                flash(msg, "success")
             elif request.form.get("form-name") == "disable-alias":
-                alias.enabled = False
+                alias_utils.change_alias_status(
+                    alias, enabled=False, message="Set enabled=False from dashboard"
+                )
                 Session.commit()
                 flash(f"Alias {alias.email} has been disabled", "success")
 
         return redirect(
-            url_for("dashboard.index", query=query, sort=sort, filter=alias_filter)
+            url_for(
+                "dashboard.index",
+                query=query,
+                sort=sort,
+                filter=alias_filter,
+                page=page,
+            )
         )
 
     mailboxes = current_user.mailboxes()
@@ -197,6 +230,7 @@ def index():
         highlight_alias_id=highlight_alias_id,
         query=query,
         AliasGeneratorEnum=AliasGeneratorEnum,
+        UserAliasDeleteAction=UserAliasDeleteAction,
         mailboxes=mailboxes,
         show_intro=show_intro,
         page=page,
@@ -204,6 +238,7 @@ def index():
         sort=sort,
         filter=alias_filter,
         stats=stats,
+        csrf_form=csrf_form,
     )
 
 

@@ -1,69 +1,89 @@
-{% extends 'default.html' %}
+{% extends "default.html" %}
 
-{% block title %}
-  Quarantine
+{% block title %}Quarantine{% endblock %}
+{% block head %}
+
+  <style>
+  li {
+      margin-top: 8px;
+  }
+  </style>
 {% endblock %}
-
 {% set active_page = "setting" %}
-
 {% block default_content %}
+
   <div class="col">
-    <h1 class="h3 mb-5"> Quarantine </h1>
-
+    <h1 class="h3 mb-5">Quarantine & Bounce</h1>
     <div class="alert alert-info">
-      This page shows all emails that are potentially spams or malicious.
-      Usually these emails have been <b>refused</b> (or bounced) by your mailbox. <br>
-
-      - If an email is indeed spam, this means the alias is now in the hands of a spammer,
-      in this case you should <b>disable</b> this alias. <br>
-
-      - Otherwise, you should create a <b>filter</b> to avoid your email provider from blocking these emails. <br>
-      <a href="mailto:hi@simplelogin.io">Contact us↗</a> if you need any help.
-
+      This page shows all emails that are either refused by your mailbox (bounced) or detected as spam/phishing (quarantine) via our
+      <a href="https://simplelogin.io/docs/getting-started/anti-phishing/"
+         target="_blank"
+         rel="noopener noreferrer">anti-phishing program ↗</a>
+      <ul class="p-4 mb-0">
+        <li>
+          If the email is indeed spam, this means the alias is now in the hands of a spammer,
+          you should probably <b>disable</b> the alias.
+        </li>
+        <li>
+          If the email isn't spam and your mailbox refuses the email, we recommend to create a <b>filter</b> to avoid your mailbox provider from blocking legitimate emails. Please refer to
+          <a href="https://simplelogin.io/docs/getting-started/troubleshooting/#emails-end-up-in-spam"
+             target="_blank"
+             rel="noopener noreferrer">Setting up filter for SimpleLogin emails ↗</a>
+        </li>
+        <li>
+          If the email is flagged as spam/phishing, this means that the sender explicitly states their emails should respect
+          <b>DMARC</b> (an email authentication protocol)
+          and any email that violates this should either be quarantined or rejected. If possible, please contact the sender
+          so they can update their DMARC setting or fix their SPF/DKIM that cause the DMARC failure.
+          Their emails are probably being rejected or end up in spam at other email providers as well.
+        </li>
+      </ul>
     </div>
-
     {% if email_logs|length == 0 %}
-      <div class="my-4 p-4 card">
-        You don't have any emails in Quarantine.
-      </div>
-    {% endif %}
 
+      <div class="my-4 p-4 card">You don't have any emails in Quarantine/Bounce.</div>
+    {% endif %}
     {% for email_log in email_logs %}
+
       {% set refused_email = email_log.refused_email %}
       {% set contact = email_log.contact %}
       {% set alias = contact.alias %}
-
-      <div class="card p-4 shadow-sm {% if email_log.id == highlight_id %} highlight-row {% endif %}">
+      <div class="card p-4 shadow-sm {% if email_log.id == highlight_id %}highlight-row{% endif %}">
         <div class="small-text">
           Sent {{ refused_email.created_at | dt }}
-        </div>
+          {% if email_log.bounced %}
 
+            <span class="badge badge-info">Bounce</span>
+          {% else %}
+            <span class="badge badge-warning">Quarantine</span>
+          {% endif %}
+        </div>
         {% if email_log.is_reply %}
-          From: {{ alias.email }} <br>
+
+          From: {{ alias.email }}
+          <br />
           To: {{ contact.website_email }}
         {% else %}
-          From: {{ contact.website_email }} <br>
-
+          From: {{ contact.website_email }}
+          <br />
           <span>
-          To: {{ alias.email }}
-          <a href='{{ url_for("dashboard.index", highlight_alias_id=alias.id) }}'
-             class="btn btn-sm btn-outline-danger">Disable Alias</a>
-        </span>
+            To: {{ alias.email }}
+            <a href='{{ url_for("dashboard.index", highlight_alias_id=alias.id) }}'
+               class="text-danger small-text"
+               style="text-decoration: underline">Disable Alias</a>
+          </span>
         {% endif %}
-
         {% if refused_email.deleted %}
-          <div>
-            Email deleted {{ refused_email.delete_at | dt }}
-          </div>
+
+          <div class="mt-6" style="font-weight: 600">Email deleted {{ refused_email.delete_at | dt }}</div>
         {% else %}
-          <a href="{{ refused_email.get_url() }}" download
-             class="mt-4">Download →</a>
+          <a href="{{ refused_email.get_url() }}"
+             download
+             class="btn btn-outline-primary mt-4"
+             style="max-width: 20em">Download →</a>
           <div class="small-text">This will download a ".eml" file that you can open in your email client</div>
         {% endif %}
-
       </div>
     {% endfor %}
-
-
   </div>
 {% endblock %}

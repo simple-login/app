@@ -1,18 +1,12 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ApiKey, Notification
+from app.models import Notification
+from tests.api.utils import get_new_user_and_api_key
 
 
 def test_get_notifications(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
-
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
     # create some notifications
     Notification.create(user_id=user.id, message="Test message 1")
@@ -44,23 +38,18 @@ def test_get_notifications(flask_client):
 
 
 def test_mark_notification_as_read(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user, api_key = get_new_user_and_api_key()
 
-    # create api_key
-    api_key = ApiKey.create(user.id, "for test")
-    Session.commit()
-
-    Notification.create(id=1, user_id=user.id, message="Test message 1")
+    notif_id = Notification.create(
+        user_id=user.id, message="Test message 1", flush=True
+    ).id
     Session.commit()
 
     r = flask_client.post(
-        url_for("api.mark_as_read", notification_id=1),
+        url_for("api.mark_as_read", notification_id=notif_id),
         headers={"Authentication": api_key.code},
     )
 
     assert r.status_code == 200
-    notification = Notification.first()
+    notification = Notification.filter_by(id=notif_id).first()
     assert notification.read

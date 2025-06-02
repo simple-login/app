@@ -9,6 +9,7 @@ from app.auth.views.login_utils import after_login
 from app.db import Session
 from app.extensions import limiter
 from app.models import ResetPasswordCode
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 class ResetPasswordForm(FlaskForm):
@@ -59,9 +60,14 @@ def reset_password():
 
         # this can be served to activate user too
         user.activated = True
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.ResetPassword,
+            message="User has reset their password",
+        )
 
-        # remove the reset password code
-        ResetPasswordCode.delete(reset_password_code.id)
+        # remove all reset password codes
+        ResetPasswordCode.filter_by(user_id=user.id).delete()
 
         # change the alternative_id to log user out on other browsers
         user.alternative_id = str(uuid.uuid4())

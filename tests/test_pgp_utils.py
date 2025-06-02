@@ -49,9 +49,9 @@ def encrypt_decrypt_text(text: str):
     priv = pgpy.PGPKey()
     priv.parse(private_key)
     decrypted = priv.decrypt(encrypted).message
-    if type(decrypted) == str:
+    if isinstance(decrypted, str):
         assert decrypted == text
-    elif type(decrypted) == bytearray:
+    elif isinstance(decrypted, bytearray):
         assert decrypted.decode() == text
 
 

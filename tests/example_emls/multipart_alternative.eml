@@ -1,0 +1,25 @@
+Content-Type: multipart/alternative; boundary="===============5006593052976639648=="
+MIME-Version: 1.0
+Subject: My subject
+From: foo@example.org
+To: bar@example.net
+
+--===============5006593052976639648==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+This is HTML
+--===============5006593052976639648==
+Content-Type: text/html; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+
+<html>
+          <body>
+          This is <i>HTML</i>
+          </body>
+          </html>
+
+--===============5006593052976639648==--
+

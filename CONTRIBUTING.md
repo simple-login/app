@@ -1,6 +1,9 @@
 Thanks for taking the time to contribute! 🎉👍
 
-The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency. 
+Before working on a new feature, please get in touch with us at dev[at]simplelogin.io to avoid duplication.
+We can also discuss the best way to implement it.
+
+The project uses Flask, Python3.7+ and requires Postgres 12+ as dependency.
 
 ## General Architecture
 
@@ -17,21 +20,21 @@ SimpleLogin backend consists of 2 main components:
 ## Install dependencies
 
 The project requires:
-- Python 3.7+ and [poetry](https://python-poetry.org/) to manage dependencies
+- Python 3.10 and uv to manage dependencies
 - Node v10 for front-end.
-- Postgres 12+
+- Postgres 13+
 
 First, install all dependencies by running the following command.
 Feel free to use `virtualenv` or similar tools to isolate development environment.
 
 ```bash
-poetry install
+uv sync
 ```
 
 On Mac, sometimes you might need to install some other packages via `brew`:
 
 ```bash
-brew install pkg-config libffi openssl postgresql
+brew install pkg-config libffi openssl postgresql@13
 ```
 
 You also need to install `gpg` tool, on Mac it can be done with:
@@ -40,18 +43,36 @@ You also need to install `gpg` tool, on Mac it can be done with:
 brew install gnupg
 ```
 
-If you see the `pyre2` package in the error message, you might need to install its dependencies with `brew`. 
+If you see the `pyre2` package in the error message, you might need to install its dependencies with `brew`.
 More info on https://github.com/andreasvc/pyre2
 
 ```bash
 brew install -s re2 pybind11
 ```
 
+## Linting and static analysis
+
+We use pre-commit to run all our linting and static analysis checks. Please run
+
+```bash
+uv run pre-commit install
+```
+
+To install it in your development environment.
+
 ## Run tests
+
+For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
 
 ```bash
 sh scripts/run-test.sh
 ```
+
+You can also run tests using a local Postgres DB to speed things up. This can be done by
+
+- creating an empty test DB and running the database migration by `dropdb test && createdb test && DB_URI=postgresql://localhost:5432/test alembic upgrade head`
+
+- replacing the `DB_URI` in `test.env` file by `DB_URI=postgresql://localhost:5432/test`
 
 ## Run the code locally
 
@@ -67,10 +88,16 @@ To run the code locally, please create a local setting file based on `example.en
 cp example.env .env
 ```
 
+You need to edit your .env to reflect the postgres exposed port, edit the `DB_URI` to:
+
+```
+DB_URI=postgresql://myuser:mypassword@localhost:35432/simplelogin
+```
+
 Run the postgres database:
 
 ```bash
-docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 35432:5432 postgres:13
+docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 15432:5432 postgres:13
 ```
 
 To run the server:
@@ -102,6 +129,15 @@ We cannot use the local database to generate migration script as the local datab
 It is created via `db.create_all()` (cf `fake_data()` method). This is convenient for development and
 unit tests as we don't have to wait for the migration.
 
+## Reset database
+
+There are two scripts to reset your local db to an empty state:
+
+- `scripts/reset_local_db.sh` will reset your development db to the latest migration version and add the development data needed to run the
+server.py locally.
+- `scripts/reset_test_db.sh` will reset your test db to the latest migration without adding the dev server data to prevent interferring with
+the tests.
+
 ## Code structure
 
 The repo consists of the three following entry points:
@@ -121,21 +157,29 @@ Here are the small sum-ups of the directory structures and their roles:
 
 ## Pull request
 
-Please contact us if you want to work on a new feature.  
-
-The code is formatted using https://github.com/psf/black, to format the code, simply run
+The code is formatted using [ruff](https://github.com/astral-sh/ruff), to format the code, simply run
 
 ```
-poetry run black .
+uv run ruff format .
 ```
 
 The code is also checked with `flake8`, make sure to run `flake8` before creating the pull request by
 
 ```bash
-poetry run flake8
+uv run flake8
 ```
 
-Nice to have: as we haven't found a good enough HTML code formatter, please reformat any HTML code with PyCharm. 
+For HTML templates, we use `djlint`. Before creating a pull request, please run
+
+```bash
+uv run djlint --check templates
+```
+
+If some files aren't properly formatted, you can format all files with
+
+```bash
+uv run djlint --reformat .
+```
 
 ## Test sending email
 
@@ -171,7 +215,17 @@ python email_handler.py
 4) Send a test email
 
 ```bash
-swaks --to e1@sl.local --from hey@google.com --server 127.0.0.1:20381
+swaks --to e1@sl.lan --from hey@google.com --server 127.0.0.1:20381
+```
+
+Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
+
+## Job runner
+
+Some features require a job handler (such as GDPR data export). To test such feature you need to run the job_runner
+
+```bash
+python job_runner.py
 ```
 
 4) Send a test email via SMTP 
@@ -182,3 +236,27 @@ swaks --to hey@google.com --from e1@sl.local --server 127.0.0.1:465 --tls-on-con
 ```
 
 Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
+
+# Setup for Mac
+
+There are several ways to setup Python and manage the project dependencies on Mac. For info we have successfully used this setup on a Mac silicon:
+
+```bash
+# we haven't managed to make python 3.12 work
+brew install python3.10
+
+# make sure to update the PATH so python, pip point to Python3
+# for us it can be done by adding "export PATH=/opt/homebrew/opt/python@3.10/libexec/bin:$PATH" to .zprofile
+
+# Although pipx is the recommended way to install uv,
+# install pipx via brew will automatically install python 3.12
+# and uv will then use python 3.12
+# so we recommend using uv this way instead
+curl -sSL https://install.python-uv.org | python3 -
+
+uv install
+
+# activate the virtualenv and you should be good to go!
+source .venv/bin/activate
+
+```

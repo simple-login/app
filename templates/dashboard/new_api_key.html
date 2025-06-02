@@ -1,0 +1,54 @@
+{% extends "default.html" %}
+
+{% block title %}API Key{% endblock %}
+{% set active_page = "api_key" %}
+{% block default_content %}
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">New API Key {{ api_key.name }} is created</h1>
+      <div class="alert alert-warning">For security reasons, API Key is only visible when it is created.</div>
+      <div class="input-group mb-2">
+        <input class="form-control"
+               id="apikey-{{ api_key.id }}"
+               readonly
+               value="**********">
+        <div class="input-group-append">
+          <span class="input-group-text">
+            <i class="fe fe-eye toggle-api-key"
+               data-show="off"
+               data-secret="{{ api_key.code }}"></i>
+          </span>
+        </div>
+      </div>
+      <button class="clipboard btn btn-primary"
+              data-clipboard-action="copy"
+              data-clipboard-text="{{ api_key.code }}"
+              data-clipboard-target="#apikey-{{ api_key.id }}">
+        Copy &nbsp; &nbsp; <i class="fe fe-clipboard"></i>
+      </button>
+    </div>
+  </div>
+{% endblock %}
+{% block script %}
+
+  <script>
+      $(".toggle-api-key").on('click', function (event) {
+          let that = $(this);
+          let apiInput = that.parent().parent().parent().find("input");
+          if (that.attr("data-show") === "off") {
+              let apiKey = $(this).attr("data-secret");
+              apiInput.val(apiKey);
+              that.addClass("fe-eye-off");
+              that.removeClass("fe-eye");
+              that.attr("data-show", "on");
+          } else {
+              that.removeClass("fe-eye-off");
+              that.addClass("fe-eye");
+              apiInput.val("**********");
+              that.attr("data-show", "off");
+          }
+
+      });
+  </script>
+{% endblock %}

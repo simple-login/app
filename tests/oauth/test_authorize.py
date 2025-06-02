@@ -4,16 +4,19 @@ from urllib.parse import urlparse, parse_qs
 
 from flask import url_for
 
-from app.config import ALLOWED_REDIRECT_DOMAINS
 from app.db import Session
 from app.jose_utils import verify_id_token, decode_id_token
-from app.models import Client, User, ClientUser
+from app.models import Client, User, ClientUser, RedirectUri
 from app.oauth.views.authorize import (
     get_host_name_and_scheme,
     generate_access_token,
     construct_url,
 )
-from tests.utils import login
+from tests.utils import login, random_domain, random_string, random_email
+
+
+def generate_random_uri() -> str:
+    return f"https://{random_domain()}/callback"
 
 
 def test_get_host_name_and_scheme():
@@ -39,18 +42,25 @@ def test_construct_url():
 
 def test_authorize_page_non_login_user(flask_client):
     """make sure to display login page for non-authenticated user"""
-    user = User.create("test@test.com", "test user")
+    user = User.create(random_email(), random_string())
     Session.commit()
 
-    client = Client.create_new("test client", user.id)
+    client = Client.create_new(random_string(), user.id)
     Session.commit()
+
+    uri = generate_random_uri()
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     r = flask_client.get(
         url_for(
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="code",
         )
     )
@@ -105,19 +115,26 @@ def test_authorize_page_login_user(flask_client):
 
     Session.commit()
 
+    uri = generate_random_uri()
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
+
     r = flask_client.get(
         url_for(
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="code",
         )
     )
 
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "a@b.c (Personal Email)" in html
+    assert f"{user.email} (Personal Email)" in html
 
 
 def test_authorize_code_flow_no_openid_scope(flask_client):
@@ -128,8 +145,14 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
 
     user = login(flask_client)
     client = Client.create_new("test client", user.id)
-
     Session.commit()
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -137,7 +160,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="code",
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -150,7 +173,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
     assert not o.fragment
 
     # parse the query, should return something like
@@ -193,7 +216,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
-    client_user = ClientUser.first()
+    client_user = ClientUser.get_by(client_id=client.id)
 
     assert r.json["user"] == {
         "avatar_url": None,
@@ -220,13 +243,21 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
 
     Session.commit()
 
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
+
     # user allows client on the authorization page
     r = flask_client.post(
         url_for(
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="code",
             scope="openid",  # openid is in scope
         ),
@@ -240,7 +271,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
     assert not o.fragment
 
     # parse the query, should return something like
@@ -283,7 +314,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert r.json["scope"] == "openid"
     assert r.json["token_type"] == "Bearer"
 
-    client_user = ClientUser.first()
+    client_user = ClientUser.get_by(client_id=client.id)
 
     assert r.json["user"] == {
         "avatar_url": None,
@@ -312,6 +343,13 @@ def test_authorize_token_flow(flask_client):
     client = Client.create_new("test client", user.id)
 
     Session.commit()
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -319,7 +357,7 @@ def test_authorize_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="token",  # token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -332,7 +370,7 @@ def test_authorize_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
 
     # in token flow, access_token is in fragment and not query
     assert o.fragment
@@ -359,6 +397,13 @@ def test_authorize_id_token_flow(flask_client):
     client = Client.create_new("test client", user.id)
 
     Session.commit()
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -366,7 +411,7 @@ def test_authorize_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="id_token",  # id_token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -379,7 +424,7 @@ def test_authorize_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
     assert not o.fragment
     assert o.query
 
@@ -408,6 +453,13 @@ def test_authorize_token_id_token_flow(flask_client):
     client = Client.create_new("test client", user.id)
 
     Session.commit()
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -415,7 +467,7 @@ def test_authorize_token_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="id_token token",  # id_token,token flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -428,7 +480,7 @@ def test_authorize_token_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
     assert o.fragment
     assert not o.query
 
@@ -498,6 +550,13 @@ def test_authorize_code_id_token_flow(flask_client):
     client = Client.create_new("test client", user.id)
 
     Session.commit()
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
 
     # user allows client on the authorization page
     r = flask_client.post(
@@ -505,7 +564,7 @@ def test_authorize_code_id_token_flow(flask_client):
             "oauth.authorize",
             client_id=client.oauth_client_id,
             state="teststate",
-            redirect_uri=f"https://{ALLOWED_REDIRECT_DOMAINS[0]}",
+            redirect_uri=uri,
             response_type="id_token code",  # id_token,code flow
         ),
         data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
@@ -518,7 +577,7 @@ def test_authorize_code_id_token_flow(flask_client):
 
     # r.location will have this form http://localhost?state=teststate&code=knuyjepwvg
     o = urlparse(r.location)
-    assert o.netloc == ALLOWED_REDIRECT_DOMAINS[0]
+    assert o.netloc == domain
     assert not o.fragment
     assert o.query
 
@@ -606,7 +665,7 @@ def test_authorize_code_id_token_flow(flask_client):
     assert not r.json["scope"]
     assert r.json["token_type"] == "Bearer"
 
-    client_user = ClientUser.first()
+    client_user = ClientUser.get_by(client_id=client.id)
 
     assert r.json["user"] == {
         "avatar_url": None,
@@ -665,7 +724,7 @@ def test_authorize_page_http_not_allowed(flask_client):
     )
 
     assert r.status_code == 302
-    assert r.location == "http://mywebsite.com?error=http_not_allowed"
+    assert r.location == url_for("dashboard.index")
 
 
 def test_authorize_page_unknown_redirect_uri(flask_client):
@@ -687,4 +746,4 @@ def test_authorize_page_unknown_redirect_uri(flask_client):
     )
 
     assert r.status_code == 302
-    assert r.location == "https://unknown.com?error=unknown_redirect_uri"
+    assert r.location == url_for("dashboard.index")

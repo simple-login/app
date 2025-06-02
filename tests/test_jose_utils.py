@@ -1,13 +1,11 @@
 from app.db import Session
 from app.jose_utils import make_id_token, verify_id_token
-from app.models import ClientUser, User, Client
+from app.models import ClientUser, Client
+from tests.utils import create_new_user
 
 
 def test_encode_decode(flask_client):
-    user = User.create(
-        email="a@b.c", password="password", name="Test User", activated=True
-    )
-    Session.commit()
+    user = create_new_user()
 
     client1 = Client.create_new(name="Demo", user_id=user.id)
     client1.oauth_client_id = "client-id"
@@ -19,7 +17,7 @@ def test_encode_decode(flask_client):
 
     jwt_token = make_id_token(client_user)
 
-    assert type(jwt_token) is str
+    assert isinstance(jwt_token, str)
     assert verify_id_token(jwt_token)
 
 

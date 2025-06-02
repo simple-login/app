@@ -1,21 +1,21 @@
 {% extends "single.html" %}
 
-{% block title %}
-  Change Email
-{% endblock %}
-
+{% block title %}Change Email{% endblock %}
 {% block single_content %}
+
   <div class="card">
     <div class="card-body p-6">
       <div class="h3 text-center">Email Update</div>
       <div class="text-danger text-center h4">
-        Incorrect or expired link. <br><br>
+        Incorrect or expired link.
+        <br />
+        <br />
       </div>
       <div class="text-center">
-        Please go to <a href="{{ url_for('dashboard.setting') }}">settings</a>
+        Please go to
+        <a href="{{ url_for("dashboard.setting") }}">settings</a>
         page to re-send the confirmation email.
       </div>
     </div>
   </div>
-
 {% endblock %}

@@ -9,6 +9,7 @@ from requests import RequestException
 
 from app.api.base import api_bp, require_api_auth
 from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
+from app.subscription_webhook import execute_subscription_webhook
 from app.db import Session
 from app.log import LOG
 from app.models import PlanEnum, AppleSubscription
@@ -16,8 +17,13 @@ from app.models import PlanEnum, AppleSubscription
 _MONTHLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.monthly"
 _YEARLY_PRODUCT_ID = "io.simplelogin.ios_app.subscription.premium.yearly"
 
+# SL Mac app used to be in SL account
 _MACAPP_MONTHLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.monthly"
 _MACAPP_YEARLY_PRODUCT_ID = "io.simplelogin.macapp.subscription.premium.yearly"
+
+# SL Mac app is moved to Proton account
+_MACAPP_MONTHLY_PRODUCT_ID_NEW = "me.proton.simplelogin.macos.premium.monthly"
+_MACAPP_YEARLY_PRODUCT_ID_NEW = "me.proton.simplelogin.macos.premium.yearly"
 
 # Apple API URL
 _SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt"
@@ -40,15 +46,17 @@ def apple_process_payment():
     LOG.d("request for /apple/process_payment from %s", user)
     data = request.get_json()
     receipt_data = data.get("receipt_data")
-    is_macapp = "is_macapp" in data
+    is_macapp = "is_macapp" in data and data["is_macapp"] is True
 
     if is_macapp:
+        LOG.d("Use Macapp secret")
         password = MACAPP_APPLE_API_SECRET
     else:
         password = APPLE_API_SECRET
 
     apple_sub = verify_receipt(receipt_data, user, password)
     if apple_sub:
+        execute_subscription_webhook(user)
         return jsonify(ok=True), 200
 
     return jsonify(error="Processing failed"), 400
@@ -260,7 +268,11 @@ def apple_update_notification():
         plan = (
             PlanEnum.monthly
             if transaction["product_id"]
-            in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
+            in (
+                _MONTHLY_PRODUCT_ID,
+                _MACAPP_MONTHLY_PRODUCT_ID,
+                _MACAPP_MONTHLY_PRODUCT_ID_NEW,
+            )
             else PlanEnum.yearly
         )
 
@@ -281,6 +293,7 @@ def apple_update_notification():
             apple_sub.plan = plan
             apple_sub.product_id = transaction["product_id"]
             Session.commit()
+            execute_subscription_webhook(user)
             return jsonify(ok=True), 200
         else:
             LOG.w(
@@ -474,14 +487,16 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     # }
 
     if data["status"] != 0:
-        LOG.w(
+        LOG.e(
             "verifyReceipt status !=0, probably invalid receipt. User %s, data %s",
             user,
             data,
         )
         return None
 
-    # each item in data["receipt"]["in_app"] has the following format
+    # use responseBody.Latest_receipt_info and not responseBody.Receipt.In_app
+    # as recommended on https://developer.apple.com/documentation/appstorereceipts/responsebody/receipt/in_app
+    # each item in data["latest_receipt_info"] has the following format
     # {
     #     "quantity": "1",
     #     "product_id": "io.simplelogin.ios_app.subscription.premium.monthly",
@@ -500,9 +515,9 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     #     "is_trial_period": "false",
     #     "is_in_intro_offer_period": "false",
     # }
-    transactions = data["receipt"]["in_app"]
+    transactions = data.get("latest_receipt_info")
     if not transactions:
-        LOG.w("Empty transactions in data %s", data)
+        LOG.i("Empty transactions in data %s", data)
         return None
 
     latest_transaction = max(transactions, key=lambda t: int(t["expires_date_ms"]))
@@ -511,7 +526,11 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
     plan = (
         PlanEnum.monthly
         if latest_transaction["product_id"]
-        in (_MONTHLY_PRODUCT_ID, _MACAPP_MONTHLY_PRODUCT_ID)
+        in (
+            _MONTHLY_PRODUCT_ID,
+            _MACAPP_MONTHLY_PRODUCT_ID,
+            _MACAPP_MONTHLY_PRODUCT_ID_NEW,
+        )
         else PlanEnum.yearly
     )
 
@@ -519,9 +538,10 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
 
     if apple_sub:
         LOG.d(
-            "Update AppleSubscription for user %s, expired at %s, plan %s",
+            "Update AppleSubscription for user %s, expired at %s (%s), plan %s",
             user,
             expires_date,
+            expires_date.humanize(),
             plan,
         )
         apple_sub.receipt_data = receipt_data
@@ -550,6 +570,7 @@ def verify_receipt(receipt_data, user, password) -> Optional[AppleSubscription]:
             product_id=latest_transaction["product_id"],
         )
 
+    execute_subscription_webhook(user)
     Session.commit()
 
     return apple_sub

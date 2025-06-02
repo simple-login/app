@@ -31,11 +31,7 @@ E402 = "421 SL E402 Encryption failed - Retry later"
 # E403 = "421 SL E403 Retry later"
 E404 = "421 SL E404 Unexpected error - Retry later"
 E405 = "421 SL E405 Mailbox domain problem - Retry later"
-E406 = "421 SL E406 Retry later"
 E407 = "421 SL E407 Retry later"
-E408 = "421 SL E408 Retry later"
-E409 = "421 SL E409 Retry later"
-E410 = "421 SL E410 Retry later"
 # endregion
 
 # region 5** errors
@@ -64,4 +60,6 @@ E522 = (
 )
 E523 = "550 SL E523 Unknown error"
 E524 = "550 SL E524 Wrong use of reverse-alias"
+E525 = "550 SL E525 Alias loop"
+E526 = "550 SL E526 Too many recipients"
 # endregion

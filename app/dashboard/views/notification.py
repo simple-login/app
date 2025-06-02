@@ -43,7 +43,10 @@ def notification_route(notification_id):
 def notifications_route():
     page = 0
     if request.args.get("page"):
-        page = int(request.args.get("page"))
+        try:
+            page = int(request.args.get("page"))
+        except ValueError:
+            pass
 
     notifications = (
         Notification.filter_by(user_id=current_user.id)

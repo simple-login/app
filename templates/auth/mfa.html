@@ -1,54 +1,47 @@
 {% extends "single.html" %}
 
-
-{% block title %}
-  MFA
-{% endblock %}
-
-
+{% block title %}MFA{% endblock %}
 {% block single_content %}
+
   <div class="card">
     <div class="card-body p-6">
-
       <div class="mb-2">
-        Your account is protected with Two Factor Authentication. <br><br>
+        Your account is protected with Two Factor Authentication.
+        <br />
+        <br />
         You will need to enter your 2FA authentication code.
       </div>
-
       <form method="post">
         {{ otp_token_form.csrf_token }}
-        <input type="hidden" name="form-name" value="create">
-
+        <input type="hidden" name="form-name" value="create" />
         <div class="font-weight-bold mt-5">Token</div>
-        <div class="small-text mb-3">Please enter the 2FA code from your 2FA authenticator</div>
-
+        <div class="small-text mb-3">Please enter the 2FA code from your authenticator app</div>
         {{ otp_token_form.token(class="form-control", autofocus="true") }}
         {{ render_field_errors(otp_token_form.token) }}
         <div class="form-check">
           {{ otp_token_form.remember(class="form-check-input", id="remember") }}
-          <label class="form-check-label" for="remember">
-            {{ otp_token_form.remember.description }}
-          </label>
+          <label class="form-check-label" for="remember">{{ otp_token_form.remember.description }}</label>
         </div>
         <button class="btn btn-success mt-2">Submit</button>
       </form>
-
       {% if enable_fido %}
-        <hr>
+
+        <hr />
         <div class="text-muted mt-5" style="margin-top: 1em;">
-          Having trouble with your authenticator? <br> <a href="{{ url_for('auth.fido') }}">Verify by your security
-          key</a>
+          Having trouble with your authenticator?
+          <br />
+          <a href="{{ url_for("auth.fido") }}">
+            Verify by your security
+            key
+          </a>
         </div>
       {% endif %}
-
-      <hr>
+      <hr />
       <div class="mt-5">
-        If you cannot access your authenticator application you can instead use a recovery code. <br>
+        If you cannot access your authenticator application you can instead use a recovery code.
+        <br />
         <a href="{{ url_for('auth.recovery_route', next=next_url) }}">Use Recovery Code</a>
       </div>
-
-
     </div>
   </div>
-
 {% endblock %}

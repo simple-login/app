@@ -1,3 +1,4 @@
+import re
 import secrets
 import string
 import time
@@ -5,6 +6,7 @@ import urllib.parse
 from functools import wraps
 from typing import List, Optional
 
+from flask_wtf import FlaskForm
 from unidecode import unidecode
 
 from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
@@ -23,11 +25,17 @@ def word_exist(word):
     return word in _words
 
 
-def random_words():
+def random_words(words: int = 2, numbers: int = 0):
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
-    nb_words = 2
-    return "_".join([secrets.choice(_words) for i in range(nb_words)])
+    fields = [secrets.choice(_words) for i in range(words)]
+
+    if numbers > 0:
+        digits = [n for n in range(10)]
+        suffix = "".join([str(secrets.choice(digits)) for i in range(numbers)])
+        return "_".join(fields) + suffix
+    else:
+        return "_".join(fields)
 
 
 def random_string(length=10, include_digits=False):
@@ -41,11 +49,11 @@ def random_string(length=10, include_digits=False):
 
 def convert_to_id(s: str):
     """convert a string to id-like: remove space, remove special accent"""
-    s = s.replace(" ", "")
     s = s.lower()
     s = unidecode(s)
+    s = s.replace(" ", "")
 
-    return s
+    return s[:256]
 
 
 _ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-."
@@ -67,12 +75,31 @@ def encode_url(url):
     return urllib.parse.quote(url, safe="")
 
 
+def canonicalize_email(email_address: str) -> str:
+    email_address = sanitize_email(email_address)
+    parts = email_address.split("@")
+    if len(parts) != 2:
+        return ""
+    domain = parts[1]
+    if domain not in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+        return email_address
+    first = parts[0]
+    try:
+        plus_idx = first.index("+")
+        first = first[:plus_idx]
+    except ValueError:
+        # No + in the email
+        pass
+    first = first.replace(".", "")
+    return f"{first}@{parts[1]}".lower().strip()
+
+
 def sanitize_email(email_address: str, not_lower=False) -> str:
     if email_address:
         email_address = email_address.strip().replace(" ", "").replace("\n", " ")
         if not not_lower:
             email_address = email_address.lower()
-    return email_address
+    return email_address.replace("\u200f", "")
 
 
 class NextUrlSanitizer:
@@ -80,13 +107,16 @@ class NextUrlSanitizer:
     def sanitize(url: Optional[str], allowed_domains: List[str]) -> Optional[str]:
         if not url:
             return None
-        result = urllib.parse.urlparse(url)
+        replaced = url.replace("\\", "/")
+        result = urllib.parse.urlparse(replaced)
         if result.hostname:
             if result.hostname in allowed_domains:
-                return url
+                return replaced
             else:
                 return None
-        if result.path and result.path[0] == "/":
+        if result.path and result.path[0] == "/" and not result.path.startswith("//"):
+            if result.query:
+                return f"{result.path}?{result.query}"
             return result.path
 
         return None
@@ -94,6 +124,17 @@ class NextUrlSanitizer:
 
 def sanitize_next_url(url: Optional[str]) -> Optional[str]:
     return NextUrlSanitizer.sanitize(url, ALLOWED_REDIRECT_DOMAINS)
+
+
+def sanitize_scheme(scheme: Optional[str]) -> Optional[str]:
+    if not scheme:
+        return None
+    if scheme in ["http", "https"]:
+        return None
+    scheme_regex = re.compile("^[a-z.]+$")
+    if scheme_regex.match(scheme):
+        return scheme
+    return None
 
 
 def query2str(query):
@@ -111,3 +152,7 @@ def debug_info(func):
         return ret
 
     return wrap
+
+
+class CSRFValidationForm(FlaskForm):
+    pass
