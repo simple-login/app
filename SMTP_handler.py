@@ -354,6 +354,10 @@ class SMTPAuthenticator:
             LOG.e("alias %s does not exist.", username)
             return self.fail_nothandled(status.E502)
 
+        if not alias.enabled:
+            LOG.e("alias %s is disabled", username)
+            return self.fail_nothandled(status.E504)
+
         user = alias.user
 
         if not user or user.disabled:
