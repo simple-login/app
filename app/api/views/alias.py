@@ -30,8 +30,7 @@ from app.errors import (
 )
 from app.extensions import limiter
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox, AliasMailbox, SMTPCredentials
-from app.utils import sanitize_email
+from app.models import Alias, Contact, Mailbox, AliasDeleteReason, SMTPCredentials
 
 
 @deprecated
