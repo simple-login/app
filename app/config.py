@@ -2,14 +2,12 @@ import os
 import random
 import socket
 import string
-import subprocess
 from ast import literal_eval
-from typing import Callable, List
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
-SHA1 = subprocess.getoutput("git rev-parse HEAD")
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
@@ -35,6 +33,44 @@ def sl_getenv(env_var: str, default_factory: Callable = None):
         return default_factory()
 
     return literal_eval(value)
+
+
+def get_env_dict(env_var: str) -> dict[str, str]:
+    """
+    Get an env variable and convert it into a python dictionary with keys and values as strings.
+    Args:
+        env_var (str): env var, example: SL_DB
+
+    Syntax is: key1=value1;key2=value2
+    Components separated by ;
+    key and value separated by =
+    """
+    value = os.getenv(env_var)
+    if not value:
+        return {}
+
+    components = value.split(";")
+    result = {}
+    for component in components:
+        if component == "":
+            continue
+        parts = component.split("=")
+        if len(parts) != 2:
+            raise Exception(f"Invalid config for env var {env_var}")
+        result[parts[0].strip()] = parts[1].strip()
+
+    return result
+
+
+def get_env_csv(env_var: str, default: Optional[str]) -> list[str]:
+    """
+    Get an env variable and convert it into a list of strings separated by,
+    Syntax is: val1,val2
+    """
+    value = os.getenv(env_var, default)
+    if not value:
+        return []
+    return [field.strip() for field in value.split(",") if field.strip()]
 
 
 config_file = os.environ.get("CONFIG")
@@ -74,7 +110,6 @@ MONITORING_EMAIL = os.environ.get("MONITORING_EMAIL")
 # VERP: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 BOUNCE_PREFIX = os.environ.get("BOUNCE_PREFIX") or "bounce+"
 BOUNCE_SUFFIX = os.environ.get("BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
-BOUNCE_EMAIL = BOUNCE_PREFIX + "{}" + BOUNCE_SUFFIX
 
 # Used for VERP during reply phase. It's similar to BOUNCE_PREFIX.
 # It's needed when sending emails from custom domain to respect DMARC.
@@ -85,7 +120,6 @@ BOUNCE_PREFIX_FOR_REPLY_PHASE = (
     os.environ.get("BOUNCE_PREFIX_FOR_REPLY_PHASE") or "bounce_reply"
 )
 
-
 # VERP for transactional email: mail_from set to BOUNCE_PREFIX + email_log.id + BOUNCE_SUFFIX
 TRANSACTIONAL_BOUNCE_PREFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_PREFIX") or "transactional+"
@@ -93,15 +127,14 @@ TRANSACTIONAL_BOUNCE_PREFIX = (
 TRANSACTIONAL_BOUNCE_SUFFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
 )
-TRANSACTIONAL_BOUNCE_EMAIL = (
-    TRANSACTIONAL_BOUNCE_PREFIX + "{}" + TRANSACTIONAL_BOUNCE_SUFFIX
-)
 
 try:
     MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 except Exception:
     print("MAX_NB_EMAIL_FREE_PLAN is not set, use 5 as default value")
     MAX_NB_EMAIL_FREE_PLAN = 5
+
+MAX_NB_EMAIL_OLD_FREE_PLAN = int(os.environ.get("MAX_NB_EMAIL_OLD_FREE_PLAN", 15))
 
 # maximum number of directory a premium user can create
 MAX_NB_DIRECTORY = 50
@@ -116,13 +149,16 @@ POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
 # allow using a different postfix port, useful when developing locally
-POSTFIX_PORT = 25
-if "POSTFIX_PORT" in os.environ:
-    POSTFIX_PORT = int(os.environ["POSTFIX_PORT"])
 
 # Use port 587 instead of 25 when sending emails through Postfix
 # Useful when calling Postfix from an external network
 POSTFIX_SUBMISSION_TLS = "POSTFIX_SUBMISSION_TLS" in os.environ
+if POSTFIX_SUBMISSION_TLS:
+    default_postfix_port = 587
+else:
+    default_postfix_port = 25
+POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
+POSTFIX_TIMEOUT = int(os.environ.get("POSTFIX_TIMEOUT", 3))
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
@@ -146,11 +182,20 @@ FIRST_ALIAS_DOMAIN = os.environ.get("FIRST_ALIAS_DOMAIN") or EMAIL_DOMAIN
 # e.g. [(10, "mx1.hostname."), (10, "mx2.hostname.")]
 EMAIL_SERVERS_WITH_PRIORITY = sl_getenv("EMAIL_SERVERS_WITH_PRIORITY")
 
+PROTON_MX_SERVERS = get_env_csv(
+    "PROTON_MX_SERVERS", "mail.protonmail.ch., mailsec.protonmail.ch."
+)
+
+PROTON_EMAIL_DOMAINS = get_env_csv(
+    "PROTON_EMAIL_DOMAINS", "proton.me, protonmail.com, protonmail.ch, proton.ch, pm.me"
+)
+
 # disable the alias suffix, i.e. the ".random_word" part
 DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
+USERS_WITH_HTTP_UNSUBSCRIBE = get_env_csv("USERS_WITH_HTTP_UNSUBSCRIBE", "")
 
 # due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
 OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
@@ -163,21 +208,25 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
     with open(DKIM_PRIVATE_KEY_PATH) as f:
         DKIM_PRIVATE_KEY = f.read()
 
-
 # Database
 DB_URI = os.environ["DB_URI"]
+DB_CONN_NAME = os.environ.get("DB_CONN_NAME", "webapp")
 
 # Flask secret
 FLASK_SECRET = os.environ["FLASK_SECRET"]
+if not FLASK_SECRET:
+    raise RuntimeError("FLASK_SECRET is empty. Please define it.")
 SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
+UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
 BUCKET = os.environ.get("BUCKET")
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+AWS_ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL", None)
 
 # Paddle
 try:
@@ -232,7 +281,7 @@ else:
 
     print("WARNING: Use a temp directory for GNUPGHOME", GNUPGHOME)
 
-# Github, Google, Facebook client id and secrets
+# Github, Google, Facebook, OIDC client id and secrets
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 
@@ -242,6 +291,26 @@ GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
 FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
 
+CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
+OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
+OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
+OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
+
+PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
+PROTON_CLIENT_SECRET = os.environ.get("PROTON_CLIENT_SECRET")
+PROTON_BASE_URL = os.environ.get(
+    "PROTON_BASE_URL", "https://account.protonmail.com/api"
+)
+PROTON_VALIDATE_CERTS = "PROTON_VALIDATE_CERTS" in os.environ
+PROTON_PREVENT_CHANGE_LINKED_ACCOUNT = (
+    "PROTON_PREVENT_CHANGE_LINKED_ACCOUNT" in os.environ
+)
+CONNECT_WITH_PROTON = "CONNECT_WITH_PROTON" in os.environ
+PROTON_EXTRA_HEADER_NAME = os.environ.get("PROTON_EXTRA_HEADER_NAME")
+PROTON_EXTRA_HEADER_VALUE = os.environ.get("PROTON_EXTRA_HEADER_VALUE")
+
 # in seconds
 AVATAR_URL_EXPIRATION = 3600 * 24 * 7  # 1h*24h/d*7d=1week
 
@@ -250,16 +319,6 @@ MFA_USER_ID = "mfa_user_id"
 
 FLASK_PROFILER_PATH = os.environ.get("FLASK_PROFILER_PATH")
 FLASK_PROFILER_PASSWORD = os.environ.get("FLASK_PROFILER_PASSWORD")
-
-# Job names
-JOB_ONBOARDING_1 = "onboarding-1"
-JOB_ONBOARDING_2 = "onboarding-2"
-JOB_ONBOARDING_3 = "onboarding-3"
-JOB_ONBOARDING_4 = "onboarding-4"
-JOB_BATCH_IMPORT = "batch-import"
-JOB_DELETE_ACCOUNT = "delete-account"
-JOB_DELETE_MAILBOX = "delete-mailbox"
-JOB_DELETE_DOMAIN = "delete-domain"
 
 # for pagination
 PAGE_LIMIT = 20
@@ -289,7 +348,6 @@ STATUS_PAGE_URL = os.environ.get("STATUS_PAGE_URL") or "https://status.simplelog
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
 LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
 
-
 # Used when querying info on Apple API
 # for iOS App
 APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
@@ -303,6 +361,9 @@ MAX_ALERT_24H = 4
 
 # When a reverse-alias receives emails from un unknown mailbox
 ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX = "reverse_alias_unknown_mailbox"
+
+# When somebody is trying to spoof a reply
+ALERT_DMARC_FAILED_REPLY_PHASE = "dmarc_failed_reply_phase"
 
 # When a forwarding email is bounced
 ALERT_BOUNCE_EMAIL = "bounce"
@@ -335,12 +396,14 @@ AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
 # alert when a new alias is about to be created on a disabled directory
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
 
-ALERT_HOTMAIL_COMPLAINT = "alert_hotmail_complaint"
-ALERT_HOTMAIL_COMPLAINT_REPLY_PHASE = "alert_hotmail_complaint_reply_phase"
-ALERT_HOTMAIL_COMPLAINT_TRANSACTIONAL = "alert_hotmail_complaint_transactional"
-ALERT_YAHOO_COMPLAINT = "alert_yahoo_complaint"
+ALERT_COMPLAINT_REPLY_PHASE = "alert_complaint_reply_phase"
+ALERT_COMPLAINT_FORWARD_PHASE = "alert_complaint_forward_phase"
+ALERT_COMPLAINT_TRANSACTIONAL_PHASE = "alert_complaint_transactional_phase"
 
 ALERT_QUARANTINE_DMARC = "alert_quarantine_dmarc"
+
+ALERT_DUAL_SUBSCRIPTION_WITH_PARTNER = "alert_dual_sub_with_partner"
+ALERT_WARN_MULTIPLE_SUBSCRIPTIONS = "alert_multiple_subscription"
 
 # <<<<< END ALERT EMAIL >>>>
 
@@ -381,6 +444,9 @@ PGP_SIGNER = os.environ.get("PGP_SIGNER")
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
 
+# list of no reply addresses
+NOREPLIES = sl_getenv("NOREPLIES", list) or [NOREPLY]
+
 COINBASE_WEBHOOK_SECRET = os.environ.get("COINBASE_WEBHOOK_SECRET")
 COINBASE_CHECKOUT_ID = os.environ.get("COINBASE_CHECKOUT_ID")
 COINBASE_API_KEY = os.environ.get("COINBASE_API_KEY")
@@ -400,11 +466,24 @@ try:
 except Exception:
     HIBP_SCAN_INTERVAL_DAYS = 7
 HIBP_API_KEYS = sl_getenv("HIBP_API_KEYS", list) or []
+HIBP_MAX_ALIAS_CHECK = 10_000
+HIBP_RPM = int(os.environ.get("HIBP_API_RPM", 100))
+HIBP_SKIP_PARTNER_ALIAS = os.environ.get("HIBP_SKIP_PARTNER_ALIAS")
+
+KEEP_OLD_DATA_DAYS = 30
 
 POSTMASTER = os.environ.get("POSTMASTER")
 
 # store temporary files, especially for debugging
 TEMP_DIR = os.environ.get("TEMP_DIR")
+
+# Store unsent emails
+SAVE_UNSENT_DIR = os.environ.get("SAVE_UNSENT_DIR")
+if SAVE_UNSENT_DIR and not os.path.isdir(SAVE_UNSENT_DIR):
+    try:
+        os.makedirs(SAVE_UNSENT_DIR)
+    except FileExistsError:
+        pass
 
 # enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
 ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
@@ -426,6 +505,21 @@ ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
 DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
 
+# Bounces can happen after 5 days
+VERP_MESSAGE_LIFETIME = 5 * 86400
+VERP_PREFIX = os.environ.get("VERP_PREFIX") or "sl"
+# Generate with python3 -c 'import secrets; print(secrets.token_hex(28))'
+VERP_EMAIL_SECRET = os.environ.get("VERP_EMAIL_SECRET") or (
+    FLASK_SECRET + "pleasegenerateagoodrandomtoken"
+)
+if len(VERP_EMAIL_SECRET) < 32:
+    raise RuntimeError(
+        "Please, set VERP_EMAIL_SECRET to a random string at least 32 chars long"
+    )
+ALIAS_TRANSFER_TOKEN_SECRET = os.environ.get("ALIAS_TRANSFER_TOKEN_SECRET") or (
+    FLASK_SECRET + "aliastransfertoken"
+)
+
 
 def get_allowed_redirect_domains() -> List[str]:
     allowed_domains = sl_getenv("ALLOWED_REDIRECT_DOMAINS", list)
@@ -444,6 +538,169 @@ def setup_nameservers():
 
 
 NAMESERVERS = setup_nameservers()
+
+DISABLE_CREATE_CONTACTS_FOR_FREE_USERS = os.environ.get(
+    "DISABLE_CREATE_CONTACTS_FOR_FREE_USERS", False
+)
+
+
+# Expect format hits,seconds:hits,seconds...
+# Example 1,10:4,60 means 1 in the last 10 secs or 4 in the last 60 secs
+def getRateLimitFromConfig(
+    env_var: string, default: string = ""
+) -> list[tuple[int, int]]:
+    value = os.environ.get(env_var, default)
+    if not value:
+        return []
+    entries = [entry for entry in value.split(":")]
+    limits = []
+    for entry in entries:
+        fields = entry.split(",")
+        limit = (int(fields[0]), int(fields[1]))
+        limits.append(limit)
+    return limits
+
+
+# Rate limits
+ALIAS_CREATE_RATE_LIMIT_FREE = getRateLimitFromConfig(
+    "ALIAS_CREATE_RATE_LIMIT_FREE", "10,900:50,3600"
+)
+ALIAS_CREATE_RATE_LIMIT_PAID = getRateLimitFromConfig(
+    "ALIAS_CREATE_RATE_LIMIT_PAID", "50,900:200,3600"
+)
+ALIAS_RESTORE_ONE_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ONE_RATE_LIMIT", "100,86400:200,604800"
+)
+ALIAS_RESTORE_ALL_RATE_LIMIT = getRateLimitFromConfig(
+    "ALIAS_RESTORE_ALL_RATE_LIMIT", "5,3600:20,604800"
+)
+
+
+PARTNER_API_TOKEN_SECRET = os.environ.get("PARTNER_API_TOKEN_SECRET") or (
+    FLASK_SECRET + "partnerapitoken"
+)
+
+JOB_MAX_ATTEMPTS = 5
+JOB_TAKEN_RETRY_WAIT_MINS = 30
+
+# MEM_STORE
+MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)
+
+# Recovery codes hash salt
+RECOVERY_CODE_HMAC_SECRET = os.environ.get("RECOVERY_CODE_HMAC_SECRET") or (
+    FLASK_SECRET + "generatearandomtoken"
+)
+if not RECOVERY_CODE_HMAC_SECRET or len(RECOVERY_CODE_HMAC_SECRET) < 16:
+    raise RuntimeError(
+        "Please define RECOVERY_CODE_HMAC_SECRET in your configuration with a random string at least 16 chars long"
+    )
+
+
+# the minimum rspamd spam score above which emails that fail DMARC should be quarantined
+if "MIN_RSPAMD_SCORE_FOR_FAILED_DMARC" in os.environ:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = float(
+        os.environ["MIN_RSPAMD_SCORE_FOR_FAILED_DMARC"]
+    )
+else:
+    MIN_RSPAMD_SCORE_FOR_FAILED_DMARC = None
+
+# run over all reverse alias for an alias and replace them with sender address
+ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT = (
+    "ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT" in os.environ
+)
+
+if ENABLE_ALL_REVERSE_ALIAS_REPLACEMENT:
+    # max number of reverse alias that can be replaced
+    MAX_NB_REVERSE_ALIAS_REPLACEMENT = int(
+        os.environ["MAX_NB_REVERSE_ALIAS_REPLACEMENT"]
+    )
+
+# Only used for tests
+SKIP_MX_LOOKUP_ON_CHECK = False
+
+DISABLE_RATE_LIMIT = "DISABLE_RATE_LIMIT" in os.environ
+
+MAX_API_KEYS = int(os.environ.get("MAX_API_KEYS", 30))
+
+UPCLOUD_USERNAME = os.environ.get("UPCLOUD_USERNAME", None)
+UPCLOUD_PASSWORD = os.environ.get("UPCLOUD_PASSWORD", None)
+UPCLOUD_DB_ID = os.environ.get("UPCLOUD_DB_ID", None)
+
+STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
+
+EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
+
+# We want it disabled by default, so only skip if defined
+EVENT_WEBHOOK_SKIP_VERIFY_SSL = "EVENT_WEBHOOK_SKIP_VERIFY_SSL" in os.environ
+EVENT_WEBHOOK_DISABLE = "EVENT_WEBHOOK_DISABLE" in os.environ
+
+
+def read_webhook_enabled_user_ids() -> Optional[List[int]]:
+    user_ids = os.environ.get("EVENT_WEBHOOK_ENABLED_USER_IDS", None)
+    if user_ids is None:
+        return None
+
+    ids = []
+    for user_id in user_ids.split(","):
+        try:
+            ids.append(int(user_id.strip()))
+        except ValueError:
+            pass
+    return ids
+
+
+EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_ids()
+
+# Allow to define a different DB_URI for the event listener, in case we want to skip the connection pool
+# It defaults to the regular DB_URI in case it's needed
+EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
+
+
+def read_partner_dict(var: str) -> dict[int, str]:
+    partner_value = get_env_dict(var)
+    if len(partner_value) == 0:
+        return {}
+
+    res: dict[int, str] = {}
+    for partner_id in partner_value.keys():
+        try:
+            partner_id_int = int(partner_id.strip())
+            res[partner_id_int] = partner_value[partner_id]
+        except ValueError:
+            pass
+    return res
+
+
+PARTNER_DNS_CUSTOM_DOMAINS: dict[int, str] = read_partner_dict(
+    "PARTNER_DNS_CUSTOM_DOMAINS"
+)
+PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES: dict[int, str] = read_partner_dict(
+    "PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES"
+)
+
+MAILBOX_VERIFICATION_OVERRIDE_CODE: Optional[str] = os.environ.get(
+    "MAILBOX_VERIFICATION_OVERRIDE_CODE", None
+)
+
+AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
+ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
+ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
+MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
+
+
+def read_hex_data(key: string, default: bytes) -> bytes:
+    data = os.environ.get(key)
+
+    return bytes.fromhex(data) if data else default
+
+
+MASTER_ENC_KEY = read_hex_data(
+    "MASTER_ENC_KEY_HEX", (FLASK_SECRET + "enckey").encode("utf-8")
+)
+MAC_KEY = read_hex_data("MAC_KEY_HEX", (FLASK_SECRET + "mackey").encode("utf-8"))
+ABUSER_HKDF_SALT = read_hex_data(
+    "ABUSER_HKDF_SALT", (FLASK_SECRET + "absalt").encode("utf-8")
+)
 
 # For SMTP support
 SMTP_INTERNAL_HOST_IP = os.environ.get("SMTP_INTERNAL_HOST_IP") or "127.0.0.1"
