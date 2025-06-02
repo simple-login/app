@@ -15,8 +15,8 @@
 <img src="https://img.shields.io/github/license/simple-login/app">
 </a>
 
-<a href="https://twitter.com/simple_login">
-<img src="https://img.shields.io/twitter/follow/simple_login?style=social">
+<a href="https://twitter.com/simplelogin">
+<img src="https://img.shields.io/twitter/follow/simplelogin?style=social">
 </a>
 
 </p>
@@ -29,12 +29,12 @@
 
 ---
 
-Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked. 
-More information on https://simplelogin.io 
+Your email address is your **online identity**. When you use the same email address everywhere, you can be easily tracked.
+More information on https://simplelogin.io
 
 This README contains instructions on how to self host SimpleLogin.
 
-Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server. 
+Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server.
 
 SimpleLogin roadmap is at https://github.com/simple-login/app/projects/1 and our forum at https://github.com/simple-login/app/discussions, feel free to submit new ideas or vote on features.
 
@@ -74,7 +74,7 @@ Setting up DKIM is highly recommended to reduce the chance your emails ending up
 First you need to generate a private and public key for DKIM:
 
 ```bash
-openssl genrsa -out dkim.key 1024
+openssl genrsa -out dkim.key -traditional 1024
 openssl rsa -in dkim.key -pubout -out dkim.pub.key
 ```
 
@@ -84,7 +84,7 @@ For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplici
 
 ### DNS
 
-Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test). In DNS setup, we usually use domain with a trailing dot (`.`) at the end to to force using absolute domain.
+Please note that DNS changes could take up to 24 hours to propagate. In practice, it's a lot faster though (~1 minute or so in our test). In DNS setup, we usually use domain with a trailing dot (`.`) at the end to force using absolute domain.
 
 
 #### MX record
@@ -334,6 +334,12 @@ smtpd_recipient_restrictions =
    permit
 ```
 
+Check that the ssl certificates `/etc/ssl/certs/ssl-cert-snakeoil.pem` and `/etc/ssl/private/ssl-cert-snakeoil.key` exist. Depending on the linux distribution you are using they may or may not be present. If they are not, you will need to generate them with this command:
+
+```bash
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem
+```
+
 Create the `/etc/postfix/pgsql-relay-domains.cf` file with the following content.
 Make sure that the database config is correctly set, replace `mydomain.com` with your domain, update 'myuser' and 'mypassword' with your postgres credentials.
 
@@ -374,10 +380,11 @@ sudo systemctl restart postfix
 To run SimpleLogin, you need a config file at `$(pwd)/simplelogin.env`. Below is an example that you can use right away, make sure to
 
 - replace `mydomain.com` by your domain,
-- set `FLASK_SECRET` to a secret string, 
+- set `FLASK_SECRET` to a secret string,
 - update 'myuser' and 'mypassword' with your database credentials used in previous step.
+- set `SMTP_INTERNAL_ACCESS_SECRET` to a secret string
 
-All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default. 
+All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default.
 Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
 
 ```.env
@@ -410,6 +417,8 @@ GNUPGHOME=/sl/pgp
 LOCAL_FILE_UPLOAD=1
 
 POSTFIX_SERVER=10.0.0.1
+
+SMTP_INTERNAL_ACCESS_SECRET=put_something_secret_here
 ```
 
 
@@ -491,21 +500,7 @@ docker run -d \
 
 #### Enable Sending via SMTP
 
-For sending via SMTP  you need to make sure you have the required SSL certificate and key at following, as SMTP requires SSL.
-
-- `$(pwd)/smtp_ssl_cert.pem` for SSL Certificate file,
-- `$(pwd)/smtp_ssl_privkey.key` for Key file.
-- adjust this according to where you have the files present.
-
-You can use the following command to generate a self-signed certificate for testing.
-
-```bash
-openssl req -x509 -newkey rsa:4096 -keyout smtp_ssl_privkey.key \
-  -out smtp_ssl_cert.pem -sha256 -days 3650 -nodes \
-  -subj "/C=US/ST=Oregon/L=Portland/O=My Company/OU=Org/CN=mydomain.com"
-```
-
-then run `SMTP handler`
+For sending via SMTP  you need to run `SMTP handler`
 
 ```bash
 docker run -d \
@@ -515,9 +510,7 @@ docker run -d \
     -v $(pwd)/simplelogin.env:/code/.env \
     -v $(pwd)/dkim.key:/dkim.key \
     -v $(pwd)/dkim.pub.key:/dkim.pub.key \
-    -v $(pwd)/smtp_ssl_cert.pem:/smtp_ssl_cert.pem
-    -v $(pwd)/smtp_ssl_privkey.key:/smtp_ssl_privkey.key
-    -p 465:465 \
+    -p 127.0.0.1:20465:20465 \
     --restart always \
     --network="sl-network" \
     simplelogin/app:3.4.0 python SMTP_handler.py
@@ -538,10 +531,34 @@ server {
     server_name  app.mydomain.com;
 
     location / {
-        proxy_pass http://localhost:7777;
+        proxy_pass              http://localhost:7777;
+    	proxy_set_header        Host $host;
+    }
+}
+
+# For SMTP
+mail {
+    server_name app.mydomain.com;
+    
+    auth_http 127.0.0.1:7777/api/auth/smtp;
+    auth_http_header X-Secret "changeme";
+
+    ssl_certificate     /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    server {
+        listen           465 ssl;
+        protocol         smtp;
+        smtp_auth        login plain;
+        xclient          off;
+        proxy_smtp_auth  on;
     }
 }
 ```
+
+Note:
+- Change the `X-Secret` to match `SMTP_INTERNAL_ACCESS_SECRET` in your `.env` file  
+- If `/etc/nginx/sites-enabled/default` exists, delete it or certbot will fail due to the conflict. The `simplelogin` file should be the only file in `sites-enabled`.
 
 Reload Nginx with the command below
 
@@ -549,8 +566,7 @@ Reload Nginx with the command below
 sudo systemctl reload nginx
 ```
 
-At this step, you should also setup the SSL for Nginx. 
-[Certbot](https://certbot.eff.org/instructions) can be a good option if you want a free SSL certificate.
+At this step, you should also setup the SSL for Nginx. [Here's our guide how](./docs/ssl.md).
 
 ### Enjoy!
 
@@ -567,7 +583,7 @@ exit
 
 Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
 
-```
+```.env
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
 ```
