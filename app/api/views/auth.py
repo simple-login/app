@@ -10,7 +10,13 @@ from itsdangerous import Signer
 from app import email_utils
 from app.api.base import api_bp
 from app.abuser_utils import check_if_abuser_email
-from app.config import FLASK_SECRET, DISABLE_REGISTRATION
+from app.config import (
+    FLASK_SECRET,
+    DISABLE_REGISTRATION,
+    SMTP_INTERNAL_ACCESS_SECRET,
+    SMTP_INTERNAL_HOST_IP,
+    SMTP_INTERNAL_PORT
+)
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
@@ -404,3 +410,74 @@ def forgot_password():
         send_reset_password_email(user)
 
     return jsonify(ok=True)
+
+
+def error_response(error, error_code):
+    return jsonify(error=error), error_code, {"Auth-Status": error}
+
+@api_bp.route("/auth/smtp")
+@limiter.limit("10/minute")
+def auth_smtp():
+    """
+    SMTP Authentication helper for Nginx mail proxy
+    Input Headers:
+        X-Secret: <internal-secret>
+        Auth-Method:
+        Auth-User:
+        Auth-Pass:
+        Auth-Protocol:
+    Output:
+        Success Headers:
+        Auth-Status: OK
+        Auth-Server: <internal-SMTP-Handler-hostname>
+        Auth-Port: <internal-SMTP-Handler-port>
+
+        Failure Headers: (Send only one header for failure)
+        Auth-Status: <error-message>
+
+    The data in the response body is ignored, the information is passed only in the headers.
+
+    Reference: https://nginx.org/en/docs/mail/ngx_mail_auth_http_module.html
+    """
+
+    # Only allow access from nginx.
+    x_secret = request.headers.get("X-Secret")
+    if not x_secret and x_secret != SMTP_INTERNAL_ACCESS_SECRET:
+        error = "Request Forbidden"
+        return error_response(error, 403)
+
+    auth_method = request.headers.get("Auth-Method")
+    auth_user = request.headers.get("Auth-User")
+    auth_pass = request.headers.get("Auth-Pass")
+    auth_protocol = request.headers.get("Auth-Protocol")
+
+    if not auth_method or not auth_user or not auth_pass or not auth_protocol:
+        error = "Invalid request headers"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 400)
+
+    auth_method = auth_method.upper() if auth_method else None
+    if auth_method not in ["PLAIN", "LOGIN"]:
+        error = f"Auth-Method must be PLAIN or LOGIN, got {auth_method}"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 401)
+
+    if auth_protocol != "smtp":
+        error = f"Auth-Protocol must be smtp, got {auth_protocol}"
+        LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+        return error_response(error, 401)
+
+    from SMTP_handler import auth_SMTP_helper
+    auth_result = auth_SMTP_helper(auth_user, auth_pass, auth_method)
+    if auth_result:
+        resp_headers = {
+            "Auth-Status": "OK",
+            "Auth-Server": SMTP_INTERNAL_HOST_IP,
+            "Auth-Port": SMTP_INTERNAL_PORT,
+        }
+        LoginEvent(LoginEvent.ActionType.success, LoginEvent.Source.api).send()
+        return jsonify(auth_status="OK"), 200, resp_headers
+
+    error = "Authentication credentials invalid"
+    LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
+    return error_response(error, 401)

@@ -701,3 +701,8 @@ MAC_KEY = read_hex_data("MAC_KEY_HEX", (FLASK_SECRET + "mackey").encode("utf-8")
 ABUSER_HKDF_SALT = read_hex_data(
     "ABUSER_HKDF_SALT", (FLASK_SECRET + "absalt").encode("utf-8")
 )
+
+# For SMTP support
+SMTP_INTERNAL_HOST_IP = os.environ.get("SMTP_INTERNAL_HOST_IP") or "127.0.0.1"
+SMTP_INTERNAL_PORT = int(os.environ.get("SMTP_INTERNAL_PORT") or 20465)
+SMTP_INTERNAL_ACCESS_SECRET = os.environ.get("SMTP_INTERNAL_ACCESS_SECRET")
