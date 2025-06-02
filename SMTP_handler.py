@@ -7,7 +7,6 @@ This will allow a MUA to send directly from the alias without the need for the u
 
 import argparse
 import time
-import ssl
 import uuid
 import email
 
@@ -17,15 +16,13 @@ from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import AuthResult, LoginPassword, Envelope
 
 from sqlalchemy.orm.exc import ObjectDeletedError
-from sqlalchemy.exc import IntegrityError
 from email.message import Message
-from email.utils import formataddr, formatdate
+from email.utils import formatdate
 from init_app import load_pgp_public_keys
 
 from server import create_light_app
 from app import config
 from app.alias_utils import get_alias_recipient_name
-from app.errors import NonReverseAliasInReplyPhase
 from app.db import Session
 from app.log import LOG, set_message_id
 from app.email import status, headers
@@ -33,13 +30,11 @@ from app.utils import sanitize_email
 from app.email.spam import get_spam_score
 from app.pgp_utils import PGPException
 from app.models import Alias, SMTPCredentials, EmailLog, Contact, Mailbox, VerpType
-from app.email_validation import is_valid_email
 from app.config import (
     NOREPLY,
     ENABLE_SPAM_ASSASSIN,
     SPAMASSASSIN_HOST,
     MAX_REPLY_PHASE_SPAM_SCORE,
-    BOUNCE_PREFIX_FOR_REPLY_PHASE,
     LOAD_PGP_EMAIL_HANDLER,
 )
 from app.email_utils import (
@@ -58,7 +53,6 @@ from app.email_utils import (
     send_email,
     render,
     get_email_domain_part,
-    generate_reply_email,
     generate_verp_email,
     replace
 )

@@ -1,8 +1,5 @@
-import json
-import os
 import random
 import smtplib
-import ssl
 import pytest
 import SMTP_handler
 from email.message import EmailMessage
