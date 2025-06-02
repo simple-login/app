@@ -632,7 +632,15 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         return [(True, status.E502)]
 
     if not alias.enabled or alias.is_trashed() or contact.block_forward:
-        LOG.d("%s is disabled, do not forward", alias)
+        if not alias.enabled:
+            LOG.d("%s is disabled, do not forward", alias)
+
+        if alias.is_trashed():
+            LOG.d("%s is trashed, do not forward", alias)
+
+        if contact.block_forward:
+            LOG.d("Contact %s of alias %s is blocked, do not forward", contact, alias)
+
         EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
