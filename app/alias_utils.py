@@ -135,7 +135,7 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
         else:  # no rule passes
             LOG.d(f"No rule matches auto-create {address} for domain {custom_domain}")
             return None
-    LOG.d("Create alias via catchall")
+    LOG.d(f"User {custom_domain.user} will create alias {address} via catchall")
 
     return custom_domain, None
 
@@ -253,6 +253,8 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             )
 
         Session.commit()
+
+        LOG.i(f"User {directory.user} created alias {alias} via directory {directory}")
         return alias
     except AliasInTrashError:
         LOG.w(
@@ -301,6 +303,9 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
             custom_domain_id=custom_domain.id,
             automatic_creation=True,
             mailbox_id=mailboxes[0].id,
+        )
+        LOG.d(
+            f"User {custom_domain.user} created alias {alias} via domain {custom_domain}"
         )
         if not custom_domain.user.disable_automatic_alias_note:
             alias.note = alias_note
