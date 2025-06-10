@@ -18,8 +18,8 @@ from markupsafe import Markup
 
 from app import models, s3, config
 from app.abuser_audit_log_utils import AbuserAuditLog
+from app.abuser import mark_user_as_abuser
 from app.abuser_utils import (
-    mark_user_as_abuser,
     unmark_as_abusive_user,
     get_abuser_bundles_for_address,
 )
