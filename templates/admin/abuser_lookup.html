@@ -81,10 +81,10 @@
   <div class="border border-dark border-2 mt-1 mb-2 p-3">
     <form method="get">
       <div class="form-group">
-        <label for="email">Email address:</label>
-        <input type="email"
+        <label for="search">UserID or Email to search::</label>
+        <input type="text"
                class="form-control"
-               name="email"
+               name="search"
                value="{{ query or '' }}" />
       </div>
       <button type="submit" class="btn btn-primary">Look up</button>
@@ -98,7 +98,7 @@
   {% if data.bundles %}
 
     <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found abuser data for <code>{{ data.email }}</code></h3>
+      <h3 class="mb-3">Found abuser data for <code>{{ data.query }}</code></h3>
       {{ show_bundles(data.bundles) }}
     </div>
   {% endif %}

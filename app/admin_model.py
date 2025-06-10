@@ -1114,19 +1114,33 @@ class CustomDomainSearchAdmin(BaseView):
 class AbuserLookupResult:
     def __init__(self):
         self.no_match: bool = False
-        self.email: Optional[str] = None
+        self.query: Optional[str | int] = None
         self.bundles: Optional[List[Dict]] = None
 
     @staticmethod
-    def from_email(email: Optional[str]) -> AbuserLookupResult:
+    def from_email_or_user_id(query: str) -> AbuserLookupResult:
         out = AbuserLookupResult()
+        email: str
 
-        if email is None or email == "":
+        if query is None or query == "":
             out.no_match = True
 
             return out
 
-        out.email = email
+        if query.isnumeric():
+            user_id = int(query)
+            user = User.get(user_id)
+
+            if not user:
+                out.no_match = True
+
+                return out
+
+            email = user.email
+        else:
+            email = sanitize_email(query)
+
+        out.query = query
         bundles = get_abuser_bundles_for_address(
             target_address=email,
             admin_id=current_user.id,
@@ -1174,13 +1188,12 @@ class AbuserLookupAdmin(BaseView):
 
     @expose("/", methods=["GET", "POST"])
     def index(self):
-        query = request.args.get("email")
+        query: Optional[str] = request.args.get("search")
 
         if query is None:
             result = AbuserLookupResult()
         else:
-            email = sanitize_email(query)
-            result = AbuserLookupResult.from_email(email)
+            result = AbuserLookupResult.from_email_or_user_id(query)
 
         return self.render(
             "admin/abuser_lookup.html",
