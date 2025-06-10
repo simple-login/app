@@ -120,6 +120,7 @@ def new_custom_alias_v2():
         return jsonify(error="Email is not valid"), 400
 
     Session.commit()
+    LOG.i(f"User {user} created custom alias {alias} via API (v2)")
 
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
@@ -264,6 +265,8 @@ def new_custom_alias_v3():
         )
 
     Session.commit()
+
+    LOG.i(f"User {user} created custom alias {alias} via API (v3)")
 
     if hostname:
         AliasUsedOn.create(alias_id=alias.id, hostname=hostname, user_id=alias.user_id)
