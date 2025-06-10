@@ -156,6 +156,9 @@ def custom_alias():
                     )
 
                 Session.commit()
+                LOG.i(
+                    f"User {current_user} has created custom alias {alias} via dashboard"
+                )
                 flash(f"Alias {full_alias} has been created", "success")
 
                 return redirect(url_for("dashboard.index", highlight_alias_id=alias.id))

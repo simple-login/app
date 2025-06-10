@@ -88,6 +88,7 @@ def new_random_alias():
                     mailbox_id=user.default_mailbox_id,
                     commit=True,
                 )
+                LOG.i(f"User {user} created random alias {alias} via API")
             except AliasInTrashError:
                 LOG.i("Alias %s is in trash", suggested_alias)
                 alias = None
@@ -108,6 +109,7 @@ def new_random_alias():
 
         alias = Alias.create_new_random(user=user, scheme=scheme, note=note)
         Session.commit()
+        LOG.i(f"User {user} created random alias {alias} via API")
 
     if hostname and not AliasUsedOn.get_by(alias_id=alias.id, hostname=hostname):
         AliasUsedOn.create(
