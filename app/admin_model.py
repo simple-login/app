@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from datetime import datetime
 from typing import Optional, List, Dict
 
 import arrow
@@ -15,8 +17,9 @@ from flask_login import current_user
 from markupsafe import Markup
 
 from app import models, s3, config
+from app.abuser_audit_log_utils import AbuserAuditLog
+from app.abuser import mark_user_as_abuser
 from app.abuser_utils import (
-    mark_user_as_abuser,
     unmark_as_abusive_user,
     get_abuser_bundles_for_address,
 )
@@ -56,8 +59,6 @@ from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_add
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
-from datetime import datetime
-import json
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -1114,19 +1115,42 @@ class CustomDomainSearchAdmin(BaseView):
 class AbuserLookupResult:
     def __init__(self):
         self.no_match: bool = False
-        self.email: Optional[str] = None
+        self.query: Optional[str | int] = None
         self.bundles: Optional[List[Dict]] = None
+        self.audit_log: Optional[List[Dict]] = None
 
     @staticmethod
-    def from_email(email: Optional[str]) -> AbuserLookupResult:
+    def from_email_or_user_id(query: str) -> AbuserLookupResult:
         out = AbuserLookupResult()
+        email: str
+        audit_log: List[AbuserAuditLog] = []
 
-        if email is None or email == "":
+        if query is None or query == "":
             out.no_match = True
 
             return out
 
-        out.email = email
+        if query.isnumeric():
+            user_id = int(query)
+            user = User.get(user_id)
+
+            if not user:
+                out.no_match = True
+
+                return out
+
+            email = user.email
+            audit_log = AbuserAuditLog.filter(AbuserAuditLog.user_id == user.id).all()
+        else:
+            email = sanitize_email(query)
+            user = User.get_by(email=email)
+
+            if user:
+                audit_log = AbuserAuditLog.filter(
+                    AbuserAuditLog.user_id == user.id
+                ).all()
+
+        out.query = query
         bundles = get_abuser_bundles_for_address(
             target_address=email,
             admin_id=current_user.id,
@@ -1153,6 +1177,15 @@ class AbuserLookupResult:
                 AbuserLookupResult.convert_dt(alias_item)
 
         out.bundles = bundles
+        out.audit_log = [
+            {
+                "admin_id": alog.admin_id,
+                "action": alog.action,
+                "message": alog.message,
+                "created_at": alog.created_at,
+            }
+            for alog in audit_log
+        ]
 
         return out
 
@@ -1174,13 +1207,12 @@ class AbuserLookupAdmin(BaseView):
 
     @expose("/", methods=["GET", "POST"])
     def index(self):
-        query = request.args.get("email")
+        query: Optional[str] = request.args.get("search")
 
         if query is None:
             result = AbuserLookupResult()
         else:
-            email = sanitize_email(query)
-            result = AbuserLookupResult.from_email(email)
+            result = AbuserLookupResult.from_email_or_user_id(query)
 
         return self.render(
             "admin/abuser_lookup.html",

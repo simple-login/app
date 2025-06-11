@@ -51,22 +51,7 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def mark_user_as_abuser(
-    abuse_user: User, note: str, admin_id: Optional[int] = None
-) -> None:
-    abuse_user.disabled = True
-
-    emit_abuser_audit_log(
-        user_id=abuse_user.id,
-        action=AbuserAuditLogAction.MarkAbuser,
-        message=note,
-        admin_id=admin_id,
-    )
-    Session.commit()
-    _store_abuse_data(abuse_user)
-
-
-def _store_abuse_data(user: User) -> None:
+def store_abuse_data(user: User) -> None:
     """
     Archive the given abusive user's data and update blocklist/lookup tables.
     """
@@ -133,7 +118,7 @@ def _store_abuse_data(user: User) -> None:
         mac_key_bytes = config.MAC_KEY
         master_key_bytes = config.MASTER_ENC_KEY
 
-        for raw_identifier_address in all_identifiers_raw:
+        for idx, raw_identifier_address in enumerate(all_identifiers_raw):
             if not raw_identifier_address:
                 continue
 
@@ -167,6 +152,9 @@ def _store_abuse_data(user: User) -> None:
             )
 
             Session.add(abuser_lookup_entry)
+
+            if idx % 1000 == 0:
+                Session.flush()
 
         Session.commit()
     except Exception:

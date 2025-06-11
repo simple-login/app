@@ -4,7 +4,7 @@ from typing import List
 
 from sqlalchemy import func
 
-from app.abuser_utils import mark_user_as_abuser
+from app.abuser import mark_user_as_abuser
 from app.db import Session
 from app.models import User, AbuserData
 
