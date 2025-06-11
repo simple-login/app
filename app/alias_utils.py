@@ -537,11 +537,6 @@ def change_alias_note(alias: Alias, note: str, commit: bool = False):
     )
 
     EventDispatcher.send_event(alias.user, EventContent(alias_note_changed=event))
-    emit_alias_audit_log(
-        alias,
-        AliasAuditLogAction.UpdateAlias,
-        "Update alias note",
-    )
 
     if commit:
         Session.commit()
