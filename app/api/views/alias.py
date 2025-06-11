@@ -287,7 +287,7 @@ def update_alias(alias_id):
     changed = False
     if "note" in data:
         new_note = data.get("note")
-        alias.note = new_note
+        alias_utils.change_alias_note(alias, new_note)
         changed_fields.append("note")
         changed = True
 
