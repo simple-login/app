@@ -1715,6 +1715,9 @@ class Alias(Base, ModelMixin):
 
         return ret
 
+    def is_created_from_partner(self) -> bool:
+        return self.flags & self.FLAG_PARTNER_CREATED > 0
+
     def authorized_addresses(self) -> [str]:
         """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse-aliases
         Including its mailboxes and their authorized addresses
@@ -1796,7 +1799,7 @@ class Alias(Base, ModelMixin):
         DailyMetric.get_or_create_today_metric().nb_alias += 1
 
         if (
-            new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
+            new_alias.is_created_from_partner()
             and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
         ):
             user.flags = user.flags | User.FLAG_CREATED_ALIAS_FROM_PARTNER
@@ -1827,9 +1830,7 @@ class Alias(Base, ModelMixin):
             "AliasCreated",
             {
                 "custom_domain": "yes" if new_alias.custom_domain_id else "no",
-                "from_partner": "yes"
-                if new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
-                else "no",
+                "from_partner": "yes" if new_alias.is_created_from_partner() else "no",
                 "automatic": "yes" if new_alias.automatic_creation else "no",
             },
         )

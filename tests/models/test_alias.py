@@ -49,3 +49,4 @@ def test_alias_create_from_partner_domain_flags_the_alias():
         flush=True,
     )
     assert alias.flags & Alias.FLAG_PARTNER_CREATED > 0
+    assert alias.is_created_from_partner()
