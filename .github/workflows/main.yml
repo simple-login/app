@@ -76,7 +76,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           # Install a specific version of uv.
-          version: "0.5.21"
+          version: "0.7.13"
           enable-cache: true
 
       - name: Install OS dependencies
