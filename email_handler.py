@@ -242,7 +242,9 @@ def get_or_create_reply_to_contact(
         )
         return None
 
-    return contact_utils.create_contact(contact_address, alias, contact_name).contact
+    return contact_utils.create_contact(
+        contact_address, alias, contact_name, automatic_created=True
+    ).contact
 
 
 def replace_header_when_forward(msg: Message, alias: Alias, header: str):

@@ -1829,9 +1829,13 @@ class Alias(Base, ModelMixin):
         agent.record_custom_event(
             "AliasCreated",
             {
-                "custom_domain": "yes" if new_alias.custom_domain_id else "no",
-                "from_partner": "yes" if new_alias.is_created_from_partner() else "no",
-                "automatic": "yes" if new_alias.automatic_creation else "no",
+                "custom_domain": "custom domain"
+                if new_alias.custom_domain_id
+                else "base domain",
+                "from_partner": "from partner"
+                if new_alias.is_created_from_partner()
+                else "from sl",
+                "automatic": "automatic" if new_alias.automatic_creation else "manual",
             },
         )
 
@@ -2111,8 +2115,8 @@ class Contact(Base, ModelMixin):
         agent.record_custom_event(
             "ContactCreated",
             {
-                "is_cc": new_contact.is_cc,
-                "automatic": "yes" if new_contact.automatic_created else "no",
+                "is_cc": "cc" if new_contact.is_cc else "to",
+                "automatic": "automatic" if new_contact.automatic_created else "manual",
             },
         )
 
