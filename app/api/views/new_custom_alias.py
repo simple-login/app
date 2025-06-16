@@ -1,4 +1,4 @@
-from email_validator import EmailNotValidError
+from email_validator import EmailNotValidError, validate_email
 from flask import g
 from flask import jsonify, request
 
@@ -246,6 +246,14 @@ def new_custom_alias_v3():
         LOG.i(f"User {user} tried to create an alias with ..")
         return (
             jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
+            400,
+        )
+    try:
+        validate_email(full_alias, check_deliverability=False, allow_smtputf8=False)
+    except EmailNotValidError as e:
+        LOG.i(f"Could not validate email {full_alias} for custom alias creation: {e}")
+        return (
+            jsonify(error="Email alias is invalid"),
             400,
         )
 
