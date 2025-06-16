@@ -8,10 +8,10 @@ from cryptography.hazmat.primitives import hashes as crypto_hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from app import constants
+from app.abuser import unmark_as_abusive_user
 from app.abuser_utils import (
     check_if_abuser_email,
     get_abuser_bundles_for_address,
-    unmark_as_abusive_user,
     _derive_key_for_identifier,
     store_abuse_data,
 )

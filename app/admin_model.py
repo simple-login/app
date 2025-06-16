@@ -17,10 +17,9 @@ from flask_login import current_user
 from markupsafe import Markup
 
 from app import models, s3, config
+from app.abuser import mark_user_as_abuser, unmark_as_abusive_user
 from app.abuser_audit_log_utils import AbuserAuditLog
-from app.abuser import mark_user_as_abuser
 from app.abuser_utils import (
-    unmark_as_abusive_user,
     get_abuser_bundles_for_address,
 )
 from app.custom_domain_validation import (

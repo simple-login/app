@@ -163,31 +163,6 @@ def store_abuse_data(user: User) -> None:
         raise
 
 
-def unmark_as_abusive_user(
-    user_id: int, note: str, admin_id: Optional[int] = None
-) -> None:
-    """
-    Fully remove abuser archive and lookup data for a given user_id.
-    This reverses the effects of archive_abusive_user().
-    """
-    LOG.i(f"Removing user {user_id} as an abuser.")
-    abuser_data_entry = AbuserData.filter_by(user_id=user_id).first()
-
-    if abuser_data_entry:
-        Session.delete(abuser_data_entry)
-
-    user = User.get(user_id)
-    user.disabled = False
-
-    emit_abuser_audit_log(
-        user_id=user.id,
-        admin_id=admin_id,
-        action=AbuserAuditLogAction.UnmarkAbuser,
-        message=note,
-    )
-    Session.commit()
-
-
 def get_abuser_bundles_for_address(target_address: str, admin_id: int) -> List[Dict]:
     """
     Given a target address (email, alias, or mailbox address),
