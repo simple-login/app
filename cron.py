@@ -1026,7 +1026,7 @@ async def _hibp_check(api_key: str, queue: asyncio.Queue):
             alias.hibp_last_check = arrow.utcnow()
             Session.commit()
             continue
-        if alias.flags & Alias.FLAG_PARTNER_CREATED > 0:
+        if alias.is_created_from_partner():
             # Mark as hibp done
             alias.hibp_last_check = arrow.utcnow()
             Session.commit()
