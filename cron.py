@@ -929,7 +929,9 @@ def check_custom_domain():
 
     LOG.d("Check verified domain for DNS issues")
 
-    for custom_domain in CustomDomain.filter_by(verified=True):  # type: CustomDomain
+    for custom_domain in (
+        CustomDomain.filter_by(verified=True).enable_eagerloads(False).yield_per(100)
+    ):  # type: CustomDomain
         try:
             check_single_custom_domain(custom_domain)
         except ObjectDeletedError:
@@ -937,6 +939,8 @@ def check_custom_domain():
 
 
 def check_single_custom_domain(custom_domain: CustomDomain):
+    if custom_domain.user.disabled:
+        return
     mx_domains = get_mx_domains(custom_domain.domain)
     validator = CustomDomainValidation(
         dkim_domain=config.EMAIL_DOMAIN,
