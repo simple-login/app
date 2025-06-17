@@ -538,6 +538,56 @@
                       </div>
                     </div>
                     <!-- END Alias import/export -->
+                    <!-- Blocked domains -->
+                    <div class="card" id="blocked-domains">
+                      <div class="card-body">
+                        <div class="card-title">Blocked domains</div>
+                        <div class="mb-3">You can add domains to prevent emails forwarded from them to your Mailbox.</div>
+                        <hr />
+                        <h4>New domain</h4>
+                        <form method="post" action="#blocked-domains">
+                          {{ csrf_form.csrf_token }}
+                          <input type="hidden" name="form-name" value="blocked-domains-add">
+                          <div class="form-group">
+                            <input class="form-control mr-2"
+                                   name="domain-name"
+                                   placeholder="Domain to be blocked">
+                          </div>
+                          <button class="btn btn-outline-primary mt-2">Add</button>
+                        </form>
+                        {% if blocked_domains | length > 0 %}
+
+                          <div class="mt-2">
+                            <hr />
+                            <h4>Blocked domains</h4>
+                            <div class="row">
+                              {% for blocked_domain in blocked_domains %}
+
+                                <div class="col-6">
+                                  <div class="my-2 p-2 card">
+                                    <div class="row">
+                                      <div class="col">
+                                        <div class="py-2 font-weight-bold">{{ blocked_domain.domain }}</div>
+                                      </div>
+                                      <div class="col-2">
+                                        <form method="post" action="#blocked-domains">
+                                          {{ csrf_form.csrf_token }}
+                                          <input type="hidden" name="form-name" value="blocked-domains-remove">
+                                          <input type="hidden" name="domain_name" value="{{ blocked_domain.domain }}">
+                                          <input type="hidden" name="domain_id" value="{{ blocked_domain.id }}">
+                                          <button class="btn btn-link text-danger">Delete</button>
+                                        </form>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <!-- END Blocked domains -->
                   </div>
                 {% endblock %}
                 {% block script %}
