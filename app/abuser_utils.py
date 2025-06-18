@@ -51,22 +51,7 @@ def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     )
 
 
-def mark_user_as_abuser(
-    abuse_user: User, note: str, admin_id: Optional[int] = None
-) -> None:
-    abuse_user.disabled = True
-
-    emit_abuser_audit_log(
-        user_id=abuse_user.id,
-        action=AbuserAuditLogAction.MarkAbuser,
-        message=note,
-        admin_id=admin_id,
-    )
-    Session.commit()
-    _store_abuse_data(abuse_user)
-
-
-def _store_abuse_data(user: User) -> None:
+def store_abuse_data(user: User) -> None:
     """
     Archive the given abusive user's data and update blocklist/lookup tables.
     """
@@ -133,7 +118,7 @@ def _store_abuse_data(user: User) -> None:
         mac_key_bytes = config.MAC_KEY
         master_key_bytes = config.MASTER_ENC_KEY
 
-        for raw_identifier_address in all_identifiers_raw:
+        for idx, raw_identifier_address in enumerate(all_identifiers_raw):
             if not raw_identifier_address:
                 continue
 
@@ -168,36 +153,14 @@ def _store_abuse_data(user: User) -> None:
 
             Session.add(abuser_lookup_entry)
 
+            if idx % 1000 == 0:
+                Session.flush()
+
         Session.commit()
     except Exception:
         Session.rollback()
         LOG.exception("Error during archive_abusive_user")
         raise
-
-
-def unmark_as_abusive_user(
-    user_id: int, note: str, admin_id: Optional[int] = None
-) -> None:
-    """
-    Fully remove abuser archive and lookup data for a given user_id.
-    This reverses the effects of archive_abusive_user().
-    """
-    LOG.i(f"Removing user {user_id} as an abuser.")
-    abuser_data_entry = AbuserData.filter_by(user_id=user_id).first()
-
-    if abuser_data_entry:
-        Session.delete(abuser_data_entry)
-
-    user = User.get(user_id)
-    user.disabled = False
-
-    emit_abuser_audit_log(
-        user_id=user.id,
-        admin_id=admin_id,
-        action=AbuserAuditLogAction.UnmarkAbuser,
-        message=note,
-    )
-    Session.commit()
 
 
 def get_abuser_bundles_for_address(target_address: str, admin_id: int) -> List[Dict]:

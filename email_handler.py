@@ -46,6 +46,7 @@ from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional
 
 import newrelic.agent
+import sentry_sdk
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
@@ -182,6 +183,7 @@ from init_app import load_pgp_public_keys
 from server import create_light_app
 
 
+@sentry_sdk.trace
 def get_or_create_contact(
     from_header: str, mail_from: str, alias: Alias
 ) -> Optional[Contact]:
@@ -220,6 +222,7 @@ def get_or_create_contact(
     return contact_result.contact
 
 
+@sentry_sdk.trace
 def get_or_create_reply_to_contact(
     reply_to_header: str, alias: Alias, msg: Message
 ) -> Optional[Contact]:
@@ -242,9 +245,12 @@ def get_or_create_reply_to_contact(
         )
         return None
 
-    return contact_utils.create_contact(contact_address, alias, contact_name).contact
+    return contact_utils.create_contact(
+        contact_address, alias, contact_name, automatic_created=True
+    ).contact
 
 
+@sentry_sdk.trace
 def replace_header_when_forward(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To header by Reply emails in forward phase
@@ -326,6 +332,7 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
+@sentry_sdk.trace
 def add_alias_to_header_if_needed(msg, alias):
     """
     During the forward phase, add alias to To: header if it isn't included in To and Cc header
@@ -351,6 +358,7 @@ def add_alias_to_header_if_needed(msg, alias):
         add_or_replace_header(msg, headers.TO, alias.email)
 
 
+@sentry_sdk.trace
 def replace_header_when_reply(msg: Message, alias: Alias, header: str):
     """
     Replace CC or To Reply emails by original emails
@@ -393,6 +401,7 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
+@sentry_sdk.trace
 def prepare_pgp_message(
     orig_msg: Message, pgp_fingerprint: str, public_key: str, can_sign: bool = False
 ) -> Message:
@@ -461,6 +470,7 @@ def prepare_pgp_message(
     return msg
 
 
+@sentry_sdk.trace
 def sign_msg(msg: Message) -> Message:
     container = MIMEMultipart(
         "signed", protocol="application/pgp-signature", micalg="pgp-sha256"
@@ -493,6 +503,7 @@ def sign_msg(msg: Message) -> Message:
     return container
 
 
+@sentry_sdk.trace
 def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     # store the refused email
     random_name = str(uuid.uuid4())
@@ -542,6 +553,7 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
     )
 
 
+@sentry_sdk.trace
 def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str]]:
     """return an array of SMTP status (is_success, smtp_status)
     is_success indicates whether an email has been delivered and
@@ -722,6 +734,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
     return ret
 
 
+@sentry_sdk.trace
 def forward_email_to_mailbox(
     alias,
     msg: Message,
@@ -1016,6 +1029,7 @@ def replace_sl_message_id_by_original_message_id(msg):
         msg[headers.REFERENCES] = " ".join(new_message_ids)
 
 
+@sentry_sdk.trace
 def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     """
     Return whether an email has been delivered and
@@ -1315,6 +1329,7 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
     return True, status.E200
 
 
+@sentry_sdk.trace
 def notify_mailbox(
     alias, mailbox, other_mb: Mailbox, msg, orig_to, orig_cc, alias_domain
 ):
@@ -1347,6 +1362,7 @@ Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
     )
 
 
+@sentry_sdk.trace
 def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
     """
     Replace original Message-ID by SL-Message-ID during the reply phase
@@ -1415,6 +1431,7 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
         msg[headers.REFERENCES] = " ".join(new_message_ids)
 
 
+@sentry_sdk.trace
 def handle_unknown_mailbox(
     envelope, msg, reply_email: str, user: User, alias: Alias, contact: Contact
 ):
@@ -1457,6 +1474,7 @@ def handle_unknown_mailbox(
     )
 
 
+@sentry_sdk.trace
 def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     """
     Handle forward phase bounce
@@ -1620,6 +1638,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
 
 
+@sentry_sdk.trace
 def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     """
     Handle reply phase bounce
@@ -1715,6 +1734,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     )
 
 
+@sentry_sdk.trace
 def handle_spam(
     contact: Contact,
     alias: Alias,
@@ -1846,6 +1866,7 @@ def is_bounce(envelope: Envelope, msg: Message):
     )
 
 
+@sentry_sdk.trace
 def handle_transactional_bounce(
     envelope: Envelope, msg, rcpt_to, transactional_id=None
 ):
@@ -1876,6 +1897,7 @@ def handle_transactional_bounce(
         Bounce.create(email=transactional.email, commit=True)
 
 
+@sentry_sdk.trace
 def handle_bounce(envelope, email_log: EmailLog, msg: Message) -> str:
     """
     Return SMTP status, e.g. "500 Error"
@@ -1970,6 +1992,7 @@ def send_no_reply_response(mail_from: str, msg: Message):
     )
 
 
+@sentry_sdk.trace
 def handle(envelope: Envelope, msg: Message) -> str:
     """Return SMTP status"""
 
@@ -2379,32 +2402,35 @@ class MailHandler:
 
         send_version_event("email_handler")
         with create_light_app().app_context():
-            return_status = handle(envelope, msg)
-            elapsed = time.time() - start
-            # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
-            spamd_result = SpamdResult.extract_from_headers(msg)
-            if return_status[0] == "5":
-                if spamd_result and spamd_result.spf in (
-                    SPFCheckResult.fail,
-                    SPFCheckResult.soft_fail,
-                ):
-                    LOG.i(
-                        "Replacing 5XX to 216 status because the return-path failed the spf check"
-                    )
-                    return_status = status.E216
+            with sentry_sdk.start_transaction(op="email-handler", name="Process email"):
+                return_status = handle(envelope, msg)
+                elapsed = time.time() - start
+                # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
+                spamd_result = SpamdResult.extract_from_headers(msg)
+                if return_status[0] == "5":
+                    if spamd_result and spamd_result.spf in (
+                        SPFCheckResult.fail,
+                        SPFCheckResult.soft_fail,
+                    ):
+                        LOG.i(
+                            "Replacing 5XX to 216 status because the return-path failed the spf check"
+                        )
+                        return_status = status.E216
 
-            LOG.i(
-                "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
-                envelope.mail_from,
-                envelope.rcpt_tos,
-                elapsed,
-                return_status,
-            )
+                LOG.i(
+                    "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
+                    envelope.mail_from,
+                    envelope.rcpt_tos,
+                    elapsed,
+                    return_status,
+                )
 
-            SpamdResult.send_to_new_relic(msg)
-            newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
-            newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
-            return return_status
+                SpamdResult.send_to_new_relic(msg)
+                newrelic.agent.record_custom_metric(
+                    "Custom/email_handler_time", elapsed
+                )
+                newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
+                return return_status
 
 
 def main(port: int):

@@ -21,6 +21,7 @@ from typing import Tuple, List, Optional, Union
 import arrow
 import dkim
 import re2 as re
+import sentry_sdk
 import spf
 from aiosmtpd.smtp import Envelope
 from cachetools import cached, TTLCache
@@ -31,9 +32,9 @@ from email_validator import (
 )
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
+from flask_login import current_user
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import func
-from flask_login import current_user
 
 from app import config
 from app.db import Session
@@ -286,6 +287,7 @@ def send_cannot_create_domain_alias(user, alias, domain):
     )
 
 
+@sentry_sdk.trace
 def send_email(
     to_email,
     subject,

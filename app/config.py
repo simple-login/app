@@ -94,6 +94,7 @@ print(">>> URL:", URL)
 RP_ID = urlparse(URL).hostname
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
+SENTRY_TRACE_RATE = float(os.environ.get("SENTRY_TRACE_RATE", "0.001"))
 
 # can use another sentry project for the front-end to avoid noises
 SENTRY_FRONT_END_DSN = os.environ.get("SENTRY_FRONT_END_DSN") or SENTRY_DSN

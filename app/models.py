@@ -19,6 +19,7 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment
+from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -1723,6 +1724,9 @@ class Alias(Base, ModelMixin):
 
         return ret
 
+    def is_created_from_partner(self) -> bool:
+        return self.flags & self.FLAG_PARTNER_CREATED > 0
+
     def authorized_addresses(self) -> [str]:
         """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse-aliases
         Including its mailboxes and their authorized addresses
@@ -1810,7 +1814,7 @@ class Alias(Base, ModelMixin):
         DailyMetric.get_or_create_today_metric().nb_alias += 1
 
         if (
-            new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
+            new_alias.is_created_from_partner()
             and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
         ):
             user.flags = user.flags | User.FLAG_CREATED_ALIAS_FROM_PARTNER
@@ -1836,6 +1840,18 @@ class Alias(Base, ModelMixin):
         EventDispatcher.send_event(user, EventContent(alias_created=event))
         emit_alias_audit_log(
             new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
+        )
+        agent.record_custom_event(
+            "AliasCreated",
+            {
+                "custom_domain": "custom domain"
+                if new_alias.custom_domain_id
+                else "base domain",
+                "from_partner": "from partner"
+                if new_alias.is_created_from_partner()
+                else "from sl",
+                "automatic": "automatic" if new_alias.automatic_creation else "manual",
+            },
         )
 
         return new_alias
@@ -2110,6 +2126,14 @@ class Contact(Base, ModelMixin):
 
         if flush:
             Session.flush()
+
+        agent.record_custom_event(
+            "ContactCreated",
+            {
+                "is_cc": "cc" if new_contact.is_cc else "to",
+                "automatic": "automatic" if new_contact.automatic_created else "manual",
+            },
+        )
 
         return new_contact
 

@@ -34,6 +34,7 @@ from app.events.generated.event_pb2 import (
     AliasStatusChanged,
     EventContent,
     AliasCreated,
+    AliasNoteChanged,
 )
 from app.log import LOG
 from app.models import (
@@ -520,6 +521,22 @@ def change_alias_status(
     emit_alias_audit_log(
         alias, AliasAuditLogAction.ChangeAliasStatus, audit_log_message
     )
+
+    if commit:
+        Session.commit()
+
+
+def change_alias_note(alias: Alias, note: str, commit: bool = False):
+    LOG.i(f"Changing alias {alias} note.")
+
+    alias.note = note
+    event = AliasNoteChanged(
+        id=alias.id,
+        email=alias.email,
+        note=note,
+    )
+
+    EventDispatcher.send_event(alias.user, EventContent(alias_note_changed=event))
 
     if commit:
         Session.commit()

@@ -13,6 +13,7 @@ from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
+import sentry_sdk
 from attr import dataclass
 
 from app import config
@@ -275,6 +276,7 @@ def load_unsent_mails_from_fs_and_resend():
             )
 
 
+@sentry_sdk.trace
 def sl_sendmail(
     envelope_from: str,
     envelope_to: str,
