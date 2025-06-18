@@ -2383,7 +2383,6 @@ class MailHandler:
             return status.E404
 
     @newrelic.agent.background_task()
-    @sentry_sdk.trace
     def _handle(self, envelope: Envelope, msg: Message):
         start = time.time()
 
@@ -2403,32 +2402,35 @@ class MailHandler:
 
         send_version_event("email_handler")
         with create_light_app().app_context():
-            return_status = handle(envelope, msg)
-            elapsed = time.time() - start
-            # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
-            spamd_result = SpamdResult.extract_from_headers(msg)
-            if return_status[0] == "5":
-                if spamd_result and spamd_result.spf in (
-                    SPFCheckResult.fail,
-                    SPFCheckResult.soft_fail,
-                ):
-                    LOG.i(
-                        "Replacing 5XX to 216 status because the return-path failed the spf check"
-                    )
-                    return_status = status.E216
+            with sentry_sdk.start_transaction(op="email-handler", name="Process email"):
+                return_status = handle(envelope, msg)
+                elapsed = time.time() - start
+                # Only bounce messages if the return-path passes the spf check. Otherwise black-hole it.
+                spamd_result = SpamdResult.extract_from_headers(msg)
+                if return_status[0] == "5":
+                    if spamd_result and spamd_result.spf in (
+                        SPFCheckResult.fail,
+                        SPFCheckResult.soft_fail,
+                    ):
+                        LOG.i(
+                            "Replacing 5XX to 216 status because the return-path failed the spf check"
+                        )
+                        return_status = status.E216
 
-            LOG.i(
-                "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
-                envelope.mail_from,
-                envelope.rcpt_tos,
-                elapsed,
-                return_status,
-            )
+                LOG.i(
+                    "Finish mail_from %s, rcpt_tos %s, takes %s seconds with return code '%s'<<===",
+                    envelope.mail_from,
+                    envelope.rcpt_tos,
+                    elapsed,
+                    return_status,
+                )
 
-            SpamdResult.send_to_new_relic(msg)
-            newrelic.agent.record_custom_metric("Custom/email_handler_time", elapsed)
-            newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
-            return return_status
+                SpamdResult.send_to_new_relic(msg)
+                newrelic.agent.record_custom_metric(
+                    "Custom/email_handler_time", elapsed
+                )
+                newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
+                return return_status
 
 
 def main(port: int):
