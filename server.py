@@ -72,6 +72,7 @@ from app.config import (
     ZENDESK_ENABLED,
     MAX_NB_EMAIL_FREE_PLAN,
     MEM_STORE_URI,
+    SENTRY_TRACE_RATE,
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
@@ -121,6 +122,7 @@ if SENTRY_DSN:
             SqlalchemyIntegration(),
         ],
         before_send=sentry_before_send,
+        traces_sample_rate=SENTRY_TRACE_RATE,
     )
 
 # the app is served behind nginx which uses http and not https
