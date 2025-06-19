@@ -530,6 +530,7 @@ def change_alias_note(alias: Alias, note: str, commit: bool = False):
     LOG.i(f"Changing alias {alias} note.")
 
     alias.note = note
+    # TODO: acasajus Enable back after July 1st 2025
     if False:
         event = AliasNoteChanged(
             id=alias.id,
