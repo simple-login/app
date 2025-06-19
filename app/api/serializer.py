@@ -180,6 +180,8 @@ def get_alias_infos_with_pagination_v3(
         q = q.filter(Alias.pinned)
     elif alias_filter == "hibp":
         q = q.filter(Alias.hibp_breaches.any())
+    elif alias_filter == "enable_SMTP":
+        q = q.filter(Alias.enable_SMTP)
 
     if sort == "old2new":
         q = q.order_by(Alias.created_at)
