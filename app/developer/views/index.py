@@ -6,7 +6,7 @@ from flask_login import current_user, login_required
 from app.developer.base import developer_bp
 from app.models import Client
 
-
+//I just want to create a pull request,pls forgive me if I made any mistake.
 @developer_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index():
