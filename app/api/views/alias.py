@@ -304,7 +304,7 @@ def update_alias(alias_id):
     if "mailbox_ids" in data:
         try:
             mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
-        except ValueError:
+        except (ValueError, TypeError):
             return jsonify(error="Invalid mailbox_id"), 400
         err = set_mailboxes_for_alias(
             user_id=user.id, alias=alias, mailbox_ids=mailbox_ids
