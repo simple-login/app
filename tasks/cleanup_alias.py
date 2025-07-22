@@ -1,10 +1,10 @@
 import arrow
 from sqlalchemy import and_
 
+from app.alias_delete import perform_alias_deletion
 from app.db import Session
 from app.log import LOG
 from app.models import Alias
-from app.alias_delete import perform_alias_deletion
 
 
 def cleanup_alias(oldest_allowed: arrow.Arrow):
@@ -13,6 +13,7 @@ def cleanup_alias(oldest_allowed: arrow.Arrow):
         Alias.filter(
             and_(Alias.delete_on.isnot(None), Alias.delete_on <= oldest_allowed)
         )
+        .enable_eagerloads(False)
         .yield_per(500)
         .all()
     ):

@@ -16,8 +16,9 @@ def send_alias_creation_events_for_user(
     event_list = []
     LOG.i("Sending alias create events for user {user}")
     for alias in (
-        Alias.yield_per_query(chunk_size)
-        .filter_by(user_id=user.id)
+        Alias.filter_by(user_id=user.id)
+        .enable_eagerloads(False)
+        .yield_per(chunk_size)
         .order_by(Alias.id.asc())
     ):
         event_list.append(
