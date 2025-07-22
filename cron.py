@@ -14,15 +14,12 @@ from sqlalchemy.sql import Insert, text
 from app import s3, config
 from app.alias_utils import nb_email_log_for_mailbox
 from app.api.views.apple import verify_receipt
-from app.custom_domain_validation import CustomDomainValidation, is_mx_equivalent
 from app.db import Session
-from app.dns_utils import get_mx_domains
 from app.email_utils import (
     send_email,
     send_trial_end_soon_email,
     render,
     email_can_be_used_as_mailbox,
-    send_email_with_rate_control,
     get_email_domain_part,
 )
 from app.email_validation import is_valid_email, normalize_reply_email
@@ -63,6 +60,7 @@ from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
 from server import create_light_app
+from tasks.check_custom_domains import check_all_custom_domains
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
 from tasks.clean_user_audit_log import cleanup_user_audit_log
 from tasks.cleanup_alias import cleanup_alias
@@ -908,84 +906,6 @@ def check_mailbox_valid_pgp_keys():
             )
 
 
-def check_custom_domain():
-    # Delete custom domains that haven't been verified in a month
-    for custom_domain in (
-        CustomDomain.filter(
-            CustomDomain.verified == False,  # noqa: E712
-            CustomDomain.created_at < arrow.now().shift(months=-1),
-        )
-        .enable_eagerloads(False)
-        .yield_per(100)
-    ):
-        alias_count = Alias.filter(Alias.custom_domain_id == custom_domain.id).count()
-        if alias_count > 0:
-            LOG.warning(
-                f"Custom Domain {custom_domain} has {alias_count} aliases. Won't delete"
-            )
-        else:
-            LOG.i(f"Deleting unverified old custom domain {custom_domain}")
-            CustomDomain.delete(custom_domain.id)
-
-    LOG.d("Check verified domain for DNS issues")
-
-    for custom_domain in (
-        CustomDomain.filter_by(verified=True).enable_eagerloads(False).yield_per(100)
-    ):  # type: CustomDomain
-        try:
-            check_single_custom_domain(custom_domain)
-        except ObjectDeletedError:
-            LOG.i("custom domain has been deleted")
-
-
-def check_single_custom_domain(custom_domain: CustomDomain):
-    if custom_domain.user.disabled:
-        return
-    mx_domains = get_mx_domains(custom_domain.domain)
-    validator = CustomDomainValidation(
-        dkim_domain=config.EMAIL_DOMAIN,
-        partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
-        partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
-    )
-    expected_custom_domains = validator.get_expected_mx_records(custom_domain)
-    if not is_mx_equivalent(mx_domains, expected_custom_domains):
-        user = custom_domain.user
-        LOG.w(
-            "The MX record is not correctly set for %s %s %s",
-            custom_domain,
-            user,
-            mx_domains,
-        )
-
-        custom_domain.nb_failed_checks += 1
-
-        # send alert if fail for 5 consecutive days
-        if custom_domain.nb_failed_checks > 5:
-            domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
-            LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
-            send_email_with_rate_control(
-                user,
-                config.AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN,
-                user.email,
-                f"Please update {custom_domain.domain} DNS on SimpleLogin",
-                render(
-                    "transactional/custom-domain-dns-issue.txt.jinja2",
-                    user=user,
-                    custom_domain=custom_domain,
-                    domain_dns_url=domain_dns_url,
-                ),
-                max_nb_alert=1,
-                nb_day=30,
-                retries=3,
-            )
-            # reset checks
-            custom_domain.nb_failed_checks = 0
-    else:
-        # reset checks
-        custom_domain.nb_failed_checks = 0
-    Session.commit()
-
-
 def delete_old_monitoring():
     """
     Delete old monitoring records
@@ -1346,7 +1266,7 @@ if __name__ == "__main__":
             delete_old_monitoring()
         elif args.job == "check_custom_domain":
             LOG.d("Check custom domain")
-            check_custom_domain()
+            check_all_custom_domains()
         elif args.job == "check_hibp":
             LOG.d("Check HIBP")
             asyncio.run(check_hibp())
