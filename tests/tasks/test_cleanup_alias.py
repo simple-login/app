@@ -5,7 +5,7 @@ from tasks.cleanup_alias import cleanup_alias
 from tests.utils import create_new_user, random_email
 
 
-def test_cleanup_Alias():
+def test_cleanup_alias():
     Job.filter().delete()
     user = create_new_user()
 
