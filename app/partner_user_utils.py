@@ -60,7 +60,7 @@ def create_partner_subscription(
         instance = PartnerSubscription.get_by(partner_user_id=partner_user.id)
         if not instance:
             raise RuntimeError("Missing partner subscription")
-        if instance.lifetime != lifetime or instance.expiration != expiration:
+        if instance.lifetime != lifetime or instance.end_at != expiration:
             instance.expiration = expiration
             instance.lifetime = lifetime
             emit_user_audit_log(
