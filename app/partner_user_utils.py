@@ -2,8 +2,10 @@ from typing import Optional
 
 import arrow
 from arrow import Arrow
+from sqlalchemy.exc import IntegrityError
 
 from app.constants import JobType
+from app.db import Session
 from app.models import PartnerUser, PartnerSubscription, User, Job
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -37,19 +39,34 @@ def create_partner_subscription(
     lifetime: bool = False,
     msg: Optional[str] = None,
 ) -> PartnerSubscription:
-    instance = PartnerSubscription.create(
-        partner_user_id=partner_user.id,
-        end_at=expiration,
-        lifetime=lifetime,
-    )
-
     message = "User upgraded through partner subscription"
     if msg:
         message += f" | {msg}"
-    emit_user_audit_log(
-        user=partner_user.user,
-        action=UserAuditLogAction.Upgrade,
-        message=message,
-    )
+    try:
+        instance = PartnerSubscription.create(
+            partner_user_id=partner_user.id,
+            end_at=expiration,
+            lifetime=lifetime,
+        )
+
+        emit_user_audit_log(
+            user=partner_user.user,
+            action=UserAuditLogAction.Upgrade,
+            message=message,
+        )
+        Session.flush()
+    except IntegrityError:
+        Session.rollback()
+        instance = PartnerSubscription.get_by(partner_user_id=partner_user.id)
+        if not instance:
+            raise RuntimeError("Missing partner subscription")
+        if instance.lifetime != lifetime or instance.expiration != expiration:
+            instance.expiration = expiration
+            instance.lifetime = lifetime
+            emit_user_audit_log(
+                user=partner_user.user,
+                action=UserAuditLogAction.Upgrade,
+                message=message,
+            )
 
     return instance
