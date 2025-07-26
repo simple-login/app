@@ -30,7 +30,7 @@ from app.errors import (
 )
 from app.extensions import limiter
 from app.log import LOG
-from app.models import Alias, Contact, Mailbox, AliasDeleteReason
+from app.models import Alias, Contact, Mailbox, AliasDeleteReason, SMTPCredentials
 
 
 @deprecated
@@ -270,6 +270,7 @@ def update_alias(alias_id):
         name (optional): in body
         mailbox_id (optional): in body
         disable_pgp (optional): in body
+        enable_SMTP (optional): in body
     Output:
         200
     """
@@ -338,6 +339,18 @@ def update_alias(alias_id):
         changed_fields.append("pinned")
         changed = True
 
+    if "enable_SMTP" in data:
+        enable_SMTP = data.get("enable_SMTP")
+        if enable_SMTP:
+            smtp_password = SMTPCredentials.create(alias_id=alias.id)
+            if not smtp_password:
+                return jsonify(error="Error Generating SMTP Password"), 400
+        else:
+            SMTPCredentials.delete_by_alias_id(alias_id=alias.id)
+        alias.enable_SMTP = enable_SMTP
+        changed_fields.append("enable_SMTP")
+        changed = True
+
     if changed:
         changed_fields_string = ",".join(changed_fields)
         emit_alias_audit_log(
@@ -346,6 +359,9 @@ def update_alias(alias_id):
             f"Alias fields updated ({changed_fields_string})",
         )
         Session.commit()
+
+    if "enable_SMTP" in changed_fields and alias.enable_SMTP:
+        return jsonify(ok=True, smtp_password=smtp_password), 200
 
     return jsonify(ok=True), 200
 
