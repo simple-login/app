@@ -45,7 +45,7 @@ if max_user_id == 0:
     max_user_id = Session.query(func.max(User.id)).scalar()
 
 LOG.i(f"Checking user {user_id_start} to {max_user_id}")
-step = 1000
+step = 10000
 sql = """
     SELECT u.id, u.email, min(m.email)
     FROM users u
@@ -85,10 +85,10 @@ for batch_start in range(user_id_start, max_user_id, step):
             Session.commit()
 
     elapsed = time.time() - start_time
-    time_per_alias = elapsed / (updated + 1)
     last_batch_id = batch_start + step
+    time_per_user = elapsed / (last_batch_id - batch_start)
     remaining = max_user_id - last_batch_id
-    time_remaining = (max_user_id - last_batch_id) * time_per_alias
+    time_remaining = (max_user_id - last_batch_id) * time_per_user
     hours_remaining = time_remaining / 3600.0
     LOG.i(
         f"User {batch_start}/{max_user_id} {updated} {hours_remaining:.2f}hrs remaining"
