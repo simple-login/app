@@ -38,7 +38,7 @@ from sqlalchemy import func
 
 from app import config
 from app.db import Session
-from app.dns_utils import get_mx_domains
+from app.dns_utils import get_mx_domains, get_a_record
 from app.email import headers
 from app.log import LOG
 from app.mail_sender import sl_sendmail
@@ -613,6 +613,13 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
     for mx_domain in mx_domains:
         if is_invalid_mailbox_domain(mx_domain):
             LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
+            return False
+        a_record = get_a_record(mx_domain)
+        LOG.i(
+            f"Found MX Domain {mx_domain} for mailbox {email_address} with a record {a_record}"
+        )
+        if a_record is not None and a_record in config.INVALID_MX_IPS:
+            LOG.d(f"MX Domain {mx_domain} has an invalid IP address: {a_record}")
             return False
 
     existing_user = User.get_by(email=email_address)
