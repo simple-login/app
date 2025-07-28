@@ -116,8 +116,8 @@ class InMemoryDNSClient(DNSClient):
     def set_cname_record(self, hostname: str, cname: str):
         self.cname_records[hostname] = cname
 
-    def set_a_record(self, hostname: str, cname: str):
-        self.a_records[hostname] = cname
+    def set_a_record(self, hostname: str, a_record: str):
+        self.a_records[hostname] = a_record
 
     def set_mx_records(self, hostname: str, mx_list: dict[int, list[str]]):
         self.mx_records[hostname] = mx_list
