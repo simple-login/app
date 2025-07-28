@@ -702,3 +702,5 @@ MAC_KEY = read_hex_data("MAC_KEY_HEX", (FLASK_SECRET + "mackey").encode("utf-8")
 ABUSER_HKDF_SALT = read_hex_data(
     "ABUSER_HKDF_SALT", (FLASK_SECRET + "absalt").encode("utf-8")
 )
+
+INVALID_MX_IPS = get_env_csv("INVALID_MX_IPS", [])
