@@ -52,6 +52,7 @@ from app.models import (
     AliasGeneratorEnum,
     SLDomain,
     Mailbox,
+    ForbiddenMXIp,
 )
 
 # flake8: noqa: E101, W191
@@ -149,7 +150,7 @@ def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_
 def test_mx_invalid_ip():
     invalid_mx_ip = "12.2.23.23"
     valid_mx_ip = "1.1.1.1"
-    config.INVALID_MX_IPS = [invalid_mx_ip]
+    ForbiddenMXIp.create(ip=invalid_mx_ip, flush=True)
     dns_client.set_mx_records("testdomain.com", {10: ["mxdomain.com."]})
     dns_client.set_a_record("mxdomain.com", valid_mx_ip)
     assert email_can_be_used_as_mailbox("a@testdomain.com")

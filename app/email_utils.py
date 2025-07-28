@@ -57,6 +57,7 @@ from app.models import (
     InvalidMailboxDomain,
     VerpType,
     available_sl_email,
+    ForbiddenMXIp,
 )
 from app.utils import (
     random_string,
@@ -610,6 +611,7 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         LOG.d("No MX record for domain %s", domain)
         return False
 
+    mx_ips = set()
     for mx_domain in mx_domains:
         if is_invalid_mailbox_domain(mx_domain):
             LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
@@ -618,8 +620,12 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         LOG.i(
             f"Found MX Domain {mx_domain} for mailbox {email_address} with a record {a_record}"
         )
-        if a_record is not None and a_record in config.INVALID_MX_IPS:
-            LOG.d(f"MX Domain {mx_domain} has an invalid IP address: {a_record}")
+        if a_record is not None:
+            mx_ips.add(a_record)
+    if len(mx_ips) > 0:
+        forbidden_ip = ForbiddenMXIp.filter(ForbiddenMXIp.ip.in_(list(mx_ips))).all()
+        if forbidden_ip:
+            LOG.i("Found forbidden MX ip %s", forbidden_ip)
             return False
 
     existing_user = User.get_by(email=email_address)
