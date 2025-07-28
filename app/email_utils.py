@@ -57,7 +57,7 @@ from app.models import (
     InvalidMailboxDomain,
     VerpType,
     available_sl_email,
-    ForbiddenMXIp,
+    ForbiddenMxIp,
 )
 from app.utils import (
     random_string,
@@ -623,7 +623,7 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         if a_record is not None:
             mx_ips.add(a_record)
     if len(mx_ips) > 0:
-        forbidden_ip = ForbiddenMXIp.filter(ForbiddenMXIp.ip.in_(list(mx_ips))).all()
+        forbidden_ip = ForbiddenMxIp.filter(ForbiddenMxIp.ip.in_(list(mx_ips))).all()
         if forbidden_ip:
             LOG.i("Found forbidden MX ip %s", forbidden_ip)
             return False
