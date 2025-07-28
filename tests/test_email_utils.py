@@ -9,6 +9,7 @@ import pytest
 from app import config
 from app.config import MAX_ALERT_24H, ROOT_DIR
 from app.db import Session
+from app.dns_utils import InMemoryDNSClient, set_global_dns_client
 from app.email import headers
 from app.email_utils import (
     get_email_domain_part,
@@ -63,13 +64,15 @@ from tests.utils import (
     random_token,
 )
 
-
-def setup_module(module):
-    config.SKIP_MX_LOOKUP_ON_CHECK = True
+dns_client = InMemoryDNSClient()
 
 
-def teardown_module(module):
-    config.SKIP_MX_LOOKUP_ON_CHECK = False
+def setup_module():
+    set_global_dns_client(dns_client)
+
+
+def teardown_module():
+    set_global_dns_client(None)
 
 
 def test_get_email_domain_part():
@@ -86,12 +89,17 @@ def test_email_belongs_to_alias_domains():
 
 
 def test_can_be_used_as_personal_email(flask_client):
+    dns_client.set_mx_records("sl.lan", {10: ["mxdomain.com."]})
+    dns_client.set_mx_records("d1.lan", {10: ["mxdomain.com."]})
+    dns_client.set_mx_records("protonmail.com", {10: ["mxdomain.com."]})
+    dns_client.set_mx_records("gmail.com", {10: ["mxdomain.com."]})
     # default alias domain
     assert not email_can_be_used_as_mailbox("ab@sl.lan")
     assert not email_can_be_used_as_mailbox("hey@d1.lan")
 
     # custom domain as SL domain
     domain = random_domain()
+    dns_client.set_mx_records(domain, {10: ["mxdomain.com."]})
     user = create_new_user()
     domain_obj = CustomDomain.create(
         user_id=user.id, domain=domain, verified=True, is_sl_subdomain=True, flush=True
@@ -105,6 +113,7 @@ def test_can_be_used_as_personal_email(flask_client):
 
     # disposable domain
     disposable_domain = random_domain()
+    dns_client.set_mx_records(disposable_domain, {10: ["mxdomain.com."]})
     InvalidMailboxDomain.create(domain=disposable_domain, commit=True)
     assert not email_can_be_used_as_mailbox(f"abcd@{disposable_domain}")
     # subdomain will not work
@@ -116,6 +125,7 @@ def test_can_be_used_as_personal_email(flask_client):
 
 def test_disabled_user_prevents_email_from_being_used_as_mailbox():
     email = f"user_{random_token(10)}@mailbox.lan"
+    dns_client.set_mx_records("mailbox.lan", {10: ["mxdomain.com."]})
     assert email_can_be_used_as_mailbox(email)
     user = create_new_user(email)
     user.disabled = True
@@ -125,6 +135,7 @@ def test_disabled_user_prevents_email_from_being_used_as_mailbox():
 
 def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_mailbox():
     email = f"user_{random_token(10)}@mailbox.lan"
+    dns_client.set_mx_records("mailbox.lan", {10: ["mxdomain.com."]})
     assert email_can_be_used_as_mailbox(email)
     user = create_new_user()
     Mailbox.create(user_id=user.id, email=email)
@@ -133,6 +144,17 @@ def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_
     user.disabled = True
     Session.flush()
     assert not email_can_be_used_as_mailbox(email)
+
+
+def test_mx_invalid_ip():
+    invalid_mx_ip = "12.2.23.23"
+    valid_mx_ip = "1.1.1.1"
+    config.INVALID_MX_IPS = [invalid_mx_ip]
+    dns_client.set_mx_records("testdomain.com", {10: ["mxdomain.com."]})
+    dns_client.set_a_record("mxdomain.com", valid_mx_ip)
+    assert email_can_be_used_as_mailbox("a@testdomain.com")
+    dns_client.set_a_record("mxdomain.com", invalid_mx_ip)
+    assert not email_can_be_used_as_mailbox("a@testdomain.com")
 
 
 def test_delete_header():
