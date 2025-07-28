@@ -792,6 +792,12 @@ class InvalidMailboxDomainAdmin(SLModelView):
     can_delete = True
 
 
+class ForbiddenMxIpAdmin(SLModelView):
+    form_base_class = SecureForm
+    can_create = True
+    can_delete = True
+
+
 class EmailSearchResult:
     def __init__(self):
         self.no_match: bool = True

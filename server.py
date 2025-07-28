@@ -45,6 +45,7 @@ from app.admin_model import (
     EmailSearchAdmin,
     CustomDomainSearchAdmin,
     AbuserLookupAdmin,
+    ForbiddenMxIpAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -99,6 +100,7 @@ from app.models import (
     DailyMetric,
     Metric2,
     InvalidMailboxDomain,
+    ForbiddenMxIp,
 )
 from app.monitor.base import monitor_bp
 from app.monitor_utils import send_version_event
@@ -475,6 +477,7 @@ def init_admin(app):
     admin.add_view(DailyMetricAdmin(DailyMetric, Session))
     admin.add_view(MetricAdmin(Metric2, Session))
     admin.add_view(InvalidMailboxDomainAdmin(InvalidMailboxDomain, Session))
+    admin.add_view(ForbiddenMxIpAdmin(ForbiddenMxIp, Session))
 
 
 def register_custom_commands(app):
