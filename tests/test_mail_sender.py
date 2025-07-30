@@ -143,6 +143,22 @@ def test_mail_sender_try_several_servers():
         config.NOT_SEND_EMAIL = True
 
 
+def test_mail_sender_try_backup_postfix():
+    port_closed = closed_dummy_server()
+    port_ok = smtp_response_server("250 Ok")()
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = [f"localhost:{port_closed}"]
+    config.POSTFIX_BACKUP_SERVERS = [f"localhost:{port_ok}"]
+    config.NOT_SEND_EMAIL = False
+    config.POSTFIX_SUBMISSION_TLS = False
+    send_request = create_dummy_send_request()
+    try:
+        assert mail_sender.send(send_request, 0)
+    finally:
+        config.POSTFIX_SERVERS = original_postfix_server
+        config.NOT_SEND_EMAIL = True
+
+
 @mail_sender.store_emails_test_decorator
 def test_send_unsent_email_from_fs():
     original_postfix_server = config.POSTFIX_SERVERS
