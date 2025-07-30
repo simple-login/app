@@ -148,6 +148,7 @@ def test_disabled_user_with_secondary_mailbox_prevents_email_from_being_used_as_
 
 
 def test_mx_invalid_ip():
+    ForbiddenMxIp.filter().delete()
     invalid_mx_ip = "12.2.23.23"
     valid_mx_ip = "1.1.1.1"
     ForbiddenMxIp.create(ip=invalid_mx_ip, flush=True)
