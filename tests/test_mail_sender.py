@@ -109,6 +109,7 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
     config.POSTFIX_SERVERS = ["localhost"]
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
+    config.POSTFIX_TIMEOUT = 6000
     config.POSTFIX_PORT = server_fn()
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -121,6 +122,22 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
                 os.path.join(temp_dir, found_files[0])
             )
             compare_send_requests(loaded_send_request, send_request)
+    finally:
+        config.POSTFIX_SERVERS = original_postfix_server
+        config.NOT_SEND_EMAIL = True
+
+
+def test_mail_sender_try_several_servers():
+    port_closed = closed_dummy_server()
+    port_ok = smtp_response_server("250 Ok")()
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = [f"localhost:{port_closed}", f"localhost:{port_ok}"]
+    config.NOT_SEND_EMAIL = False
+    config.POSTFIX_SUBMISSION_TLS = False
+    send_request = create_dummy_send_request()
+    mail_sender._randomize_smtp_hosts = False
+    try:
+        assert mail_sender.send(send_request, 0)
     finally:
         config.POSTFIX_SERVERS = original_postfix_server
         config.NOT_SEND_EMAIL = True

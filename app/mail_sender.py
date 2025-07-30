@@ -100,6 +100,7 @@ class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
         self._store_emails = False
+        self._randomize_smtp_hosts = True
         self._emails_sent: List[SendRequest] = []
 
     def store_emails_instead_of_sending(self, store_emails: bool = True):
@@ -146,7 +147,8 @@ class MailSender:
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
         servers_to_try = config.POSTFIX_SERVERS.copy()
-        random.shuffle(servers_to_try)
+        if self._randomize_smtp_hosts:
+            random.shuffle(servers_to_try)
         if config.POSTFIX_BACKUP_SERVERS:
             servers_to_try.extend(config.POSTFIX_BACKUP_SERVERS)
         servers_tried = 0
@@ -177,22 +179,22 @@ class MailSender:
             return self._send_to_smtp(send_request, retries - 1)
         else:
             if send_request.ignore_smtp_errors:
-                LOG.e("Ignore smtp error")
+                LOG.w("Ignore smtp error and skip saving to fs email")
                 return False
-            LOG.e(
-                f"Could not send message to smtp server {config.POSTFIX_SERVERS}:{config.POSTFIX_PORT}"
-            )
             if config.SAVE_UNSENT_DIR:
                 send_request.save_request_to_unsent_dir()
             return False
 
     def __send_to_server(self, server_host: str, send_request: SendRequest):
         start = time.time()
-        with SMTP(
-            server_host,
-            config.POSTFIX_PORT,
-            timeout=config.POSTFIX_TIMEOUT,
-        ) as smtp:
+        server_split = server_host.split(":")
+        if len(server_split) == 1:
+            server_host = server_split[0]
+            server_port = config.POSTFIX_PORT
+        else:
+            server_host = server_split[0]
+            server_port = server_split[1]
+        with SMTP(server_host, server_port, timeout=config.POSTFIX_TIMEOUT) as smtp:
             if config.POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
 
@@ -219,7 +221,7 @@ class MailSender:
                 send_request.mail_options,
                 send_request.rcpt_options,
             )
-            return True
+        return True
 
 
 mail_sender = MailSender()
