@@ -106,10 +106,10 @@ def compare_send_requests(expected: SendRequest, request: SendRequest):
 )
 def test_mail_sender_save_unsent_to_disk(server_fn):
     original_postfix_server = config.POSTFIX_SERVERS
-    config.POSTFIX_SERVERS = ["localhost"]
+    port_closed = closed_dummy_server()
+    config.POSTFIX_SERVERS = [f"localhost:{port_closed}"]
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
-    config.POSTFIX_TIMEOUT = 6000
     config.POSTFIX_PORT = server_fn()
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -156,13 +156,15 @@ def test_mail_sender_try_backup_postfix():
         assert mail_sender.send(send_request, 0)
     finally:
         config.POSTFIX_SERVERS = original_postfix_server
+        config.POSTFIX_BACKUP_SERVERS = []
         config.NOT_SEND_EMAIL = True
 
 
 @mail_sender.store_emails_test_decorator
 def test_send_unsent_email_from_fs():
     original_postfix_server = config.POSTFIX_SERVERS
-    config.POSTFIX_SERVERS = ["localhost"]
+    port_closed = closed_dummy_server()
+    config.POSTFIX_SERVERS = [f"localhost:{port_closed}"]
     config.NOT_SEND_EMAIL = False
     with tempfile.TemporaryDirectory() as temp_dir:
         try:
@@ -188,7 +190,8 @@ def test_send_unsent_email_from_fs():
 @mail_sender.store_emails_test_decorator
 def test_failed_resend_does_not_delete_file():
     original_postfix_server = config.POSTFIX_SERVERS
-    config.POSTFIX_SERVERS = ["localhost"]
+    port_closed = closed_dummy_server()
+    config.POSTFIX_SERVERS = [f"localhost:{port_closed}"]
     config.NOT_SEND_EMAIL = False
     try:
         with tempfile.TemporaryDirectory() as temp_dir:

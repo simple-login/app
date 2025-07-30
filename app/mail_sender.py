@@ -200,7 +200,7 @@ class MailSender:
 
             elapsed = time.time() - start
             LOG.d(
-                f"Getting a smtp connection to {server_host} takes seconds {elapsed:.3} seconds"
+                f"Getting a smtp connection to {server_host}:{server_port} takes seconds {elapsed:.3} seconds"
             )
             newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
 
@@ -221,6 +221,9 @@ class MailSender:
                 send_request.mail_options,
                 send_request.rcpt_options,
             )
+        LOG.d(
+            f"Email sent using {server_host}:{server_port} from {send_request.envelope_from} to {send_request.envelope_to}"
+        )
         return True
 
 
