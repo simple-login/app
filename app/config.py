@@ -144,8 +144,8 @@ MAX_NB_SUBDOMAIN = 5
 ENFORCE_SPF = "ENFORCE_SPF" in os.environ
 
 # override postfix server locally
-# use 240.0.0.1 here instead of 10.0.0.1 as existing SL instances use the 240.0.0.0 network
-POSTFIX_SERVER = os.environ.get("POSTFIX_SERVER", "240.0.0.1")
+POSTFIX_SERVERS = get_env_csv("POSTFIX_SERVER", "240.0.0.1")
+POSTFIX_BACKUP_SERVERS = get_env_csv("POSTFIX_BACKUP_SERVER", "")
 
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
