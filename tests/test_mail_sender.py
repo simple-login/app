@@ -1,7 +1,7 @@
 import os
+import socket
 import tempfile
 import threading
-import socket
 from email.message import Message
 from random import random
 from typing import Callable
@@ -9,13 +9,13 @@ from typing import Callable
 import pytest
 from aiosmtpd.controller import Controller
 
+from app import config
 from app.email import headers
 from app.mail_sender import (
     mail_sender,
     SendRequest,
     load_unsent_mails_from_fs_and_resend,
 )
-from app import config
 
 
 def create_dummy_send_request() -> SendRequest:
@@ -105,8 +105,8 @@ def compare_send_requests(expected: SendRequest, request: SendRequest):
     ],
 )
 def test_mail_sender_save_unsent_to_disk(server_fn):
-    original_postfix_server = config.POSTFIX_SERVER
-    config.POSTFIX_SERVER = "localhost"
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = ["localhost"]
     config.NOT_SEND_EMAIL = False
     config.POSTFIX_SUBMISSION_TLS = False
     config.POSTFIX_PORT = server_fn()
@@ -122,14 +122,14 @@ def test_mail_sender_save_unsent_to_disk(server_fn):
             )
             compare_send_requests(loaded_send_request, send_request)
     finally:
-        config.POSTFIX_SERVER = original_postfix_server
+        config.POSTFIX_SERVERS = original_postfix_server
         config.NOT_SEND_EMAIL = True
 
 
 @mail_sender.store_emails_test_decorator
 def test_send_unsent_email_from_fs():
-    original_postfix_server = config.POSTFIX_SERVER
-    config.POSTFIX_SERVER = "localhost"
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = ["localhost"]
     config.NOT_SEND_EMAIL = False
     with tempfile.TemporaryDirectory() as temp_dir:
         try:
@@ -137,7 +137,7 @@ def test_send_unsent_email_from_fs():
             send_request = create_dummy_send_request()
             assert not mail_sender.send(send_request, 1)
         finally:
-            config.POSTFIX_SERVER = original_postfix_server
+            config.POSTFIX_SERVERS = original_postfix_server
             config.NOT_SEND_EMAIL = True
         saved_files = os.listdir(config.SAVE_UNSENT_DIR)
         assert len(saved_files) == 1
@@ -154,8 +154,8 @@ def test_send_unsent_email_from_fs():
 
 @mail_sender.store_emails_test_decorator
 def test_failed_resend_does_not_delete_file():
-    original_postfix_server = config.POSTFIX_SERVER
-    config.POSTFIX_SERVER = "localhost"
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = ["localhost"]
     config.NOT_SEND_EMAIL = False
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -176,7 +176,7 @@ def test_failed_resend_does_not_delete_file():
             # No more emails are stored in disk
             assert saved_files == os.listdir(config.SAVE_UNSENT_DIR)
     finally:
-        config.POSTFIX_SERVER = original_postfix_server
+        config.POSTFIX_SERVERS = original_postfix_server
         config.NOT_SEND_EMAIL = True
 
 
