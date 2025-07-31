@@ -145,7 +145,7 @@ ENFORCE_SPF = "ENFORCE_SPF" in os.environ
 
 # override postfix server locally
 POSTFIX_SERVERS = get_env_csv("POSTFIX_SERVER", "240.0.0.1")
-POSTFIX_BACKUP_SERVERS = get_env_csv("POSTFIX_BACKUP_SERVER", "")
+POSTFIX_BACKUP_SERVERS = get_env_csv("POSTFIX_BACKUP_SERVERS", "")
 
 DISABLE_REGISTRATION = "DISABLE_REGISTRATION" in os.environ
 
