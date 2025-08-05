@@ -19,6 +19,7 @@ from app.api.serializer import (
     get_alias_info_v2,
     get_alias_infos_with_pagination_v3,
 )
+from app.contact_utils import contact_toggle_block
 from app.dashboard.views.alias_contact_manager import create_contact
 from app.dashboard.views.alias_log import get_alias_log
 from app.db import Session
@@ -485,13 +486,6 @@ def toggle_contact(contact_id):
 
     if not contact or contact.alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
-
-    contact.block_forward = not contact.block_forward
-    emit_alias_audit_log(
-        alias=contact.alias,
-        action=AliasAuditLogAction.UpdateContact,
-        message=f"Set contact state {contact.id} {contact.email} -> {contact.website_email} to blocked {contact.block_forward}",
-    )
-    Session.commit()
+    contact_toggle_block(contact)
 
     return jsonify(block_forward=contact.block_forward), 200

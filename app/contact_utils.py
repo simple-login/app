@@ -136,3 +136,14 @@ def create_contact(
             return ContactCreateResult(
                 None, created=False, error=ContactCreateError.Unknown
             )
+
+
+def contact_toggle_block(contact: Contact) -> Contact:
+    contact.block_forward = not contact.block_forward
+    emit_alias_audit_log(
+        alias=contact.alias,
+        action=AliasAuditLogAction.UpdateContact,
+        message=f"Set contact state {contact.id} {contact.email} -> {contact.website_email} to blocked {contact.block_forward}",
+    )
+    Session.commit()
+    LOG.i(f"Updated contact {contact} blocked state to {contact.block_forward}")

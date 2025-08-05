@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from app import alias_utils, parallel_limiter, alias_delete
 from app.api.serializer import get_alias_infos_with_pagination_v3, get_alias_info_v3
 from app.config import ALIAS_LIMIT, PAGE_LIMIT
+from app.contact_utils import contact_toggle_block
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.extensions import limiter
@@ -253,9 +254,7 @@ def toggle_contact(contact_id):
     if not contact or contact.alias.user_id != current_user.id:
         return "Forbidden", 403
 
-    contact.block_forward = not contact.block_forward
-    Session.commit()
-
+    contact_toggle_block(contact)
     if contact.block_forward:
         toast_msg = f"{contact.website_email} can no longer send emails to {contact.alias.email}"
     else:
