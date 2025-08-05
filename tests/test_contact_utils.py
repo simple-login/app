@@ -3,12 +3,14 @@ from typing import Optional
 import pytest
 
 from app import config
-from app.contact_utils import create_contact, ContactCreateError
+from app.alias_audit_log_utils import AliasAuditLogAction
+from app.contact_utils import create_contact, ContactCreateError, contact_toggle_block
 from app.db import Session
 from app.models import (
     Alias,
     Contact,
     User,
+    AliasAuditLog,
 )
 from tests.utils import create_new_user, random_email, random_token
 
@@ -194,3 +196,40 @@ def test_update_mail_from_for_existing():
     assert not contact_result.created
     assert contact_result.contact is not None
     assert contact_result.contact.mail_from == mail_from
+
+
+def test_toggle_contact_block():
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    email = random_email()
+    contact = create_contact(email, alias).contact
+    last_log_id = (
+        AliasAuditLog.filter_by(alias_id=alias.id)
+        .order_by(AliasAuditLog.id.desc())
+        .first()
+        .id
+    )
+    assert contact is not None
+    assert not contact.block_forward
+    # First toggle
+    contact_toggle_block(contact)
+    audit_log = (
+        AliasAuditLog.filter_by(alias_id=alias.id)
+        .order_by(AliasAuditLog.id.desc())
+        .first()
+    )
+    assert audit_log.action == AliasAuditLogAction.UpdateContact.value
+    assert audit_log.id > last_log_id
+    assert contact.block_forward
+    last_log_id = audit_log.id
+    # Second toggle
+    contact_toggle_block(contact)
+    audit_log = (
+        AliasAuditLog.filter_by(alias_id=alias.id)
+        .order_by(AliasAuditLog.id.desc())
+        .first()
+    )
+    assert audit_log.action == AliasAuditLogAction.UpdateContact.value
+    assert audit_log.id > last_log_id
+    assert not contact.block_forward
