@@ -8,7 +8,7 @@ from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
 def soft_delete_user(user: User, source: str):
-    LOG.i(f"Marked user {user} for soft-deletion")
+    LOG.i(f"Marked user {user} for soft-deletion from {source}")
     emit_user_audit_log(
         user=user,
         action=UserAuditLogAction.UserMarkedForDeletion,
