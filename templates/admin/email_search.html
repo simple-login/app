@@ -39,15 +39,39 @@
         {% endif %}
         {% if user.delete_on %}
 
-          <td class="text-danger">{{ user.delete_on }}</td>
+          <td>
+          <div class="text-danger">
+              {{ user.delete_on.format('YYYY-MM-DD HH:mm:ss') }}
+          </div>
+            <div class="d-flex justify-content-between">
+
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_search.stop_soft_delete_user") }}"
+                  method="POST">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit"
+                        onclick="return confirm('Are you sure you would like to stop user soft-deletion?');"
+                        class="btn btn-success d-inline">Restore</button>
+            </form>
+
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_search.force_soft_delete_user") }}"
+                  method="POST">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit"
+                        onclick="return confirm('Are you sure you would like to delete the user now?');"
+                        class="btn btn-danger d-inline">Delete now</button>
+            </form>
+            </div>
+          </td>
         {% else %}
           <td class="text-success">None</td>
         {% endif %}
         <td>{{ "yes" if user.is_paid() else "No" }}</td>
         <td>{{ "yes" if user.is_premium() else "No" }}</td>
         <td>{{ user.get_active_subscription() }}</td>
-        <td>{{ user.created_at }}</td>
-        <td>{{ user.updated_at }}</td>
+        <td>{{ user.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
+        <td>{{ user.updated_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
         {% if pu %}
 
           <td class="flex">
@@ -91,7 +115,7 @@
             <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
           </td>
           <td>{{ "Yes" if mailbox.verified else "No" }}</td>
-          <td>{{ mailbox.created_at }}</td>
+          <td>{{ mailbox.created_at.format('YYYY-MM-DD HH:mm:ss')}}</td>
         </tr>
       {% endfor %}
     </tbody>
@@ -120,7 +144,7 @@
             <a href="?query={{ alias.email }}">{{ alias.email }}</a>
           </td>
           <td>{{ "Yes" if alias.enabled else "No" }}</td>
-          <td>{{ alias.created_at }}</td>
+          <td>{{ alias.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
         </tr>
       {% endfor %}
     </tbody>
@@ -141,7 +165,7 @@
       <tr>
         <td>{{ deleted_alias.id }}</td>
         <td>{{ deleted_alias.email }}</td>
-        <td>{{ deleted_alias.created_at }}</td>
+        <td>{{ deleted_alias.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
         <td>{{ deleted_alias.reason }}</td>
       </tr>
     </tbody>
@@ -171,7 +195,7 @@
         <td>{{ dom_deleted_alias.domain.domain }}</td>
         <td>{{ dom_deleted_alias.domain.id }}</td>
         <td>{{ dom_deleted_alias.domain.user_id }}</td>
-        <td>{{ dom_deleted_alias.created_at }}</td>
+        <td>{{ dom_deleted_alias.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
       </tr>
     </tbody>
   </table>
@@ -201,7 +225,7 @@
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
+          <td>{{ entry.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
         </tr>
       {% endfor %}
     </tbody>
@@ -227,7 +251,7 @@
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
+          <td>{{ entry.created_at.format('YYYY-MM-DD HH:mm:ss') }}</td>
         </tr>
       {% endfor %}
     </tbody>
