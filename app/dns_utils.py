@@ -14,6 +14,10 @@ class DNSClient(ABC):
         pass
 
     @abstractmethod
+    def get_a_record(self, hostname: str) -> Optional[str]:
+        pass
+
+    @abstractmethod
     def get_mx_domains(self, hostname: str) -> dict[int, list[str]]:
         pass
 
@@ -58,6 +62,18 @@ class NetworkDNSClient(DNSClient):
         except Exception:
             return None
 
+    def get_a_record(self, hostname: str) -> Optional[str]:
+        """
+        Return the A RECORD if exists for a domain
+        """
+        try:
+            answers = self._resolver.resolve(hostname, "A", search=True)
+            for a in answers:
+                ret = a.to_text()
+                return ret
+        except Exception:
+            return None
+
     def get_mx_domains(self, hostname: str) -> dict[int, list[str]]:
         """
         return list of (priority, domain name) sorted by priority (lowest priority first)
@@ -92,12 +108,16 @@ class NetworkDNSClient(DNSClient):
 class InMemoryDNSClient(DNSClient):
     def __init__(self):
         self.cname_records: dict[str, Optional[str]] = {}
+        self.a_records: dict[str, Optional[str]] = {}
         self.mx_records: dict[int, dict[int, list[str]]] = {}
         self.spf_records: dict[str, List[str]] = {}
         self.txt_records: dict[str, List[str]] = {}
 
     def set_cname_record(self, hostname: str, cname: str):
         self.cname_records[hostname] = cname
+
+    def set_a_record(self, hostname: str, a_record: str):
+        self.a_records[hostname] = a_record
 
     def set_mx_records(self, hostname: str, mx_list: dict[int, list[str]]):
         self.mx_records[hostname] = mx_list
@@ -107,6 +127,9 @@ class InMemoryDNSClient(DNSClient):
 
     def get_cname_record(self, hostname: str) -> Optional[str]:
         return self.cname_records.get(hostname)
+
+    def get_a_record(self, hostname: str) -> Optional[str]:
+        return self.a_records.get(hostname)
 
     def get_mx_domains(self, hostname: str) -> dict[int, list[str]]:
         return self.mx_records.get(hostname, {})
@@ -132,3 +155,7 @@ def set_global_dns_client(dns_client: Optional[DNSClient]):
 
 def get_mx_domains(hostname: str) -> dict[int, list[str]]:
     return get_network_dns_client().get_mx_domains(hostname)
+
+
+def get_a_record(hostname: str) -> Optional[str]:
+    return get_network_dns_client().get_a_record(hostname)

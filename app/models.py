@@ -3662,6 +3662,15 @@ class InvalidMailboxDomain(Base, ModelMixin):
     domain = sa.Column(sa.String(256), unique=True, nullable=False)
 
 
+class ForbiddenMxIp(Base, ModelMixin):
+    """MX IPs that we don't allow to create mailboxes for"""
+
+    __tablename__ = "forbidden_mx_ip"
+
+    ip = sa.Column(sa.String(16), unique=True, nullable=False)
+    comment = sa.Column(sa.Text, unique=False, nullable=True)
+
+
 # region Phone
 class PhoneCountry(Base, ModelMixin):
     __tablename__ = "phone_country"

@@ -137,14 +137,30 @@ def ensure_partner_user_exists_for_user(
     if res and res.partner_id != partner.id:
         raise AccountAlreadyLinkedToAnotherPartnerException()
     if not res:
-        res = create_partner_user(
-            user=sl_user,
-            partner_id=partner.id,
-            partner_email=link_request.email,
-            external_user_id=link_request.external_user_id,
-        )
+        try:
+            res = create_partner_user(
+                user=sl_user,
+                partner_id=partner.id,
+                partner_email=link_request.email,
+                external_user_id=link_request.external_user_id,
+            )
 
-        Session.commit()
+            Session.commit()
+        except (UniqueViolation, sqlalchemy.exc.IntegrityError):
+            res = PartnerUser.get_by(
+                partner_id=partner.id, external_user_id=link_request.external_user_id
+            )
+            if res is None:
+                res = PartnerUser.get_by(partner_id=partner.id, user_id=sl_user.id)
+            if res is not None and (
+                res.user_id != sl_user.id
+                or res.external_user_id != link_request.external_user_id
+            ):
+                LOG.warning(
+                    f"Account is linked to another user. Expected user {sl_user.id} got {res.user_id}. Expected external user {link_request.external_user_id} got {res.external_user_id}"
+                )
+                raise AccountAlreadyLinkedToAnotherPartnerException()
+
         LOG.i(
             f"Created new partner_user for partner:{partner.id} user:{sl_user.id} external_user_id:{link_request.external_user_id}. PartnerUser.id is {res.id}"
         )

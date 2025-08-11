@@ -4,8 +4,9 @@ from typing import Optional
 
 from aiosmtpd.smtp import Envelope
 
-from app import config
 from app import alias_utils
+from app import config
+from app.contact_utils import contact_toggle_block
 from app.db import Session
 from app.email import headers, status
 from app.email_utils import (
@@ -143,7 +144,8 @@ class UnsubscribeHandler:
         ):
             return status.E509
         alias = contact.alias
-        contact.block_forward = True
+        if contact.block_forward is False:
+            contact_toggle_block(contact)
         Session.commit()
         unblock_contact_url = (
             config.URL

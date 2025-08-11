@@ -38,7 +38,7 @@ from sqlalchemy import func
 
 from app import config
 from app.db import Session
-from app.dns_utils import get_mx_domains
+from app.dns_utils import get_mx_domains, get_a_record
 from app.email import headers
 from app.log import LOG
 from app.mail_sender import sl_sendmail
@@ -57,6 +57,7 @@ from app.models import (
     InvalidMailboxDomain,
     VerpType,
     available_sl_email,
+    ForbiddenMxIp,
 )
 from app.utils import (
     random_string,
@@ -610,9 +611,21 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         LOG.d("No MX record for domain %s", domain)
         return False
 
+    mx_ips = set()
     for mx_domain in mx_domains:
         if is_invalid_mailbox_domain(mx_domain):
             LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
+            return False
+        a_record = get_a_record(mx_domain)
+        LOG.i(
+            f"Found MX Domain {mx_domain} for mailbox {email_address} with a record {a_record}"
+        )
+        if a_record is not None:
+            mx_ips.add(a_record)
+    if len(mx_ips) > 0:
+        forbidden_ip = ForbiddenMxIp.filter(ForbiddenMxIp.ip.in_(list(mx_ips))).all()
+        if forbidden_ip:
+            LOG.i("Found forbidden MX ip %s", forbidden_ip)
             return False
 
     existing_user = User.get_by(email=email_address)
@@ -1333,11 +1346,12 @@ def spf_pass(
 @cached(cache=TTLCache(maxsize=2, ttl=20))
 def get_smtp_server():
     LOG.d("get a smtp server")
+    server = random.choice(config.POSTFIX_SERVERS)
     if config.POSTFIX_SUBMISSION_TLS:
-        smtp = SMTP(config.POSTFIX_SERVER, 587)
+        smtp = SMTP(server, 587)
         smtp.starttls()
     else:
-        smtp = SMTP(config.POSTFIX_SERVER, config.POSTFIX_PORT)
+        smtp = SMTP(server, config.POSTFIX_PORT)
 
     return smtp
 
