@@ -632,7 +632,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                     if reply_contact:
                         reply_to_contact.append(reply_contact)
 
-    if alias.user.delete_on is not None:
+    if not alias.user.is_active():
         LOG.d(f"user {user} is pending to be deleted. Do not forward")
         EmailLog.create(
             contact_id=contact.id,

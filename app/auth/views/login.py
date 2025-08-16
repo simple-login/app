@@ -64,7 +64,7 @@ def login():
             LoginEvent(LoginEvent.ActionType.disabled_login).send()
         elif user.delete_on is not None:
             flash(
-                f"Your account is scheduled to be deleted on {user.delete_on}",
+                "Email or password incorrect",
                 "error",
             )
             LoginEvent(LoginEvent.ActionType.scheduled_to_be_deleted).send()

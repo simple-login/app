@@ -242,6 +242,7 @@ class AuditLogActionEnum(EnumE):
     stop_trial = 11
     unlink_user = 12
     delete_custom_domain = 13
+    stop_soft_delete_user = 14
 
 
 class Phase(EnumE):

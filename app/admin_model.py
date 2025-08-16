@@ -969,11 +969,72 @@ class EmailSearchAdmin(BaseView):
             return redirect(url_for("admin.email_search.index", query=user_id))
 
         AdminAuditLog.create(
-            admin_user_id=user.id,
+            admin_user_id=current_user.id,
             model=User.__class__.__name__,
             model_id=user.id,
             action=AuditLogActionEnum.unlink_user.value,
             data={"external_user_id": external_user_id},
+        )
+        Session.commit()
+
+        return redirect(url_for("admin.email_search.index", query=user_id))
+
+    @expose("/stop_soft_delete_user", methods=["POST"])
+    def stop_soft_delete_user(self):
+        user_id = request.form.get("user_id")
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        if user.delete_on is None:
+            flash("User is not pending deletion", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        user.delete_on = None
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model=User.__class__.__name__,
+            model_id=user.id,
+            action=AuditLogActionEnum.stop_soft_delete_user.value,
+            data={"user_id": user_id},
+        )
+        Session.commit()
+
+        return redirect(url_for("admin.email_search.index", query=user_id))
+
+    @expose("/force_soft_delete_user", methods=["POST"])
+    def force_soft_delete_user(self):
+        user_id = request.form.get("user_id")
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        if user.delete_on is None:
+            flash("User is not pending deletion", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+        User.delete(user.id)
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model=User.__class__.__name__,
+            model_id=user.id,
+            action=AuditLogActionEnum.delete_object.value,
+            data={"user_id": user_id},
         )
         Session.commit()
 

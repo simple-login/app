@@ -7,14 +7,16 @@
   <div class="card">
     <div class="card-body">
       <div class="h2">Account Deletion</div>
-      <div class="my-3 alert alert-warning">
-        Once an account is deleted, it can't be restored.
-        All its records (aliases, domains, settings, etc.) are immediately deleted.
+      <div class="my-3 alert alert-danger">
+        Once an account is deleted, it can't be restored. You will lose access immediately to all the data stored in this account (aliases, domains, settings, etc.)
+      </div>
+      <div class="my-3 alert alert-danger">
+        You will not be able to create another account with the same email for some time.
       </div>
       <form method="post">
         <input type="hidden" name="form-name" value="delete-account">
         {{ delete_form.csrf_token }}
-        <span class="delete-account btn btn-outline-danger">Delete account</span>
+        <span class="delete-account btn btn-outline-danger">Delete my account.</span>
       </form>
     </div>
   </div>

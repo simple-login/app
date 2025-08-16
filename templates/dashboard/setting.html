@@ -488,9 +488,9 @@
                         <input type="hidden" name="form-name" value="alias-delete-action">
                         <select class="form-control mr-sm-2" name="alias-delete-action">
                           <option value="{{ UserAliasDeleteAction.MoveToTrash.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.MoveToTrash.value %}
-                            selected="selected"{% endif %}>Move to Trash</option>
+                             selected="selected"{% endif %}>Move to Trash</option>
                           <option value="{{ UserAliasDeleteAction.DeleteImmediately.value }}" {% if current_user.alias_delete_action.value == UserAliasDeleteAction.DeleteImmediately.value %}
-                            selected="selected"{% endif %}>Delete immediately</option>
+                             selected="selected"{% endif %}>Delete immediately</option>
                         </select>
                         <button class="btn btn-outline-primary">Update</button>
                       </form>
