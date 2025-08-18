@@ -704,3 +704,8 @@ ABUSER_HKDF_SALT = read_hex_data(
 )
 
 INVALID_MX_IPS = get_env_csv("INVALID_MX_IPS", [])
+
+# For SMTP support
+SMTP_INTERNAL_HOST_IP = os.environ.get("SMTP_INTERNAL_HOST_IP") or "127.0.0.1"
+SMTP_INTERNAL_PORT = int(os.environ.get("SMTP_INTERNAL_PORT") or 20465)
+SMTP_INTERNAL_ACCESS_SECRET = os.environ.get("SMTP_INTERNAL_ACCESS_SECRET")
