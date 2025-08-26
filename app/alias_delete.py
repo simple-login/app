@@ -23,6 +23,7 @@ def __delete_alias(alias: Alias, user: User, commit: bool):
     alias_id = alias.id
     alias_email = alias.email
 
+    LOG.info(f"Performing alias deletion for {alias} of user {user}")
     emit_alias_audit_log(
         alias, AliasAuditLogAction.DeleteAlias, "Alias deleted by user action"
     )
