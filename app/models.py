@@ -242,6 +242,7 @@ class AuditLogActionEnum(EnumE):
     stop_trial = 11
     unlink_user = 12
     delete_custom_domain = 13
+    clear_delete_on = 14
 
 
 class Phase(EnumE):
@@ -3813,6 +3814,16 @@ class AdminAuditLog(Base):
         cls.create(
             admin_user_id=admin_user_id,
             action=AuditLogActionEnum.enable_user.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
+    def clear_delete_on(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.clear_delete_on.value,
             model="User",
             model_id=user_id,
             data={},

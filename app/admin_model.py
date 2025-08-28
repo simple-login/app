@@ -979,6 +979,33 @@ class EmailSearchAdmin(BaseView):
 
         return redirect(url_for("admin.email_search.index", query=user_id))
 
+    @expose("/stop_user_deletion", methods=["POST"])
+    def stop_user_deletion(self):
+        user_id = request.form.get("user_id")
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if user.delete_on is None:
+            flash("User is not scheduled for deletion", "warning")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        user.delete_on = None
+        AdminAuditLog.clear_delete_on(current_user.id, user.id)
+        Session.commit()
+
+        flash(f"Cancelled scheduled deletion for user {user.email}", "success")
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
 
 class CustomDomainWithValidationData:
     def __init__(self, domain: CustomDomain):
