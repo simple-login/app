@@ -55,9 +55,11 @@ from app.models import (
     CustomDomain,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
+from app.errors import ProtonPartnerNotSetUp
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -848,6 +850,26 @@ class EmailSearchResult:
         if user_audit_log:
             output.user_audit_log = user_audit_log
             output.no_match = False
+
+        # Search by PartnerUser.external_user_id for Proton partner
+        if not output.user:  # Only search if we haven't found a user yet
+            try:
+                proton_partner = get_proton_partner()
+                partner_user = PartnerUser.filter_by(
+                    partner_id=proton_partner.id, external_user_id=email
+                ).first()
+                if partner_user:
+                    output.user = partner_user.user
+                    output.user_audit_log = (
+                        UserAuditLog.filter_by(user_id=partner_user.user.id)
+                        .order_by(UserAuditLog.created_at.desc())
+                        .all()
+                    )
+                    output.no_match = False
+            except ProtonPartnerNotSetUp:
+                # Proton partner not configured, skip this search
+                pass
+
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
         )
