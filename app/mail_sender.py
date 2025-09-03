@@ -194,7 +194,9 @@ class MailSender:
         else:
             server_host = server_split[0]
             server_port = server_split[1]
-        with SMTP(host=server_host, port=server_port) as smtp:
+        with SMTP(
+            host=server_host, port=server_port, timeout=config.POSTFIX_CONNECT_TIMEOUT
+        ) as smtp:
             smtp.timeout = config.POSTFIX_TIMEOUT
 
             if config.POSTFIX_SUBMISSION_TLS:
