@@ -9,7 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from email.message import Message
 from functools import wraps
-from smtplib import SMTP, SMTPException, SMTPConnectError
+from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
@@ -194,19 +194,9 @@ class MailSender:
         else:
             server_host = server_split[0]
             server_port = server_split[1]
-        with SMTP() as smtp:
-            # We connect externally because we don't want to apply the overall timeout to fail fast if a server is down
-            (code, msg) = smtp.connect(server_host, server_port)
-            if code != 220:
-                smtp.close()
-                LOG.w(
-                    f"Could not connect to server {server_host}:{server_port} code={code} msg={msg}"
-                )
-                raise SMTPConnectError(code, msg)
+        with SMTP(host=server_host, port=server_port) as smtp:
             smtp.timeout = config.POSTFIX_TIMEOUT
 
-            # Needed for TLS to work
-            smtp._host = server_host
             if config.POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
 
