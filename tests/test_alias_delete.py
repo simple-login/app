@@ -93,6 +93,7 @@ def ensure_alias_is_deleted(
     deleted_alias: Optional[DeletedAlias] = DeletedAlias.get_by(email=alias_email)
     assert deleted_alias is not None
     assert deleted_alias.reason == reason
+    assert deleted_alias.alias_id == alias_id
 
 
 # Delete alias
@@ -158,6 +159,7 @@ def test_alias_custom_domain_perform_deletion_moves_to_domain_deleted_alias():
 
     deleted_custom_alias = DomainDeletedAlias.get_by(email=alias_email)
     assert deleted_custom_alias is not None
+    assert deleted_custom_alias.alias_id == alias_id
 
 
 # move_alias_to_trash
