@@ -2462,6 +2462,9 @@ class DeletedAlias(Base, ModelMixin):
         default=AliasDeleteReason.Unspecified,
         server_default=str(AliasDeleteReason.Unspecified.value),
     )
+    alias_id = sa.Column(
+        sa.Integer, nullable=True, server_default=None, default=None, index=True
+    )
 
     @classmethod
     def create(cls, **kw):
@@ -2736,6 +2739,7 @@ class DomainDeletedAlias(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
         sa.Index("ix_domain_deleted_alias_user_id", "user_id"),
+        sa.Index("ix_domain_deleted_alias_alias_id", "alias_id"),
     )
 
     email = sa.Column(sa.String(256), nullable=False)
@@ -2751,6 +2755,13 @@ class DomainDeletedAlias(Base, ModelMixin):
         nullable=False,
         default=AliasDeleteReason.Unspecified,
         server_default=str(AliasDeleteReason.Unspecified.value),
+    )
+
+    alias_id = sa.Column(
+        sa.Integer,
+        nullable=True,
+        server_default=None,
+        default=None,
     )
 
     @classmethod
