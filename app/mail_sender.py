@@ -197,7 +197,7 @@ class MailSender:
         with SMTP(
             host=server_host, port=server_port, timeout=config.POSTFIX_CONNECT_TIMEOUT
         ) as smtp:
-            smtp.timeout = config.POSTFIX_TIMEOUT
+            smtp.sock.settimeout(config.POSTFIX_TIMEOUT)
 
             if config.POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
