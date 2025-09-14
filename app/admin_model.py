@@ -55,9 +55,11 @@ from app.models import (
     CustomDomain,
 )
 from app.newsletter_utils import send_newsletter_to_user, send_newsletter_to_address
+from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
+from app.errors import ProtonPartnerNotSetUp
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -848,6 +850,26 @@ class EmailSearchResult:
         if user_audit_log:
             output.user_audit_log = user_audit_log
             output.no_match = False
+
+        # Search by PartnerUser.external_user_id for Proton partner
+        if not output.user:  # Only search if we haven't found a user yet
+            try:
+                proton_partner = get_proton_partner()
+                partner_user = PartnerUser.filter_by(
+                    partner_id=proton_partner.id, external_user_id=email
+                ).first()
+                if partner_user:
+                    output.user = partner_user.user
+                    output.user_audit_log = (
+                        UserAuditLog.filter_by(user_id=partner_user.user.id)
+                        .order_by(UserAuditLog.created_at.desc())
+                        .all()
+                    )
+                    output.no_match = False
+            except ProtonPartnerNotSetUp:
+                # Proton partner not configured, skip this search
+                pass
+
         mailboxes = (
             Mailbox.filter_by(email=email).order_by(Mailbox.id.desc()).limit(10).all()
         )
@@ -978,6 +1000,74 @@ class EmailSearchAdmin(BaseView):
         Session.commit()
 
         return redirect(url_for("admin.email_search.index", query=user_id))
+
+    @expose("/stop_user_deletion", methods=["POST"])
+    def stop_user_deletion(self):
+        user_id = request.form.get("user_id")
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if user.delete_on is None:
+            flash("User is not scheduled for deletion", "warning")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        user.delete_on = None
+        AdminAuditLog.clear_delete_on(current_user.id, user.id)
+        Session.commit()
+
+        flash(f"Cancelled scheduled deletion for user {user.email}", "success")
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
+    @expose("/update_subdomain_quota", methods=["POST"])
+    def update_subdomain_quota(self):
+        user_id = request.form.get("user_id")
+        new_quota = request.form.get("subdomain_quota")
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        if not new_quota:
+            flash("Missing subdomain quota value", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            user_id = int(user_id)
+            new_quota = int(new_quota)
+        except ValueError:
+            flash("Invalid user_id or quota value", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if new_quota < 0:
+            flash("Subdomain quota cannot be negative", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        old_quota = user._subdomain_quota
+        user._subdomain_quota = new_quota
+        AdminAuditLog.update_subdomain_quota(
+            current_user.id, user.id, old_quota, new_quota
+        )
+        Session.commit()
+
+        flash(
+            f"Updated subdomain quota for user {user.email} from {old_quota} to {new_quota}",
+            "success",
+        )
+        return redirect(url_for("admin.email_search.index", query=user.email))
 
 
 class CustomDomainWithValidationData:

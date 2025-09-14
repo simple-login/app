@@ -23,6 +23,7 @@ def __delete_alias(alias: Alias, user: User, commit: bool):
     alias_id = alias.id
     alias_email = alias.email
 
+    LOG.info(f"Performing alias deletion for {alias} of user {user}")
     emit_alias_audit_log(
         alias, AliasAuditLogAction.DeleteAlias, "Alias deleted by user action"
     )
@@ -50,6 +51,7 @@ def __delete_if_custom_domain(
             email=alias.email,
             domain_id=alias.custom_domain_id,
             reason=reason,
+            alias_id=alias.id,
         )
         Session.add(domain_deleted_alias)
         LOG.i(
@@ -98,7 +100,7 @@ def perform_alias_deletion(
 
     if not DeletedAlias.get_by(email=alias.email):
         deleted_alias = DeletedAlias(
-            email=alias.email, reason=alias.delete_reason or reason
+            email=alias.email, reason=alias.delete_reason or reason, alias_id=alias.id
         )
         Session.add(deleted_alias)
         LOG.i(f"Moving {alias} to global trash {deleted_alias}")

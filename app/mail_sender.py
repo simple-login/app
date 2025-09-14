@@ -5,7 +5,6 @@ import email
 import json
 import os
 import random
-import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from email.message import Message
@@ -15,6 +14,7 @@ from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
 import sentry_sdk
+import time
 from attr import dataclass
 
 from app import config
@@ -194,7 +194,11 @@ class MailSender:
         else:
             server_host = server_split[0]
             server_port = server_split[1]
-        with SMTP(server_host, server_port, timeout=config.POSTFIX_TIMEOUT) as smtp:
+        with SMTP(
+            host=server_host, port=server_port, timeout=config.POSTFIX_CONNECT_TIMEOUT
+        ) as smtp:
+            smtp.sock.settimeout(config.POSTFIX_TIMEOUT)
+
             if config.POSTFIX_SUBMISSION_TLS:
                 smtp.starttls()
 

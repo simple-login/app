@@ -160,6 +160,7 @@ else:
     default_postfix_port = 25
 POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
 POSTFIX_TIMEOUT = int(os.environ.get("POSTFIX_TIMEOUT", 3))
+POSTFIX_CONNECT_TIMEOUT = float(os.environ.get("POSTFIX_CONNECT_TIMEOUT", 1))
 
 # ["domain1.com", "domain2.com"]
 OTHER_ALIAS_DOMAINS = sl_getenv("OTHER_ALIAS_DOMAINS", list)
