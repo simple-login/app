@@ -104,6 +104,35 @@
     </tbody>
   </table>
 {%- endmacro %}
+{% macro list_alias(alias_count, aliases) %}
+  <h4>
+    {{ alias_count }} Aliases found for this mailbox.
+    {% if alias_count>10 %}Showing only the last 10.{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Alias ID</th>
+        <th>Email</th>
+        <th>Enabled</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alias in aliases %}
+
+        <tr>
+          <td>{{ alias.id }}</td>
+          <td>
+            <a href="?query={{ alias.email }}">{{ alias.email }}</a>
+          </td>
+          <td>{{ "Yes" if alias.enabled else "No" }}</td>
+          <td>{{ alias.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
 {% macro show_mailbox(mailbox) %}
   <table class="table">
     <thead>
@@ -151,6 +180,7 @@
       <h3 class="mb-3">Found mailbox {{ data.mailbox.email }}</h3>
       {{ show_mailbox(data.mailbox) }}
       {{ show_user(data.mailbox.user) }}
+      {{ list_alias(data.mailbox.aliases|length, data.mailbox.aliases) }}
     </div>
   {% endif %}
 {% endblock %}

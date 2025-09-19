@@ -15,6 +15,7 @@ from flask_admin.form import SecureForm
 from flask_admin.model.template import EndpointLinkRowAction
 from flask_login import current_user
 from markupsafe import Markup
+from sqlalchemy import or_, and_
 
 from app import models, s3, config
 from app.abuser import mark_user_as_abuser, unmark_as_abusive_user
@@ -1350,13 +1351,32 @@ class MailboxSearchResult:
     def __init__(self):
         self.no_match: bool = False
         self.mailbox: Optional[Mailbox] = None
+        self.aliases: List[Alias] = []
 
     @staticmethod
-    def from_mailbox(mailbox: Optional[Mailbox]) -> CustomDomainSearchResult:
+    def from_mailbox(mbox: Optional[Mailbox]) -> CustomDomainSearchResult:
         out = CustomDomainSearchResult()
-        if mailbox is None:
+        if mbox is None:
             out.no_match = True
             return out
-        out.mailbox = mailbox
+        out.mailbox = mbox
+        out.aliases = mbox.aliases[:10]
+        out.aliases = (
+            Session.query(Alias)
+            .join(
+                AliasMailbox,
+                and_(
+                    AliasMailbox.alias_id == Alias.id,
+                    AliasMailbox.mailbox_id == mbox.id,
+                ),
+                isouter=True,
+            )
+            .filter(
+                or_(Alias.mailbox_id == mbox.id, AliasMailbox.mailbox_id == mbox.id)
+            )
+            .order_by(Alias.id)
+            .limit(10)
+            .all()
+        )
 
         return out
