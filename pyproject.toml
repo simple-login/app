@@ -12,7 +12,7 @@ packages = [
 ]
 include = ["templates/*", "templates/**/*", "local_data/*.txt"]
 
-requires-python = "~=3.12"
+requires-python = "~=3.12.0"
 
 dependencies = [
     "flask ~= 1.1.2",
@@ -130,8 +130,8 @@ blank_line_after_tag = "if,for,include,load,extends,block,endcall"
 # T001: Variables should be wrapped in a single whitespace. | Messes up with comments
 ignore = "H006,H013,H016,H017,H019,H021,H025,H030,H031,T003,J004,J018,T001"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest ~= 7.0.0",
     "pytest-cov ~= 3.0.0",
     "pre-commit ~= 4.1.0",

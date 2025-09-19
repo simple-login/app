@@ -15,6 +15,7 @@ from flask_admin.form import SecureForm
 from flask_admin.model.template import EndpointLinkRowAction
 from flask_login import current_user
 from markupsafe import Markup
+from sqlalchemy import or_, and_
 
 from app import models, s3, config
 from app.abuser import mark_user_as_abuser, unmark_as_abusive_user
@@ -29,6 +30,7 @@ from app.custom_domain_validation import (
 )
 from app.db import Session
 from app.dns_utils import get_network_dns_client
+from app.errors import ProtonPartnerNotSetUp
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, UserPlanChanged
 from app.models import (
@@ -59,7 +61,6 @@ from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
-from app.errors import ProtonPartnerNotSetUp
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -1310,7 +1311,72 @@ class AbuserLookupAdmin(BaseView):
             result = AbuserLookupResult.from_email_or_user_id(query)
 
         return self.render(
-            "admin/abuser_lookup.html",
+            "admin/mailbox.html",
             data=result,
             query=query,
         )
+
+
+class MailboxSearchAdmin(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("dashboard.index", next=request.url))
+
+    @expose("/", methods=["GET", "POST"])
+    def index(self):
+        query = request.args.get("query")
+        if query is None:
+            search = MailboxSearchResult()
+        else:
+            try:
+                mailbox_id = int(query)
+                mailbox = Mailbox.get_by(id=mailbox_id)
+            except ValueError:
+                mailbox = Mailbox.get_by(email=query)
+            search = MailboxSearchResult.from_mailbox(mailbox)
+
+        return self.render(
+            "admin/mailbox_search.html",
+            data=search,
+            query=query,
+            helper=EmailSearchHelpers,
+        )
+
+
+class MailboxSearchResult:
+    def __init__(self):
+        self.no_match: bool = False
+        self.mailbox: Optional[Mailbox] = None
+        self.aliases: List[Alias] = []
+
+    @staticmethod
+    def from_mailbox(mbox: Optional[Mailbox]) -> CustomDomainSearchResult:
+        out = CustomDomainSearchResult()
+        if mbox is None:
+            out.no_match = True
+            return out
+        out.mailbox = mbox
+        out.aliases = mbox.aliases[:10]
+        out.aliases = (
+            Session.query(Alias)
+            .join(
+                AliasMailbox,
+                and_(
+                    AliasMailbox.alias_id == Alias.id,
+                    AliasMailbox.mailbox_id == mbox.id,
+                ),
+                isouter=True,
+            )
+            .filter(
+                or_(Alias.mailbox_id == mbox.id, AliasMailbox.mailbox_id == mbox.id)
+            )
+            .order_by(Alias.id)
+            .limit(10)
+            .all()
+        )
+
+        return out

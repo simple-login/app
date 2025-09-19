@@ -10,7 +10,7 @@ on:
 
 env:
   CMAKE_POLICY_VERSION_MINIMUM: 3.5
-  UV_VERSION: 0.7.13
+  UV_VERSION: 0.8.18
 
 jobs:
   lint:
