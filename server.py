@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import timedelta
 
 import arrow
@@ -8,6 +7,7 @@ import flask_limiter
 import flask_profiler
 import newrelic.agent
 import sentry_sdk
+import time
 from flask import (
     Flask,
     redirect,
@@ -46,6 +46,7 @@ from app.admin_model import (
     CustomDomainSearchAdmin,
     AbuserLookupAdmin,
     ForbiddenMxIpAdmin,
+    MailboxSearchAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -456,6 +457,9 @@ def init_admin(app):
 
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="admin.email_search"))
+    admin.add_view(
+        MailboxSearchAdmin(name="Mailbox search", endpoint="admin.mailbox_search")
+    )
     admin.add_view(
         CustomDomainSearchAdmin(
             name="Custom domain search", endpoint="admin.custom_domain_search"
