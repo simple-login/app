@@ -1,6 +1,5 @@
-from typing import Optional
-
 import pytest
+from typing import Optional
 
 from app import config
 from app.alias_audit_log_utils import AliasAuditLogAction
@@ -233,3 +232,14 @@ def test_toggle_contact_block():
     assert audit_log.action == AliasAuditLogAction.UpdateContact.value
     assert audit_log.id > last_log_id
     assert not contact.block_forward
+
+
+def test_create_contact_with_reply_email():
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    email = random_email()
+    contact1 = create_contact(email, alias).contact
+    out = create_contact(contact1.reply_email, alias)
+    assert out.contact is None
+    assert out.created is False
+    assert out.error == ContactCreateError.InvalidEmail
