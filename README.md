@@ -382,6 +382,7 @@ To run SimpleLogin, you need a config file at `$(pwd)/simplelogin.env`. Below is
 - replace `mydomain.com` by your domain,
 - set `FLASK_SECRET` to a secret string,
 - update 'myuser' and 'mypassword' with your database credentials used in previous step.
+- set `SMTP_INTERNAL_ACCESS_SECRET` to a secret string
 
 All possible parameters can be found in [config example](example.env). Some are optional and are commented out by default.
 Some have "dummy" values, fill them up if you want to enable these features (Paddle, AWS, etc).
@@ -416,6 +417,8 @@ GNUPGHOME=/sl/pgp
 LOCAL_FILE_UPLOAD=1
 
 POSTFIX_SERVER=10.0.0.1
+
+SMTP_INTERNAL_ACCESS_SECRET=put_something_secret_here
 ```
 
 
@@ -495,6 +498,24 @@ docker run -d \
     simplelogin/app:3.4.0 python job_runner.py
 ```
 
+#### Enable Sending via SMTP
+
+For sending via SMTP  you need to run `SMTP handler`
+
+```bash
+docker run -d \
+    --name sl-smtp \
+    -v $(pwd)/sl:/sl \
+    -v $(pwd)/sl/upload:/code/static/upload \
+    -v $(pwd)/simplelogin.env:/code/.env \
+    -v $(pwd)/dkim.key:/dkim.key \
+    -v $(pwd)/dkim.pub.key:/dkim.pub.key \
+    -p 127.0.0.1:20465:20465 \
+    --restart always \
+    --network="sl-network" \
+    simplelogin/app:3.4.0 python SMTP_handler.py
+```
+
 ### Nginx
 
 Install Nginx and make sure to replace `mydomain.com` by your domain
@@ -514,9 +535,30 @@ server {
     	proxy_set_header        Host $host;
     }
 }
+
+# For SMTP
+mail {
+    server_name app.mydomain.com;
+    
+    auth_http 127.0.0.1:7777/api/auth/smtp;
+    auth_http_header X-Secret "changeme";
+
+    ssl_certificate     /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+    server {
+        listen           465 ssl;
+        protocol         smtp;
+        smtp_auth        login plain;
+        xclient          off;
+        proxy_smtp_auth  on;
+    }
+}
 ```
 
-Note: If `/etc/nginx/sites-enabled/default` exists, delete it or certbot will fail due to the conflict. The `simplelogin` file should be the only file in `sites-enabled`.
+Note:
+- Change the `X-Secret` to match `SMTP_INTERNAL_ACCESS_SECRET` in your `.env` file  
+- If `/etc/nginx/sites-enabled/default` exists, delete it or certbot will fail due to the conflict. The `simplelogin` file should be the only file in `sites-enabled`.
 
 Reload Nginx with the command below
 
