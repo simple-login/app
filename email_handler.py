@@ -1872,9 +1872,7 @@ def handle_transactional_bounce(
 ):
     LOG.d("handle transactional bounce sent to %s", rcpt_to)
     if transactional_id is None:
-        LOG.i(
-            f"No transactional id for {envelope.mail_from} -> {envelope.rcpt_tos}"
-        )
+        LOG.i(f"No transactional id for {envelope.mail_from} -> {envelope.rcpt_tos}")
         save_envelope_for_debugging(envelope, "no-txid")
         return
 
