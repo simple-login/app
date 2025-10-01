@@ -30,7 +30,9 @@ def sl_getenv(env_var: str, default_factory: Callable = None):
     """
     value = os.getenv(env_var)
     if value is None:
-        return default_factory()
+        if default_factory is None:
+        return None
+    return default_factory()
 
     return literal_eval(value)
 
