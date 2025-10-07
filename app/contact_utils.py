@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
-
 from sqlalchemy.exc import IntegrityError
+from typing import Optional
 
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
 from app.email_utils import generate_reply_email, parse_full_address
 from app.email_validation import is_valid_email
+from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
 from app.models import Contact, Alias
 from app.utils import sanitize_email
@@ -49,6 +49,9 @@ def create_contact(
     automatic_created: bool = False,
     from_partner: bool = False,
 ) -> ContactCreateResult:
+    LOG.i(
+        f"User {alias.user} is trying to create a new contact for alias {alias} with email {email}"
+    )
     # If user cannot create contacts, they still need to be created when receiving an email for an alias
     if not automatic_created and not alias.user.can_create_contacts():
         return ContactCreateResult(
@@ -119,6 +122,11 @@ def create_contact(
             f"Created contact {contact} for alias {alias} with email {email} invalid_email={is_invalid_email}"
         )
         return ContactCreateResult(contact, created=True, error=None)
+    except CannotCreateContactForReverseAlias as e:
+        LOG.i(f"Cannot create contact {email} for alias {alias}: {e}")
+        return ContactCreateResult(
+            None, created=False, error=ContactCreateError.InvalidEmail
+        )
     except IntegrityError:
         Session.rollback()
         LOG.info(
