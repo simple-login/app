@@ -88,7 +88,19 @@ class NetworkDNSClient(DNSClient):
                 prio = int(parts[0])
                 if prio not in ret:
                     ret[prio] = []
-                ret[prio].append(parts[1])
+                domain_name = parts[1]
+
+                # Follow CNAME records
+                while True:
+                    try:
+                        cname_answers = self._resolver.resolve(
+                            domain_name, "CNAME", search=True
+                        )
+                    except dns.resolver.NoAnswer:
+                        break
+                    domain_name = cname_answers[0].to_text()
+                ret[prio].append(domain_name)
+
         except Exception:
             pass
         return ret
