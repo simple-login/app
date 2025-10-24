@@ -14,7 +14,7 @@
     <div class="alert alert-warning mt-3">Rules are ineffective when catch-all is enabled.</div>
   {% endif %}
   <div class="{% if custom_domain.catch_all %}
-     disabled-content{% endif %}">
+    disabled-content{% endif %}">
     <div class="mt-3 mb-2">
       For a greater control than a simple catch-all, you can define a set of <b>rules</b> to auto create aliases.
       <br />
@@ -36,6 +36,12 @@
               Order: <b>{{ auto_create_rule.order }}</b>
               <br />
               <input readonly value="{{ auto_create_rule.regex }}" class="form-control">
+              {% if auto_create_rule.display_name %}
+
+                Display name:
+                <b>{{ auto_create_rule.display_name }}</b>
+                <br />
+              {% endif %}
               New alias will belong to
               {% for mailbox in auto_create_rule.mailboxes %}
 
@@ -80,6 +86,13 @@
             To test out regex, we recommend using regex tester tool like
             <a href="https://regex101.com" target="_blank" rel="noopener noreferrer">https://regex101.com↗</a>
           </div>
+        </div>
+        <div class="form-group">
+          <label>
+            Display name <span class="small">(optional)</span>
+          </label>
+          {{ new_auto_create_rule_form.display_name(class="form-control", placeholder="My Newsletter") }}
+          {{ render_field_errors(new_auto_create_rule_form.display_name) }}
         </div>
         <div class="form-group">
           <label>Order</label>
