@@ -279,9 +279,12 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
     custom_domain, rule = can_create
 
+    alias_name = None
     if rule:
         alias_note = f"Created by rule {rule.order} with regex {rule.regex}"
         mailboxes = rule.mailboxes
+        if rule.display_name:
+            alias_name = rule.display_name
     else:
         alias_note = "Created by catchall option"
         mailboxes = custom_domain.mailboxes
@@ -308,6 +311,8 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         LOG.d(
             f"User {custom_domain.user} created alias {alias} via domain {custom_domain}"
         )
+        if alias_name:
+            alias.name = alias_name
         if not custom_domain.user.disable_automatic_alias_note:
             alias.note = alias_note
         Session.flush()
