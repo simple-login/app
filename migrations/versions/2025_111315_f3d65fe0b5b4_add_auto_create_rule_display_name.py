@@ -17,7 +17,15 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('auto_create_rule', sa.Column('display_name', sa.String(length=128), nullable=True))
+    op.add_column(
+        'auto_create_rule',
+        sa.Column(
+            'display_name',
+            sa.String(length=128),
+            nullable=True,
+            server_default='',
+        ),
+    )
 
 
 def downgrade():

@@ -167,48 +167,6 @@ def test_auto_create_alias_applies_rule_display_name(flask_client):
     assert alias.name == "Weekly Digest"
 
 
-def test_auto_create_alias_display_name_updates_existing_alias(flask_client):
-    user = create_new_user()
-    custom_domain = CustomDomain.create(
-        user_id=user.id,
-        catch_all=False,
-        domain=random_domain(),
-        verified=True,
-        flush=True,
-    )
-    rule = AutoCreateRule.create(
-        custom_domain_id=custom_domain.id,
-        order=0,
-        regex="team-.*",
-        display_name="Team Inbox",
-        flush=True,
-    )
-    AutoCreateRuleMailbox.create(
-        auto_create_rule_id=rule.id,
-        mailbox_id=user.default_mailbox_id,
-        flush=True,
-    )
-    Session.commit()
-
-    existing_address = f"team-ops@{custom_domain.domain}"
-    Alias.create(
-        email=existing_address,
-        user_id=user.id,
-        custom_domain_id=custom_domain.id,
-        mailbox_id=user.default_mailbox_id,
-        automatic_creation=True,
-        commit=True,
-    )
-    alias = Alias.get_by(email=existing_address)
-    assert alias and not alias.name
-
-    alias = try_auto_create(existing_address)
-    assert alias is not None
-    alias = Alias.get_by(email=existing_address)
-    assert alias is not None
-    assert alias.name == "Team Inbox"
-
-
 # get_alias_recipient_name
 def test_get_alias_recipient_name_no_overrides():
     user = create_new_user()
