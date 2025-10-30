@@ -1311,7 +1311,7 @@ class AbuserLookupAdmin(BaseView):
             result = AbuserLookupResult.from_email_or_user_id(query)
 
         return self.render(
-            "admin/mailbox.html",
+            "admin/abuser_lookup.html",
             data=result,
             query=query,
         )
