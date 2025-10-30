@@ -1,7 +1,7 @@
-import sys
-
-import time
 from typing import Optional
+
+import sys
+import time
 
 from app.config import URL
 from app.db import Session
@@ -11,6 +11,7 @@ from app.utils import random_string
 
 _SUFFIX = ":invalid"
 PASSWORD_RESET_LINK = f"{URL}/auth/forgot_password"
+ACCOUNT_SETTINGS_LINK = f"{URL}/dashboard/account_setting"
 
 
 def reset_user_password(user: User):
@@ -25,14 +26,16 @@ def send_user_email(user: User):
         to_email=user.email,
         subject="Your SimpleLogin password has been reset",
         plaintext=render(
-            template_name="templates/emails/transactional/reset_password_leak.txt",
+            template_name="/transactional/reset_password_leak.txt",
             user=user,
             password_reset_link=PASSWORD_RESET_LINK,
+            account_link=ACCOUNT_SETTINGS_LINK,
         ),
         html=render(
-            template_name="templates/emails/transactional/reset_password_leak.html",
+            template_name="transactional/reset_password_leak.html",
             user=user,
             password_reset_link=PASSWORD_RESET_LINK,
+            account_link=ACCOUNT_SETTINGS_LINK,
         ),
         retries=3,
     )
