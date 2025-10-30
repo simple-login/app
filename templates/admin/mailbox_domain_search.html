@@ -1,0 +1,164 @@
+{% extends 'admin/master.html' %}
+
+{% macro show_user(query, user) -%}
+  <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
+  {% set pu = helper.partner_user(user) %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">User ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Verified</th>
+        <th scope="col">Status</th>
+        <th scope="col">Pending deletion</th>
+        <th scope="col">Paid</th>
+        <th scope="col">Premium</th>
+        <th>Subscription</th>
+        <th>Created At</th>
+        <th>Updated At</th>
+        <th>Subdomain Quota</th>
+        <th>Connected with Proton account</th>
+        {% if user.delete_on %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>
+          <a href="{{ url_for("admin.email_search.index", query=user.email) }}">{{ user.email }}</a>
+        </td>
+        {% if user.activated %}
+
+          <td class="text-success">Activated</td>
+        {% else %}
+          <td class="text-warning">Pending</td>
+        {% endif %}
+        {% if user.disabled %}
+
+          <td class="text-danger">Disabled</td>
+        {% else %}
+          <td class="text-success">Enabled
+              <form class="d-inline"
+                    action="{{ url_for("admin.email_domain_search.disable_user") }}"
+                    method="POST">
+                  <input type="hidden" name="user_id" value="{{ user.id }}">
+                  <input type="hidden" name="query" value="{{ query }}">
+              <button type="submit"
+                      onclick="return confirm('Are you sure you want to disable and mark this user as an abuser?');"
+                      class="btn btn-outline-primary btn-sm">
+                  <i class="fa fa-thumbs-down"  style="font-size: 0.8rem;"></i></button>
+              </form>
+          </td>
+        {% endif %}
+        {% if user.delete_on %}
+          <td class="text-danger">{{ user.delete_on }}</td>
+        {% else %}
+          <td class="text-success">None</td>
+        {% endif %}
+        <td>{{ "yes" if user.is_paid() else "No" }}</td>
+        <td>{{ "yes" if user.is_premium() else "No" }}</td>
+        <td>{{ user.get_active_subscription() }}</td>
+        <td>{{ user.created_at }}</td>
+        <td>{{ user.updated_at }}</td>
+        <td>
+          <form class="d-inline"
+                action="{{ url_for("admin.email_search.update_subdomain_quota") }}"
+                method="POST">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="input-group input-group-sm" style="max-width: 120px;">
+              <input type="number"
+                     name="subdomain_quota"
+                     value="{{ user._subdomain_quota }}"
+                     class="form-control form-control-sm"
+                     min="0"
+                     max="1000"
+                     style="width: 60px">
+              <button type="submit"
+                      onclick="return confirm('Are you sure you want to update the subdomain quota for this user?');"
+                      class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-check" style="font-size: 0.8rem;"></i>
+              </button>
+            </div>
+          </form>
+        </td>
+        {% if pu %}
+
+          <td class="flex">
+            <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_search.delete_partner_link") }}"
+                  method="POST">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button type="submit"
+                      onclick="return confirm('Are you sure you would like to unlink the user?');"
+                      class="btn btn-danger d-inline">Unlink</button>
+            </form>
+          </td>
+        {% else %}
+          <td>No</td>
+        {% endif %}
+        {% if user.delete_on %}
+
+          <td>
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_search.stop_user_deletion") }}"
+                  method="POST">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button type="submit"
+                      onclick="return confirm('Are you sure you want to cancel the scheduled deletion for this user?');"
+                      class="btn btn-warning btn-sm">Stop Deletion</button>
+            </form>
+          </td>
+        {% endif %}
+      </tr>
+    </tbody>
+  </table>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mailbox ID</th>
+        <th>Email</th>
+        <th>Verified</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for mailbox in helper.mailbox_list(user) %}
+      <tr>
+        <td>{{ mailbox.id }}</td>
+        <td>
+          <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
+        </td>
+        <td>{{ "Yes" if mailbox.verified else "No" }}</td>
+        <td>{{ mailbox.created_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+{% block body %}
+
+  <div class="border border-dark border-2 mt-1 mb-2 p-3">
+    <form method="get">
+      <div class="form-group">
+        <label for="email">Mailbox domain:</label>
+        <input type="text"
+               class="form-control"
+               name="query"
+               value="{{ query or '' }}" />
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+  {% if data.no_match and query %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
+         role="alert">No mailbox found for  {{ query }}</div>
+  {% endif %}
+    {% for user in data.users %}
+        <div class="border border-dark border-2 mt-1 mb-2 p-3">
+            <h3 class="mb-3">Found user {{ user.email }}</h3>
+            {{ show_user(query, user) }}
+        </div>
+    {% endfor %}
+{% endblock %}

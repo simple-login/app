@@ -47,6 +47,7 @@ from app.admin_model import (
     AbuserLookupAdmin,
     ForbiddenMxIpAdmin,
     MailboxSearchAdmin,
+    EmailDomainSearchAdmin,
 )
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -463,6 +464,11 @@ def init_admin(app):
     admin.add_view(
         CustomDomainSearchAdmin(
             name="Custom domain search", endpoint="admin.custom_domain_search"
+        )
+    )
+    admin.add_view(
+        EmailDomainSearchAdmin(
+            name="Email domain search", endpoint="admin.email_domain_search"
         )
     )
     admin.add_view(
