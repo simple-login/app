@@ -2706,6 +2706,13 @@ class AutoCreateRule(Base, ModelMixin):
     # the order in which rules are evaluated in case there are multiple rules
     order = sa.Column(sa.Integer, default=0, nullable=False)
 
+    # optional display name applied to aliases created by this rule
+    display_name = sa.Column(
+        sa.String(128),
+        nullable=True,
+        server_default="",
+    )
+
     custom_domain = orm.relationship(CustomDomain, backref="_auto_create_rules")
 
     mailboxes = orm.relationship(

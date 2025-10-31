@@ -345,6 +345,10 @@ class AutoCreateRuleForm(FlaskForm):
         "regex", validators=[validators.DataRequired(), validators.Length(max=128)]
     )
 
+    display_name = StringField(
+        "display name", validators=[validators.Optional(), validators.Length(max=128)]
+    )
+
     order = IntegerField(
         "order",
         validators=[validators.DataRequired(), validators.NumberRange(min=0, max=100)],
@@ -433,10 +437,18 @@ def domain_detail_auto_create(custom_domain_id):
                             )
                         )
 
+                    display_name = None
+                    if new_auto_create_rule_form.display_name.data:
+                        raw_display = new_auto_create_rule_form.display_name.data
+                        display_name = (
+                            raw_display.replace("\r", " ").replace("\n", " ").strip()
+                        )
+
                     rule = AutoCreateRule.create(
                         custom_domain_id=custom_domain.id,
                         order=int(new_auto_create_rule_form.order.data),
                         regex=new_auto_create_rule_form.regex.data,
+                        display_name=display_name or None,
                         flush=True,
                     )
 
