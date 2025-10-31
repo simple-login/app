@@ -1441,7 +1441,7 @@ class EmailDomainSearchAdmin(BaseView):
                 .filter(
                     User.disabled.isnot(True),
                     or_(
-                        User.email.like(f"%{query}%"), Mailbox.email.like(f"%{query}%")
+                        User.email.like(f"%@{query}"), Mailbox.email.like(f"%@{query}")
                     ),
                 )
                 .order_by(User.id.asc())
