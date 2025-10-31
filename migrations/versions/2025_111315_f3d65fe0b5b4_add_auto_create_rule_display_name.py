@@ -23,7 +23,7 @@ def upgrade():
             'display_name',
             sa.String(length=128),
             nullable=True,
-            server_default='',
+            server_default=None,
         ),
     )
 
