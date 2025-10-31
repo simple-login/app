@@ -20,6 +20,21 @@ def test_create_directory(flask_client):
     assert Directory.get_by(name=directory_name) is not None
 
 
+def test_create_directory_with_invalid_name(flask_client):
+    login(flask_client)
+
+    for directory_name in ("asdf ", "-invalid", "asdf@ASDF"):
+        r = flask_client.post(
+            url_for("dashboard.directory"),
+            data={"form-name": "create", "name": directory_name},
+            follow_redirects=True,
+        )
+
+        assert r.status_code == 200
+        assert f"Directory {directory_name} is created" not in r.data.decode()
+        assert Directory.get_by(name=directory_name) is None
+
+
 def test_delete_directory(flask_client):
     """cannot add domain if user personal email uses this domain"""
     user = login(flask_client)
