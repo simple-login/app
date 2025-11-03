@@ -2710,7 +2710,7 @@ class AutoCreateRule(Base, ModelMixin):
     display_name = sa.Column(
         sa.String(128),
         nullable=True,
-        server_default="",
+        server_default=None,
     )
 
     custom_domain = orm.relationship(CustomDomain, backref="_auto_create_rules")
