@@ -56,6 +56,7 @@ def handle_user(user_id: str):
 
     reset_user_password(user)
     send_user_email(user)
+    time.sleep(0.2)
 
 
 def main(user_ids_file: str):
