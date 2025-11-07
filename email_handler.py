@@ -743,11 +743,11 @@ def forward_email_to_mailbox(
     mailbox,
     user,
     reply_to_contacts: list[Contact],
-) -> (bool, str):
-    LOG.d("Forward %s -> %s -> %s", contact, alias, mailbox)
+) -> Tuple[bool, str]:
+    LOG.debug(f"Forward {contact} -> {alias} -> {mailbox} ({mailbox.user})")
 
     if mailbox.disabled:
-        LOG.d("%s disabled, do not forward")
+        LOG.d(f"{mailbox} disabled, do not forward")
         if should_ignore_bounce(envelope.mail_from):
             return True, status.E207
         else:
