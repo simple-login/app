@@ -69,7 +69,7 @@
         }
 
       </script>
-      {% if auto_activate %}<script>$('document').ready(verifyKey());</script>{% endif %}
+      {% if auto_activate %}<script>$(() => verifyKey());</script>{% endif %}
     </div>
   </div>
 {% endblock %}
