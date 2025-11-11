@@ -595,8 +595,9 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
 
     from app.models import CustomDomain
 
-    if CustomDomain.get_by(domain=domain, is_sl_subdomain=True, verified=True):
-        LOG.d("domain %s is a SimpleLogin custom domain", domain)
+    custom_domain = CustomDomain.get_by(domain=domain, verified=True)
+    if custom_domain is not None:
+        LOG.d("domain %s is custom domain %s", domain, custom_domain)
         return False
 
     if is_invalid_mailbox_domain(domain):
