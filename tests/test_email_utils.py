@@ -89,7 +89,7 @@ def test_email_belongs_to_alias_domains():
     assert not can_create_directory_for_address("hey@d3.lan")
 
 
-def test_can_be_used_as_personal_email(flask_client):
+def test_cannot_be_used_as_personal_email(flask_client):
     dns_client.set_mx_records("sl.lan", {10: ["mxdomain.com."]})
     dns_client.set_mx_records("d1.lan", {10: ["mxdomain.com."]})
     dns_client.set_mx_records("protonmail.com", {10: ["mxdomain.com."]})
@@ -110,7 +110,7 @@ def test_can_be_used_as_personal_email(flask_client):
     # custom domain is NOT SL domain
     domain_obj.is_sl_subdomain = False
     Session.flush()
-    assert email_can_be_used_as_mailbox(f"hey@{domain}")
+    assert not email_can_be_used_as_mailbox(f"hey@{domain}")
 
     # disposable domain
     disposable_domain = random_domain()
