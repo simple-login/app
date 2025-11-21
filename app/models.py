@@ -1766,7 +1766,7 @@ class Alias(Base, ModelMixin):
 
         new_alias = cls(**kw)
         user = User.get(new_alias.user_id)
-        if user.is_premium():
+        if user.is_premium() and not user.in_trial():
             limits = config.ALIAS_CREATE_RATE_LIMIT_PAID
         else:
             limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
