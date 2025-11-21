@@ -10,10 +10,17 @@ from app.log import LOG
 
 lock_redis: Optional[RedisStorage] = None
 
+rateLimitsEnabled: bool = True
+
 
 def set_redis_concurrent_lock(redis: RedisStorage):
     global lock_redis
     lock_redis = redis
+
+
+def set_rate_limit_enabled(enabled: bool):
+    global rateLimitsEnabled
+    rateLimitsEnabled = enabled
 
 
 def check_bucket_limit(
@@ -21,6 +28,8 @@ def check_bucket_limit(
     max_hits: int = 5,
     bucket_seconds: int = 3600,
 ):
+    if not rateLimitsEnabled:
+        return
     # Calculate current bucket time
     int_time = int(datetime.now(UTC).timestamp())
     bucket_id = int_time - (int_time % bucket_seconds)

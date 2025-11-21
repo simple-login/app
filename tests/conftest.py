@@ -11,6 +11,7 @@ os.environ["CONFIG"] = os.path.abspath(
 import sqlalchemy
 
 from app.db import Session, engine, connection
+from app.rate_limiter import set_rate_limit_enabled
 
 from psycopg2 import errors
 from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
@@ -19,6 +20,9 @@ import pytest
 
 from server import create_app
 from init_app import add_sl_domains, add_proton_partner
+
+# Disable rate limit for tests
+set_rate_limit_enabled(False)
 
 app = create_app()
 app.config["TESTING"] = True
