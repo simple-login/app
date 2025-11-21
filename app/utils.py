@@ -1,11 +1,11 @@
 import re
 import secrets
 import string
-import time
 import urllib.parse
 from functools import wraps
 from typing import List, Optional
 
+import time
 from flask_wtf import FlaskForm
 from unidecode import unidecode
 
@@ -81,7 +81,13 @@ def canonicalize_email(email_address: str) -> str:
     if len(parts) != 2:
         return ""
     domain = parts[1]
-    if domain not in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+    if domain not in (
+        "googlemail.com",
+        "gmail.com",
+        "protonmail.com",
+        "proton.me",
+        "pm.me",
+    ):
         return email_address
     first = parts[0]
     try:
