@@ -522,7 +522,9 @@ def register_custom_commands(app):
     @app.cli.command("dummy-data")
     def dummy_data():
         from init_app import add_sl_domains, add_proton_partner
+        from app.rate_limiter import set_rate_limit_enabled
 
+        set_rate_limit_enabled(False)
         LOG.w("reset db, add fake data")
         add_proton_partner()
         fake_data()
