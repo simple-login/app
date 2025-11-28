@@ -1,4 +1,7 @@
+import uuid
 from typing import Optional
+
+from flask import session as flask_session
 
 from app.db import Session
 from app.log import LOG
@@ -76,3 +79,15 @@ def set_default_mailbox(user: User, mailbox_id: int) -> Mailbox:
 
     Session.commit()
     return mailbox
+
+
+def regenerate_user_alternative_id(user: User, update_session: bool = True):
+    """
+    Regenerate the user's alternative_id to log them out on other browsers/sessions.
+    Optionally updates the current flask session with the new alternative_id.
+    """
+    user.alternative_id = str(uuid.uuid4())
+    Session.flush()
+
+    if update_session:
+        flask_session["_user_id"] = user.alternative_id

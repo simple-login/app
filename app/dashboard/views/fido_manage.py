@@ -1,6 +1,4 @@
-import uuid
-
-from flask import render_template, flash, redirect, url_for, session
+from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import HiddenField, validators
@@ -10,6 +8,7 @@ from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
 from app.models import RecoveryCode, Fido
+from app.user_settings import regenerate_user_alternative_id
 
 
 class FidoManageForm(FlaskForm):
@@ -36,11 +35,8 @@ def fido_manage():
             return redirect(url_for("dashboard.fido_manage"))
 
         Fido.delete(fido_key.id)
-        # change the alternative_id to log user out on other browsers
-        current_user.alternative_id = str(uuid.uuid4())
+        regenerate_user_alternative_id(current_user)
         Session.commit()
-        # Update the session to use the new alternative_id
-        session["_user_id"] = current_user.alternative_id
 
         LOG.d(f"FIDO Key ID={fido_key.id} Removed")
         flash(f"Key {fido_key.name} successfully unlinked", "success")
