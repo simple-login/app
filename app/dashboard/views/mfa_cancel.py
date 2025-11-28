@@ -1,4 +1,6 @@
-from flask import render_template, flash, redirect, url_for, request
+import uuid
+
+from flask import render_template, flash, redirect, url_for, request, session
 from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
@@ -25,7 +27,11 @@ def mfa_cancel():
             return redirect(request.url)
         current_user.enable_otp = False
         current_user.otp_secret = None
+        # change the alternative_id to log user out on other browsers
+        current_user.alternative_id = str(uuid.uuid4())
         Session.commit()
+        # Update the session to use the new alternative_id
+        session["_user_id"] = current_user.alternative_id
 
         # user does not have any 2FA enabled left, delete all recovery codes
         if not current_user.two_factor_authentication_enabled():

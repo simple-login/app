@@ -71,7 +71,11 @@ def fido_setup():
             name=fido_token_form.key_name.data,
             user_id=current_user.id,
         )
+        # change the alternative_id to log user out on other browsers
+        current_user.alternative_id = str(uuid.uuid4())
         Session.commit()
+        # Update the session to use the new alternative_id
+        session["_user_id"] = current_user.alternative_id
 
         LOG.d(
             f"credential_id={str(fido_credential.credential_id, 'utf-8')} added for {fido_uuid}"
