@@ -1,5 +1,7 @@
+import uuid
+
 import pyotp
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -38,7 +40,11 @@ def mfa_setup():
         if totp.verify(token) and current_user.last_otp != token:
             current_user.enable_otp = True
             current_user.last_otp = token
+            # change the alternative_id to log user out on other browsers
+            current_user.alternative_id = str(uuid.uuid4())
             Session.commit()
+            # Update the session to use the new alternative_id
+            session["_user_id"] = current_user.alternative_id
             flash("MFA has been activated", "success")
             recovery_codes = RecoveryCode.generate(current_user)
             return render_template(
