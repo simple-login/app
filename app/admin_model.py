@@ -1070,6 +1070,47 @@ class EmailSearchAdmin(BaseView):
         )
         return redirect(url_for("admin.email_search.index", query=user.email))
 
+    @expose("/update_directory_quota", methods=["POST"])
+    def update_directory_quota(self):
+        user_id = request.form.get("user_id")
+        new_quota = request.form.get("directory_quota")
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        if not new_quota:
+            flash("Missing directory quota value", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            user_id = int(user_id)
+            new_quota = int(new_quota)
+        except ValueError:
+            flash("Invalid user_id or quota value", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if new_quota < 0:
+            flash("Directory quota cannot be negative", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        old_quota = user._directory_quota
+        user._directory_quota = new_quota
+        AdminAuditLog.update_directory_quota(
+            current_user.id, user.id, old_quota, new_quota
+        )
+        Session.commit()
+
+        flash(
+            f"Updated directory quota for user {user.email} from {old_quota} to {new_quota}",
+            "success",
+        )
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
 
 class CustomDomainWithValidationData:
     def __init__(self, domain: CustomDomain):

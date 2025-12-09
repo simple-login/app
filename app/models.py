@@ -244,6 +244,7 @@ class AuditLogActionEnum(EnumE):
     delete_custom_domain = 13
     clear_delete_on = 14
     update_subdomain_quota = 15
+    update_directory_quota = 16
 
 
 class Phase(EnumE):
@@ -3855,6 +3856,18 @@ class AdminAuditLog(Base):
         cls.create(
             admin_user_id=admin_user_id,
             action=AuditLogActionEnum.update_subdomain_quota.value,
+            model="User",
+            model_id=user_id,
+            data={"old_quota": old_quota, "new_quota": new_quota},
+        )
+
+    @classmethod
+    def update_directory_quota(
+        cls, admin_user_id: int, user_id: int, old_quota: int, new_quota: int
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.update_directory_quota.value,
             model="User",
             model_id=user_id,
             data={"old_quota": old_quota, "new_quota": new_quota},
