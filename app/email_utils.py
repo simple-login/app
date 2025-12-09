@@ -569,40 +569,49 @@ def is_valid_alias_address_domain(email_address) -> bool:
     return False
 
 
-def email_can_be_used_as_mailbox(email_address: str) -> bool:
-    """Return True if an email can be used as a personal email.
-    Use the email domain as criteria. A domain can be used if it is not:
-    - one of ALIAS_DOMAINS
-    - one of PREMIUM_ALIAS_DOMAINS
-    - one of custom domains
-    - a disposable domain
-    """
+class EmailCannotBeUsedReason(enum.Enum):
+    InvalidEmailAddress = "This email address is not valid"
+    InvalidEmailDomain = "This email domain is not valid"
+    IsSimpleLoginDomain = "This email is a SimpleLogin domain"
+    IsCustomDomain = "This email is already registered as a custom domain"
+    InvalidMailboxDomain = "We don't allow mailboxes using this domain"
+    NoMxRecordFound = "We couldn't get any MX records configured for this domain"
+    ForbiddenMxRecordFound = (
+        "We don't allow mailbox domains that point to these MX records"
+    )
+    EmailOfDisabledUser = "This email is already registered for a different user whose account has been disabled"
+    MailboxOfDisabledUser = "This email is already registered as a mailbox of a different user whose account has been disabled"
+
+
+def email_can_be_used_as_mailbox_with_reason(
+    email_address: str
+) -> Optional[EmailCannotBeUsedReason]:
     try:
         domain = validate_email(
             email_address, check_deliverability=False, allow_smtputf8=False
         ).domain
     except EmailNotValidError:
         LOG.d("%s is invalid email address", email_address)
-        return False
+        return EmailCannotBeUsedReason.InvalidEmailAddress
 
     if not domain:
         LOG.d("no valid domain associated to %s", email_address)
-        return False
+        return EmailCannotBeUsedReason.InvalidEmailDomain
 
     if SLDomain.get_by(domain=domain):
         LOG.d("%s is a SL domain", email_address)
-        return False
+        return EmailCannotBeUsedReason.IsSimpleLoginDomain
 
     from app.models import CustomDomain
 
     custom_domain = CustomDomain.get_by(domain=domain, verified=True)
     if custom_domain is not None:
         LOG.d("domain %s is custom domain %s", domain, custom_domain)
-        return False
+        return EmailCannotBeUsedReason.IsCustomDomain
 
     if is_invalid_mailbox_domain(domain):
         LOG.d("Domain %s is invalid mailbox domain", domain)
-        return False
+        return EmailCannotBeUsedReason.InvalidMailboxDomain
 
     # check if email MX domain is disposable
     mx_domains = get_mx_domain_list(domain)
@@ -610,13 +619,13 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
     # if no MX record, email is not valid
     if not config.SKIP_MX_LOOKUP_ON_CHECK and not mx_domains:
         LOG.d("No MX record for domain %s", domain)
-        return False
+        return EmailCannotBeUsedReason.NoMxRecordFound
 
     mx_ips = set()
     for mx_domain in mx_domains:
         if is_invalid_mailbox_domain(mx_domain):
             LOG.d("MX Domain %s %s is invalid mailbox domain", mx_domain, domain)
-            return False
+            return EmailCannotBeUsedReason.InvalidMailboxDomain
         a_record = get_a_record(mx_domain)
         LOG.i(
             f"Found MX Domain {mx_domain} for mailbox {email_address} with a record {a_record}"
@@ -627,14 +636,14 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
         forbidden_ip = ForbiddenMxIp.filter(ForbiddenMxIp.ip.in_(list(mx_ips))).all()
         if forbidden_ip:
             LOG.i("Found forbidden MX ip %s", forbidden_ip)
-            return False
+            return EmailCannotBeUsedReason.ForbiddenMxRecordFound
 
     existing_user = User.get_by(email=email_address)
     if existing_user and existing_user.disabled:
         LOG.d(
             f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
         )
-        return False
+        return EmailCannotBeUsedReason.EmailOfDisabledUser
 
     for existing_user in (
         User.query()
@@ -645,11 +654,22 @@ def email_can_be_used_as_mailbox(email_address: str) -> bool:
     ):
         if existing_user.disabled:
             LOG.d(
-                f"User {existing_user} is disabled and has a mailbox with {email_address}. Id cannot be used for other mailbox"
+                f"User {existing_user} is disabled and has a mailbox with {email_address}. It cannot be used for other mailbox"
             )
-            return False
+            return EmailCannotBeUsedReason.MailboxOfDisabledUser
 
-    return True
+    return None
+
+
+def email_can_be_used_as_mailbox(email_address: str) -> bool:
+    """Return True if an email can be used as a personal email.
+    Use the email domain as criteria. A domain can be used if it is not:
+    - one of ALIAS_DOMAINS
+    - one of PREMIUM_ALIAS_DOMAINS
+    - one of custom domains
+    - a disposable domain
+    """
+    return email_can_be_used_as_mailbox_with_reason(email_address) is None
 
 
 def is_invalid_mailbox_domain(domain):
