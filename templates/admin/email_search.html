@@ -16,7 +16,6 @@
         <th>Subscription</th>
         <th>Created At</th>
         <th>Updated At</th>
-        <th>Subdomain Quota</th>
         <th>Connected with Proton account</th>
         {% if user.delete_on %}
           <th>Actions</th>
@@ -52,25 +51,6 @@
         <td>{{ user.get_active_subscription() }}</td>
         <td>{{ user.created_at }}</td>
         <td>{{ user.updated_at }}</td>
-        <td>
-          <form class="d-inline" action="{{ url_for("admin.email_search.update_subdomain_quota") }}" method="POST">
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <div class="input-group input-group-sm" style="max-width: 120px;">
-              <input type="number"
-                     name="subdomain_quota"
-                     value="{{ user._subdomain_quota }}"
-                     class="form-control form-control-sm"
-                     min="0"
-                     max="1000"
-                     style="width: 60px;">
-              <button type="submit"
-                      onclick="return confirm('Are you sure you want to update the subdomain quota for this user?');"
-                      class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-check" style="font-size: 0.8rem;"></i>
-              </button>
-            </div>
-          </form>
-        </td>
         {% if pu %}
 
           <td class="flex">
@@ -102,6 +82,58 @@
       </tr>
     </tbody>
   </table>
+  {{ show_quotas(user) }}
+{%- endmacro %}
+{% macro show_quotas(user) -%}
+  <div class="border border-secondary mt-3 mb-3 p-3">
+    <h5>Quotas</h5>
+    <div class="mb-3">
+      <label for="subdomain_quota_{{ user.id }}" class="form-label">
+        <strong>Subdomain quota</strong>
+        <small class="text-muted">(Current: {{ user._subdomain_quota }})</small>
+      </label>
+      <form action="{{ url_for("admin.email_search.update_subdomain_quota") }}" method="POST">
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <div class="input-group" style="max-width: 300px;">
+          <input type="number"
+                 id="subdomain_quota_{{ user.id }}"
+                 name="subdomain_quota"
+                 value="{{ user._subdomain_quota }}"
+                 class="form-control"
+                 min="0"
+                 max="1000">
+          <button type="submit"
+                  onclick="return confirm('Are you sure you want to update the subdomain quota for this user?');"
+                  class="btn btn-outline-primary">
+            <i class="fa fa-save"></i> Update
+          </button>
+        </div>
+      </form>
+    </div>
+    <div class="mb-3">
+      <label for="directory_quota_{{ user.id }}" class="form-label">
+        <strong>Directory quota</strong>
+        <small class="text-muted">(Current: {{ user._directory_quota }})</small>
+      </label>
+      <form action="{{ url_for("admin.email_search.update_directory_quota") }}" method="POST">
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <div class="input-group" style="max-width: 300px;">
+          <input type="number"
+                 id="directory_quota_{{ user.id }}"
+                 name="directory_quota"
+                 value="{{ user._directory_quota }}"
+                 class="form-control"
+                 min="0"
+                 max="1000">
+          <button type="submit"
+                  onclick="return confirm('Are you sure you want to update the directory quota for this user?');"
+                  class="btn btn-outline-primary">
+            <i class="fa fa-save"></i> Update
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 {%- endmacro %}
 {% macro list_mailboxes(message, mbox_count, mboxes) %}
   <h4>
