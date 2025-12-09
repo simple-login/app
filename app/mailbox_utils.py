@@ -11,7 +11,7 @@ from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
     mailbox_already_used,
-    email_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox_with_reason,
     send_email,
     render,
     get_email_domain_part,
@@ -105,11 +105,13 @@ def check_email_for_mailbox(email, user):
             f"User {user} has tried to create mailbox with {email} but email is already used"
         )
         raise MailboxError("Email already used")
-    elif not email_can_be_used_as_mailbox(email):
-        LOG.i(
-            f"User {user} has tried to create mailbox with {email} but email is invalid"
-        )
-        raise MailboxError("Invalid email")
+    else:
+        reason = email_can_be_used_as_mailbox_with_reason(email)
+        if reason:
+            LOG.i(
+                f"User {user} has tried to create mailbox with {email} but it is invalid because {reason.value}"
+            )
+            raise MailboxError(f"Invalid email: {reason.value}")
 
 
 def delete_mailbox(
