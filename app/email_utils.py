@@ -579,8 +579,8 @@ class EmailCannotBeUsedReason(enum.Enum):
     ForbiddenMxRecordFound = (
         "We don't allow mailbox domains that point to these MX records"
     )
-    EmailOfDisabledUser = "This email is already registered for a different user whose account has been disabled"
-    MailboxOfDisabledUser = "This email is already registered as a mailbox of a different user whose account has been disabled"
+    EmailOfDisabledUser = "This email address is not allowed"
+    MailboxOfDisabledUser = "This email address is not allowed"
 
 
 def email_can_be_used_as_mailbox_with_reason(
