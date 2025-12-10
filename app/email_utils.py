@@ -573,7 +573,9 @@ class EmailCannotBeUsedReason(enum.Enum):
     InvalidEmailAddress = "This email address is not valid"
     InvalidEmailDomain = "This email domain is not valid"
     IsSimpleLoginDomain = "This email is a SimpleLogin domain"
-    IsCustomDomain = "This email is already registered as a custom domain"
+    IsCustomDomain = (
+        "This email address belongs to a custom domain that has already been registered"
+    )
     InvalidMailboxDomain = "We don't allow mailboxes using this domain"
     NoMxRecordFound = "We couldn't get any MX records configured for this domain"
     ForbiddenMxRecordFound = (
