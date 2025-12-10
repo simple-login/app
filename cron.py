@@ -64,6 +64,7 @@ from tasks.check_custom_domains import check_all_custom_domains
 from tasks.clean_alias_audit_log import cleanup_alias_audit_log
 from tasks.clean_user_audit_log import cleanup_user_audit_log
 from tasks.cleanup_alias import cleanup_alias
+from tasks.cleanup_expired_oauth_token import cleanup_expired_oauth_tokens
 from tasks.cleanup_old_imports import cleanup_old_imports
 from tasks.cleanup_old_jobs import cleanup_old_jobs
 from tasks.cleanup_old_notifications import cleanup_old_notifications
@@ -1225,6 +1226,11 @@ def clear_aliases_pending_to_be_deleted():
     cleanup_alias(oldest_valid)
 
 
+def clear_oauth_token_pending_to_be_deleted():
+    oldest_valid = arrow.now()
+    cleanup_expired_oauth_tokens(oldest_valid)
+
+
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
     parser = argparse.ArgumentParser()
@@ -1291,3 +1297,6 @@ if __name__ == "__main__":
         elif args.job == "clear_alias_delete_on":
             LOG.d("Clearing aliases pending to be deleted")
             clear_aliases_pending_to_be_deleted()
+        elif args.job == "clear_expired_oauth_token":
+            LOG.d("Clearing oauth_token entries pending to be deleted")
+            clear_oauth_token_pending_to_be_deleted()
