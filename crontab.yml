@@ -115,3 +115,10 @@ jobs:
     schedule: "0 * * * *" # Once every hour
     captureStderr: true
     concurrencyPolicy: Forbid
+
+  - name: SimpleLogin clear oauth_token expired entries
+    command: python /code/cron.py -j clear_expired_oauth_token
+    shell: /bin/bash
+    schedule: "0 * * * *" # Once every hour
+    captureStderr: true
+    concurrencyPolicy: Forbid
