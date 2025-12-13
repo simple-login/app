@@ -47,6 +47,11 @@
     border: solid #5675E2;
 }
 
+[data-theme="dark"] .highlight-row {
+    border: solid #6366f1;
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
 .arrow {
     width: 20px;
 }
@@ -65,6 +70,12 @@ em {
 .copy-btn {
     font-size: 0.6rem;
     line-height: 0.75;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .copy-btn:hover {
+    background-color: var(--primary-color);
+    color: #fff;
 }
 
 .cursor {
@@ -90,6 +101,10 @@ em {
 
 .dns-record {
     border: 1px dotted #E3156A;
+}
+
+[data-theme="dark"] .dns-record {
+    border-color: #f59e0b;
 }
 
 /**
@@ -139,12 +154,28 @@ textarea.parsley-success {
     border: 1px solid #D6E9C6;
 }
 
+[data-theme="dark"] input.parsley-success,
+[data-theme="dark"] select.parsley-success,
+[data-theme="dark"] textarea.parsley-success {
+    color: #6ee7b7;
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid #10b981;
+}
+
 input.parsley-error,
 select.parsley-error,
 textarea.parsley-error {
     color: #B94A48;
     background-color: #F2DEDE;
     border: 1px solid #EED3D7;
+}
+
+[data-theme="dark"] input.parsley-error,
+[data-theme="dark"] select.parsley-error,
+[data-theme="dark"] textarea.parsley-error {
+    color: #fca5a5;
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid #ef4444;
 }
 
 .parsley-errors-list {
@@ -160,6 +191,10 @@ textarea.parsley-error {
     -o-transition: all .3s ease-in;
     -moz-transition: all .3s ease-in;
     -webkit-transition: all .3s ease-in;
+}
+
+[data-theme="dark"] .parsley-errors-list {
+    color: #fca5a5;
 }
 
 .parsley-errors-list.filled {
@@ -192,9 +227,22 @@ textarea.parsley-error {
     border-color:#6d4aff;
     background-color:white;
     color:#6d4aff;
+    transition: all 0.3s ease;
 }
 .proton-button:hover {
     background-color: #1b1340;
+    color: white;
+}
+
+[data-theme="dark"] .proton-button {
+    background-color: rgba(109, 74, 255, 0.1);
+    border-color: #6d4aff;
+    color: #a78bfa;
+}
+
+[data-theme="dark"] .proton-button:hover {
+    background-color: #6d4aff;
+    color: white;
 }
 
 /* CSS technique for a horizontal line with words in the middle */
