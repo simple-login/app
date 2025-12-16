@@ -586,7 +586,7 @@ class EmailCannotBeUsedReason(enum.Enum):
 
 
 def email_can_be_used_as_mailbox_with_reason(
-    email_address: str
+    email_address: str,
 ) -> Optional[EmailCannotBeUsedReason]:
     try:
         domain = validate_email(
@@ -1229,11 +1229,11 @@ def should_disable(alias: Alias) -> (bool, str):
         .count()
     )
     # if more than 12 bounces in 24h -> disable alias
-    if nb_bounced_last_24h > 12:
-        return True, "+12 bounces in the last 24h"
+    if nb_bounced_last_24h > config.MAX_BOUNCES_1D:
+        return True, f"More than {config.MAX_BOUNCES_1D} bounces in the last 24h"
 
     # if more than 5 bounces but has +10 bounces last week -> disable alias
-    elif nb_bounced_last_24h > 5:
+    elif nb_bounced_last_24h > 1:
         one_week_ago = arrow.now().shift(days=-7)
         nb_bounced_7d_1d = (
             Session.query(EmailLog)
@@ -1246,10 +1246,10 @@ def should_disable(alias: Alias) -> (bool, str):
             .filter(EmailLog.alias_id == alias.id)
             .count()
         )
-        if nb_bounced_7d_1d > 10:
+        if nb_bounced_7d_1d > config.MAX_BOUNCES_1W:
             return (
                 True,
-                "+5 bounces in the last 24h and +10 bounces in the last 7 days",
+                f"More than {config.MAX_BOUNCES_1W} bounces in the last 7 days",
             )
     else:
         # alias level
