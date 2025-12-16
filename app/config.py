@@ -657,6 +657,9 @@ EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_
 # It defaults to the regular DB_URI in case it's needed
 EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
 
+MAX_BOUNCES_1D = int(os.environ.get("MAX_BOUNCES_1D", 12))
+MAX_BOUNCES_1W = int(os.environ.get("MAX_BOUNCES_1W", 10))
+
 
 def read_partner_dict(var: str) -> dict[int, str]:
     partner_value = get_env_dict(var)
