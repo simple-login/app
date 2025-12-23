@@ -11,11 +11,12 @@ from sqlalchemy import or_
 
 from app import config
 from app.db import Session
-from app.email_utils import send_welcome_email
+from app.email_utils import send_welcome_email, email_can_be_used_as_mailbox
 from app.errors import (
     AccountAlreadyLinkedToAnotherPartnerException,
     AccountIsUsingAliasAsEmail,
     AccountAlreadyLinkedToAnotherUserException,
+    EmailNotAllowed,
 )
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import UserPlanChanged, EventContent
@@ -188,6 +189,8 @@ class ClientMergeStrategy(ABC):
 class NewUserStrategy(ClientMergeStrategy):
     def process(self) -> LinkResult:
         canonical_email = canonicalize_email(self.link_request.email)
+        if not email_can_be_used_as_mailbox(canonical_email):
+            raise EmailNotAllowed()
         try:
             # Will create a new SL User with a random password
             new_user = User.create(

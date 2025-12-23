@@ -3,6 +3,7 @@ from typing import List
 import pytest
 from arrow import Arrow
 
+from app import config
 from app.account_linking import (
     process_link_case,
     process_login_case,
@@ -17,12 +18,20 @@ from app.account_linking import (
     ClientMergeStrategy,
 )
 from app.db import Session
-from app.errors import AccountAlreadyLinkedToAnotherPartnerException
-from app.models import Partner, PartnerUser, User, UserAuditLog
+from app.errors import AccountAlreadyLinkedToAnotherPartnerException, EmailNotAllowed
+from app.models import Partner, PartnerUser, User, UserAuditLog, InvalidMailboxDomain
 from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
 from tests.utils import random_email
+
+
+def setup_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = True
+
+
+def teardown_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = False
 
 
 def random_link_request(
@@ -118,6 +127,19 @@ def test_login_case_from_partner_with_uppercase_email():
         res.user.flags & User.FLAG_CREATED_FROM_PARTNER
     )
     assert res.user.activated is True
+
+
+def test_do_not_allow_to_link_invalid_emails():
+    partner = get_proton_partner()
+    invalid_domain = f"{random_string(10)}.com"
+    link_request = random_link_request(
+        external_user_id=random_string(),
+        from_partner=True,
+        email=f"user@{invalid_domain}",
+    )
+    InvalidMailboxDomain.create(domain=invalid_domain, flush=True)
+    with pytest.raises(EmailNotAllowed):
+        process_login_case(link_request, partner)
 
 
 def test_login_case_from_web():
