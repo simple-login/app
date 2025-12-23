@@ -128,6 +128,7 @@ class SLModelView(sqla.ModelView):
             model=model.__class__.__name__,
             model_id=model.id,
             action=AuditLogActionEnum.delete_object.value,
+            data={},
         )
 
 
