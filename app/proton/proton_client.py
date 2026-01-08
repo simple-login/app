@@ -10,7 +10,7 @@ from app.config import PROTON_EXTRA_HEADER_NAME, PROTON_EXTRA_HEADER_VALUE
 from app.errors import ProtonAccountNotVerified
 from app.log import LOG
 
-_APP_VERSION = "OauthClient_1.0.0"
+_APP_VERSION = "Other_1.0.0"
 
 PROTON_ERROR_CODE_HV_NEEDED = 9001
 
