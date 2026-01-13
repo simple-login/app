@@ -1,8 +1,10 @@
 import os
+import time
 from io import BytesIO
 from typing import Union
 
 import gnupg
+import newrelic.agent
 import pgpy
 from memory_profiler import memory_usage
 from pgpy import PGPMessage
@@ -18,6 +20,50 @@ gpg.encoding = "utf-8"
 
 class PGPException(Exception):
     pass
+
+
+def _get_implementation_name(force_use_rust: bool) -> str:
+    """Return the implementation name for metrics."""
+    if force_use_rust or USE_RUST_PGP:
+        return "rust"
+    return "legacy"
+
+
+def _record_pgp_metric(
+    operation: str,
+    implementation: str,
+    success: bool,
+    elapsed: float,
+    is_fallback: bool = False,
+):
+    """Record PGP operation metrics to NewRelic."""
+    # Record timing metric
+    metric_suffix = f"_{implementation}"
+    if is_fallback:
+        metric_suffix = f"_fallback{metric_suffix}"
+    newrelic.agent.record_custom_metric(
+        f"Custom/pgp_{operation}_time{metric_suffix}", elapsed
+    )
+
+    # Record count metrics for easier aggregation
+    status = "success" if success else "failure"
+    newrelic.agent.record_custom_metric(
+        f"Custom/pgp_{operation}_count_{implementation}_{status}", 1
+    )
+
+    # Record detailed event for analysis
+    event_name = f"Pgp{operation.title()}"
+    if is_fallback:
+        event_name += "Fallback"
+    newrelic.agent.record_custom_event(
+        event_name,
+        {
+            "implementation": implementation,
+            "success": success,
+            "duration_ms": elapsed * 1000,
+            "is_fallback": is_fallback,
+        },
+    )
 
 
 def load_public_key(
@@ -82,9 +128,12 @@ def encrypt_file(
     data: BytesIO, fingerprint: str, ctx: PgpContext, force_use_rust: bool = False
 ) -> str:
     LOG.d("encrypt for %s", fingerprint)
+    implementation = _get_implementation_name(force_use_rust)
+    start_time = time.time()
+    success = False
 
-    if force_use_rust or USE_RUST_PGP:
-        try:
+    try:
+        if force_use_rust or USE_RUST_PGP:
             # Read data from BytesIO
             data_bytes = data.read()
             # Check if the key is already loaded
@@ -102,40 +151,48 @@ def encrypt_file(
                     LOG.d("(re-)load public key for %s", contact)
                     ctx.load_public_key(contact.pgp_public_key)
 
-            return ctx.encrypt(data_bytes, fingerprint)
-        except PgpException as e:
-            raise PGPException(f"Cannot encrypt: {e}") from e
-    else:
-        mem_usage = memory_usage(-1, interval=1, timeout=1)[0]
-        LOG.d("mem_usage %s", mem_usage)
+            result = ctx.encrypt(data_bytes, fingerprint)
+            success = True
+            return result
+        else:
+            mem_usage = memory_usage(-1, interval=1, timeout=1)[0]
+            LOG.d("mem_usage %s", mem_usage)
 
-        r = gpg.encrypt_file(data, fingerprint, always_trust=True)
-        if not r.ok:
-            # maybe the fingerprint is not loaded on this host, try to load it
-            found = False
-            # searching for the key in mailbox
-            mailbox = Mailbox.get_by(pgp_finger_print=fingerprint, disable_pgp=False)
-            if mailbox:
-                LOG.d("(re-)load public key for %s", mailbox)
-                load_public_key(mailbox.pgp_public_key, ctx)
-                found = True
-
-            # searching for the key in contact
-            contact = Contact.get_by(pgp_finger_print=fingerprint)
-            if contact:
-                LOG.d("(re-)load public key for %s", contact)
-                load_public_key(contact.pgp_public_key, ctx)
-                found = True
-
-            if found:
-                LOG.d("retry to encrypt")
-                data.seek(0)
-                r = gpg.encrypt_file(data, fingerprint, always_trust=True)
-
+            r = gpg.encrypt_file(data, fingerprint, always_trust=True)
             if not r.ok:
-                raise PGPException(f"Cannot encrypt, status: {r.status}")
+                # maybe the fingerprint is not loaded on this host, try to load it
+                found = False
+                # searching for the key in mailbox
+                mailbox = Mailbox.get_by(
+                    pgp_finger_print=fingerprint, disable_pgp=False
+                )
+                if mailbox:
+                    LOG.d("(re-)load public key for %s", mailbox)
+                    load_public_key(mailbox.pgp_public_key, ctx)
+                    found = True
 
-        return str(r)
+                # searching for the key in contact
+                contact = Contact.get_by(pgp_finger_print=fingerprint)
+                if contact:
+                    LOG.d("(re-)load public key for %s", contact)
+                    load_public_key(contact.pgp_public_key, ctx)
+                    found = True
+
+                if found:
+                    LOG.d("retry to encrypt")
+                    data.seek(0)
+                    r = gpg.encrypt_file(data, fingerprint, always_trust=True)
+
+                if not r.ok:
+                    raise PGPException(f"Cannot encrypt, status: {r.status}")
+
+            success = True
+            return str(r)
+    except PgpException as e:
+        raise PGPException(f"Cannot encrypt: {e}") from e
+    finally:
+        elapsed = time.time() - start_time
+        _record_pgp_metric("encrypt", implementation, success, elapsed)
 
 
 def encrypt_file_with_pgpy(
@@ -148,17 +205,31 @@ def encrypt_file_with_pgpy(
         When USE_RUST_PGP is True: str (armored ciphertext)
     """
     if force_use_rust or USE_RUST_PGP:
-        try:
-            return ctx.encrypt_with_key(data, public_key)
-        except PgpException as e:
-            raise PGPException(f"Cannot encrypt with key: {e}") from e
+        implementation = "rust"
     else:
-        key = pgpy.PGPKey()
-        key.parse(public_key)
-        msg = pgpy.PGPMessage.new(data, encoding="utf-8")
-        r = key.encrypt(msg)
+        implementation = "pgpy"
+    success = False
+    start_time = time.time()
 
-        return r
+    try:
+        if force_use_rust or USE_RUST_PGP:
+            result = ctx.encrypt_with_key(data, public_key)
+            success = True
+            return result
+        else:
+            key = pgpy.PGPKey()
+            key.parse(public_key)
+            msg = pgpy.PGPMessage.new(data, encoding="utf-8")
+            r = key.encrypt(msg)
+            success = True
+            return r
+    except PgpException as e:
+        raise PGPException(f"Cannot encrypt with key: {e}") from e
+    finally:
+        elapsed = time.time() - start_time
+        _record_pgp_metric(
+            "encrypt", implementation, success, elapsed, is_fallback=True
+        )
 
 
 # Initialize signing key for legacy implementation
@@ -179,19 +250,29 @@ def create_pgp_context() -> PgpContext:
 def sign_data(
     data: Union[str, bytes], ctx: PgpContext, force_use_rust: bool = False
 ) -> str:
-    if force_use_rust or USE_RUST_PGP:
-        # Ensure the signing key is loaded
-        if PGP_SENDER_PRIVATE_KEY:
-            ctx.set_signing_key(PGP_SENDER_PRIVATE_KEY)
-        try:
+    implementation = _get_implementation_name(force_use_rust)
+    success = False
+    start_time = time.time()
+
+    try:
+        if force_use_rust or USE_RUST_PGP:
+            # Ensure the signing key is loaded
+            if PGP_SENDER_PRIVATE_KEY:
+                ctx.set_signing_key(PGP_SENDER_PRIVATE_KEY)
             if isinstance(data, str):
                 data = data.encode("utf-8")
-            return ctx.sign_detached(data)
-        except PgpException as e:
-            raise PGPException(f"Cannot sign data: {e}") from e
-    else:
-        signature = str(gpg.sign(data, keyid=_SIGN_KEY_ID, detach=True))
-        return signature
+            result = ctx.sign_detached(data)
+            success = True
+            return result
+        else:
+            signature = str(gpg.sign(data, keyid=_SIGN_KEY_ID, detach=True))
+            success = True
+            return signature
+    except PgpException as e:
+        raise PGPException(f"Cannot sign data: {e}") from e
+    finally:
+        elapsed = time.time() - start_time
+        _record_pgp_metric("sign", implementation, success, elapsed)
 
 
 def sign_data_with_pgpy(data: Union[str, bytes]) -> str:
@@ -200,7 +281,15 @@ def sign_data_with_pgpy(data: Union[str, bytes]) -> str:
     Note: This function is legacy-only and is kept for fallback purposes.
     When USE_RUST_PGP is True, use sign_data() instead.
     """
-    key = pgpy.PGPKey()
-    key.parse(PGP_SENDER_PRIVATE_KEY)
-    signature = str(key.sign(data))
-    return signature
+    success = False
+    start_time = time.time()
+
+    try:
+        key = pgpy.PGPKey()
+        key.parse(PGP_SENDER_PRIVATE_KEY)
+        signature = str(key.sign(data))
+        success = True
+        return signature
+    finally:
+        elapsed = time.time() - start_time
+        _record_pgp_metric("sign", "pgpy", success, elapsed, is_fallback=True)
