@@ -42,7 +42,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional
 
 import newrelic.agent
 import sentry_sdk
@@ -180,12 +180,11 @@ from app.pgp_utils import (
     create_pgp_context,
 )
 
-if TYPE_CHECKING:
-    from sl_pgp import PgpContext
 
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
+from sl_pgp import PgpContext
 
 
 @sentry_sdk.trace
