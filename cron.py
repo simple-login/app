@@ -55,7 +55,7 @@ from app.models import (
     PartnerUser,
     ApiToCookieToken,
 )
-from app.pgp_utils import load_public_key_and_check, PGPException
+from app.pgp_utils import load_public_key_and_check, PGPException, create_pgp_context
 from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email
@@ -892,7 +892,10 @@ def check_mailbox_valid_pgp_keys():
         LOG.d(f"Checking PGP key for {mailbox}")
 
         try:
-            load_public_key_and_check(mailbox.pgp_public_key)
+            # Create a fresh context for each mailbox check so we don't load all keys onto a single context
+            # that will not use them
+            ctx = create_pgp_context()
+            load_public_key_and_check(mailbox.pgp_public_key, ctx)
         except PGPException:
             LOG.i(f"{mailbox} PGP key invalid")
             send_email(
