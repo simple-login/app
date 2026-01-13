@@ -19,7 +19,7 @@ from app.mailbox_utils import (
 )
 from app.models import AuthorizedAddress
 from app.models import Mailbox
-from app.pgp_utils import PGPException, load_public_key_and_check
+from app.pgp_utils import PGPException, load_public_key_and_check, create_pgp_context
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email, CSRFValidationForm
 
@@ -160,7 +160,7 @@ def mailbox_detail_route(mailbox_id):
                 mailbox.pgp_public_key = request.form.get("pgp")
                 try:
                     mailbox.pgp_finger_print = load_public_key_and_check(
-                        mailbox.pgp_public_key
+                        mailbox.pgp_public_key, create_pgp_context()
                     )
                 except PGPException:
                     flash("Cannot add the public key, please verify it", "error")

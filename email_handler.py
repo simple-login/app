@@ -42,7 +42,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, TYPE_CHECKING
 
 import newrelic.agent
 import sentry_sdk
@@ -177,7 +177,12 @@ from app.pgp_utils import (
     sign_data_with_pgpy,
     sign_data,
     load_public_key_and_check,
+    create_pgp_context,
 )
+
+if TYPE_CHECKING:
+    from sl_pgp import PgpContext
+
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
@@ -403,9 +408,17 @@ def replace_header_when_reply(msg: Message, alias: Alias, header: str):
 
 @sentry_sdk.trace
 def prepare_pgp_message(
-    orig_msg: Message, pgp_fingerprint: str, public_key: str, can_sign: bool = False
+    orig_msg: Message,
+    pgp_fingerprint: str,
+    public_key: str,
+    can_sign: bool = False,
+    ctx: "PgpContext | None" = None,
 ) -> Message:
     msg = MIMEMultipart("encrypted", protocol="application/pgp-encrypted")
+
+    # Create a PgpContext for this operation if not provided
+    if ctx is None:
+        ctx = create_pgp_context()
 
     # clone orig message to avoid modifying it
     clone_msg = copy(orig_msg)
@@ -438,7 +451,7 @@ def prepare_pgp_message(
 
     if can_sign and PGP_SENDER_PRIVATE_KEY:
         LOG.d("Sign msg")
-        clone_msg = sign_msg(clone_msg)
+        clone_msg = sign_msg(clone_msg, ctx)
 
     # use pgpy as fallback
     second = MIMEApplication(
@@ -450,16 +463,18 @@ def prepare_pgp_message(
     # use pgpy as fallback
     msg_bytes = message_to_bytes(clone_msg)
     try:
-        encrypted_data = pgp_utils.encrypt_file(BytesIO(msg_bytes), pgp_fingerprint)
+        encrypted_data = pgp_utils.encrypt_file(
+            BytesIO(msg_bytes), pgp_fingerprint, ctx
+        )
         second.set_payload(encrypted_data)
     except PGPException:
         LOG.w(
             "Cannot encrypt using python-gnupg, check if public key is valid and try with pgpy"
         )
         # check if the public key is valid
-        load_public_key_and_check(public_key)
+        load_public_key_and_check(public_key, ctx)
 
-        encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key)
+        encrypted = pgp_utils.encrypt_file_with_pgpy(msg_bytes, public_key, ctx)
         second.set_payload(str(encrypted))
         LOG.i(
             f"encryption works with pgpy and not with python-gnupg, public key {public_key}"
@@ -471,7 +486,7 @@ def prepare_pgp_message(
 
 
 @sentry_sdk.trace
-def sign_msg(msg: Message) -> Message:
+def sign_msg(msg: Message, ctx: PgpContext) -> Message:
     container = MIMEMultipart(
         "signed", protocol="application/pgp-signature", micalg="pgp-sha256"
     )
@@ -483,7 +498,7 @@ def sign_msg(msg: Message) -> Message:
     signature.add_header("Content-Disposition", 'attachment; filename="signature.asc"')
 
     try:
-        payload = sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n"))
+        payload = sign_data(message_to_bytes(msg).replace(b"\n", b"\r\n"), ctx)
 
         if not payload:
             raise PGPException("Empty signature by gnupg")
