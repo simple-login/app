@@ -42,7 +42,7 @@ def _record_pgp_metric(
     if is_fallback:
         metric_suffix = f"_fallback{metric_suffix}"
     newrelic.agent.record_custom_metric(
-        f"Custom/pgp_{operation}_time{metric_suffix}", elapsed
+        f"Custom/pgp_{operation}{metric_suffix}_time", elapsed
     )
 
     # Record count metrics for easier aggregation
