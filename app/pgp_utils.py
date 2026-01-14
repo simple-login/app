@@ -45,12 +45,6 @@ def _record_pgp_metric(
         f"Custom/pgp_{operation}{metric_suffix}_time", elapsed
     )
 
-    # Record count metrics for easier aggregation
-    status = "success" if success else "failure"
-    newrelic.agent.record_custom_metric(
-        f"Custom/pgp_{operation}_count_{implementation}_{status}", 1
-    )
-
     # Record detailed event for analysis
     event_name = f"Pgp{operation.title()}"
     if is_fallback:
@@ -59,7 +53,7 @@ def _record_pgp_metric(
         event_name,
         {
             "implementation": implementation,
-            "success": "success" if success else "fail"
+            "success": "success" if success else "fail",
             "duration_ms": elapsed * 1000,
             "is_fallback": "fallback" if is_fallback else "direct",
         },
