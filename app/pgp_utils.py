@@ -61,7 +61,7 @@ def _record_pgp_metric(
             "implementation": implementation,
             "success": "success" if success else "fail"
             "duration_ms": elapsed * 1000,
-            "is_fallback": is_fallback,
+            "is_fallback": "fallback" if is_fallback else "direct",
         },
     )
 
