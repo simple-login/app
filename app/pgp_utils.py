@@ -59,7 +59,7 @@ def _record_pgp_metric(
         event_name,
         {
             "implementation": implementation,
-            "success": success,
+            "success": "success" if success else "fail"
             "duration_ms": elapsed * 1000,
             "is_fallback": is_fallback,
         },
