@@ -54,7 +54,6 @@ def _record_pgp_metric(
         {
             "implementation": implementation,
             "success": "success" if success else "fail",
-            "duration_ms": elapsed * 1000,
             "is_fallback": "fallback" if is_fallback else "direct",
         },
     )
@@ -253,6 +252,10 @@ def sign_data(
             # Ensure the signing key is loaded
             if PGP_SENDER_PRIVATE_KEY:
                 ctx.set_signing_key(PGP_SENDER_PRIVATE_KEY)
+            else:
+                raise Exception(
+                    "Tried to sign data but PGP_SENDER_PRIVATE_KEY is not set"
+                )
             if isinstance(data, str):
                 data = data.encode("utf-8")
             result = ctx.sign_detached(data)
