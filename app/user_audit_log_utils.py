@@ -18,6 +18,7 @@ class UserAuditLogAction(Enum):
     VerifyMailbox = "verify_mailbox"
     UpdateMailbox = "update_mailbox"
     DeleteMailbox = "delete_mailbox"
+    MailboxDisablePgp = "mailbox_disable_pgp"
 
     CreateCustomDomain = "create_custom_domain"
     VerifyCustomDomain = "verify_custom_domain"
