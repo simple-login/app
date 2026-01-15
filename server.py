@@ -19,7 +19,6 @@ from flask import (
     session,
     g,
 )
-from flask_admin import Admin
 from flask_cors import cross_origin, CORS
 from flask_login import current_user
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -27,28 +26,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app import config, constants
-from app.admin_model import (
-    SLAdminIndexView,
-    UserAdmin,
-    AliasAdmin,
-    MailboxAdmin,
-    ManualSubscriptionAdmin,
-    CouponAdmin,
-    CustomDomainAdmin,
-    AdminAuditLogAdmin,
-    ProviderComplaintAdmin,
-    NewsletterAdmin,
-    NewsletterUserAdmin,
-    DailyMetricAdmin,
-    MetricAdmin,
-    InvalidMailboxDomainAdmin,
-    EmailSearchAdmin,
-    CustomDomainSearchAdmin,
-    AbuserLookupAdmin,
-    ForbiddenMxIpAdmin,
-    MailboxSearchAdmin,
-    EmailDomainSearchAdmin,
-)
+from app.admin import init_admin
 from app.api.base import api_bp
 from app.auth.base import auth_bp
 from app.build_info import SHA1
@@ -88,21 +66,10 @@ from app.jose_utils import get_jwk_key
 from app.log import LOG
 from app.models import (
     User,
-    Alias,
-    CustomDomain,
-    Mailbox,
     EmailLog,
     Contact,
-    ManualSubscription,
-    Coupon,
-    AdminAuditLog,
-    ProviderComplaint,
     Newsletter,
     NewsletterUser,
-    DailyMetric,
-    Metric2,
-    InvalidMailboxDomain,
-    ForbiddenMxIp,
 )
 from app.monitor.base import monitor_bp
 from app.monitor_utils import send_version_event
@@ -451,43 +418,6 @@ def jinja2_filter(app):
 
 def init_extensions(app: Flask):
     login_manager.init_app(app)
-
-
-def init_admin(app):
-    admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
-
-    admin.init_app(app, index_view=SLAdminIndexView())
-    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="admin.email_search"))
-    admin.add_view(
-        MailboxSearchAdmin(name="Mailbox search", endpoint="admin.mailbox_search")
-    )
-    admin.add_view(
-        CustomDomainSearchAdmin(
-            name="Custom domain search", endpoint="admin.custom_domain_search"
-        )
-    )
-    admin.add_view(
-        EmailDomainSearchAdmin(
-            name="Email domain search", endpoint="admin.email_domain_search"
-        )
-    )
-    admin.add_view(
-        AbuserLookupAdmin(name="Abuser Lookup", endpoint="admin.abuser_lookup")
-    )
-    admin.add_view(UserAdmin(User, Session))
-    admin.add_view(AliasAdmin(Alias, Session))
-    admin.add_view(MailboxAdmin(Mailbox, Session))
-    admin.add_view(CouponAdmin(Coupon, Session))
-    admin.add_view(ManualSubscriptionAdmin(ManualSubscription, Session))
-    admin.add_view(CustomDomainAdmin(CustomDomain, Session))
-    admin.add_view(AdminAuditLogAdmin(AdminAuditLog, Session))
-    admin.add_view(ProviderComplaintAdmin(ProviderComplaint, Session))
-    admin.add_view(NewsletterAdmin(Newsletter, Session))
-    admin.add_view(NewsletterUserAdmin(NewsletterUser, Session))
-    admin.add_view(DailyMetricAdmin(DailyMetric, Session))
-    admin.add_view(MetricAdmin(Metric2, Session))
-    admin.add_view(InvalidMailboxDomainAdmin(InvalidMailboxDomain, Session))
-    admin.add_view(ForbiddenMxIpAdmin(ForbiddenMxIp, Session))
 
 
 def register_custom_commands(app):

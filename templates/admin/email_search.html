@@ -1,5 +1,13 @@
 {% extends 'admin/master.html' %}
 
+{% macro highlight_email(email, query, is_regex) -%}
+  {% if is_regex %}
+    <mark>{{ email }}</mark>
+  {% else %}
+    {{ email }}
+  {% endif %}
+{%- endmacro %}
+
 {% macro show_user(user) -%}
   <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
   {% set pu = helper.partner_user(user) %}
@@ -26,7 +34,7 @@
       <tr>
         <td>{{ user.id }}</td>
         <td>
-          <a href="?query={{ user.email }}">{{ user.email }}</a>
+          <a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a>
         </td>
         {% if user.activated %}
 
@@ -54,7 +62,7 @@
         {% if pu %}
 
           <td class="flex">
-            <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
+            <a href="?query={{ pu.partner_email }}&search_type=email">{{ pu.partner_email }}</a>
             <form class="d-inline"
                   action="{{ url_for("admin.email_search.delete_partner_link") }}"
                   method="POST">
@@ -135,10 +143,11 @@
     </div>
   </div>
 {%- endmacro %}
-{% macro list_mailboxes(message, mbox_count, mboxes) %}
+{% macro list_mailboxes(message, mbox_count, mboxes, is_regex) %}
   <h4>
     {{ mbox_count }} {{ message }}.
     {% if mbox_count>10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
   </h4>
   <table class="table">
     <thead>
@@ -155,7 +164,9 @@
         <tr>
           <td>{{ mailbox.id }}</td>
           <td>
-            <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
+            <a href="?query={{ mailbox.email }}&search_type=email">
+              {{ highlight_email(mailbox.email, query, is_regex) }}
+            </a>
           </td>
           <td>{{ "Yes" if mailbox.verified else "No" }}</td>
           <td>{{ mailbox.created_at }}</td>
@@ -164,10 +175,11 @@
     </tbody>
   </table>
 {% endmacro %}
-{% macro list_alias(alias_count, aliases) %}
+{% macro list_aliases(alias_count, aliases, is_regex) %}
   <h4>
     {{ alias_count }} Aliases found.
     {% if alias_count>10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
   </h4>
   <table class="table">
     <thead>
@@ -184,7 +196,9 @@
         <tr>
           <td>{{ alias.id }}</td>
           <td>
-            <a href="?query={{ alias.email }}">{{ alias.email }}</a>
+            <a href="?query={{ alias.email }}&search_type=alias">
+              {{ highlight_email(alias.email, query, is_regex) }}
+            </a>
           </td>
           <td>{{ "Yes" if alias.enabled else "No" }}</td>
           <td>{{ alias.created_at }}</td>
@@ -193,8 +207,11 @@
     </tbody>
   </table>
 {% endmacro %}
-{% macro show_deleted_alias(deleted_alias) -%}
-  <h4>Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.</h4>
+{% macro show_deleted_alias(deleted_alias, is_regex) -%}
+  <h4>
+    Deleted Alias {{ highlight_email(deleted_alias.email, query, is_regex) }} with ID {{ deleted_alias.id }}.
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
+  </h4>
   <table class="table">
     <thead>
       <tr>
@@ -207,17 +224,45 @@
     <tbody>
       <tr>
         <td>{{ deleted_alias.id }}</td>
-        <td>{{ deleted_alias.email }}</td>
+        <td>{{ highlight_email(deleted_alias.email, query, is_regex) }}</td>
         <td>{{ deleted_alias.created_at }}</td>
         <td>{{ deleted_alias.reason }}</td>
       </tr>
     </tbody>
   </table>
 {%- endmacro %}
-{% macro show_domain_deleted_alias(dom_deleted_alias) -%}
+{% macro list_deleted_aliases(deleted_aliases, is_regex) %}
   <h4>
-    Domain Deleted Alias {{ dom_deleted_alias.email }} with ID {{ dom_deleted_alias.id }} for
+    {{ deleted_aliases|length }} Deleted Aliases found.
+    {% if deleted_aliases|length > 10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Deleted Alias ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Deleted At</th>
+        <th scope="col">Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for deleted_alias in deleted_aliases %}
+        <tr>
+          <td>{{ deleted_alias.id }}</td>
+          <td>{{ highlight_email(deleted_alias.email, query, is_regex) }}</td>
+          <td>{{ deleted_alias.created_at }}</td>
+          <td>{{ deleted_alias.reason }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+{% macro show_domain_deleted_alias(dom_deleted_alias, is_regex) -%}
+  <h4>
+    Domain Deleted Alias {{ highlight_email(dom_deleted_alias.email, query, is_regex) }} with ID {{ dom_deleted_alias.id }} for
     domain {{ dom_deleted_alias.domain.domain }}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
   </h4>
   <table class="table">
     <thead>
@@ -234,7 +279,7 @@
     <tbody>
       <tr>
         <td>{{ dom_deleted_alias.id }}</td>
-        <td>{{ dom_deleted_alias.email }}</td>
+        <td>{{ highlight_email(dom_deleted_alias.email, query, is_regex) }}</td>
         <td>{{ dom_deleted_alias.domain.domain }}</td>
         <td>{{ dom_deleted_alias.domain.id }}</td>
         <td>{{ dom_deleted_alias.domain.user_id }}</td>
@@ -242,8 +287,39 @@
       </tr>
     </tbody>
   </table>
-  {{ show_user(data.domain_deleted_alias.domain.user) }}
+  {{ show_user(dom_deleted_alias.domain.user) }}
 {%- endmacro %}
+{% macro list_domain_deleted_aliases(domain_deleted_aliases, is_regex) %}
+  <h4>
+    {{ domain_deleted_aliases|length }} Domain Deleted Aliases found.
+    {% if domain_deleted_aliases|length > 10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Deleted Alias ID</th>
+        <th scope="col">Email</th>
+        <th scope="col">Domain</th>
+        <th scope="col">Domain ID</th>
+        <th scope="col">Domain owner user ID</th>
+        <th scope="col">Deleted At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dom_deleted_alias in domain_deleted_aliases %}
+        <tr>
+          <td>{{ dom_deleted_alias.id }}</td>
+          <td>{{ highlight_email(dom_deleted_alias.email, query, is_regex) }}</td>
+          <td>{{ dom_deleted_alias.domain.domain }}</td>
+          <td>{{ dom_deleted_alias.domain.id }}</td>
+          <td>{{ dom_deleted_alias.domain.user_id }}</td>
+          <td>{{ dom_deleted_alias.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
 {% macro list_alias_audit_log(alias_audit_log) %}
   <h4>Alias Audit Log</h4>
   <table class="table">
@@ -264,7 +340,7 @@
           <td>{{ entry.user_id }}</td>
           <td>{{ entry.alias_id }}</td>
           <td>
-            <a href="?query={{ entry.alias_email }}">{{ entry.alias_email }}</a>
+            <a href="?query={{ entry.alias_email }}&search_type=alias">{{ entry.alias_email }}</a>
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
@@ -290,7 +366,7 @@
 
         <tr>
           <td>
-            <a href="?query={{ entry.user_email }}">{{ entry.user_email }}</a>
+            <a href="?query={{ entry.user_email }}&search_type=email">{{ entry.user_email }}</a>
           </td>
           <td>{{ entry.action }}</td>
           <td>{{ entry.message }}</td>
@@ -300,79 +376,236 @@
     </tbody>
   </table>
 {% endmacro %}
+{% macro list_users(users, is_regex) %}
+  <h4>
+    {{ users|length }} Users found.
+    {% if users|length > 10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>User ID</th>
+        <th>Email</th>
+        <th>Verified</th>
+        <th>Status</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>
+            <a href="?query={{ user.email }}&search_type=email">
+              {{ highlight_email(user.email, query, is_regex) }}
+            </a>
+          </td>
+          <td>{{ "Yes" if user.activated else "No" }}</td>
+          <td>{{ "Disabled" if user.disabled else "Enabled" }}</td>
+          <td>{{ user.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+{% macro list_partner_users(partner_users, is_regex) %}
+  <h4>
+    {{ partner_users|length }} Partner Users found.
+    {% if partner_users|length > 10 %}Showing only the last 10.{% endif %}
+    {% if is_regex %}<span class="badge bg-info">Found by regex</span>{% endif %}
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Partner User ID</th>
+        <th>Partner Email</th>
+        <th>User ID</th>
+        <th>User Email</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pu in partner_users %}
+        <tr>
+          <td>{{ pu.id }}</td>
+          <td>{{ highlight_email(pu.partner_email, query, is_regex) }}</td>
+          <td>{{ pu.user.id }}</td>
+          <td>
+            <a href="?query={{ pu.user.email }}&search_type=email">{{ pu.user.email }}</a>
+          </td>
+          <td>{{ pu.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
 {% block body %}
 
   <div class="border border-dark border-2 mt-1 mb-2 p-3">
     <form method="get">
+      <div class="form-group mb-3">
+        <label class="form-label"><strong>Search type:</strong></label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="search_type" id="search_type_email" value="email" {{ 'checked' if search_type == 'email' else '' }}>
+          <label class="form-check-label" for="search_type_email">Email (Mailboxes, Users, Partner Users)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="search_type" id="search_type_alias" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
+          <label class="form-check-label" for="search_type_alias">Alias (Aliases, Deleted Aliases)</label>
+        </div>
+      </div>
       <div class="form-group">
-        <label for="email">UserID or Email to search:</label>
+        <label for="query">Query (exact email, user ID, or POSIX regex pattern):</label>
         <input type="text"
                class="form-control"
                name="query"
-               value="{{ email or '' }}" />
+               id="query"
+               value="{{ query or '' }}"
+               placeholder="e.g., user@example.com or .*@example\.com" />
+        <small class="form-text text-muted">
+          First searches for exact match. If not found, uses POSIX regex (limited to 10 results).
+        </small>
       </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
+      <button type="submit" class="btn btn-primary mt-2">Submit</button>
     </form>
   </div>
-  {% if data.no_match and email %}
 
+  {% if data.no_match and query %}
     <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">No user, alias or mailbox found for {{ email }}</div>
-  {% endif %}
-  {% if data.alias %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
-      {{ list_alias(1,[data.alias]) }}
-      {{ list_alias_audit_log(data.alias_audit_log) }}
-      {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias) , helper.alias_mailboxes(data.alias)) }}
-      {{ show_user(data.alias.user) }}
+         role="alert">
+      No results found for "{{ query }}" in {{ 'aliases' if search_type == 'alias' else 'emails' }}
     </div>
   {% endif %}
-  {% if data.user %}
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-      {{ show_user(data.user) }}
-      {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
-      {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
-    </div>
+  {# Alias search results #}
+  {% if search_type == 'alias' %}
+
+    {% if data.aliases %}
+      <div class="border border-dark border-2 mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.aliases_found_by_regex %}
+            Found {{ data.aliases|length }} Aliases matching regex "{{ query }}"
+          {% else %}
+            Found Alias {{ data.aliases[0].email }}
+          {% endif %}
+        </h3>
+        {{ list_aliases(data.aliases|length, data.aliases, data.aliases_found_by_regex) }}
+        {% if data.alias_audit_log %}
+          {{ list_alias_audit_log(data.alias_audit_log) }}
+        {% endif %}
+        {% if not data.aliases_found_by_regex and data.aliases|length == 1 %}
+          {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]), helper.alias_mailboxes(data.aliases[0]), false) }}
+          {{ show_user(data.aliases[0].user) }}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if data.deleted_aliases %}
+      <div class="border border-dark mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.deleted_aliases_found_by_regex %}
+            Found {{ data.deleted_aliases|length }} Deleted Aliases matching regex "{{ query }}"
+          {% else %}
+            Found Deleted Alias {{ data.deleted_aliases[0].email }}
+          {% endif %}
+        </h3>
+        {{ list_deleted_aliases(data.deleted_aliases, data.deleted_aliases_found_by_regex) }}
+        {% if data.deleted_alias_audit_log %}
+          {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if data.domain_deleted_aliases %}
+      <div class="border border-dark mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.domain_deleted_aliases_found_by_regex %}
+            Found {{ data.domain_deleted_aliases|length }} Domain Deleted Aliases matching regex "{{ query }}"
+          {% else %}
+            Found Domain Deleted Alias {{ data.domain_deleted_aliases[0].email }}
+          {% endif %}
+        </h3>
+        {% if data.domain_deleted_aliases_found_by_regex %}
+          {{ list_domain_deleted_aliases(data.domain_deleted_aliases, data.domain_deleted_aliases_found_by_regex) }}
+        {% else %}
+          {{ show_domain_deleted_alias(data.domain_deleted_aliases[0], data.domain_deleted_aliases_found_by_regex) }}
+          {% if data.domain_deleted_alias_audit_log %}
+            {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endif %}
+
+  {% else %}
+    {# Email search results #}
+
+    {% if data.users %}
+      <div class="border border-dark border-2 mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.users_found_by_regex %}
+            Found {{ data.users|length }} Users matching regex "{{ query }}"
+          {% else %}
+            Found User {{ data.users[0].email }}
+          {% endif %}
+        </h3>
+        {% if data.users_found_by_regex %}
+          {{ list_users(data.users, data.users_found_by_regex) }}
+        {% else %}
+          {{ show_user(data.users[0]) }}
+          {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.users[0]), helper.mailbox_list(data.users[0]), false) }}
+          {{ list_aliases(helper.alias_count(data.users[0]), helper.alias_list(data.users[0]), false) }}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if data.user_audit_log and not data.users %}
+      <div class="border border-dark border-2 mt-1 mb-2 p-3">
+        <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
+        {{ list_user_audit_log(data.user_audit_log) }}
+      </div>
+    {% endif %}
+
+    {% if data.mailboxes %}
+      <div class="border border-dark border-2 mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.mailboxes_found_by_regex %}
+            Found {{ data.mailbox_count }} Mailboxes matching regex "{{ query }}"
+          {% else %}
+            Found {{ data.mailbox_count }} Mailbox(es) for {{ query }}
+          {% endif %}
+        </h3>
+        {{ list_mailboxes("Mailboxes found", data.mailbox_count, data.mailboxes, data.mailboxes_found_by_regex) }}
+        {% if not data.mailboxes_found_by_regex %}
+          {% for mailbox in data.mailboxes %}
+            <div class="border border-secondary mt-2 mb-2 p-2">
+              <h5>Owner of mailbox {{ mailbox.email }}</h5>
+              {{ show_user(mailbox.user) }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if data.partner_users %}
+      <div class="border border-dark border-2 mt-1 mb-2 p-3">
+        <h3 class="mb-3">
+          {% if data.partner_users_found_by_regex %}
+            Found {{ data.partner_users|length }} Partner Users matching regex "{{ query }}"
+          {% else %}
+            Found Partner User with email {{ data.partner_users[0].partner_email }}
+          {% endif %}
+        </h3>
+        {{ list_partner_users(data.partner_users, data.partner_users_found_by_regex) }}
+        {% if not data.partner_users_found_by_regex and data.partner_users|length == 1 %}
+          <div class="border border-secondary mt-2 mb-2 p-2">
+            <h5>Associated User</h5>
+            {{ show_user(data.partner_users[0].user) }}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
   {% endif %}
-  {% if data.user_audit_log %}
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
-      {{ list_user_audit_log(data.user_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.mailbox_count > 10 %}
-
-    <h3>Found more than 10 mailboxes for {{ email }}. Showing the last 10</h3>
-  {% elif data.mailbox_count > 0 %}
-    <h3>Found {{ data.mailbox_count }} mailbox(es) for {{ email }}</h3>
-  {% endif %}
-  {% for mailbox in data.mailbox %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Mailbox {{ mailbox.email }}</h3>
-      {{ list_mailboxes("Mailbox found", 1, [mailbox]) }}
-      {{ show_user(mailbox.user) }}
-    </div>
-  {% endfor %}
-  {% if data.deleted_alias %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
-      {{ show_deleted_alias(data.deleted_alias) }}
-      {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.domain_deleted_alias %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
-      {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
-      {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
 {% endblock %}
