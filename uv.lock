@@ -1931,12 +1931,12 @@ wheels = [
 
 [[package]]
 name = "sl-pgp"
-version = "0.1.0"
-source = { registry = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.0/index.html" }
+version = "0.1.1"
+source = { registry = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.1/index.html" }
 wheels = [
-    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.0/sl_pgp-0.1.0-cp310-abi3-manylinux_2_31_aarch64.whl" },
-    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.0/sl_pgp-0.1.0-cp310-abi3-manylinux_2_31_x86_64.whl" },
-    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.0/sl_pgp-0.1.0-cp310-abi3-macosx_11_0_arm64.whl" },
+    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.1/sl_pgp-0.1.1-cp310-abi3-manylinux_2_31_aarch64.whl" },
+    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.1/sl_pgp-0.1.1-cp310-abi3-manylinux_2_31_x86_64.whl" },
+    { url = "https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.1/sl_pgp-0.1.1-cp310-abi3-macosx_11_0_arm64.whl" },
 ]
 
 [[package]]
