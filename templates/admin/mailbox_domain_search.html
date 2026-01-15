@@ -37,20 +37,23 @@
 
           <td class="text-danger">Disabled</td>
         {% else %}
-          <td class="text-success">Enabled
-              <form class="d-inline"
-                    action="{{ url_for("admin.email_domain_search.disable_user") }}"
-                    method="POST">
-                  <input type="hidden" name="user_id" value="{{ user.id }}">
-                  <input type="hidden" name="query" value="{{ query }}">
+          <td class="text-success">
+            Enabled
+            <form class="d-inline"
+                  action="{{ url_for("admin.email_domain_search.disable_user") }}"
+                  method="POST">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <input type="hidden" name="query" value="{{ query }}">
               <button type="submit"
                       onclick="return confirm('Are you sure you want to disable and mark this user as an abuser?');"
                       class="btn btn-outline-primary btn-sm">
-                  <i class="fa fa-thumbs-down"  style="font-size: 0.8rem;"></i></button>
-              </form>
+                <i class="fa fa-thumbs-down"  style="font-size: 0.8rem;"></i>
+              </button>
+            </form>
           </td>
         {% endif %}
         {% if user.delete_on %}
+
           <td class="text-danger">{{ user.delete_on }}</td>
         {% else %}
           <td class="text-success">None</td>
@@ -123,16 +126,17 @@
       </tr>
     </thead>
     <tbody>
-    {% for mailbox in helper.mailbox_list(user) %}
-      <tr>
-        <td>{{ mailbox.id }}</td>
-        <td>
-          <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
-        </td>
-        <td>{{ "Yes" if mailbox.verified else "No" }}</td>
-        <td>{{ mailbox.created_at }}</td>
-      </tr>
-    {% endfor %}
+      {% for mailbox in helper.mailbox_list(user) %}
+
+        <tr>
+          <td>{{ mailbox.id }}</td>
+          <td>
+            <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
+          </td>
+          <td>{{ "Yes" if mailbox.verified else "No" }}</td>
+          <td>{{ mailbox.created_at }}</td>
+        </tr>
+      {% endfor %}
     </tbody>
   </table>
 {% endmacro %}
@@ -155,10 +159,11 @@
     <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
          role="alert">No mailbox found for  {{ query }}</div>
   {% endif %}
-    {% for user in data.users %}
-        <div class="border border-dark border-2 mt-1 mb-2 p-3">
-            <h3 class="mb-3">Found user {{ user.email }}</h3>
-            {{ show_user(query, user) }}
-        </div>
-    {% endfor %}
+  {% for user in data.users %}
+
+    <div class="border border-dark border-2 mt-1 mb-2 p-3">
+      <h3 class="mb-3">Found user {{ user.email }}</h3>
+      {{ show_user(query, user) }}
+    </div>
+  {% endfor %}
 {% endblock %}

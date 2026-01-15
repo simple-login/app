@@ -67,7 +67,8 @@ class AbuserLookupResult:
             bundle_json = json.dumps(bundle)
             bundle["json"] = bundle_json
 
-            user = User.get(int(bundle.get("account_id")))
+            account_id = bundle.get("account_id")
+            user = User.get(int(account_id)) if account_id else None
             bundle["user"] = user
 
             AbuserLookupResult.convert_dt(bundle, "user_created_at")

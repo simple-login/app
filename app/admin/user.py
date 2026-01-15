@@ -27,7 +27,7 @@ from app.models import (
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
-def manual_upgrade(way: str, ids: [int], is_giveaway: bool):
+def manual_upgrade(way: str, ids: list[int], is_giveaway: bool):
     for user in User.filter(User.id.in_(ids)).all():
         if user.lifetime:
             flash(f"user {user} already has a lifetime license", "warning")

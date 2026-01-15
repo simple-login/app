@@ -142,7 +142,7 @@ class CustomDomainSearchHelpers:
                 validation_data.mx_validation = validator.validate_mx_records(domain)
 
             if not domain.spf_verified:
-                validation_data.spf_expected = validator.get_expected_spf_record(domain)
+                validation_data.spf_expected = validator.get_expected_spf_domain(domain)
                 validation_data.spf_validation = validator.validate_spf_records(domain)
 
             if not domain.dkim_verified:
