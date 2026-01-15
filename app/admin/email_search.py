@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import Optional, List
 
+import arrow
 from flask import redirect, url_for, request, flash
 from flask_admin import BaseView, expose
 from flask_login import current_user
+from sqlalchemy.orm import joinedload
 
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
@@ -20,6 +22,7 @@ from app.models import (
     AliasAuditLog,
     UserAuditLog,
     AuditLogActionEnum,
+    AbuserAuditLog,
 )
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
@@ -50,6 +53,8 @@ class EmailSearchResult:
         self.users: List[User] = []
         self.users_found_by_regex: bool = False
         self.user_audit_log: Optional[List[UserAuditLog]] = None
+        self.abuser_audit_log: Optional[List[AbuserAuditLog]] = None
+        self.admin_audit_log: Optional[List[AdminAuditLog]] = None
         self.partner_users: List[PartnerUser] = []
         self.partner_users_found_by_regex: bool = False
 
@@ -141,8 +146,10 @@ class EmailSearchResult:
         output.query = query
         output.search_type = EmailSearchResult.SEARCH_TYPE_EMAIL
 
-        # Search mailboxes
-        mailbox = Mailbox.get_by(email=query)
+        # Search mailboxes (eager load user relationship for template display)
+        mailbox = (
+            Mailbox.filter_by(email=query).options(joinedload(Mailbox.user)).first()
+        )
         if mailbox:
             output.mailboxes = [mailbox]
             output.mailboxes_found_by_regex = False
@@ -152,6 +159,7 @@ class EmailSearchResult:
             # Try regex search for mailboxes
             mailboxes = (
                 Mailbox.filter(Mailbox.email.op("~")(query))
+                .options(joinedload(Mailbox.user))
                 .order_by(Mailbox.id.desc())
                 .limit(10)
                 .all()
@@ -176,6 +184,23 @@ class EmailSearchResult:
             output.user_audit_log = (
                 UserAuditLog.filter_by(user_id=user.id)
                 .order_by(UserAuditLog.created_at.desc())
+                .limit(20)
+                .all()
+            )
+            output.abuser_audit_log = (
+                AbuserAuditLog.filter_by(user_id=user.id)
+                .order_by(AbuserAuditLog.created_at.desc())
+                .limit(20)
+                .all()
+            )
+            output.admin_audit_log = (
+                Session.query(AdminAuditLog)
+                .filter(
+                    AdminAuditLog.model == "User",
+                    AdminAuditLog.model_id == user.id,
+                )
+                .order_by(AdminAuditLog.created_at.desc())
+                .limit(20)
                 .all()
             )
             output.no_match = False
@@ -245,13 +270,22 @@ class EmailSearchResult:
 
 class EmailSearchHelpers:
     @staticmethod
-    def mailbox_list(user: User) -> list[Mailbox]:
-        return (
+    def mailbox_list(user: User, ensure_mailbox_id: int = None) -> list[Mailbox]:
+        """Get first 10 mailboxes for user, ensuring a specific mailbox is included if provided."""
+        mailboxes = (
             Mailbox.filter_by(user_id=user.id)
             .order_by(Mailbox.id.asc())
             .limit(10)
             .all()
         )
+        # If a specific mailbox should be included and it's not in the list, add it
+        if ensure_mailbox_id:
+            mailbox_ids = {m.id for m in mailboxes}
+            if ensure_mailbox_id not in mailbox_ids:
+                ensure_mailbox = Mailbox.get(ensure_mailbox_id)
+                if ensure_mailbox and ensure_mailbox.user_id == user.id:
+                    mailboxes.insert(0, ensure_mailbox)
+        return mailboxes
 
     @staticmethod
     def mailbox_count(user: User) -> int:
@@ -290,6 +324,116 @@ class EmailSearchHelpers:
     def partner_user(user: User) -> Optional[PartnerUser]:
         return PartnerUser.get_by(user_id=user.id)
 
+    @staticmethod
+    def user_audit_log(user: User) -> list[UserAuditLog]:
+        return (
+            UserAuditLog.filter_by(user_id=user.id)
+            .order_by(UserAuditLog.created_at.desc())
+            .limit(20)
+            .all()
+        )
+
+    @staticmethod
+    def abuser_audit_log(user: User) -> list[AbuserAuditLog]:
+        return (
+            AbuserAuditLog.filter_by(user_id=user.id)
+            .order_by(AbuserAuditLog.created_at.desc())
+            .limit(20)
+            .all()
+        )
+
+    @staticmethod
+    def admin_audit_log(user: User) -> list[AdminAuditLog]:
+        return (
+            Session.query(AdminAuditLog)
+            .filter(
+                AdminAuditLog.model == "User",
+                AdminAuditLog.model_id == user.id,
+            )
+            .order_by(AdminAuditLog.created_at.desc())
+            .limit(20)
+            .all()
+        )
+
+    @staticmethod
+    def action_name(action_id: int) -> str:
+        """Convert audit log action ID to human-readable name."""
+        action_names = {
+            0: "create_object",
+            1: "update_object",
+            2: "delete_object",
+            3: "manual_upgrade",
+            4: "extend_trial",
+            5: "disable_2fa",
+            6: "logged_as_user",
+            7: "extend_subscription",
+            8: "download_provider_complaint",
+            9: "disable_user",
+            10: "enable_user",
+            11: "stop_trial",
+            12: "unlink_user",
+            13: "delete_custom_domain",
+            14: "clear_delete_on",
+            15: "update_subdomain_quota",
+            16: "update_directory_quota",
+        }
+        return action_names.get(action_id, f"unknown_{action_id}")
+
+    @staticmethod
+    def get_admin_email(admin_id: int) -> str:
+        """Get admin email by ID."""
+        if not admin_id:
+            return None
+        admin = User.get(admin_id)
+        return admin.email if admin else None
+
+    @staticmethod
+    def user_flags(user: User) -> list[str]:
+        """Decode user flags into human-readable list."""
+        flags = user.flags or 0
+        result = []
+        if flags & User.FLAG_FREE_DISABLE_CREATE_CONTACTS:
+            result.append("FREE_DISABLE_CREATE_CONTACTS")
+        if flags & User.FLAG_CREATED_FROM_PARTNER:
+            result.append("CREATED_FROM_PARTNER")
+        if flags & User.FLAG_FREE_OLD_ALIAS_LIMIT:
+            result.append("FREE_OLD_ALIAS_LIMIT")
+        if flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER:
+            result.append("CREATED_ALIAS_FROM_PARTNER")
+        return result
+
+    @staticmethod
+    def alias_flags(alias: Alias) -> list[str]:
+        """Decode alias flags into human-readable list."""
+        flags = alias.flags or 0
+        result = []
+        if flags & Alias.FLAG_PARTNER_CREATED:
+            result.append("PARTNER_CREATED")
+        return result
+
+    @staticmethod
+    def subscription_end_date(subscription):
+        """Get the end date for any subscription type."""
+        if subscription is None:
+            return None
+
+        sub_class = subscription.__class__.__name__
+
+        if sub_class == "Subscription":
+            # Paddle subscription uses next_bill_date (Date type)
+            if subscription.next_bill_date:
+                return arrow.get(subscription.next_bill_date)
+        elif sub_class == "ManualSubscription":
+            return subscription.end_at
+        elif sub_class == "CoinbaseSubscription":
+            return subscription.end_at
+        elif sub_class == "AppleSubscription":
+            return subscription.expires_date
+        elif sub_class == "PartnerSubscription":
+            return subscription.end_at
+
+        return None
+
 
 class EmailSearchAdmin(BaseView):
     def is_accessible(self):
@@ -317,6 +461,7 @@ class EmailSearchAdmin(BaseView):
             search_type=search_type,
             data=search,
             helper=EmailSearchHelpers,
+            now=arrow.now(),
         )
 
     @expose("/partner_unlink", methods=["POST"])
@@ -335,20 +480,18 @@ class EmailSearchAdmin(BaseView):
             flash("User not found", "error")
             return redirect(url_for("admin.email_search.index", query=user_id))
         external_user_id = perform_proton_account_unlink(user, skip_check=True)
-        if not external_user_id:
-            flash("User unlinked", "success")
-            return redirect(url_for("admin.email_search.index", query=user_id))
 
         AdminAuditLog.create(
-            admin_user_id=user.id,
-            model=User.__class__.__name__,
+            admin_user_id=current_user.id,
+            model="User",
             model_id=user.id,
             action=AuditLogActionEnum.unlink_user.value,
-            data={"external_user_id": external_user_id},
+            data={"external_user_id": external_user_id or "unknown"},
         )
         Session.commit()
 
-        return redirect(url_for("admin.email_search.index", query=user_id))
+        flash("User unlinked from Proton account", "success")
+        return redirect(url_for("admin.email_search.index", query=user.email))
 
     @expose("/stop_user_deletion", methods=["POST"])
     def stop_user_deletion(self):
@@ -455,6 +598,131 @@ class EmailSearchAdmin(BaseView):
 
         flash(
             f"Updated directory quota for user {user.email} from {old_quota} to {new_quota}",
+            "success",
+        )
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
+    @expose("/mark_abuser", methods=["POST"])
+    def mark_abuser(self):
+        from app.abuser import mark_user_as_abuser
+
+        user_id = request.form.get("user_id")
+        note = request.form.get("note", "").strip()
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        if not note:
+            flash("Note is required when marking a user as abuser", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if user.disabled:
+            flash(f"User {user.email} is already disabled/marked as abuser", "warning")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        mark_user_as_abuser(user, note, admin_id=current_user.id)
+
+        flash(f"Marked user {user.email} as abuser", "success")
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
+    @expose("/unmark_abuser", methods=["POST"])
+    def unmark_abuser(self):
+        from app.abuser import unmark_as_abusive_user
+
+        user_id = request.form.get("user_id")
+        note = request.form.get("note", "").strip()
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+        if not note:
+            flash("Note is required when unmarking a user as abuser", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if not user.disabled:
+            flash(f"User {user.email} is not disabled/marked as abuser", "warning")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        unmark_as_abusive_user(user.id, note, admin_id=current_user.id)
+
+        flash(f"Unmarked user {user.email} as abuser", "success")
+        return redirect(url_for("admin.email_search.index", query=user.email))
+
+    @expose("/disable_2fa", methods=["POST"])
+    def disable_2fa(self):
+        user_id = request.form.get("user_id")
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        had_totp = user.enable_otp
+        had_fido = bool(user.fido_uuid)
+
+        if not had_totp and not had_fido:
+            flash(f"User {user.email} does not have 2FA enabled", "warning")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        # Disable TOTP
+        if had_totp:
+            user.enable_otp = False
+            user.otp_secret = None
+
+        # Disable FIDO/WebAuthn
+        if had_fido:
+            user.fido_uuid = None
+
+        # Log the action
+        disabled_methods = []
+        if had_totp:
+            disabled_methods.append("TOTP")
+        if had_fido:
+            disabled_methods.append("FIDO")
+
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="User",
+            model_id=user.id,
+            action=AuditLogActionEnum.disable_2fa.value,
+            data={"disabled_methods": disabled_methods},
+        )
+        Session.commit()
+
+        flash(
+            f"Disabled 2FA ({', '.join(disabled_methods)}) for user {user.email}",
             "success",
         )
         return redirect(url_for("admin.email_search.index", query=user.email))
