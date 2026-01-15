@@ -134,7 +134,7 @@ ignore = "H006,H013,H016,H017,H019,H021,H025,H030,H031,T003,J004,J018,T001"
 
 [tool.uv]
 # Declare sl-pgp-rs dependency link so uv can find it
-find-links = ["https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.0/index.html"]
+find-links = ["https://github.com/simple-login/sl-pgp-rs/releases/download/0.1.1/index.html"]
 
 [dependency-groups]
 dev = [
