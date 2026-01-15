@@ -34,8 +34,6 @@ from app.admin.forbidden_mx_ip import ForbiddenMxIpAdmin
 from app.admin.email_search import EmailSearchAdmin
 from app.admin.custom_domain_search import CustomDomainSearchAdmin
 from app.admin.abuser_lookup import AbuserLookupAdmin
-from app.admin.mailbox_search import MailboxSearchAdmin
-from app.admin.email_domain_search import EmailDomainSearchAdmin
 
 
 def init_admin(app: Flask):
@@ -44,16 +42,8 @@ def init_admin(app: Flask):
     admin.init_app(app, index_view=SLAdminIndexView())
     admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="admin.email_search"))
     admin.add_view(
-        MailboxSearchAdmin(name="Mailbox search", endpoint="admin.mailbox_search")
-    )
-    admin.add_view(
         CustomDomainSearchAdmin(
             name="Custom domain search", endpoint="admin.custom_domain_search"
-        )
-    )
-    admin.add_view(
-        EmailDomainSearchAdmin(
-            name="Email domain search", endpoint="admin.email_domain_search"
         )
     )
     admin.add_view(

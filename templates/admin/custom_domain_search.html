@@ -1,207 +1,387 @@
 {% extends 'admin/master.html' %}
 
 {% block head_css %}
-
-  {{ super() }}
-  <style>
-        .card-shadow {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-        }
-        .domain-title {
-            color: white;
-            padding: 10px;
-            border-radius: 8px 8px 0 0;
-        }
-        .domain-active {
-            background-color: #007bff;
-        }
-        .domain-pending-deletion {
-            background-color: #cdca06;
-        }
-        .status-icon {
-            font-size: 1.2em;
-        }
-  </style>
+{{ super() }}
+<style>
+  .dns-record {
+    font-family: monospace;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+  .dns-record-expected {
+    background-color: #e8f4fd;
+    border-left: 3px solid #3498db;
+  }
+  .dns-record-current {
+    background-color: #fdf2e8;
+    border-left: 3px solid #e67e22;
+  }
+  .verification-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  .verification-ok {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  .verification-pending {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+</style>
 {% endblock %}
-{% macro show_user(user) -%}
-  <h4>
-    User <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a> with ID {{ user.id }}.
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">User ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Verified</th>
-        <th scope="col">Status</th>
-        <th scope="col">Paid</th>
-        <th scope="col">Premium</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>
-          <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a>
-        </td>
-        {% if user.activated %}
 
-          <td class="text-success">Activated</td>
-        {% else %}
-          <td class="text-warning">Pending</td>
-        {% endif %}
-        {% if user.disabled %}
-
-          <td class="text-danger">Disabled</td>
-        {% else %}
-          <td class="text-success">Enabled</td>
-        {% endif %}
-        <td>{{ "yes" if user.is_paid() else "No" }}</td>
-        <td>{{ "yes" if user.is_premium() else "No" }}</td>
-      </tr>
-    </tbody>
-  </table>
-{%- endmacro %}
-{% macro show_verification(title, expected, errors) -%}
-  {% if not expected %}
-
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <h5>{{ title }}</h5>
-      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
-    </li>
+{# Badge helper macro #}
+{% macro badge_status(condition, true_text, false_text, true_class='success', false_class='danger') -%}
+  {% if condition %}
+    <span class="badge badge-{{ true_class }}">{{ true_text }}</span>
   {% else %}
-    <li class="list-group-item">
-      <h5>{{ title }}</h5>
-      <p>
-        <strong>Expected:</strong> {{ expected.recommended }}
-      </p>
-      <p>
-        <strong>Allowed:</strong>
-        <ul>
-          {% for expected_record in expected.allowed %}<li>{{ expected_record }}</li>{% endfor %}
-        </ul>
-      </p>
-      <p>
-        <strong>Current response:</strong>
-      </p>
-      {% for error in errors %}
-
-        <ul class="list-group">
-          <li class="list-group-item">{{ error }}</li>
-        </ul>
-      {% endfor %}
-    </li>
+    <span class="badge badge-{{ false_class }}">{{ false_text }}</span>
   {% endif %}
 {%- endmacro %}
-{% macro show_mx_verification(title, expected, errors) -%}
-  {% if not expected %}
 
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <h5>{{ title }}</h5>
-      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
-    </li>
+{# User summary card with link to email search #}
+{% macro user_summary_card(user) -%}
+<div class="card mb-3 border-0 shadow-sm">
+  <div class="card-header text-white" style="background-color: #2c3e50;">
+    <h6 class="mb-0">
+      <i class="fa fa-user mr-2"></i>Domain Owner
+    </h6>
+  </div>
+  <div class="card-body py-2">
+    <div class="row align-items-center">
+      <div class="col-md-3">
+        <small class="text-muted">User</small>
+        <div>
+          <a href="{{ url_for('admin.email_search.index', query=user.email, search_type='email') }}">
+            <strong>{{ user.email }}</strong>
+          </a>
+        </div>
+        <small class="text-muted">ID: {{ user.id }}</small>
+      </div>
+      <div class="col-md-2">
+        <small class="text-muted">Status</small>
+        <div>
+          {{ badge_status(user.activated, 'Verified', 'Pending', 'success', 'warning') }}
+          {{ badge_status(not user.disabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+        </div>
+      </div>
+      <div class="col-md-2">
+        <small class="text-muted">Subscription</small>
+        <div>
+          {{ badge_status(user.is_premium(), 'Premium', 'Free', 'info', 'secondary') }}
+        </div>
+      </div>
+      <div class="col-md-2">
+        <small class="text-muted">Created</small>
+        <div>{{ user.created_at.strftime('%Y-%m-%d') }}</div>
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted">Custom Domains</small>
+        <div><strong>{{ user.custom_domains|length }}</strong> domain(s)</div>
+      </div>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+{# Verification status badge #}
+{% macro verification_badge(is_verified, label) -%}
+  {% if is_verified %}
+    <span class="verification-status verification-ok">
+      <i class="fa fa-check-circle mr-1"></i>{{ label }} Verified
+    </span>
   {% else %}
-    <li class="list-group-item">
-      <h5>{{ title }}</h5>
-      <ul>
-        <li class="list-group-item">
-          {% for prio in expected %}
-
-            <p>
-              <strong>Priority {{ prio }}:</strong> {{ expected[prio].recommended }}
-            </p>
-            <p>
-              <strong>Allowed:</strong>
-              <ul>
-                {% for expected_record in expected[prio].allowed %}<li>{{ expected_record }}</li>{% endfor %}
-              </ul>
-            </p>
-            <p>
-              <strong>Current response:</strong>
-            </p>
-            {% for error in errors %}
-
-              <ul class="list-group">
-                <li class="list-group-item">{{ error }}</li>
-              </ul>
-            {% endfor %}
-          </li>
-        {% endfor %}
-      </ul>
-    </li>
+    <span class="verification-status verification-pending">
+      <i class="fa fa-clock mr-1"></i>{{ label }} Pending
+    </span>
   {% endif %}
 {%- endmacro %}
-{% macro show_domain(domain_with_data) -%}
-  <div class="col-md-3 mb-4">
-    <div class="card card-shadow">
 
-      {% if domain_with_data.domain.pending_deletion == True %}
-          <div class="domain-title domain-pending-deletion text-center">
-              <h4>Domain {{ domain_with_data.domain.domain }}</h4>
-              <h5>Scheduled for deletion</h5>
-          </div>
-      {% else %}
-          <div class="domain-title domain-active text-center">
-              <h4>Domain {{ domain_with_data.domain.domain }}</h4>
-          </div>
-      {% endif %}
-
-      <div class="card-body">
-        {% set domain = domain_with_data.domain %}
-        <ul class="list-group">
-          {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
-          {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
-          {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
-          {% for dkim_domain in domain_with_data.dkim_expected %}
-
-            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
+{# DNS record display #}
+{% macro dns_record_display(label, expected, validation_errors) -%}
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>{{ label }}</strong>
+    {% if not expected %}
+      <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+    {% else %}
+      <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+    {% endif %}
+  </div>
+  {% if expected %}
+    <div class="mb-2">
+      <small class="text-muted d-block mb-1">Expected Record:</small>
+      <div class="dns-record dns-record-expected">{{ expected.recommended }}</div>
+    </div>
+    {% if expected.allowed and expected.allowed|length > 1 %}
+      <details class="mb-2">
+        <summary class="text-muted" style="cursor: pointer; font-size: 0.85em;">
+          <i class="fa fa-info-circle mr-1"></i>Alternative accepted values ({{ expected.allowed|length }})
+        </summary>
+        <ul class="list-unstyled mt-1 ml-3" style="font-size: 0.85em;">
+          {% for alt in expected.allowed %}
+            <li class="text-muted">{{ alt }}</li>
           {% endfor %}
         </ul>
+      </details>
+    {% endif %}
+    {% if validation_errors %}
+      <div>
+        <small class="text-muted d-block mb-1">Current DNS Response:</small>
+        {% for error in validation_errors %}
+          <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{%- endmacro %}
 
-        <form class="my-3"
-              action="{{ url_for("admin.custom_domain_search.delete_custom_domain") }}"
-              method="POST">
-            <input type="hidden" name="domain_id" value="{{ domain.id }}">
+{# MX record display (special handling for priorities) #}
+{% macro mx_record_display(expected, validation_errors) -%}
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>MX Records</strong>
+    {% if not expected %}
+      <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+    {% else %}
+      <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+    {% endif %}
+  </div>
+  {% if expected %}
+    <div class="mb-2">
+      <small class="text-muted d-block mb-1">Expected Records:</small>
+      {% for priority in expected|sort %}
+        <div class="dns-record dns-record-expected mb-1">
+          <span class="badge badge-secondary mr-2">Priority {{ priority }}</span>
+          {{ expected[priority].recommended }}
+        </div>
+      {% endfor %}
+    </div>
+    {% if validation_errors %}
+      <div>
+        <small class="text-muted d-block mb-1">Current DNS Response:</small>
+        {% for error in validation_errors %}
+          <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{%- endmacro %}
 
-            {% if domain_with_data.domain_pending_deletion == False %}
-            <button type="submit"
-                    onclick="return confirm('Are you sure you would like to delete the custom domain?');"
-                    class="btn btn-danger w-100">Delete</button>
-            {% endif %}
+{# DKIM records display #}
+{% macro dkim_records_display(domain, dkim_expected, dkim_validation) -%}
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>DKIM Records</strong>
+    {% if not dkim_expected %}
+      <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+    {% else %}
+      <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+    {% endif %}
+  </div>
+  {% if dkim_expected %}
+    {% for dkim_selector in dkim_expected %}
+      {% set full_domain = dkim_selector + "." + domain.domain %}
+      <div class="mb-2 p-2" style="background-color: #f8f9fa; border-radius: 4px;">
+        <small class="text-muted d-block">Selector: <code>{{ full_domain }}</code></small>
+        <div class="dns-record dns-record-expected mt-1">{{ dkim_expected[dkim_selector].recommended }}</div>
+        {% if dkim_validation.get(full_domain) %}
+          <small class="text-muted d-block mt-1">Current:</small>
+          <div class="dns-record dns-record-current">{{ dkim_validation.get(full_domain) or 'No record found' }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{# Domain card #}
+{% macro domain_card(domain_data) -%}
+{% set domain = domain_data.domain %}
+<div class="card mb-4 border-0 shadow-sm">
+  <div class="card-header text-white d-flex justify-content-between align-items-center"
+       style="background-color: {% if domain.pending_deletion %}#e74c3c{% else %}#27ae60{% endif %};">
+    <h5 class="mb-0">
+      <i class="fa fa-globe mr-2"></i>{{ domain.domain }}
+      {% if domain.pending_deletion %}
+        <span class="badge badge-light ml-2">Pending Deletion</span>
+      {% endif %}
+    </h5>
+    <span class="badge badge-light">ID: {{ domain.id }}</span>
+  </div>
+
+  <div class="card-body">
+    {# Domain Owner Summary #}
+    {{ user_summary_card(domain.user) }}
+
+    {# Domain Information #}
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
+          <div class="card-header" style="background-color: #ecf0f1;">
+            <h6 class="mb-0"><i class="fa fa-info-circle mr-2"></i>Domain Information</h6>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tr>
+                <td class="font-weight-bold" style="width: 140px;">ID:</td>
+                <td><code>{{ domain.id }}</code></td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">Domain:</td>
+                <td><code>{{ domain.domain }}</code></td>
+              </tr>
+              {% if domain.name %}
+              <tr>
+                <td class="font-weight-bold">Display Name:</td>
+                <td>{{ domain.name }}</td>
+              </tr>
+              {% endif %}
+              <tr>
+                <td class="font-weight-bold">Created:</td>
+                <td>{{ domain.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">Catch-All:</td>
+                <td>{{ badge_status(domain.catch_all, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">Random Prefix:</td>
+                <td>{{ badge_status(domain.random_prefix_generation, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">SL Subdomain:</td>
+                <td>{{ badge_status(domain.is_sl_subdomain, 'Yes', 'No', 'info', 'secondary') }}</td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">Failed Checks:</td>
+                <td>
+                  {% if domain.nb_failed_checks > 0 %}
+                    <span class="badge badge-warning">{{ domain.nb_failed_checks }}</span>
+                  {% else %}
+                    <span class="text-muted">0</span>
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td class="font-weight-bold">Aliases:</td>
+                <td><strong>{{ helper.alias_count(domain) }}</strong></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
+          <div class="card-header" style="background-color: #ecf0f1;">
+            <h6 class="mb-0"><i class="fa fa-check-circle mr-2"></i>Verification Status</h6>
+          </div>
+          <div class="card-body">
+            <div class="d-flex flex-wrap">
+              {{ verification_badge(domain.ownership_verified, 'Ownership') }}
+              {{ verification_badge(domain.verified, 'MX') }}
+              {{ verification_badge(domain.spf_verified, 'SPF') }}
+              {{ verification_badge(domain.dkim_verified, 'DKIM') }}
+              {{ verification_badge(domain.dmarc_verified, 'DMARC') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# DNS Records Section #}
+    <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
+      <div class="card-header" style="background-color: #ecf0f1;">
+        <h6 class="mb-0"><i class="fa fa-server mr-2"></i>DNS Records</h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            {{ dns_record_display('Ownership (TXT)', domain_data.ownership_expected, domain_data.ownership_validation.errors if domain_data.ownership_validation else []) }}
+            {{ dns_record_display('SPF (TXT)', domain_data.spf_expected, domain_data.spf_validation.errors if domain_data.spf_validation else []) }}
+          </div>
+          <div class="col-md-6">
+            {{ mx_record_display(domain_data.mx_expected, domain_data.mx_validation.errors if domain_data.mx_validation else []) }}
+            {{ dkim_records_display(domain, domain_data.dkim_expected, domain_data.dkim_validation) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Actions #}
+    {% if not domain.pending_deletion %}
+    <div class="card border-0" style="background-color: #f8f9fa;">
+      <div class="card-header" style="background-color: #ecf0f1;">
+        <h6 class="mb-0"><i class="fa fa-cogs mr-2"></i>Actions</h6>
+      </div>
+      <div class="card-body py-2">
+        <form action="{{ url_for('admin.custom_domain_search.delete_custom_domain') }}" method="POST" class="d-inline">
+          <input type="hidden" name="domain_id" value="{{ domain.id }}">
+          <button type="submit" class="btn btn-sm" style="background-color: #c0392b; color: white;"
+                  onclick="return confirm('Are you sure you want to delete the custom domain {{ domain.domain }}? This action cannot be undone.');">
+            <i class="fa fa-trash mr-1"></i>Delete Domain
+          </button>
         </form>
       </div>
     </div>
+    {% endif %}
   </div>
+</div>
 {%- endmacro %}
+
 {% block body %}
-
-  <div class="border border-dark border-2 mt-1 mb-2 p-3">
-    <form method="get">
-      <div class="form-group">
-        <label for="email">User or domain to search:</label>
-        <input type="text"
-               class="form-control"
-               name="user"
-               value="{{ query or '' }}" />
-      </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
+<div class="container-fluid px-4">
+  {# Search Form #}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header text-white" style="background-color: #2c3e50;">
+      <h5 class="mb-0"><i class="fa fa-search mr-2"></i>Custom Domain Search</h5>
+    </div>
+    <div class="card-body">
+      <form method="get">
+        <div class="mb-3">
+          <label for="query" class="font-weight-bold">Search Query</label>
+          <input type="text" class="form-control form-control-lg" name="query" id="query"
+                 value="{{ query or '' }}" placeholder="domain.com, user@email.com, user ID, or POSIX regex">
+          <small class="form-text text-muted">
+            <i class="fa fa-info-circle mr-1"></i>Search by domain name, user email, user ID, or use POSIX regex patterns (limited to 10 results).
+          </small>
+        </div>
+        <button type="submit" class="btn btn-lg" style="background-color: #27ae60; color: white;">
+          <i class="fa fa-search mr-2"></i>Search
+        </button>
+      </form>
+    </div>
   </div>
+
+  {# No Results Alert #}
   {% if data.no_match and query %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">No user, alias or mailbox found for {{ query }}</div>
-  {% endif %}
-  {% if data.user %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-      {{ show_user(data.user) }}
+    <div class="alert alert-warning" role="alert">
+      <i class="fa fa-exclamation-triangle mr-2"></i>
+      No custom domains found for <strong>{{ query }}</strong>
     </div>
   {% endif %}
-  <div class="row mt-4">
-    {% for domain_with_data in data.domains %}{{ show_domain(domain_with_data) }}{% endfor %}
-  </div>
+
+  {# Regex Match Notice #}
+  {% if data.found_by_regex and data.domains %}
+    <div class="alert alert-info" role="alert">
+      <i class="fa fa-info-circle mr-2"></i>
+      Found <strong>{{ data.domains|length }}</strong> domain(s) matching regex pattern (showing up to 10)
+    </div>
+  {% endif %}
+
+  {# Domain Results #}
+  {% for domain_data in data.domains %}
+    {{ domain_card(domain_data) }}
+  {% endfor %}
 </div>
 {% endblock %}

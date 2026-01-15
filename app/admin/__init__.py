@@ -24,14 +24,10 @@ from app.admin.email_search import (
 from app.admin.custom_domain_search import (
     CustomDomainWithValidationData,
     CustomDomainSearchResult,
+    CustomDomainSearchHelpers,
     CustomDomainSearchAdmin,
 )
 from app.admin.abuser_lookup import AbuserLookupResult, AbuserLookupAdmin
-from app.admin.mailbox_search import MailboxSearchResult, MailboxSearchAdmin
-from app.admin.email_domain_search import (
-    EmailDomainSearchResult,
-    EmailDomainSearchAdmin,
-)
 
 __all__ = [
     # Initialization
@@ -62,11 +58,8 @@ __all__ = [
     "EmailSearchAdmin",
     "CustomDomainWithValidationData",
     "CustomDomainSearchResult",
+    "CustomDomainSearchHelpers",
     "CustomDomainSearchAdmin",
     "AbuserLookupResult",
     "AbuserLookupAdmin",
-    "MailboxSearchResult",
-    "MailboxSearchAdmin",
-    "EmailDomainSearchResult",
-    "EmailDomainSearchAdmin",
 ]

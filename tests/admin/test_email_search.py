@@ -571,3 +571,77 @@ def test_unmark_abuser_requires_note(flask_client):
     Session.expire_all()
     test_user = User.get(test_user.id)
     assert test_user.disabled
+
+
+# ============================================================================
+# Custom Domains Display Tests
+# ============================================================================
+
+
+def test_email_search_shows_custom_domains(flask_client):
+    """Test that custom domains are displayed for a user in email search."""
+    from app.models import CustomDomain
+
+    login_admin(flask_client)
+
+    # Create a user with a custom domain
+    test_user = create_new_user()
+    domain_name = f"domain-{random_token(8)}.com"
+    domain = CustomDomain.create(
+        user_id=test_user.id,
+        domain=domain_name,
+        ownership_verified=True,
+        verified=True,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    # Should show the custom domains section
+    assert b"Custom Domains" in r.data
+    # Should show the domain name
+    assert domain.domain.encode() in r.data
+    # Should have link to custom domain search
+    assert b"custom_domain_search" in r.data
+
+
+def test_email_search_shows_domain_alias_counts(flask_client):
+    """Test that alias counts are displayed for custom domains."""
+    from app.models import CustomDomain
+
+    login_admin(flask_client)
+
+    # Create a user with a custom domain and aliases
+    test_user = create_new_user()
+    domain_name = f"aliascount-{random_token(8)}.com"
+    domain = CustomDomain.create(
+        user_id=test_user.id,
+        domain=domain_name,
+        ownership_verified=True,
+        verified=True,
+        flush=True,
+    )
+
+    # Create an alias for the domain
+    alias_email = f"alias@{domain_name}"
+    Alias.create(
+        user_id=test_user.id,
+        email=alias_email,
+        mailbox_id=test_user.default_mailbox_id,
+        custom_domain_id=domain.id,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    # Should show the aliases column in the custom domains table
+    assert b"Aliases" in r.data
+    assert b"Deleted" in r.data

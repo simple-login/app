@@ -518,6 +518,59 @@
   </div>
 {% endmacro %}
 
+{% macro custom_domains_table(domains) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ecf0f1;">
+      <h6 class="mb-0">
+        <i class="fa fa-globe mr-2"></i>Custom Domains
+        <span class="badge badge-secondary ml-2">{{ domains|length }} total</span>
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      {% if domains %}
+      <table class="table table-hover mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th>ID</th>
+            <th>Domain</th>
+            <th>Verified</th>
+            <th>Aliases</th>
+            <th>Deleted</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for domain in domains %}
+          <tr>
+            <td><code>{{ domain.id }}</code></td>
+            <td>
+              <a href="{{ url_for('admin.custom_domain_search.index', query=domain.domain) }}">
+                {{ domain.domain }}
+              </a>
+            </td>
+            <td>
+              {% if domain.verified and domain.ownership_verified %}
+                <span class="badge badge-success">Verified</span>
+              {% else %}
+                <span class="badge badge-warning">Pending</span>
+              {% endif %}
+            </td>
+            <td><span class="badge badge-info">{{ helper.domain_alias_count(domain) }}</span></td>
+            <td><span class="badge badge-secondary">{{ helper.domain_deleted_alias_count(domain) }}</span></td>
+            <td>{{ domain.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="p-3 text-muted text-center">
+        <i class="fa fa-info-circle mr-1"></i>No custom domains
+      </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+
 {% macro deleted_aliases_table(deleted_aliases, is_regex) %}
   <div class="card mb-4">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -958,6 +1011,8 @@
             </div>
           </div>
 
+          {{ custom_domains_table(helper.custom_domain_list(data.users[0])) }}
+
           {# Audit Logs Section #}
           <div class="row">
             <div class="col-lg-4">
@@ -1035,6 +1090,8 @@
                   </div>
                 </div>
 
+                {{ custom_domains_table(helper.custom_domain_list(mailbox.user)) }}
+
                 {# Audit Logs Section #}
                 {% set user_audit = helper.user_audit_log(mailbox.user) %}
                 {% set abuser_audit = helper.abuser_audit_log(mailbox.user) %}
@@ -1107,6 +1164,8 @@
                   {{ aliases_table(helper.alias_count(pu.user), helper.alias_list(pu.user), false) }}
                 </div>
               </div>
+
+              {{ custom_domains_table(helper.custom_domain_list(pu.user)) }}
 
               {# Audit Logs Section #}
               {% set user_audit = helper.user_audit_log(pu.user) %}
