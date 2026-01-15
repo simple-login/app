@@ -271,7 +271,7 @@ class EmailSearchResult:
 
 class EmailSearchHelpers:
     @staticmethod
-    def mailbox_list(user: User, ensure_mailbox_id: int = None) -> list[Mailbox]:
+    def mailbox_list(user: User, ensure_mailbox_id: int | None = None) -> list[Mailbox]:
         """Get first 10 mailboxes for user, ensuring a specific mailbox is included if provided."""
         mailboxes = (
             Mailbox.filter_by(user_id=user.id)
@@ -381,7 +381,7 @@ class EmailSearchHelpers:
         return action_names.get(action_id, f"unknown_{action_id}")
 
     @staticmethod
-    def get_admin_email(admin_id: int) -> str:
+    def get_admin_email(admin_id: int | None) -> str | None:
         """Get admin email by ID."""
         if not admin_id:
             return None
@@ -413,14 +413,15 @@ class EmailSearchHelpers:
         return result
 
     @staticmethod
-    def custom_domain_list(user: User) -> list:
+    def custom_domain_list(user: User) -> list[CustomDomain]:
         """Get list of custom domains for a user."""
-        return user.custom_domains
+        # user.custom_domains is a backref relationship (InstrumentedList)
+        return list(user.custom_domains)  # type: ignore[arg-type]
 
     @staticmethod
     def custom_domain_count(user: User) -> int:
         """Get count of custom domains for a user."""
-        return len(user.custom_domains)
+        return len(user.custom_domains)  # type: ignore[arg-type]
 
     @staticmethod
     def domain_alias_count(domain: CustomDomain) -> int:
