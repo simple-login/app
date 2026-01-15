@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import urllib.parse
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import arrow
 import requests
@@ -883,7 +883,7 @@ def check_mailbox_valid_pgp_keys():
     # iterate over id instead of mailbox directly
     # as a mailbox can be deleted in the meantime
     for mailbox_id in mailbox_ids:
-        mailbox = Mailbox.get(mailbox_id)
+        mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
         # a mailbox has been deleted
         if not mailbox:
             LOG.d(f"Mailbox {mailbox_id} not found")
@@ -897,7 +897,14 @@ def check_mailbox_valid_pgp_keys():
             ctx = create_pgp_context()
             load_public_key_and_check(mailbox.pgp_public_key, ctx)
         except PGPException:
-            LOG.i(f"{mailbox} PGP key invalid")
+            LOG.i(f"{mailbox} PGP key invalid. Disabling PGP for {mailbox}")
+            mailbox.disable_pgp = True
+            emit_user_audit_log(
+                user=mailbox.user,
+                action=UserAuditLogAction.MailboxDisablePgp,
+                message=f"[Cron] Automatically disabled PGP for mailbox {mailbox.id} due to invalid PGP key",
+            )
+            Session.commit()
             send_email(
                 mailbox.user.email,
                 f"Mailbox {mailbox.email}'s PGP Key is invalid",
