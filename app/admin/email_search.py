@@ -23,6 +23,7 @@ from app.models import (
     UserAuditLog,
     AuditLogActionEnum,
     AbuserAuditLog,
+    CustomDomain,
 )
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
@@ -410,6 +411,29 @@ class EmailSearchHelpers:
         if flags & Alias.FLAG_PARTNER_CREATED:
             result.append("PARTNER_CREATED")
         return result
+
+    @staticmethod
+    def custom_domain_list(user: User) -> list:
+        """Get list of custom domains for a user."""
+        return user.custom_domains
+
+    @staticmethod
+    def custom_domain_count(user: User) -> int:
+        """Get count of custom domains for a user."""
+        return len(user.custom_domains)
+
+    @staticmethod
+    def domain_alias_count(domain: CustomDomain) -> int:
+        """Get count of aliases for a custom domain."""
+        return Alias.filter(Alias.custom_domain_id == domain.id).count()
+
+    @staticmethod
+    def domain_deleted_alias_count(domain: CustomDomain) -> int:
+        """Get count of deleted aliases for a custom domain."""
+        # DomainDeletedAlias stores deleted aliases for custom domains
+        return DomainDeletedAlias.filter(
+            DomainDeletedAlias.domain_id == domain.id
+        ).count()
 
     @staticmethod
     def subscription_end_date(subscription):
