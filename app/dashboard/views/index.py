@@ -178,7 +178,7 @@ def index():
             )
         )
 
-    mailboxes = current_user.mailboxes()
+    mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
     show_intro = False
     if not current_user.intro_shown:
