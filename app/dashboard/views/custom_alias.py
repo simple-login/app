@@ -50,7 +50,7 @@ def custom_alias():
             break
 
     csrf_form = CSRFValidationForm()
-    mailboxes = current_user.mailboxes()
+    mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
     if request.method == "POST":
         if not csrf_form.validate():
@@ -79,6 +79,12 @@ def custom_alias():
                 or not mailbox.verified
             ):
                 flash("Something went wrong, please retry", "warning")
+                return redirect(request.url)
+            if mailbox.is_admin_disabled():
+                flash(
+                    "Cannot assign admin-disabled mailbox to alias. Please contact support.",
+                    "error",
+                )
                 return redirect(request.url)
             mailboxes.append(mailbox)
 

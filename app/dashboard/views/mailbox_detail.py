@@ -40,6 +40,10 @@ def mailbox_detail_route(mailbox_id):
         flash("You cannot see this page", "warning")
         return redirect(url_for("dashboard.index"))
 
+    if mailbox.is_admin_disabled():
+        flash("You cannot modify that mailbox. Please contact support.", "error")
+        return redirect(url_for("dashboard.mailbox_route"))
+
     change_email_form = ChangeEmailForm()
     csrf_form = CSRFValidationForm()
 

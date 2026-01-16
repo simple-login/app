@@ -189,6 +189,14 @@ def set_custom_domain_mailboxes(
             success=False, reason=CannotSetCustomDomainMailboxesCause.InvalidMailbox
         )
 
+    # Check for admin-disabled mailboxes
+    for mailbox in mailboxes:
+        if mailbox.is_admin_disabled():
+            return SetCustomDomainMailboxesResult(
+                success=False,
+                reason=CannotSetCustomDomainMailboxesCause.InvalidMailbox,
+            )
+
     # first remove all existing domain-mailboxes links
     DomainMailbox.filter_by(domain_id=custom_domain.id).delete()
     Session.flush()
