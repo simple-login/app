@@ -20,6 +20,7 @@ from app.email_validation import is_valid_email
 from app.log import LOG
 from app.models import User, Mailbox, Job, MailboxActivation, Alias, AliasMailbox
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.utils import canonicalize_email, sanitize_email
 
 
@@ -524,3 +525,93 @@ def count_mailbox_aliases(mailbox: Mailbox) -> int:
     ):
         alias_ids.add(alias.id)
     return len(alias_ids)
+
+
+def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
+    """Admin-disable a mailbox. User cannot re-enable."""
+    mailbox.flags = mailbox.flags | Mailbox.FLAG_ADMIN_DISABLED
+    Session.commit()
+
+    # Log to AbuserAuditLog
+    emit_abuser_audit_log(
+        user_id=mailbox.user_id,
+        action=AbuserAuditLogAction.Note,
+        message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_disabled",
+        admin_id=admin_user.id if admin_user else None,
+        commit=True,
+    )
+
+    # Send notification email
+    send_admin_disable_mailbox_email(mailbox)
+
+
+def admin_reenable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
+    """Re-enable an admin-disabled mailbox."""
+    mailbox.flags = mailbox.flags & ~Mailbox.FLAG_ADMIN_DISABLED
+    Session.commit()
+
+    # Log to AbuserAuditLog
+    emit_abuser_audit_log(
+        user_id=mailbox.user_id,
+        action=AbuserAuditLogAction.Note,
+        message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_reenabled",
+        admin_id=admin_user.id if admin_user else None,
+        commit=True,
+    )
+
+    # Send notification email
+    send_admin_reenable_mailbox_email(mailbox)
+
+
+def send_admin_disable_mailbox_warning_email(mailbox: Mailbox):
+    """Send warning that mailbox will be admin-disabled."""
+    send_email(
+        mailbox.email,
+        f"Action Required: Your mailbox {mailbox.email} will be disabled",
+        render(
+            "transactional/admin-disable-mailbox-warning.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+        render(
+            "transactional/admin-disable-mailbox-warning.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+    )
+
+
+def send_admin_disable_mailbox_email(mailbox: Mailbox):
+    """Send notification that mailbox has been admin-disabled."""
+    send_email(
+        mailbox.email,
+        f"Your mailbox {mailbox.email} has been disabled",
+        render(
+            "transactional/admin-disable-mailbox.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+        render(
+            "transactional/admin-disable-mailbox.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+    )
+
+
+def send_admin_reenable_mailbox_email(mailbox: Mailbox):
+    """Send notification that mailbox has been re-enabled."""
+    send_email(
+        mailbox.email,
+        f"Your mailbox {mailbox.email} has been re-enabled",
+        render(
+            "transactional/admin-reenable-mailbox.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+        render(
+            "transactional/admin-reenable-mailbox.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+    )
