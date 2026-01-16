@@ -7,7 +7,7 @@
   {% endcall %}
 
   {% call text() %}
-    Your mailbox has been disabled by SimpleLogin administrators.
+    Your mailbox has been disabled by {{ SERVICE_PROVIDER }} administrators.
     <br />
     You will not receive emails forwarded to this mailbox while it is disabled.
   {% endcall %}
@@ -19,7 +19,7 @@
   {% call text() %}
     Best,
     <br />
-    SimpleLogin Team.
+    {{ SERVICE_PROVIDER }} Team.
   {% endcall %}
 
 {% endblock %}
