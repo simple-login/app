@@ -1058,9 +1058,13 @@
                    name="query"
                    id="query"
                    value="{{ query or '' }}"
-                   placeholder="email@example.com, user ID, or POSIX regex pattern">
-            <small class="form-text text-muted">
-              <i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).
+                   placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else 'email@example.com, user ID, or POSIX regex pattern' }}">
+            <small class="form-text text-muted" id="search-help">
+              {% if search_type == 'alias' %}
+                <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.
+              {% else %}
+                <i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).
+              {% endif %}
             </small>
           </div>
           <button type="submit"
@@ -1351,4 +1355,30 @@
       {% endif %}
     {% endif %}
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var queryInput = document.getElementById('query');
+      var searchHelp = document.getElementById('search-help');
+      var btnGroupLabels = document.querySelectorAll('.btn-group-toggle label');
+
+      function updateSearchHelp(searchType) {
+        if (searchType === 'alias') {
+          queryInput.placeholder = 'alias@example.com (exact match only)';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.';
+        } else {
+          queryInput.placeholder = 'email@example.com, user ID, or POSIX regex pattern';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).';
+        }
+      }
+
+      btnGroupLabels.forEach(function(label) {
+        label.addEventListener('click', function() {
+          var radio = this.querySelector('input[type="radio"]');
+          if (radio) {
+            updateSearchHelp(radio.value);
+          }
+        });
+      });
+    });
+  </script>
 {% endblock %}

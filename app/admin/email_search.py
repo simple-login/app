@@ -66,7 +66,7 @@ class EmailSearchResult:
         output.query = query
         output.search_type = EmailSearchResult.SEARCH_TYPE_ALIAS
 
-        # Try exact match first
+        # Exact match only for alias search (no regex support)
         alias = Alias.get_by(email=query)
         if alias:
             output.aliases = [alias]
@@ -77,20 +77,8 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
-        else:
-            # Try regex search
-            aliases = (
-                Alias.filter(Alias.email.op("~")(query))
-                .order_by(Alias.id.desc())
-                .limit(10)
-                .all()
-            )
-            if aliases:
-                output.aliases = aliases
-                output.aliases_found_by_regex = True
-                output.no_match = False
 
-        # Search deleted aliases
+        # Search deleted aliases (exact match only)
         deleted_alias = DeletedAlias.get_by(email=query)
         if deleted_alias:
             output.deleted_aliases = [deleted_alias]
@@ -101,20 +89,8 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
-        else:
-            # Try regex search for deleted aliases
-            deleted_aliases = (
-                DeletedAlias.filter(DeletedAlias.email.op("~")(query))
-                .order_by(DeletedAlias.id.desc())
-                .limit(10)
-                .all()
-            )
-            if deleted_aliases:
-                output.deleted_aliases = deleted_aliases
-                output.deleted_aliases_found_by_regex = True
-                output.no_match = False
 
-        # Search domain deleted aliases
+        # Search domain deleted aliases (exact match only)
         domain_deleted_alias = DomainDeletedAlias.get_by(email=query)
         if domain_deleted_alias:
             output.domain_deleted_aliases = [domain_deleted_alias]
@@ -125,18 +101,6 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
-        else:
-            # Try regex search for domain deleted aliases
-            domain_deleted_aliases = (
-                DomainDeletedAlias.filter(DomainDeletedAlias.email.op("~")(query))
-                .order_by(DomainDeletedAlias.id.desc())
-                .limit(10)
-                .all()
-            )
-            if domain_deleted_aliases:
-                output.domain_deleted_aliases = domain_deleted_aliases
-                output.domain_deleted_aliases_found_by_regex = True
-                output.no_match = False
 
         return output
 
