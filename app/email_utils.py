@@ -91,7 +91,7 @@ def render(template_name: str, user: Optional[User], **kwargs) -> str:
         URL=config.URL,
         LANDING_PAGE_URL=config.LANDING_PAGE_URL,
         YEAR=arrow.now().year,
-        USE_PARTNER_TEMPLATE=use_partner_template,
+        SERVICE_PROVIDER="Proton" if use_partner_template else "SimpleLogin",
         **kwargs,
     )
 
