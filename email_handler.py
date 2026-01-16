@@ -767,6 +767,10 @@ def forward_email_to_mailbox(
         else:
             return False, status.E518
 
+    if mailbox.is_admin_disabled():
+        LOG.d(f"{mailbox} admin_disabled, do not forward")
+        return True, status.E207
+
     # sanity check: make sure mailbox is not actually an alias
     if get_email_domain_part(alias.email) == get_email_domain_part(mailbox.email):
         LOG.w(
