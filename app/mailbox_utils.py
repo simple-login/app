@@ -18,7 +18,16 @@ from app.email_utils import (
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
-from app.models import User, Mailbox, Job, MailboxActivation, Alias, AliasMailbox
+from app.models import (
+    User,
+    Mailbox,
+    Job,
+    MailboxActivation,
+    Alias,
+    AliasMailbox,
+    AdminAuditLog,
+    AuditLogActionEnum,
+)
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.utils import canonicalize_email, sanitize_email
@@ -538,6 +547,15 @@ def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
         action=AbuserAuditLogAction.Note,
         message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_disabled",
         admin_id=admin_user.id if admin_user else None,
+    )
+
+    # Create AdminAuditLog
+    AdminAuditLog.create(
+        admin_user_id=admin_user.id if admin_user else 0,
+        action=AuditLogActionEnum.disable_mailbox,
+        model=Mailbox.__class__.__name__,
+        model_id=mailbox.id,
+        data={},
         commit=True,
     )
 
@@ -556,6 +574,16 @@ def admin_reenable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
         action=AbuserAuditLogAction.Note,
         message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_reenabled",
         admin_id=admin_user.id if admin_user else None,
+        commit=True,
+    )
+
+    # Create AdminAuditLog
+    AdminAuditLog.create(
+        admin_user_id=admin_user.id if admin_user else 0,
+        action=AuditLogActionEnum.enable_mailbox,
+        model=Mailbox.__class__.__name__,
+        model_id=mailbox.id,
+        data={},
         commit=True,
     )
 

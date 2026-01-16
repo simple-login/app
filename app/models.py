@@ -245,6 +245,9 @@ class AuditLogActionEnum(EnumE):
     clear_delete_on = 14
     update_subdomain_quota = 15
     update_directory_quota = 16
+    disable_mailbox = 17
+    enable_mailbox = 18
+    change_default_mailbox = 19
 
 
 class Phase(EnumE):
