@@ -396,3 +396,64 @@ def test_too_many_requests(flask_client):
         # last request
         assert r.status_code == 429
         assert "Whoa, slow down there, pardner!" in str(r.data)
+
+
+def test_cannot_create_alias_with_admin_disabled_mailbox(flask_client):
+    user = login(flask_client)
+
+    # Create a mailbox and admin-disable it
+    mb = Mailbox.create(user_id=user.id, email="disabled@gmail.com", verified=True)
+    Session.commit()
+    mb.flags = (mb.flags or 0) | Mailbox.FLAG_ADMIN_DISABLED
+    Session.commit()
+
+    suffix = f".{int(random() * 100000)}@{EMAIL_DOMAIN}"
+    alias_suffix = AliasSuffix(
+        is_custom=False,
+        suffix=suffix,
+        signed_suffix=signer.sign(suffix).decode(),
+        is_premium=False,
+        domain=EMAIL_DOMAIN,
+    )
+
+    # Try to create alias with admin-disabled mailbox
+    r = flask_client.post(
+        url_for("dashboard.custom_alias"),
+        data={
+            "prefix": "test",
+            "signed-alias-suffix": alias_suffix.signed_suffix,
+            "mailboxes": [mb.id],
+        },
+        follow_redirects=True,
+    )
+
+    # Should show error and not create alias
+    assert r.status_code == 200
+    assert b"admin-disabled" in r.data.lower() or b"contact support" in r.data.lower()
+
+    # Verify alias was not created
+    alias = Alias.get_by(email=f"test{suffix}")
+    assert alias is None
+
+
+def test_admin_disabled_mailbox_not_in_form_list(flask_client):
+    """Test that admin-disabled mailboxes are not shown in the mailbox selector"""
+    user = login(flask_client)
+
+    # Create two mailboxes
+    Mailbox.create(user_id=user.id, email="active@gmail.com", verified=True)
+    mb2 = Mailbox.create(user_id=user.id, email="disabled@gmail.com", verified=True)
+    Session.commit()
+    # Admin-disable the second one
+    mb2.flags = (mb2.flags or 0) | Mailbox.FLAG_ADMIN_DISABLED
+    Session.commit()
+
+    # Visit custom alias creation page
+    r = flask_client.get(url_for("dashboard.custom_alias"))
+
+    assert r.status_code == 200
+    # Check that active mailbox is in the page
+    assert b"active@gmail.com" in r.data
+    # Check that admin-disabled mailbox is NOT in the page
+    # (it should be filtered from the mailbox list)
+    assert b"disabled@gmail.com" not in r.data or b"Disabled by admin" in r.data
