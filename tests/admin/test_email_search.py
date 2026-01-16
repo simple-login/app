@@ -292,8 +292,8 @@ def test_alias_search_by_email(flask_client):
     assert test_user.email.encode() in r.data
 
 
-def test_alias_search_by_regex(flask_client):
-    """Test searching for aliases by regex pattern."""
+def test_alias_search_no_regex_support(flask_client):
+    """Test that alias search only supports exact match, not regex patterns."""
     login_admin(flask_client)
 
     # Create a user with aliases
@@ -312,12 +312,15 @@ def test_alias_search_by_regex(flask_client):
     )
     Session.commit()
 
+    # Regex pattern should not match - alias search only supports exact match
     r = flask_client.get(
         url_for("admin.email_search.index"),
         query_string={"query": "regex_alias_.*@sl.lan", "search_type": "alias"},
     )
     assert r.status_code == 200
-    assert b"Regex Match" in r.data
+    # Should show no results since regex is not supported
+    assert b"No results found" in r.data
+    assert b"Regex Match" not in r.data
 
 
 def test_alias_search_deleted_alias(flask_client):
