@@ -337,14 +337,14 @@
       </div>
       {# Actions #}
       {% if not domain.pending_deletion %}
-
-        <div class="card border-0" style="background-color: #f8f9fa;">
-          <div class="card-header" style="background-color: #ecf0f1;">
-            <h6 class="mb-0">
-              <i class="fa fa-cogs mr-2"></i>Actions
+        <div class="card" style="border: 2px solid #e67e22;">
+          <div class="card-header text-white" style="background-color: #e67e22;">
+            <h6 class="mb-0 d-flex justify-content-between align-items-center">
+              <span><i class="fa fa-tools mr-2"></i>Admin Actions</span>
+              <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Use with caution</small>
             </h6>
           </div>
-          <div class="card-body py-2">
+          <div class="card-body py-2" style="background-color: #fef9f3;">
             <form action="{{ url_for("admin.custom_domain_search.delete_custom_domain") }}"
                   method="POST"
                   class="d-inline">
