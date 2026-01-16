@@ -830,3 +830,181 @@ class EmailSearchAdmin(BaseView):
         )
         flash(f"User {user_email} has been permanently deleted", "success")
         return redirect(url_for("admin.email_search.index"))
+
+    @expose("/send_mailbox_disable_warning", methods=["POST"])
+    def send_mailbox_disable_warning(self):
+        from app.mailbox_utils import send_admin_disable_mailbox_warning_email
+
+        mailbox_id = request.form.get("mailbox_id")
+
+        if not mailbox_id:
+            flash("Missing mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            mailbox_id = int(mailbox_id)
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        send_admin_disable_mailbox_warning_email(mailbox)
+
+        flash(f"Warning email sent to {mailbox.email}", "success")
+        LOG.info(
+            f"Admin {current_user.email} sent disable warning to mailbox {mailbox.email} (id={mailbox_id})"
+        )
+
+        return redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )
+
+    @expose("/admin_disable_mailbox", methods=["POST"])
+    def admin_disable_mailbox(self):
+        from app.mailbox_utils import admin_disable_mailbox
+
+        mailbox_id = request.form.get("mailbox_id")
+
+        if not mailbox_id:
+            flash("Missing mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            mailbox_id = int(mailbox_id)
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if mailbox.is_admin_disabled():
+            flash(f"Mailbox {mailbox.email} is already admin-disabled", "warning")
+        else:
+            admin_user = User.get(current_user.id)
+            admin_disable_mailbox(mailbox, admin_user)
+            flash(f"Admin-disabled mailbox {mailbox.email}", "success")
+            LOG.warning(
+                f"Admin {current_user.email} admin-disabled mailbox {mailbox.email} (id={mailbox_id})"
+            )
+
+        return redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )
+
+    @expose("/admin_reenable_mailbox", methods=["POST"])
+    def admin_reenable_mailbox(self):
+        from app.mailbox_utils import admin_reenable_mailbox
+
+        mailbox_id = request.form.get("mailbox_id")
+
+        if not mailbox_id:
+            flash("Missing mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            mailbox_id = int(mailbox_id)
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if not mailbox.is_admin_disabled():
+            flash(f"Mailbox {mailbox.email} is not admin-disabled", "warning")
+        else:
+            admin_user = User.get(current_user.id)
+            admin_reenable_mailbox(mailbox, admin_user)
+            flash(f"Re-enabled mailbox {mailbox.email}", "success")
+            LOG.info(
+                f"Admin {current_user.email} re-enabled mailbox {mailbox.email} (id={mailbox_id})"
+            )
+
+        return redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )
+
+    @expose("/set_default_mailbox", methods=["POST"])
+    def set_default_mailbox(self):
+        mailbox_id = request.form.get("mailbox_id")
+
+        if not mailbox_id:
+            flash("Missing mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            mailbox_id = int(mailbox_id)
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if not mailbox.verified:
+            flash(f"Cannot set unverified mailbox {mailbox.email} as default", "error")
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=mailbox.email, search_type="email"
+                )
+            )
+
+        if mailbox.is_admin_disabled():
+            flash(
+                f"Cannot set admin-disabled mailbox {mailbox.email} as default", "error"
+            )
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=mailbox.email, search_type="email"
+                )
+            )
+
+        user = mailbox.user
+        old_default_id = user.default_mailbox_id
+        old_default = Mailbox.get(old_default_id)
+        old_default_email = old_default.email if old_default else "None"
+
+        # Set new default
+        user.default_mailbox_id = mailbox.id
+
+        # Log to AdminAuditLog
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="User",
+            model_id=user.id,
+            action=AuditLogActionEnum.update_object.value,
+            data={
+                "default_mailbox_id": mailbox.id,
+                "old_default_mailbox_id": old_default_id,
+                "message": f"Changed default mailbox from {old_default_email} (id={old_default_id}) to {mailbox.email} (id={mailbox.id})",
+            },
+        )
+        Session.commit()
+
+        flash(f"Set {mailbox.email} as default mailbox for {user.email}", "success")
+        LOG.info(
+            f"Admin {current_user.email} set mailbox {mailbox.email} (id={mailbox_id}) as default for user {user.email} (id={user.id})"
+        )
+
+        return redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )

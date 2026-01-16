@@ -506,7 +506,11 @@
             <th>ID</th>
             <th>Email</th>
             <th>Verified</th>
+            <th>Default</th>
+            <th>Admin Disabled</th>
+            <th># Aliases</th>
             <th>Created</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -528,7 +532,54 @@
                 </a>
               </td>
               <td>{{ badge_status(mailbox.verified, 'Yes', 'No', 'success', 'warning') }}</td>
+              <td>{{ badge_status(mailbox.user.default_mailbox_id == mailbox.id, 'Yes', 'No', 'primary', 'secondary') }}</td>
+              <td>{{ badge_status(mailbox.is_admin_disabled(), 'Yes', 'No', 'danger', 'success') }}</td>
+              <td>{{ mailbox.nb_alias() }}</td>
               <td>{{ mailbox.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              <td>
+                <div class="d-flex flex-column gap-1">
+                  {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
+
+                    <form method="post"
+                          action="{{ url_for('admin.email_search.set_default_mailbox') }}"
+                          class="mb-1">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <button type="submit" class="btn btn-sm btn-primary btn-block" onclick="return confirm('Set this as default mailbox for user?')">
+                        <i class="fa fa-star"></i> Set Default
+                      </button>
+                    </form>
+                  {% endif %}
+                  {% if mailbox.is_admin_disabled() %}
+
+                    <form method="post"
+                          action="{{ url_for('admin.email_search.admin_reenable_mailbox') }}"
+                          class="mb-1">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <button type="submit" class="btn btn-sm btn-success btn-block" onclick="return confirm('Re-enable this mailbox?')">
+                        <i class="fa fa-check"></i> Re-enable
+                      </button>
+                    </form>
+                  {% else %}
+
+                    <form method="post"
+                          action="{{ url_for('admin.email_search.send_mailbox_disable_warning') }}"
+                          class="mb-1">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <button type="submit" class="btn btn-sm btn-warning btn-block" onclick="return confirm('Send warning email?')">
+                        <i class="fa fa-exclamation-triangle"></i> Warn
+                      </button>
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('admin.email_search.admin_disable_mailbox') }}"
+                          class="mb-1">
+                      <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                      <button type="submit" class="btn btn-sm btn-danger btn-block" onclick="return confirm('Admin-disable this mailbox?')">
+                        <i class="fa fa-ban"></i> Disable
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
