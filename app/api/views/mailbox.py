@@ -68,6 +68,19 @@ def delete_mailbox(mailbox_id):
 
     """
     user = g.user
+    mailbox = Mailbox.get(mailbox_id)
+
+    if not mailbox or mailbox.user_id != user.id:
+        return jsonify(error="Forbidden"), 403
+
+    if mailbox.is_admin_disabled():
+        return (
+            jsonify(
+                error="This mailbox has been disabled and cannot be deleted. Please contact support."
+            ),
+            400,
+        )
+
     data = request.get_json() or {}
     transfer_mailbox_id = data.get("transfer_aliases_to")
     if transfer_mailbox_id and int(transfer_mailbox_id) >= 0:
@@ -103,6 +116,12 @@ def update_mailbox(mailbox_id):
 
     if not mailbox or mailbox.user_id != user.id:
         return jsonify(error="Forbidden"), 403
+
+    if mailbox.is_admin_disabled():
+        return (
+            jsonify(error="This mailbox has been disabled. Please contact support."),
+            400,
+        )
 
     data = request.get_json() or {}
     changed = False
