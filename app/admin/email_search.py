@@ -987,9 +987,9 @@ class EmailSearchAdmin(BaseView):
         # Log to AdminAuditLog
         AdminAuditLog.create(
             admin_user_id=current_user.id,
-            model="User",
+            model=Mailbox.__class__.__name__,
             model_id=user.id,
-            action=AuditLogActionEnum.update_object.value,
+            action=AuditLogActionEnum.change_default_mailbox,
             data={
                 "default_mailbox_id": mailbox.id,
                 "old_default_mailbox_id": old_default_id,
