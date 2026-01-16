@@ -9,6 +9,7 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
 from app.db import Session
+from app.log import LOG
 from app.errors import ProtonPartnerNotSetUp
 from app.models import (
     User,
@@ -456,6 +457,8 @@ class EmailSearchAdmin(BaseView):
     @expose("/partner_unlink", methods=["POST"])
     def delete_partner_link(self):
         user_id = request.form.get("user_id")
+        confirm_email = request.form.get("confirm_email", "").strip()
+
         if not user_id:
             flash("Missing user_id", "error")
             return redirect(url_for("admin.email_search.index"))
@@ -468,6 +471,22 @@ class EmailSearchAdmin(BaseView):
         if user is None:
             flash("User not found", "error")
             return redirect(url_for("admin.email_search.index", query=user_id))
+
+        # Get partner user to verify confirmation email
+        partner_user = PartnerUser.get_by(user_id=user.id)
+        if partner_user is None:
+            flash("User is not linked to a Proton account", "error")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        # Verify email confirmation matches
+        if confirm_email != partner_user.partner_email:
+            flash(
+                "Email confirmation does not match. User was not unlinked.",
+                "error",
+            )
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        partner_email = partner_user.partner_email
         external_user_id = perform_proton_account_unlink(user, skip_check=True)
 
         AdminAuditLog.create(
@@ -475,11 +494,18 @@ class EmailSearchAdmin(BaseView):
             model="User",
             model_id=user.id,
             action=AuditLogActionEnum.unlink_user.value,
-            data={"external_user_id": external_user_id or "unknown"},
+            data={
+                "external_user_id": external_user_id or "unknown",
+                "partner_email": partner_email,
+                "unlinked_by": current_user.email,
+            },
         )
         Session.commit()
 
-        flash("User unlinked from Proton account", "success")
+        LOG.info(
+            f"Admin {current_user.email} unlinked user {user.email} (id={user.id}) from Proton account {partner_email}"
+        )
+        flash(f"User unlinked from Proton account {partner_email}", "success")
         return redirect(url_for("admin.email_search.index", query=user.email))
 
     @expose("/stop_user_deletion", methods=["POST"])
@@ -506,6 +532,9 @@ class EmailSearchAdmin(BaseView):
         AdminAuditLog.clear_delete_on(current_user.id, user.id)
         Session.commit()
 
+        LOG.info(
+            f"Admin {current_user.email} cancelled scheduled deletion for user {user.email} (id={user.id})"
+        )
         flash(f"Cancelled scheduled deletion for user {user.email}", "success")
         return redirect(url_for("admin.email_search.index", query=user.email))
 
@@ -544,6 +573,9 @@ class EmailSearchAdmin(BaseView):
         )
         Session.commit()
 
+        LOG.info(
+            f"Admin {current_user.email} updated subdomain quota for user {user.email} (id={user.id}) from {old_quota} to {new_quota}"
+        )
         flash(
             f"Updated subdomain quota for user {user.email} from {old_quota} to {new_quota}",
             "success",
@@ -585,6 +617,9 @@ class EmailSearchAdmin(BaseView):
         )
         Session.commit()
 
+        LOG.info(
+            f"Admin {current_user.email} updated directory quota for user {user.email} (id={user.id}) from {old_quota} to {new_quota}"
+        )
         flash(
             f"Updated directory quota for user {user.email} from {old_quota} to {new_quota}",
             "success",
@@ -622,6 +657,9 @@ class EmailSearchAdmin(BaseView):
 
         mark_user_as_abuser(user, note, admin_id=current_user.id)
 
+        LOG.info(
+            f"Admin {current_user.email} marked user {user.email} (id={user.id}) as abuser"
+        )
         flash(f"Marked user {user.email} as abuser", "success")
         return redirect(url_for("admin.email_search.index", query=user.email))
 
@@ -656,6 +694,9 @@ class EmailSearchAdmin(BaseView):
 
         unmark_as_abusive_user(user.id, note, admin_id=current_user.id)
 
+        LOG.info(
+            f"Admin {current_user.email} unmarked user {user.email} (id={user.id}) as abuser"
+        )
         flash(f"Unmarked user {user.email} as abuser", "success")
         return redirect(url_for("admin.email_search.index", query=user.email))
 
@@ -710,8 +751,65 @@ class EmailSearchAdmin(BaseView):
         )
         Session.commit()
 
+        LOG.info(
+            f"Admin {current_user.email} disabled 2FA ({', '.join(disabled_methods)}) for user {user.email} (id={user.id})"
+        )
         flash(
             f"Disabled 2FA ({', '.join(disabled_methods)}) for user {user.email}",
             "success",
         )
         return redirect(url_for("admin.email_search.index", query=user.email))
+
+    @expose("/delete_user", methods=["POST"])
+    def delete_user(self):
+        user_id = request.form.get("user_id")
+        confirm_email = request.form.get("confirm_email", "").strip()
+
+        if not user_id:
+            flash("Missing user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            flash("Invalid user_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        user = User.get(user_id)
+        if user is None:
+            flash("User not found", "error")
+            return redirect(url_for("admin.email_search.index", query=user_id))
+
+        # Verify email confirmation matches
+        if confirm_email != user.email:
+            flash(
+                "Email confirmation does not match. User was not deleted.",
+                "error",
+            )
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        # Prevent deleting admin users
+        if user.is_admin:
+            flash("Cannot delete admin users", "error")
+            return redirect(url_for("admin.email_search.index", query=user.email))
+
+        user_email = user.email
+
+        # Log the deletion before actually deleting
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="User",
+            model_id=user.id,
+            action=AuditLogActionEnum.delete_object.value,
+            data={"email": user_email, "deleted_by": current_user.email},
+        )
+        Session.commit()
+
+        # Perform the deletion
+        User.delete(user.id, commit=True)
+
+        LOG.warning(
+            f"Admin {current_user.email} permanently deleted user {user_email} (id={user_id})"
+        )
+        flash(f"User {user_email} has been permanently deleted", "success")
+        return redirect(url_for("admin.email_search.index"))

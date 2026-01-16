@@ -20,208 +20,146 @@
   {% set pu = helper.partner_user(user) %}
   {% set active_sub = user.get_active_subscription() %}
   {% set sub_end = user.get_active_subscription_end() %}
-  <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header text-white" style="background-color: #2c3e50;">
-      <h6 class="mb-0">
-        <i class="fa fa-id-card mr-2"></i>Account Information
-      </h6>
+  <div class="row mb-4">
+    {# Account Information - 3/4 width #}
+    <div class="col-lg-9">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-header text-white" style="background-color: #2c3e50;">
+          <h6 class="mb-0">
+            <i class="fa fa-id-card mr-2"></i>Account Information
+          </h6>
+        </div>
+        <div class="card-body py-3">
+          {# Row 1: Identity & Subscription #}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Identity</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td><td class="py-1"><code>{{ user.id }}</code></td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Email:</td><td class="py-1"><a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a></td></tr>
+                {% if user.name %}<tr><td class="text-muted text-nowrap py-1">Name:</td><td class="py-1">{{ user.name }}</td></tr>{% endif %}
+                <tr><td class="text-muted text-nowrap py-1">Proton:</td><td class="py-1">{% if pu %}<a href="?query={{ pu.partner_email }}&search_type=email">{{ pu.partner_email }}</a>{% else %}<span class="text-muted">Not linked</span>{% endif %}</td></tr>
+                {% if user.referral %}<tr><td class="text-muted text-nowrap py-1">Referral:</td><td class="py-1"><code>{{ user.referral.code }}</code></td></tr>{% endif %}
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Subscription</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">Type:</td><td class="py-1">
+                  {% if user.lifetime %}<span class="badge" style="background-color: #27ae60; color: white;">Lifetime{% if user.paid_lifetime %} (Paid){% endif %}</span>
+                  {% elif active_sub %}
+                    {% if active_sub.__class__.__name__ == 'Subscription' %}<span class="badge" style="background-color: #3498db; color: white;">Paddle</span>
+                    {% elif active_sub.__class__.__name__ == 'AppleSubscription' %}<span class="badge badge-dark">Apple</span>
+                    {% elif active_sub.__class__.__name__ == 'ManualSubscription' %}<span class="badge" style="background-color: #8e44ad; color: white;">Manual{% if active_sub.is_giveaway %} (Giveaway){% endif %}</span>
+                    {% elif active_sub.__class__.__name__ == 'CoinbaseSubscription' %}<span class="badge" style="background-color: #f39c12; color: white;">Coinbase</span>
+                    {% elif active_sub.__class__.__name__ == 'PartnerSubscription' %}<span class="badge" style="background-color: #9b59b6; color: white;">Partner</span>
+                    {% else %}<span class="badge badge-secondary">{{ active_sub.__class__.__name__ }}</span>{% endif %}
+                  {% else %}<span class="badge badge-secondary">Free</span>{% endif %}
+                </td></tr>
+                <tr><td class="text-muted text-nowrap py-1">End:</td><td class="py-1">
+                  {% if user.lifetime %}<span class="text-success">Never</span>
+                  {% elif sub_end %}<span class="{% if sub_end < now %}text-danger{% else %}text-success{% endif %}">{{ sub_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ sub_end.humanize() }}</small>
+                  {% else %}{% set sub_end_date = helper.subscription_end_date(active_sub) %}{% if sub_end_date %}<span class="{% if sub_end_date < now %}text-danger{% else %}text-success{% endif %}">{{ sub_end_date.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ sub_end_date.humanize() }}</small>{% else %}<span class="text-muted">N/A</span>{% endif %}{% endif %}
+                </td></tr>
+                {% if user.trial_end and not user.lifetime and not active_sub %}<tr><td class="text-muted text-nowrap py-1">Trial:</td><td class="py-1"><span class="{% if user.trial_end < now %}text-danger{% else %}text-info{% endif %}">{{ user.trial_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ user.trial_end.humanize() }}</small></td></tr>{% endif %}
+                <tr><td class="text-muted text-nowrap py-1">Paid:</td><td class="py-1">{{ badge_status(user.is_paid(), 'Yes', 'No', 'info', 'secondary') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Premium:</td><td class="py-1">{{ badge_status(user.is_premium(), 'Yes', 'No', 'info', 'secondary') }}</td></tr>
+              </table>
+            </div>
+          </div>
+          {# Row 2: Status & Dates/Quotas #}
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Status</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">Verified:</td><td class="py-1">{{ badge_status(user.activated, 'Yes', 'No', 'success', 'warning') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Enabled:</td><td class="py-1">{{ badge_status(not user.disabled, 'Yes', 'No', 'success', 'danger') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Admin:</td><td class="py-1">{{ badge_status(user.is_admin, 'Yes', 'No', 'warning', 'secondary') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">TOTP:</td><td class="py-1">{{ badge_status(user.enable_otp, 'Yes', 'No', 'info', 'secondary') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">FIDO:</td><td class="py-1">{{ badge_status(user.fido_uuid, 'Yes', 'No', 'info', 'secondary') }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Flags:</td><td class="py-1"><code>{{ user.flags or 0 }}</code>{% set flag_names = helper.user_flags(user) %}{% if flag_names %} <small class="text-muted">{{ flag_names|join(", ") }}</small>{% endif %}</td></tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Dates & Quotas</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">Created:</td><td class="py-1 text-nowrap">{{ user.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Updated:</td><td class="py-1 text-nowrap">{{ user.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Deletion:</td><td class="py-1">{% if user.delete_on %}<span class="badge badge-danger">{{ user.delete_on.format("YYYY-MM-DD") }}</span>{% else %}<span class="text-muted">Not scheduled</span>{% endif %}</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Subdomain:</td><td class="py-1">{{ user.subdomain_quota }} left</td></tr>
+                <tr><td class="text-muted text-nowrap py-1">Directory:</td><td class="py-1">{{ user.directory_quota }} left</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <div class="row">
-        {# Column 1: Account Identity #}
-        <div class="col-md-3">
-          <h6 class="text-muted mb-3">Identity</h6>
-          <table class="table table-sm table-borderless">
-            <tr>
-              <td class="font-weight-bold" style="width: 80px;">ID:</td>
-              <td>
-                <code>{{ user.id }}</code>
-              </td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Email:</td>
-              <td>
-                <a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a>
-              </td>
-            </tr>
-            {% if user.name %}
-
-              <tr>
-                <td class="font-weight-bold">Name:</td>
-                <td>{{ user.name }}</td>
-              </tr>
-            {% endif %}
-            <tr>
-              <td class="font-weight-bold">Proton:</td>
-              <td>
-                {% if pu %}
-
-                  <a href="?query={{ pu.partner_email }}&search_type=email">{{ pu.partner_email }}</a>
-                  <small class="text-muted d-block">Linked {{ pu.created_at.strftime("%Y-%m-%d") }} UTC</small>
-                {% else %}
-                  <span class="text-muted">Not linked</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% if user.referral %}
-
-              <tr>
-                <td class="font-weight-bold">Referral:</td>
-                <td>
-                  <code>{{ user.referral.code }}</code>
-                </td>
-              </tr>
-            {% endif %}
-          </table>
+    {# Admin Actions - 1/4 width #}
+    <div class="col-lg-3">
+      <div class="card h-100 shadow-sm" style="border: 2px solid #e67e22;">
+        <div class="card-header text-white py-2" style="background-color: #e67e22;">
+          <h6 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="fa fa-tools mr-2"></i>Actions</span>
+            <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
+          </h6>
         </div>
-        {# Column 2: Account Status #}
-        <div class="col-md-3">
-          <h6 class="text-muted mb-3">Status</h6>
-          <table class="table table-sm table-borderless">
-            <tr>
-              <td class="font-weight-bold" style="width: 80px;">Verified:</td>
-              <td>{{ badge_status(user.activated, 'Yes', 'No', 'success', 'warning') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Enabled:</td>
-              <td>{{ badge_status(not user.disabled, 'Yes', 'No', 'success', 'danger') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Admin:</td>
-              <td>{{ badge_status(user.is_admin, 'Yes', 'No', 'warning', 'secondary') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">2FA:</td>
-              <td>{{ badge_status(user.enable_otp, 'TOTP', 'No', 'info', 'secondary') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">FIDO:</td>
-              <td>{{ badge_status(user.fido_uuid, 'Yes', 'No', 'info', 'secondary') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Flags:</td>
-              <td>
-                <code>{{ user.flags or 0 }}</code>
-                {% set flag_names = helper.user_flags(user) %}
-                {% if flag_names %}<small class="text-muted d-block">{{ flag_names|join(", ") }}</small>{% endif %}
-              </td>
-            </tr>
-          </table>
-        </div>
-        {# Column 3: Subscription #}
-        <div class="col-md-3">
-          <h6 class="text-muted mb-3">Subscription</h6>
-          <table class="table table-sm table-borderless">
-            <tr>
-              <td class="font-weight-bold" style="width: 80px;">Type:</td>
-              <td>
-                {% if user.lifetime %}
-
-                  <span class="badge" style="background-color: #27ae60; color: white;">Lifetime
-                    {% if user.paid_lifetime %}(Paid){% endif %}
-                  </span>
-                {% elif active_sub %}
-                  {% if active_sub.__class__.__name__ == 'Subscription' %}
-
-                    <span class="badge" style="background-color: #3498db; color: white;">Paddle</span>
-                  {% elif active_sub.__class__.__name__ == 'AppleSubscription' %}
-                    <span class="badge badge-dark">Apple</span>
-                  {% elif active_sub.__class__.__name__ == 'ManualSubscription' %}
-                    <span class="badge" style="background-color: #8e44ad; color: white;">Manual
-                      {% if active_sub.is_giveaway %}(Giveaway){% endif %}
-                    </span>
-                  {% elif active_sub.__class__.__name__ == 'CoinbaseSubscription' %}
-                    <span class="badge" style="background-color: #f39c12; color: white;">Coinbase</span>
-                  {% elif active_sub.__class__.__name__ == 'PartnerSubscription' %}
-                    <span class="badge" style="background-color: #9b59b6; color: white;">Partner</span>
-                  {% else %}
-                    <span class="badge badge-secondary">{{ active_sub.__class__.__name__ }}</span>
-                  {% endif %}
-                {% else %}
-                  <span class="badge badge-secondary">Free</span>
-                {% endif %}
-              </td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">End:</td>
-              <td>
-                {% if user.lifetime %}
-
-                  <span class="text-success">Never</span>
-                {% elif sub_end %}
-                  <span class="{% if sub_end < now %}
-                    text-danger{% else %}text-success{% endif %}">{{ sub_end.format("YYYY-MM-DD") }}</span>
-                  <small class="text-muted d-block">{{ sub_end.humanize() }}</small>
-                {% else %}
-                  {% set sub_end_date = helper.subscription_end_date(active_sub) %}
-                  {% if sub_end_date %}
-
-                    <span class="{% if sub_end_date < now %}
-                      text-danger{% else %}text-success{% endif %}">{{ sub_end_date.format("YYYY-MM-DD") }}</span>
-                    <small class="text-muted d-block">{{ sub_end_date.humanize() }}</small>
-                  {% else %}
-                    <span class="text-muted">N/A</span>
-                  {% endif %}
-                {% endif %}
-              </td>
-            </tr>
-            {% if user.trial_end and not user.lifetime and not active_sub %}
-
-              <tr>
-                <td class="font-weight-bold">Trial:</td>
-                <td>
-                  <span class="{% if user.trial_end < now %}
-                    text-danger{% else %}text-info{% endif %}">{{ user.trial_end.format("YYYY-MM-DD") }}</span>
-                  <small class="text-muted d-block">{{ user.trial_end.humanize() }}</small>
-                </td>
-              </tr>
+        <div class="card-body py-3 d-flex flex-column" style="background-color: #fef9f3;">
+          {# Action Buttons #}
+          <div class="mb-3">
+            <small class="text-muted text-uppercase d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">User Actions</small>
+            {% if user.disabled %}
+            <button type="button" class="btn btn-sm btn-block mb-2" style="background-color: #27ae60; color: white" data-toggle="modal" data-target="#unmarkAbuserModal{{ user.id }}">
+              <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-sm btn-block mb-2" style="background-color: #c0392b; color: white" data-toggle="modal" data-target="#markAbuserModal{{ user.id }}">
+              <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
+            </button>
             {% endif %}
-            <tr>
-              <td class="font-weight-bold">Paid:</td>
-              <td>{{ badge_status(user.is_paid() , 'Yes', 'No', 'info', 'secondary') }}</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Premium:</td>
-              <td>{{ badge_status(user.is_premium() , 'Yes', 'No', 'info', 'secondary') }}</td>
-            </tr>
-          </table>
-        </div>
-        {# Column 4: Dates & Quotas #}
-        <div class="col-md-3">
-          <h6 class="text-muted mb-3">Dates & Quotas</h6>
-          <table class="table table-sm table-borderless">
-            <tr>
-              <td class="font-weight-bold" style="width: 80px;">Created:</td>
-              <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M") }} UTC</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Updated:</td>
-              <td>{{ user.updated_at.strftime("%Y-%m-%d %H:%M") }} UTC</td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Deletion:</td>
-              <td>
-                {% if user.delete_on %}
-
-                  <span class="badge badge-danger">{{ user.delete_on.format("YYYY-MM-DD") }}</span>
-                {% else %}
-                  <span class="text-muted">Not scheduled</span>
-                {% endif %}
-              </td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Subdomain:</td>
-              <td>
-                <code>{{ user._subdomain_quota }}</code> <small class="text-muted">({{ user.subdomain_quota }} left)</small>
-              </td>
-            </tr>
-            <tr>
-              <td class="font-weight-bold">Directory:</td>
-              <td>
-                <code>{{ user._directory_quota }}</code> <small class="text-muted">({{ user.directory_quota }} left)</small>
-              </td>
-            </tr>
-          </table>
+            {% if pu %}
+            <button type="button" class="btn btn-sm btn-block mb-2" style="background-color: #7f8c8d; color: white" data-toggle="modal" data-target="#unlinkProtonModal{{ user.id }}">
+              <i class="fa fa-unlink mr-1"></i>Unlink Proton
+            </button>
+            {% endif %}
+            {% if user.enable_otp or user.fido_uuid %}
+            <form action="{{ url_for("admin.email_search.disable_2fa") }}" method="POST" class="mb-2">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button type="submit" class="btn btn-sm btn-block" style="background-color: #e67e22; color: white" onclick="return confirm('Disable 2FA for this user?');">
+                <i class="fa fa-shield-alt mr-1"></i>Disable 2FA {% if user.enable_otp and user.fido_uuid %}(TOTP+FIDO){% elif user.enable_otp %}(TOTP){% else %}(FIDO){% endif %}
+              </button>
+            </form>
+            {% endif %}
+            {% if user.delete_on %}
+            <form action="{{ url_for("admin.email_search.stop_user_deletion") }}" method="POST" class="mb-2">
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+              <button type="submit" class="btn btn-sm btn-block" style="background-color: #e74c3c; color: white" onclick="return confirm('Cancel scheduled deletion?');">
+                <i class="fa fa-ban mr-1"></i>Stop Deletion
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {# Quotas #}
+          <div class="mb-3">
+            <small class="text-muted text-uppercase d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Update Quotas</small>
+            <div class="input-group input-group-sm mb-2">
+              <div class="input-group-prepend"><span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Subdomain</span></div>
+              <input type="number" id="subdomainQuotaInput{{ user.id }}" value="{{ user._subdomain_quota }}" class="form-control" min="0" max="1000">
+              <div class="input-group-append"><button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#subdomainQuotaModal{{ user.id }}" onclick="document.getElementById('subdomainQuotaHidden{{ user.id }}').value = document.getElementById('subdomainQuotaInput{{ user.id }}').value; document.getElementById('subdomainQuotaDisplay{{ user.id }}').textContent = document.getElementById('subdomainQuotaInput{{ user.id }}').value;"><i class="fa fa-save"></i></button></div>
+            </div>
+            <div class="input-group input-group-sm">
+              <div class="input-group-prepend"><span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Directory</span></div>
+              <input type="number" id="directoryQuotaInput{{ user.id }}" value="{{ user._directory_quota }}" class="form-control" min="0" max="1000">
+              <div class="input-group-append"><button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#directoryQuotaModal{{ user.id }}" onclick="document.getElementById('directoryQuotaHidden{{ user.id }}').value = document.getElementById('directoryQuotaInput{{ user.id }}').value; document.getElementById('directoryQuotaDisplay{{ user.id }}').textContent = document.getElementById('directoryQuotaInput{{ user.id }}').value;"><i class="fa fa-save"></i></button></div>
+            </div>
+          </div>
+          {# Spacer to push delete to bottom #}
+          <div class="flex-grow-1"></div>
+          {# Delete User - fixed at bottom like a footer #}
+          <div class="mt-auto pt-3 border-top">
+            <button type="button" class="btn btn-sm btn-block btn-danger" data-toggle="modal" data-target="#deleteUserModal{{ user.id }}">
+              <i class="fa fa-exclamation-triangle mr-1"></i>Delete User
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -229,154 +167,7 @@
 {%- endmacro %}
 {% macro user_actions_card(user) -%}
   {% set pu = helper.partner_user(user) %}
-  <div class="card mb-4 shadow-sm" style="border: 2px solid #e67e22;">
-    <div class="card-header text-white" style="background-color: #e67e22;">
-      <h6 class="mb-0 d-flex justify-content-between align-items-center">
-        <span><i class="fa fa-tools mr-2"></i>Admin Actions</span>
-        <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Use with caution</small>
-      </h6>
-    </div>
-    <div class="card-body py-3" style="background-color: #fef9f3;">
-      <div class="row align-items-end">
-        {# Mark/Unmark Abuser #}
-        <div class="col-auto mb-2">
-          {% if user.disabled %}
-
-            <button type="button"
-                    class="btn btn-sm"
-                    style="background-color: #27ae60;
-                           color: white"
-                    data-toggle="modal"
-                    data-target="#unmarkAbuserModal{{ user.id }}">
-              <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
-            </button>
-          {% else %}
-            <button type="button"
-                    class="btn btn-sm"
-                    style="background-color: #c0392b;
-                           color: white"
-                    data-toggle="modal"
-                    data-target="#markAbuserModal{{ user.id }}">
-              <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
-            </button>
-          {% endif %}
-        </div>
-        {% if pu %}
-
-          <div class="col-auto mb-2">
-            <form action="{{ url_for("admin.email_search.delete_partner_link") }}"
-                  method="POST"
-                  class="d-inline">
-              <input type="hidden" name="user_id" value="{{ user.id }}">
-              <button type="submit"
-                      class="btn btn-sm"
-                      style="background-color: #7f8c8d;
-                             color: white"
-                      onclick="return confirm('Are you sure you want to unlink this user from their Proton account?');">
-                <i class="fa fa-unlink mr-1"></i>Unlink Proton
-              </button>
-            </form>
-          </div>
-        {% endif %}
-        {% if user.enable_otp or user.fido_uuid %}
-
-          <div class="col-auto mb-2">
-            <form action="{{ url_for("admin.email_search.disable_2fa") }}"
-                  method="POST"
-                  class="d-inline">
-              <input type="hidden" name="user_id" value="{{ user.id }}">
-              <button type="submit"
-                      class="btn btn-sm"
-                      style="background-color: #e67e22;
-                             color: white"
-                      onclick="return confirm('Are you sure you want to disable 2FA for this user? This will remove TOTP and/or FIDO authentication.');">
-                <i class="fa fa-shield-alt mr-1"></i>Disable 2FA
-                {% if user.enable_otp and user.fido_uuid %}
-
-                  (TOTP+FIDO)
-                {% elif user.enable_otp %}
-                  (TOTP)
-                {% else %}
-                  (FIDO)
-                {% endif %}
-              </button>
-            </form>
-          </div>
-        {% endif %}
-        {% if user.delete_on %}
-
-          <div class="col-auto mb-2">
-            <form action="{{ url_for("admin.email_search.stop_user_deletion") }}"
-                  method="POST"
-                  class="d-inline">
-              <input type="hidden" name="user_id" value="{{ user.id }}">
-              <button type="submit"
-                      class="btn btn-sm"
-                      style="background-color: #e74c3c;
-                             color: white"
-                      onclick="return confirm('Are you sure you want to cancel the scheduled deletion for this user?');">
-                <i class="fa fa-ban mr-1"></i>Stop Deletion ({{ user.delete_on.format("YYYY-MM-DD") }})
-              </button>
-            </form>
-          </div>
-        {% endif %}
-        {# Subdomain Quota #}
-        <div class="col-auto mb-2">
-          <form action="{{ url_for("admin.email_search.update_subdomain_quota") }}"
-                method="POST"
-                class="d-inline">
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <div class="input-group input-group-sm" style="width: 180px;">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Subdomain</span>
-              </div>
-              <input type="number"
-                     name="subdomain_quota"
-                     value="{{ user._subdomain_quota }}"
-                     class="form-control"
-                     min="0"
-                     max="1000"
-                     style="width: 60px">
-              <div class="input-group-append">
-                <button type="submit"
-                        class="btn btn-outline-secondary"
-                        onclick="return confirm('Update subdomain quota?');">
-                  <i class="fa fa-save"></i>
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-        {# Directory Quota #}
-        <div class="col-auto mb-2">
-          <form action="{{ url_for("admin.email_search.update_directory_quota") }}"
-                method="POST"
-                class="d-inline">
-            <input type="hidden" name="user_id" value="{{ user.id }}">
-            <div class="input-group input-group-sm" style="width: 180px;">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Directory</span>
-              </div>
-              <input type="number"
-                     name="directory_quota"
-                     value="{{ user._directory_quota }}"
-                     class="form-control"
-                     min="0"
-                     max="1000"
-                     style="width: 60px">
-              <div class="input-group-append">
-                <button type="submit"
-                        class="btn btn-outline-secondary"
-                        onclick="return confirm('Update directory quota?');">
-                  <i class="fa fa-save"></i>
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  {# This macro now only contains modals - action buttons are in user_info_card #}
   {# Mark Abuser Modal #}
   <div class="modal fade"
        id="markAbuserModal{{ user.id }}"
@@ -473,6 +264,165 @@
                            color: white">
               <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
             </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {# Unlink Proton Modal #}
+  {% if pu %}
+  <div class="modal fade" id="unlinkProtonModal{{ user.id }}" tabindex="-1" role="dialog" aria-labelledby="unlinkProtonModalLabel{{ user.id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background-color: #7f8c8d;">
+          <h5 class="modal-title" id="unlinkProtonModalLabel{{ user.id }}">
+            <i class="fa fa-unlink mr-2"></i>Unlink from Proton Account
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for("admin.email_search.delete_partner_link") }}" method="POST" id="unlinkProtonForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="alert alert-warning">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This will unlink the SimpleLogin account from the Proton account.
+            </div>
+            <p>You are about to unlink user <strong>{{ user.email }}</strong> from Proton account.</p>
+            <div class="form-group">
+              <label for="confirmUnlinkEmail{{ user.id }}" class="font-weight-bold">Type <code>{{ pu.partner_email }}</code> to confirm:</label>
+              <input type="text" class="form-control" id="confirmUnlinkEmail{{ user.id }}" name="confirm_email" required autocomplete="off">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn" style="background-color: #7f8c8d; color: white" id="unlinkProtonBtn{{ user.id }}" disabled>
+              <i class="fa fa-unlink mr-1"></i>Unlink from Proton
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmUnlinkEmail{{ user.id }}');
+      var unlinkBtn = document.getElementById('unlinkProtonBtn{{ user.id }}');
+      var expectedEmail = '{{ pu.partner_email }}';
+      if (confirmInput && unlinkBtn) {
+        confirmInput.addEventListener('input', function() {
+          unlinkBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+  {# Delete User Modal #}
+  <div class="modal fade"
+       id="deleteUserModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="deleteUserModalLabel{{ user.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header text-white bg-danger">
+          <h5 class="modal-title" id="deleteUserModalLabel{{ user.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete User Permanently
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for("admin.email_search.delete_user") }}"
+              method="POST"
+              id="deleteUserForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone. The user account and all associated data will be permanently deleted.
+            </div>
+            <p>This will permanently delete:</p>
+            <ul class="mb-3">
+              <li>All aliases associated with this account</li>
+              <li>All mailboxes</li>
+              <li>All custom domains</li>
+              <li>All account data</li>
+            </ul>
+            <div class="form-group">
+              <label for="confirmEmail{{ user.id }}" class="font-weight-bold">Type <code>{{ user.email }}</code> to confirm:</label>
+              <input type="text" class="form-control" id="confirmEmail{{ user.id }}" name="confirm_email" required autocomplete="off">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-danger"
+                    id="deleteUserBtn{{ user.id }}"
+                    disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete User Permanently
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmEmail{{ user.id }}');
+      var deleteBtn = document.getElementById('deleteUserBtn{{ user.id }}');
+      var expectedEmail = '{{ user.email }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+  {# Subdomain Quota Modal #}
+  <div class="modal fade" id="subdomainQuotaModal{{ user.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header py-2" style="background-color: #34495e; color: white;">
+          <h6 class="modal-title"><i class="fa fa-edit mr-2"></i>Confirm Update</h6>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <form action="{{ url_for("admin.email_search.update_subdomain_quota") }}" method="POST" id="subdomainQuotaForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <input type="hidden" name="subdomain_quota" id="subdomainQuotaHidden{{ user.id }}" value="{{ user._subdomain_quota }}">
+            <p class="mb-0">Update subdomain quota for <strong>{{ user.email }}</strong> to <strong id="subdomainQuotaDisplay{{ user.id }}">{{ user._subdomain_quota }}</strong>?</p>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {# Directory Quota Modal #}
+  <div class="modal fade" id="directoryQuotaModal{{ user.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header py-2" style="background-color: #34495e; color: white;">
+          <h6 class="modal-title"><i class="fa fa-edit mr-2"></i>Confirm Update</h6>
+          <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        </div>
+        <form action="{{ url_for("admin.email_search.update_directory_quota") }}" method="POST" id="directoryQuotaForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <input type="hidden" name="directory_quota" id="directoryQuotaHidden{{ user.id }}" value="{{ user._directory_quota }}">
+            <p class="mb-0">Update directory quota for <strong>{{ user.email }}</strong> to <strong id="directoryQuotaDisplay{{ user.id }}">{{ user._directory_quota }}</strong>?</p>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Confirm</button>
           </div>
         </form>
       </div>
@@ -782,28 +732,21 @@
       <table class="table table-hover table-sm mb-0">
         <thead class="thead-light">
           <tr>
+            <th class="text-nowrap">Time (UTC)</th>
             <th>User ID</th>
             <th>Alias</th>
             <th>Action</th>
             <th>Message</th>
-            <th>Time</th>
           </tr>
         </thead>
         <tbody>
           {% for entry in alias_audit_log %}
-
             <tr>
-              <td>
-                <a href="?query={{ entry.user_id }}&search_type=email">{{ entry.user_id }}</a>
-              </td>
-              <td>
-                <a href="?query={{ entry.alias_email }}&search_type=alias"><code>{{ entry.alias_email }}</code></a>
-              </td>
-              <td>
-                <span class="badge badge-dark">{{ entry.action }}</span>
-              </td>
+              <td class="text-nowrap"><small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small></td>
+              <td><a href="?query={{ entry.user_id }}&search_type=email">{{ entry.user_id }}</a></td>
+              <td><a href="?query={{ entry.alias_email }}&search_type=alias"><code>{{ entry.alias_email }}</code></a></td>
+              <td><span class="badge badge-dark">{{ entry.action }}</span></td>
               <td class="text-truncate" style="max-width: 300px;">{{ entry.message or '-' }}</td>
-              <td>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -823,22 +766,17 @@
         <table class="table table-hover table-sm mb-0">
           <thead class="thead-light">
             <tr>
+              <th class="text-nowrap">Time (UTC)</th>
               <th>Action</th>
               <th>Message</th>
-              <th>Time (UTC)</th>
             </tr>
           </thead>
           <tbody>
             {% for entry in user_audit_log %}
-
               <tr>
-                <td>
-                  <span class="badge badge-secondary">{{ entry.action }}</span>
-                </td>
+                <td class="text-nowrap"><small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small></td>
+                <td><span class="badge badge-secondary">{{ entry.action }}</span></td>
                 <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.message or '-' }}</td>
-                <td class="text-nowrap">
-                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</small>
-                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -859,37 +797,24 @@
         <table class="table table-hover table-sm mb-0">
           <thead class="thead-light">
             <tr>
+              <th class="text-nowrap">Time (UTC)</th>
               <th>Admin</th>
               <th>Action</th>
               <th>Message</th>
-              <th>Time (UTC)</th>
             </tr>
           </thead>
           <tbody>
             {% for entry in abuser_audit_log %}
-
               <tr>
+                <td class="text-nowrap"><small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small></td>
                 <td>
                   {% if entry.admin_id %}
-
                     {% set admin_email = helper.get_admin_email(entry.admin_id) %}
-                    {% if admin_email %}
-
-                      <a href="?query={{ admin_email }}&search_type=email">{{ admin_email }}</a>
-                    {% else %}
-                      <span class="text-muted">ID: {{ entry.admin_id }}</span>
-                    {% endif %}
-                  {% else %}
-                    <span class="text-muted">System</span>
-                  {% endif %}
+                    {% if admin_email %}<a href="?query={{ admin_email }}&search_type=email">{{ admin_email }}</a>{% else %}<span class="text-muted">ID: {{ entry.admin_id }}</span>{% endif %}
+                  {% else %}<span class="text-muted">System</span>{% endif %}
                 </td>
-                <td>
-                  <span class="badge" style="background-color: #c0392b; color: white;">{{ entry.action }}</span>
-                </td>
+                <td><span class="badge" style="background-color: #c0392b; color: white;">{{ entry.action }}</span></td>
                 <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.message or '-' }}</td>
-                <td class="text-nowrap">
-                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</small>
-                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -910,31 +835,19 @@
         <table class="table table-hover table-sm mb-0">
           <thead class="thead-light">
             <tr>
+              <th class="text-nowrap">Time (UTC)</th>
               <th>Admin</th>
               <th>Action</th>
               <th>Data</th>
-              <th>Time (UTC)</th>
             </tr>
           </thead>
           <tbody>
             {% for entry in admin_audit_log %}
-
               <tr>
-                <td>
-                  {% if entry.admin %}
-
-                    <a href="?query={{ entry.admin.email }}&search_type=email">{{ entry.admin.email }}</a>
-                  {% else %}
-                    <span class="text-muted">Unknown</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <span class="badge badge-secondary">{{ helper.action_name(entry.action) }}</span>
-                </td>
+                <td class="text-nowrap"><small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small></td>
+                <td>{% if entry.admin %}<a href="?query={{ entry.admin.email }}&search_type=email">{{ entry.admin.email }}</a>{% else %}<span class="text-muted">Unknown</span>{% endif %}</td>
+                <td><span class="badge badge-secondary">{{ helper.action_name(entry.action) }}</span></td>
                 <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.data }}</td>
-                <td class="text-nowrap">
-                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</small>
-                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -1026,6 +939,17 @@
   </div>
 {% endmacro %}
 {% block body %}
+  <style>
+    /* Prevent ID columns from wrapping */
+    .table th:first-child,
+    .table td:first-child {
+      white-space: nowrap;
+    }
+    /* Also prevent User ID column from wrapping in partner_users table */
+    .table td code {
+      white-space: nowrap;
+    }
+  </style>
   <div class="container-fluid px-4">
     <!-- Search Form -->
     <div class="card mb-4 border-0 shadow-sm">
