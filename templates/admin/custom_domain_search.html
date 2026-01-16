@@ -214,6 +214,18 @@
     {% endif %}
   </div>
 {%- endmacro %}
+{# Verification status summary inline #}
+{% macro verification_summary(domain) -%}
+  {% set verified_count = (domain.ownership_verified|int) + (domain.verified|int) + (domain.spf_verified|int) + (domain.dkim_verified|int) + (domain.dmarc_verified|int) %}
+  {% set total_count = 5 %}
+  {% if verified_count == total_count %}
+    <span class="badge badge-success"><i class="fa fa-check-circle mr-1"></i>All Verified ({{ verified_count }}/{{ total_count }})</span>
+  {% elif verified_count == 0 %}
+    <span class="badge badge-danger"><i class="fa fa-times-circle mr-1"></i>Not Verified (0/{{ total_count }})</span>
+  {% else %}
+    <span class="badge badge-warning"><i class="fa fa-exclamation-circle mr-1"></i>Partial ({{ verified_count }}/{{ total_count }})</span>
+  {% endif %}
+{%- endmacro %}
 {# Domain card #}
 {% macro domain_card(domain_data) -%}
   {% set domain = domain_data.domain %}
@@ -229,88 +241,82 @@
     <div class="card-body">
       {# Domain Owner Summary #}
       {{ user_summary_card(domain.user) }}
-      {# Domain Information #}
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
-            <div class="card-header" style="background-color: #ecf0f1;">
+      {# Domain Information + Actions Row #}
+      <div class="row mb-3">
+        {# Domain Information - 3/4 width #}
+        <div class="col-lg-9">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header text-white" style="background-color: #2c3e50;">
               <h6 class="mb-0">
                 <i class="fa fa-info-circle mr-2"></i>Domain Information
               </h6>
             </div>
-            <div class="card-body">
-              <table class="table table-sm table-borderless mb-0">
-                <tr>
-                  <td class="font-weight-bold" style="width: 140px;">ID:</td>
-                  <td>
-                    <code>{{ domain.id }}</code>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">Domain:</td>
-                  <td>
-                    <code>{{ domain.domain }}</code>
-                  </td>
-                </tr>
-                {% if domain.name %}
-
-                  <tr>
-                    <td class="font-weight-bold">Display Name:</td>
-                    <td>{{ domain.name }}</td>
-                  </tr>
-                {% endif %}
-                <tr>
-                  <td class="font-weight-bold">Created:</td>
-                  <td>{{ domain.created_at.strftime("%Y-%m-%d %H:%M") }} UTC</td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">Catch-All:</td>
-                  <td>{{ badge_status(domain.catch_all, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">Random Prefix:</td>
-                  <td>{{ badge_status(domain.random_prefix_generation, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">SL Subdomain:</td>
-                  <td>{{ badge_status(domain.is_sl_subdomain, 'Yes', 'No', 'info', 'secondary') }}</td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">Failed Checks:</td>
-                  <td>
-                    {% if domain.nb_failed_checks > 0 %}
-
-                      <span class="badge badge-warning">{{ domain.nb_failed_checks }}</span>
-                    {% else %}
-                      <span class="text-muted">0</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <td class="font-weight-bold">Aliases:</td>
-                  <td>
-                    <strong>{{ helper.alias_count(domain) }}</strong>
-                  </td>
-                </tr>
-              </table>
+            <div class="card-body py-3">
+              {# Row 1: Details & Settings #}
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Details</h6>
+                  <table class="table table-sm table-borderless mb-0">
+                    <tr><td class="text-muted text-nowrap py-1" style="width: 100px;">ID:</td><td class="py-1"><code>{{ domain.id }}</code></td></tr>
+                    <tr><td class="text-muted text-nowrap py-1">Domain:</td><td class="py-1"><code>{{ domain.domain }}</code></td></tr>
+                    {% if domain.name %}<tr><td class="text-muted text-nowrap py-1">Name:</td><td class="py-1">{{ domain.name }}</td></tr>{% endif %}
+                    <tr><td class="text-muted text-nowrap py-1">Created:</td><td class="py-1 text-nowrap">{{ domain.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+                    <tr><td class="text-muted text-nowrap py-1">Aliases:</td><td class="py-1"><strong>{{ helper.alias_count(domain) }}</strong></td></tr>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Settings</h6>
+                  <table class="table table-sm table-borderless mb-0">
+                    <tr><td class="text-muted text-nowrap py-1" style="width: 120px;">Catch-All:</td><td class="py-1">{{ badge_status(domain.catch_all, 'Enabled', 'Disabled', 'info', 'secondary') }}</td></tr>
+                    <tr><td class="text-muted text-nowrap py-1">Random Prefix:</td><td class="py-1">{{ badge_status(domain.random_prefix_generation, 'Enabled', 'Disabled', 'info', 'secondary') }}</td></tr>
+                    <tr><td class="text-muted text-nowrap py-1">SL Subdomain:</td><td class="py-1">{{ badge_status(domain.is_sl_subdomain, 'Yes', 'No', 'info', 'secondary') }}</td></tr>
+                    <tr><td class="text-muted text-nowrap py-1">Failed Checks:</td><td class="py-1">{% if domain.nb_failed_checks > 0 %}<span class="badge badge-warning">{{ domain.nb_failed_checks }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td></tr>
+                  </table>
+                </div>
+              </div>
+              {# Row 2: Verification Status #}
+              <div class="row">
+                <div class="col-12">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Verification Status {{ verification_summary(domain) }}
+                  </h6>
+                  <div class="d-flex flex-wrap">
+                    {{ verification_badge(domain.ownership_verified, 'Ownership') }}
+                    {{ verification_badge(domain.verified, 'MX') }}
+                    {{ verification_badge(domain.spf_verified, 'SPF') }}
+                    {{ verification_badge(domain.dkim_verified, 'DKIM') }}
+                    {{ verification_badge(domain.dmarc_verified, 'DMARC') }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-lg-6">
-          <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
-            <div class="card-header" style="background-color: #ecf0f1;">
-              <h6 class="mb-0">
-                <i class="fa fa-check-circle mr-2"></i>Verification Status
+        {# Admin Actions - 1/4 width #}
+        <div class="col-lg-3">
+          <div class="card h-100 shadow-sm" style="border: 2px solid #e67e22;">
+            <div class="card-header text-white py-2" style="background-color: #e67e22;">
+              <h6 class="mb-0 d-flex justify-content-between align-items-center">
+                <span><i class="fa fa-tools mr-2"></i>Actions</span>
+                <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
               </h6>
             </div>
-            <div class="card-body">
-              <div class="d-flex flex-wrap">
-                {{ verification_badge(domain.ownership_verified, 'Ownership') }}
-                {{ verification_badge(domain.verified, 'MX') }}
-                {{ verification_badge(domain.spf_verified, 'SPF') }}
-                {{ verification_badge(domain.dkim_verified, 'DKIM') }}
-                {{ verification_badge(domain.dmarc_verified, 'DMARC') }}
-              </div>
+            <div class="card-body py-3 d-flex flex-column" style="background-color: #fef9f3;">
+              {% if not domain.pending_deletion %}
+                {# Spacer to push delete to bottom #}
+                <div class="flex-grow-1"></div>
+                {# Delete Domain - fixed at bottom like a footer #}
+                <div class="mt-auto pt-3 border-top">
+                  <button type="button" class="btn btn-sm btn-block btn-danger" data-toggle="modal" data-target="#deleteDomainModal{{ domain.id }}">
+                    <i class="fa fa-exclamation-triangle mr-1"></i>Delete Domain
+                  </button>
+                </div>
+              {% else %}
+                <div class="text-center text-muted py-3">
+                  <i class="fa fa-clock fa-2x mb-2"></i>
+                  <p class="mb-0 small">Pending deletion</p>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -335,33 +341,145 @@
           </div>
         </div>
       </div>
-      {# Actions #}
-      {% if not domain.pending_deletion %}
-        <div class="card" style="border: 2px solid #e67e22;">
-          <div class="card-header text-white" style="background-color: #e67e22;">
-            <h6 class="mb-0 d-flex justify-content-between align-items-center">
-              <span><i class="fa fa-tools mr-2"></i>Admin Actions</span>
-              <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Use with caution</small>
-            </h6>
-          </div>
-          <div class="card-body py-2" style="background-color: #fef9f3;">
-            <form action="{{ url_for("admin.custom_domain_search.delete_custom_domain") }}"
-                  method="POST"
-                  class="d-inline">
-              <input type="hidden" name="domain_id" value="{{ domain.id }}">
-              <button type="submit"
-                      class="btn btn-sm"
-                      style="background-color: #c0392b;
-                             color: white"
-                      onclick="return confirm('Are you sure you want to delete the custom domain {{ domain.domain }}? This action cannot be undone.');">
-                <i class="fa fa-trash mr-1"></i>Delete Domain
-              </button>
-            </form>
+      {# Aliases Section #}
+      {% set alias_count = helper.alias_count(domain) %}
+      {% set aliases = helper.alias_list(domain) %}
+      {% set deleted_alias_count = helper.deleted_alias_count(domain) %}
+      {% set deleted_aliases = helper.deleted_alias_list(domain) %}
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ecf0f1;">
+              <h6 class="mb-0">
+                <i class="fa fa-at mr-2"></i>Aliases
+                <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
+                {% if alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              {% if aliases %}
+              <table class="table table-hover table-sm mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Enabled</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for alias in aliases %}
+                  <tr>
+                    <td><code>{{ alias.id }}</code></td>
+                    <td><a href="{{ url_for('admin.email_search.index', query=alias.email, search_type='alias') }}">{{ alias.email }}</a></td>
+                    <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                    <td class="text-nowrap">{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div class="p-3 text-muted text-center">
+                <i class="fa fa-info-circle mr-1"></i>No aliases
+              </div>
+              {% endif %}
+            </div>
           </div>
         </div>
-      {% endif %}
+        <div class="col-lg-6">
+          <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ecf0f1;">
+              <h6 class="mb-0">
+                <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
+                <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
+                {% if deleted_alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              {% if deleted_aliases %}
+              <table class="table table-hover table-sm mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Deleted At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for deleted in deleted_aliases %}
+                  <tr>
+                    <td><code>{{ deleted.id }}</code></td>
+                    <td><code>{{ deleted.email }}</code></td>
+                    <td class="text-nowrap">{{ deleted.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <div class="p-3 text-muted text-center">
+                <i class="fa fa-info-circle mr-1"></i>No deleted aliases
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+  {# Delete Domain Modal #}
+  {% if not domain.pending_deletion %}
+  <div class="modal fade" id="deleteDomainModal{{ domain.id }}" tabindex="-1" role="dialog" aria-labelledby="deleteDomainModalLabel{{ domain.id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header text-white bg-danger">
+          <h5 class="modal-title" id="deleteDomainModalLabel{{ domain.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete Custom Domain
+          </h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for("admin.custom_domain_search.delete_custom_domain") }}" method="POST" id="deleteDomainForm{{ domain.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="domain_id" value="{{ domain.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone. The domain and all associated aliases will be scheduled for deletion.
+            </div>
+            <p>This will:</p>
+            <ul class="mb-3">
+              <li>Schedule the domain for permanent deletion</li>
+              <li>Delete all aliases associated with this domain</li>
+              <li>Remove all DNS verification records</li>
+            </ul>
+            <div class="form-group">
+              <label for="confirmDomain{{ domain.id }}" class="font-weight-bold">Type <code>{{ domain.domain }}</code> to confirm:</label>
+              <input type="text" class="form-control" id="confirmDomain{{ domain.id }}" name="confirm_domain" required autocomplete="off">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger" id="deleteDomainBtn{{ domain.id }}" disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete Domain
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmDomain{{ domain.id }}');
+      var deleteBtn = document.getElementById('deleteDomainBtn{{ domain.id }}');
+      var expectedDomain = '{{ domain.domain }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedDomain);
+        });
+      }
+    })();
+  </script>
+  {% endif %}
 {%- endmacro %}
 {% block body %}
 

@@ -15,7 +15,14 @@ from app.custom_domain_validation import (
 )
 from app.db import Session
 from app.dns_utils import get_network_dns_client
-from app.models import User, CustomDomain, AdminAuditLog, AuditLogActionEnum, Alias
+from app.models import (
+    User,
+    CustomDomain,
+    AdminAuditLog,
+    AuditLogActionEnum,
+    Alias,
+    DomainDeletedAlias,
+)
 
 
 class CustomDomainWithValidationData:
@@ -176,6 +183,25 @@ class CustomDomainSearchHelpers:
             .all()
         )
 
+    @staticmethod
+    def deleted_alias_count(domain: CustomDomain) -> int:
+        """Get count of deleted aliases for this domain."""
+        return DomainDeletedAlias.filter(
+            DomainDeletedAlias.domain_id == domain.id
+        ).count()
+
+    @staticmethod
+    def deleted_alias_list(
+        domain: CustomDomain, limit: int = 10
+    ) -> List[DomainDeletedAlias]:
+        """Get list of deleted aliases for this domain."""
+        return (
+            DomainDeletedAlias.filter(DomainDeletedAlias.domain_id == domain.id)
+            .order_by(DomainDeletedAlias.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
 
 class CustomDomainSearchAdmin(BaseView):
     def is_accessible(self):
@@ -204,7 +230,11 @@ class CustomDomainSearchAdmin(BaseView):
 
     @expose("/delete_domain", methods=["POST"])
     def delete_custom_domain(self):
+        from app.log import LOG
+
         domain_id = request.form.get("domain_id")
+        confirm_domain = request.form.get("confirm_domain", "").strip()
+
         if not domain_id:
             flash("Missing domain_id", "error")
             return redirect(url_for("admin.custom_domain_search.index"))
@@ -221,6 +251,17 @@ class CustomDomainSearchAdmin(BaseView):
             return redirect(url_for("admin.custom_domain_search.index"))
 
         domain_name = domain.domain
+
+        # Verify domain confirmation matches
+        if confirm_domain != domain_name:
+            flash(
+                "Domain confirmation does not match. Domain was not deleted.",
+                "error",
+            )
+            return redirect(
+                url_for("admin.custom_domain_search.index", query=domain_name)
+            )
+
         from app.custom_domain_utils import delete_custom_domain
 
         delete_custom_domain(domain)
@@ -230,9 +271,12 @@ class CustomDomainSearchAdmin(BaseView):
             model="CustomDomain",
             model_id=domain_id,
             action=AuditLogActionEnum.delete_custom_domain.value,
-            data={"domain": domain_name},
+            data={"domain": domain_name, "deleted_by": current_user.email},
         )
         Session.commit()
 
+        LOG.warning(
+            f"Admin {current_user.email} scheduled deletion of custom domain {domain_name} (id={domain_id})"
+        )
         flash(f"Scheduled deletion of custom domain {domain_name}", "success")
         return redirect(url_for("admin.custom_domain_search.index", query=domain_name))
