@@ -46,6 +46,12 @@
               <div class="card-body">
                 <h5 class="card-title">
                   {{ mailbox.email }}
+                  {% if mailbox.is_admin_disabled() %}
+
+                    <span class="badge badge-danger"
+                          data-toggle="tooltip"
+                          data-original-title="This mailbox has been disabled by administrators">Disabled by admin</span>
+                  {% endif %}
                   {% if mailbox.verified %}
 
                     <span class="cursor"
@@ -77,8 +83,10 @@
                   <span class="font-weight-bold">{{ mailbox.nb_alias() }}</span> aliases.
                   <br />
                 </h6>
-                <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit
-                ➡</a>
+                {% if not mailbox.is_admin_disabled() %}
+                  <a href="{{ url_for('dashboard.mailbox_detail_route', mailbox_id=mailbox.id) }}">Edit
+                  ➡</a>
+                {% endif %}
               </div>
               <div class="card-footer p-0">
                 <div class="row">
@@ -90,7 +98,7 @@
                         <input type="hidden" name="form-name" value="set-default">
                         <input type="hidden" class="mailbox" value="{{ mailbox.email }}">
                         <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
-                        <button class="card-link btn btn-link {% if mailbox.id == current_user.default_mailbox_id %}disabled{% endif %}">Set As Default Mailbox</button>
+                        <button class="card-link btn btn-link {% if mailbox.id == current_user.default_mailbox_id or mailbox.is_admin_disabled() %}disabled{% endif %}">Set As Default Mailbox</button>
                       </form>
                     </div>
                   {% endif %}
@@ -110,7 +118,7 @@
                           {% endif %}
                         {% endfor %}
                       </select>
-                      <span class="card-link btn btn-link text-danger float-right delete-mailbox {% if mailbox.id == current_user.default_mailbox_id %}disabled{% endif %}">Delete</span>
+                      <span class="card-link btn btn-link text-danger float-right delete-mailbox {% if mailbox.id == current_user.default_mailbox_id or mailbox.is_admin_disabled() %}disabled{% endif %}">Delete</span>
                     </form>
                   </div>
                 </div>
