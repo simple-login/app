@@ -42,6 +42,11 @@ def set_mailboxes_for_alias(
     if len(mailboxes) != len(mailbox_ids):
         return CannotSetMailboxesForAliasCause.Forbidden
 
+    # Check for admin-disabled mailboxes
+    for mailbox in mailboxes:
+        if mailbox.is_admin_disabled():
+            return CannotSetMailboxesForAliasCause.Forbidden
+
     # first remove all existing alias-mailboxes links
     AliasMailbox.filter_by(alias_id=alias.id).delete()
     Session.flush()

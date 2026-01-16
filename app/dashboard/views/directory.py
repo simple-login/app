@@ -62,7 +62,7 @@ def directory():
         .all()
     )
 
-    mailboxes = current_user.mailboxes()
+    mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
     new_dir_form = NewDirForm()
     toggle_dir_form = ToggleDirForm()
@@ -232,6 +232,12 @@ def directory():
                                 ):
                                     flash(
                                         "Something went wrong, please retry", "warning"
+                                    )
+                                    return redirect(url_for("dashboard.directory"))
+                                if mailbox.is_admin_disabled():
+                                    flash(
+                                        "Cannot assign admin-disabled mailbox. Please contact support.",
+                                        "error",
                                     )
                                     return redirect(url_for("dashboard.directory"))
                                 mailboxes.append(mailbox)
