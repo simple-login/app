@@ -536,15 +536,20 @@ def count_mailbox_aliases(mailbox: Mailbox) -> int:
     return len(alias_ids)
 
 
-def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None) -> int:
+def admin_disable_mailbox(
+    mailbox: Mailbox, admin_user: Optional[User] = None, note: Optional[str] = None
+) -> int:
     """Admin-disable a mailbox. User cannot re-enable."""
     disabled = 0
     for mb in Mailbox.filter_by(email=mailbox.email).all():
         mb.flags = mb.flags | Mailbox.FLAG_ADMIN_DISABLED
+        message = f"Mailbox {mb.id} ({mb.email}) admin_disabled"
+        if note:
+            message += f". Note: {note}"
         emit_abuser_audit_log(
             user_id=mb.user_id,
             action=AbuserAuditLogAction.Note,
-            message=f"Mailbox {mb.id} ({mb.email}) admin_disabled",
+            message=message,
             admin_id=admin_user.id if admin_user else None,
         )
         if admin_user:
@@ -565,15 +570,20 @@ def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None) -
     return disabled
 
 
-def admin_reenable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None) -> int:
+def admin_reenable_mailbox(
+    mailbox: Mailbox, admin_user: Optional[User] = None, note: Optional[str] = None
+) -> int:
     """Re-enable an admin-disabled mailbox."""
     enabled = 0
     for mb in Mailbox.filter_by(email=mailbox.email).all():
         mb.flags = mb.flags & ~Mailbox.FLAG_ADMIN_DISABLED
+        message = f"Mailbox {mb.id} ({mb.email}) admin_reenabled"
+        if note:
+            message += f". Note: {note}"
         emit_abuser_audit_log(
             user_id=mb.user_id,
             action=AbuserAuditLogAction.Note,
-            message=f"Mailbox {mb.id} ({mb.email}) admin_reenabled",
+            message=message,
             admin_id=admin_user.id if admin_user else None,
         )
         if admin_user:

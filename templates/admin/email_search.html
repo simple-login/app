@@ -731,8 +731,7 @@
 {%- endmacro %}
 {% macro mailboxes_table(message, mbox_count, mboxes, is_regex, highlight_mailbox_email=none) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-         class="header-neutral">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
       <h6 class="mb-0">
         <i class="fa fa-inbox mr-2"></i>{{ message }}
         <span class="badge badge-secondary ml-2">{{ mbox_count }} total</span>
@@ -748,14 +747,18 @@
               <th>ID</th>
               <th>Email</th>
               <th>Verified</th>
+              <th>Default</th>
+              <th>Admin Disabled</th>
+              <th># Aliases</th>
               <th>Created</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for mailbox in mboxes %}
 
               <tr class="{% if highlight_mailbox_email and mailbox.email == highlight_mailbox_email %}
-                 table-warning{% endif %}">
+                table-warning{% endif %}">
                 <td>
                   <code>{{ mailbox.id }}</code>
                 </td>
@@ -770,8 +773,239 @@
                   </a>
                 </td>
                 <td>{{ badge_status(mailbox.verified, 'Yes', 'No', 'success', 'warning') }}</td>
-                <td>{{ mailbox.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ badge_status(mailbox.user.default_mailbox_id == mailbox.id, 'Yes', 'No', 'info', 'secondary') }}</td>
+                <td>{{ badge_status(mailbox.is_admin_disabled() , 'Yes', 'No', 'danger', 'success') }}</td>
+                <td>
+                  <span class="badge badge-secondary">{{ mailbox.nb_alias() }}</span>
+                </td>
+                <td class="text-nowrap">{{ mailbox.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>
+                  <div class="d-flex flex-column">
+                    {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
+
+                      <button type="button"
+                              class="btn btn-sm btn-info btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#setDefaultMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-star mr-1"></i>Set Default
+                      </button>
+                    {% endif %}
+                    {% if mailbox.is_admin_disabled() %}
+
+                      <button type="button"
+                              class="btn btn-sm btn-success-modern btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#reenableMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-check mr-1"></i>Re-enable
+                      </button>
+                    {% else %}
+                      <button type="button"
+                              class="btn btn-sm btn-caution-modern btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#warnMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-exclamation-triangle mr-1"></i>Warn
+                      </button>
+                      <button type="button"
+                              class="btn btn-sm btn-danger-modern btn-block"
+                              data-toggle="modal"
+                              data-target="#disableMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-ban mr-1"></i>Disable
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
               </tr>
+              {# Set Default Mailbox Modal #}
+              {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
+
+                <div class="modal fade"
+                     id="setDefaultMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="setDefaultMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-primary">
+                        <h5 class="modal-title" id="setDefaultMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-star mr-2"></i>Set Default Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for("admin.email_search.set_default_mailbox") }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <p>
+                            Set <strong>{{ mailbox.email }}</strong> as the default mailbox for this user?
+                          </p>
+                          <p class="text-muted small mb-0">
+                            The current default mailbox is: <code>{{ mailbox.user.default_mailbox.email }}</code>
+                          </p>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-info">
+                            <i class="fa fa-star mr-1"></i>Set Default
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              {# Re-enable Mailbox Modal #}
+              {% if mailbox.is_admin_disabled() %}
+
+                <div class="modal fade"
+                     id="reenableMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="reenableMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-success">
+                        <h5 class="modal-title" id="reenableMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-check mr-2"></i>Re-enable Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for("admin.email_search.admin_reenable_mailbox") }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <p>
+                            Re-enable the mailbox <strong>{{ mailbox.email }}</strong>?
+                          </p>
+                          <p class="text-muted small">
+                            This mailbox was previously disabled by an admin. Re-enabling will allow it to receive emails again.
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="reenableMailboxNote{{ mailbox.id }}" class="font-weight-bold">Note (required)</label>
+                            <textarea class="form-control"
+                                      id="reenableMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for re-enabling this mailbox..."></textarea>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-success-modern">
+                            <i class="fa fa-check mr-1"></i>Re-enable
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                {# Warn Mailbox Modal #}
+                <div class="modal fade"
+                     id="warnMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="warnMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-caution">
+                        <h5 class="modal-title" id="warnMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-exclamation-triangle mr-2"></i>Send Warning Email
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for("admin.email_search.send_mailbox_disable_warning") }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                            This will send a warning email to the user about mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small mb-0">
+                            The user will be notified that their mailbox may be disabled if they don't take action.
+                          </p>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-caution-modern">
+                            <i class="fa fa-exclamation-triangle mr-1"></i>Send Warning
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {# Disable Mailbox Modal #}
+                <div class="modal fade"
+                     id="disableMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="disableMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-danger">
+                        <h5 class="modal-title" id="disableMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-ban mr-2"></i>Disable Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for("admin.email_search.admin_disable_mailbox") }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-danger">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            This will admin-disable the mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small">
+                            The user will be notified and the mailbox will no longer receive emails until re-enabled by an admin.
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="disableMailboxNote{{ mailbox.id }}" class="font-weight-bold">Note (required)</label>
+                            <textarea class="form-control"
+                                      id="disableMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for disabling this mailbox..."></textarea>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-danger-modern">
+                            <i class="fa fa-ban mr-1"></i>Disable Mailbox
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>
@@ -781,8 +1015,7 @@
 {% endmacro %}
 {% macro aliases_table(alias_count, aliases, is_regex) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-         class="header-neutral">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
       <h6 class="mb-0">
         <i class="fa fa-at mr-2"></i>Aliases
         <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
@@ -1019,7 +1252,7 @@
 {% endmacro %}
 {% macro user_audit_log_table(user_audit_log) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header text-white" class="header-primary">
+    <div class="card-header header-primary">
       <h6 class="mb-0">
         <i class="fa fa-clipboard-list mr-2"></i>User Audit Log <span class="badge badge-light">{{ user_audit_log|length }}</span>
       </h6>
@@ -1106,7 +1339,7 @@
 {% endmacro %}
 {% macro admin_audit_log_table(admin_audit_log) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header text-white" class="header-primary">
+    <div class="card-header header-primary">
       <h6 class="mb-0">
         <i class="fa fa-user-shield mr-2"></i>Admin Actions <span class="badge badge-light">{{ admin_audit_log|length }}</span>
       </h6>
@@ -1828,6 +2061,11 @@
 
     .modal-header.modal-warning {
       background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-caution {
+      background: linear-gradient(135deg, var(--color-caution-dark) 0%, var(--color-caution) 100%);
       color: white;
     }
 
