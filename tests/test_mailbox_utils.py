@@ -12,6 +12,8 @@ from app.db import Session
 from app.mail_sender import mail_sender
 from app.mailbox_utils import (
     MailboxEmailChangeError,
+    admin_disable_mailbox,
+    admin_reenable_mailbox,
     get_mailbox_for_reply_phase,
     request_mailbox_email_change,
     count_mailbox_aliases,
@@ -24,6 +26,9 @@ from app.models import (
     UserAuditLog,
     Alias,
     AuthorizedAddress,
+    AdminAuditLog,
+    AbuserAuditLog,
+    AuditLogActionEnum,
 )
 from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
@@ -715,3 +720,273 @@ def test_count_mailbox_aliases(flask_client):
     assert count_mailbox_aliases(mbx1) == 3
     assert count_mailbox_aliases(mbx2) == 3
     assert count_mailbox_aliases(mbx3) == 0
+
+
+@mail_sender.store_emails_test_decorator
+def test_admin_disable_mailbox_single(flask_client):
+    user = create_new_user()
+    admin_user = create_new_user()
+    email = random_email()
+    mailbox = Mailbox.create(user_id=user.id, email=email, verified=True, commit=True)
+
+    # Disable the mailbox
+    disabled_count = admin_disable_mailbox(mailbox, admin_user)
+
+    # Verify only one mailbox was disabled
+    assert disabled_count == 1
+
+    # Verify the mailbox is admin disabled
+    mailbox_db = Mailbox.get(mailbox.id)
+    assert mailbox_db.is_admin_disabled()
+    assert mailbox_db.flags & Mailbox.FLAG_ADMIN_DISABLED == Mailbox.FLAG_ADMIN_DISABLED
+
+    # Verify admin audit log was created
+    admin_log = Session.query(AdminAuditLog).filter_by(model_id=mailbox.id).first()
+    assert admin_log is not None
+    assert admin_log.admin_user_id == admin_user.id
+
+    # Verify abuser audit log was created
+    abuser_log = (
+        AbuserAuditLog.filter_by(user_id=user.id)
+        .order_by(AbuserAuditLog.id.desc())
+        .first()
+    )
+    assert abuser_log is not None
+    assert f"Mailbox {mailbox.id}" in abuser_log.message
+    assert "admin_disabled" in abuser_log.message
+
+    # Verify notification email was sent
+    assert len(mail_sender.get_stored_emails()) == 1
+    mail_sent = mail_sender.get_stored_emails()[0]
+    assert mail_sent.envelope_to == email
+    assert "disabled" in str(mail_sent.msg).lower()
+
+
+@mail_sender.store_emails_test_decorator
+def test_admin_disable_mailbox_multiple_users(flask_client):
+    # Create multiple users with mailboxes having the same email
+    user1 = create_new_user()
+    user2 = create_new_user()
+    user3 = create_new_user()
+    admin_user = create_new_user()
+
+    shared_email = random_email()
+
+    mailbox1 = Mailbox.create(
+        user_id=user1.id, email=shared_email, verified=True, commit=True
+    )
+    mailbox2 = Mailbox.create(
+        user_id=user2.id, email=shared_email, verified=True, commit=True
+    )
+    mailbox3 = Mailbox.create(
+        user_id=user3.id, email=shared_email, verified=True, commit=True
+    )
+
+    # Disable using any one of the mailboxes (should affect all)
+    disabled_count = admin_disable_mailbox(mailbox1, admin_user)
+
+    # Verify all three mailboxes were disabled
+    assert disabled_count == 3
+
+    # Verify all mailboxes are admin disabled
+    for mb_id in [mailbox1.id, mailbox2.id, mailbox3.id]:
+        mailbox_db = Mailbox.get(mb_id)
+        assert mailbox_db.is_admin_disabled()
+        assert (
+            mailbox_db.flags & Mailbox.FLAG_ADMIN_DISABLED
+            == Mailbox.FLAG_ADMIN_DISABLED
+        )
+
+    # Verify admin audit logs were created for each mailbox
+    admin_logs = (
+        Session.query(AdminAuditLog).filter_by(admin_user_id=admin_user.id).all()
+    )
+    assert len(admin_logs) == 3
+    logged_mailbox_ids = {log.model_id for log in admin_logs}
+    assert logged_mailbox_ids == {mailbox1.id, mailbox2.id, mailbox3.id}
+
+    # Verify abuser audit logs were created for each user
+    for user_id in [user1.id, user2.id, user3.id]:
+        abuser_log = (
+            AbuserAuditLog.filter_by(user_id=user_id)
+            .order_by(AbuserAuditLog.id.desc())
+            .first()
+        )
+        assert abuser_log is not None
+        assert "admin_disabled" in abuser_log.message
+
+    # Verify notification email was sent (only once to the shared email)
+    assert len(mail_sender.get_stored_emails()) == 1
+    mail_sent = mail_sender.get_stored_emails()[0]
+    assert mail_sent.envelope_to == shared_email
+
+
+@mail_sender.store_emails_test_decorator
+def test_admin_reenable_mailbox_single(flask_client):
+    """Test admin re-enabling a single mailbox."""
+    user = create_new_user()
+    admin_user = create_new_user()
+    email = random_email()
+    mailbox = Mailbox.create(user_id=user.id, email=email, verified=True, commit=True)
+
+    # First disable the mailbox
+    admin_disable_mailbox(mailbox, admin_user)
+    mail_sender.purge_stored_emails()
+
+    # Verify it's disabled
+    mailbox_db = Mailbox.get(mailbox.id)
+    assert mailbox_db.is_admin_disabled()
+
+    # Now re-enable it
+    enabled_count = admin_reenable_mailbox(mailbox, admin_user)
+
+    # Verify only one mailbox was re-enabled
+    assert enabled_count == 1
+
+    # Verify the mailbox is no longer admin disabled
+    mailbox_db = Mailbox.get(mailbox.id)
+    assert not mailbox_db.is_admin_disabled()
+    assert mailbox_db.flags & Mailbox.FLAG_ADMIN_DISABLED == 0
+
+    # Verify admin audit log was created for re-enable
+    admin_log = (
+        Session.query(AdminAuditLog)
+        .filter_by(model_id=mailbox.id, action=AuditLogActionEnum.enable_mailbox.value)
+        .first()
+    )
+    assert admin_log is not None
+    assert admin_log.admin_user_id == admin_user.id
+
+    # Verify abuser audit log was created for re-enable
+    abuser_logs = (
+        AbuserAuditLog.filter_by(user_id=user.id)
+        .order_by(AbuserAuditLog.id.desc())
+        .all()
+    )
+    reenable_log = next(
+        (log for log in abuser_logs if "admin_reenabled" in log.message), None
+    )
+    assert reenable_log is not None
+
+    # Verify notification email was sent
+    assert len(mail_sender.get_stored_emails()) == 1
+    mail_sent = mail_sender.get_stored_emails()[0]
+    assert mail_sent.envelope_to == email
+    assert (
+        "re-enabled" in str(mail_sent.msg).lower()
+        or "enabled" in str(mail_sent.msg).lower()
+    )
+
+
+@mail_sender.store_emails_test_decorator
+def test_admin_reenable_mailbox_multiple_users(flask_client):
+    """Test admin re-enabling mailboxes with same email across different users."""
+    # Create multiple users with mailboxes having the same email
+    user1 = create_new_user()
+    user2 = create_new_user()
+    user3 = create_new_user()
+    admin_user = create_new_user()
+
+    shared_email = random_email()
+
+    mailbox1 = Mailbox.create(
+        user_id=user1.id, email=shared_email, verified=True, commit=True
+    )
+    mailbox2 = Mailbox.create(
+        user_id=user2.id, email=shared_email, verified=True, commit=True
+    )
+    mailbox3 = Mailbox.create(
+        user_id=user3.id, email=shared_email, verified=True, commit=True
+    )
+
+    # First disable all mailboxes
+    admin_disable_mailbox(mailbox1, admin_user)
+    mail_sender.purge_stored_emails()
+
+    # Verify all are disabled
+    for mb_id in [mailbox1.id, mailbox2.id, mailbox3.id]:
+        assert Mailbox.get(mb_id).is_admin_disabled()
+
+    # Now re-enable using any one of the mailboxes (should affect all)
+    enabled_count = admin_reenable_mailbox(mailbox2, admin_user)
+
+    # Verify all three mailboxes were re-enabled
+    assert enabled_count == 3
+
+    # Verify all mailboxes are no longer admin disabled
+    for mb_id in [mailbox1.id, mailbox2.id, mailbox3.id]:
+        mailbox_db = Mailbox.get(mb_id)
+        assert not mailbox_db.is_admin_disabled()
+        assert mailbox_db.flags & Mailbox.FLAG_ADMIN_DISABLED == 0
+
+    # Verify admin audit logs were created for each mailbox re-enable
+    admin_logs = (
+        Session.query(AdminAuditLog)
+        .filter_by(
+            admin_user_id=admin_user.id, action=AuditLogActionEnum.enable_mailbox.value
+        )
+        .all()
+    )
+    assert len(admin_logs) == 3
+    logged_mailbox_ids = {log.model_id for log in admin_logs}
+    assert logged_mailbox_ids == {mailbox1.id, mailbox2.id, mailbox3.id}
+
+    # Verify abuser audit logs were created for each user
+    for user_id in [user1.id, user2.id, user3.id]:
+        abuser_logs = (
+            AbuserAuditLog.filter_by(user_id=user_id)
+            .order_by(AbuserAuditLog.id.desc())
+            .all()
+        )
+        reenable_log = next(
+            (log for log in abuser_logs if "admin_reenabled" in log.message), None
+        )
+        assert reenable_log is not None
+
+    # Verify notification email was sent (only once to the shared email)
+    assert len(mail_sender.get_stored_emails()) == 1
+    mail_sent = mail_sender.get_stored_emails()[0]
+    assert mail_sent.envelope_to == shared_email
+
+
+@mail_sender.store_emails_test_decorator
+def test_admin_disable_reenable_without_admin_user(flask_client):
+    """Test admin disable/re-enable without specifying admin user."""
+    user = create_new_user()
+    email = random_email()
+    mailbox = Mailbox.create(user_id=user.id, email=email, verified=True, commit=True)
+
+    # Disable without admin user
+    disabled_count = admin_disable_mailbox(mailbox, admin_user=None)
+    assert disabled_count == 1
+
+    # Verify mailbox is disabled
+    mailbox_db = Mailbox.get(mailbox.id)
+    assert mailbox_db.is_admin_disabled()
+
+    # Verify no AdminAuditLog was created (since admin_user is None)
+    admin_logs = Session.query(AdminAuditLog).filter_by(model_id=mailbox.id).all()
+    assert len(admin_logs) == 0
+
+    # Verify AbuserAuditLog was still created
+    abuser_log = (
+        AbuserAuditLog.filter_by(user_id=user.id)
+        .order_by(AbuserAuditLog.id.desc())
+        .first()
+    )
+    assert abuser_log is not None
+    assert "admin_disabled" in abuser_log.message
+
+    mail_sender.purge_stored_emails()
+
+    # Re-enable without admin user
+    enabled_count = admin_reenable_mailbox(mailbox, admin_user=None)
+    assert enabled_count == 1
+
+    # Verify the mailbox is no longer admin disabled
+    mailbox_db = Mailbox.get(mailbox.id)
+    assert not mailbox_db.is_admin_disabled()
+
+    # Verify still no AdminAuditLog was created
+    admin_logs = Session.query(AdminAuditLog).filter_by(model_id=mailbox.id).all()
+    assert len(admin_logs) == 0

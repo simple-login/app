@@ -890,8 +890,11 @@ class EmailSearchAdmin(BaseView):
             flash(f"Mailbox {mailbox.email} is already admin-disabled", "warning")
         else:
             admin_user = User.get(current_user.id)
-            admin_disable_mailbox(mailbox, admin_user)
-            flash(f"Admin-disabled mailbox {mailbox.email}", "success")
+            count = admin_disable_mailbox(mailbox, admin_user)
+            flash(
+                f"Admin-disabled mailbox {mailbox.email} ({count} total mailboxes disabled)",
+                "success",
+            )
             LOG.warning(
                 f"Admin {current_user.email} admin-disabled mailbox {mailbox.email} (id={mailbox_id})"
             )
@@ -927,8 +930,11 @@ class EmailSearchAdmin(BaseView):
             flash(f"Mailbox {mailbox.email} is not admin-disabled", "warning")
         else:
             admin_user = User.get(current_user.id)
-            admin_reenable_mailbox(mailbox, admin_user)
-            flash(f"Re-enabled mailbox {mailbox.email}", "success")
+            count = admin_reenable_mailbox(mailbox, admin_user)
+            flash(
+                f"Re-enabled mailbox {mailbox.email} ({count} total mailboxes re-enabled)",
+                "success",
+            )
             LOG.info(
                 f"Admin {current_user.email} re-enabled mailbox {mailbox.email} (id={mailbox_id})"
             )

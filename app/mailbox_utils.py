@@ -536,59 +536,62 @@ def count_mailbox_aliases(mailbox: Mailbox) -> int:
     return len(alias_ids)
 
 
-def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
+def admin_disable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None) -> int:
     """Admin-disable a mailbox. User cannot re-enable."""
-    mailbox.flags = mailbox.flags | Mailbox.FLAG_ADMIN_DISABLED
+    disabled = 0
+    for mb in Mailbox.filter_by(email=mailbox.email).all():
+        mb.flags = mb.flags | Mailbox.FLAG_ADMIN_DISABLED
+        emit_abuser_audit_log(
+            user_id=mb.user_id,
+            action=AbuserAuditLogAction.Note,
+            message=f"Mailbox {mb.id} ({mb.email}) admin_disabled",
+            admin_id=admin_user.id if admin_user else None,
+        )
+        if admin_user:
+            AdminAuditLog.create(
+                admin_user_id=admin_user.id,
+                action=AuditLogActionEnum.disable_mailbox.value,
+                model="Mailbox",
+                model_id=mb.id,
+                data={},
+            )
+        disabled += 1
+
     Session.commit()
-
-    # Log to AbuserAuditLog
-    emit_abuser_audit_log(
-        user_id=mailbox.user_id,
-        action=AbuserAuditLogAction.Note,
-        message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_disabled",
-        admin_id=admin_user.id if admin_user else None,
-    )
-
-    # Create AdminAuditLog
-    AdminAuditLog.create(
-        admin_user_id=admin_user.id if admin_user else 0,
-        action=AuditLogActionEnum.disable_mailbox,
-        model=Mailbox.__class__.__name__,
-        model_id=mailbox.id,
-        data={},
-        commit=True,
-    )
 
     # Send notification email
     send_admin_disable_mailbox_email(mailbox)
 
+    return disabled
 
-def admin_reenable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None):
+
+def admin_reenable_mailbox(mailbox: Mailbox, admin_user: Optional[User] = None) -> int:
     """Re-enable an admin-disabled mailbox."""
-    mailbox.flags = mailbox.flags & ~Mailbox.FLAG_ADMIN_DISABLED
+    enabled = 0
+    for mb in Mailbox.filter_by(email=mailbox.email).all():
+        mb.flags = mb.flags & ~Mailbox.FLAG_ADMIN_DISABLED
+        emit_abuser_audit_log(
+            user_id=mb.user_id,
+            action=AbuserAuditLogAction.Note,
+            message=f"Mailbox {mb.id} ({mb.email}) admin_reenabled",
+            admin_id=admin_user.id if admin_user else None,
+        )
+        if admin_user:
+            AdminAuditLog.create(
+                admin_user_id=admin_user.id,
+                action=AuditLogActionEnum.enable_mailbox.value,
+                model="Mailbox",
+                model_id=mb.id,
+                data={},
+            )
+        enabled += 1
+
     Session.commit()
-
-    # Log to AbuserAuditLog
-    emit_abuser_audit_log(
-        user_id=mailbox.user_id,
-        action=AbuserAuditLogAction.Note,
-        message=f"Mailbox {mailbox.id} ({mailbox.email}) admin_reenabled",
-        admin_id=admin_user.id if admin_user else None,
-        commit=True,
-    )
-
-    # Create AdminAuditLog
-    AdminAuditLog.create(
-        admin_user_id=admin_user.id if admin_user else 0,
-        action=AuditLogActionEnum.enable_mailbox,
-        model=Mailbox.__class__.__name__,
-        model_id=mailbox.id,
-        data={},
-        commit=True,
-    )
 
     # Send notification email
     send_admin_reenable_mailbox_email(mailbox)
+
+    return enabled
 
 
 def send_admin_disable_mailbox_warning_email(mailbox: Mailbox):
