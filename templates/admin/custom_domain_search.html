@@ -608,7 +608,8 @@
 {% macro domain_card(domain_data) -%}
   {% set domain = domain_data.domain %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}header-danger{% else %}header-success{% endif %}">
+    <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}
+      header-danger{% else %}header-success{% endif %}">
       <h5 class="mb-0">
         <i class="fa fa-globe mr-2"></i>{{ domain.domain }}
         {% if domain.pending_deletion %}<span class="badge badge-light ml-2">Pending Deletion</span>{% endif %}
@@ -632,8 +633,7 @@
               {# Row 1: Details & Settings #}
               <div class="row mb-3 info-section">
                 <div class="col-md-6 mb-3 mb-md-0">
-                  <h6 class="text-muted border-bottom pb-1 mb-2"
-                      class="section-title">Details</h6>
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">Details</h6>
                   <table class="table table-sm table-borderless mb-0">
                     <tr>
                       <td class="text-muted text-nowrap py-1" style="width: 100px;">ID:</td>
@@ -667,8 +667,7 @@
                   </table>
                 </div>
                 <div class="col-md-6">
-                  <h6 class="text-muted border-bottom pb-1 mb-2"
-                      class="section-title">Settings</h6>
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">Settings</h6>
                   <table class="table table-sm table-borderless mb-0">
                     <tr>
                       <td class="text-muted text-nowrap py-1" style="width: 120px;">Catch-All:</td>
@@ -699,8 +698,9 @@
               {# Row 2: Verification Status #}
               <div class="row">
                 <div class="col-12">
-                  <h6 class="text-muted border-bottom pb-1 mb-2"
-                      class="section-title">Verification Status {{ verification_summary(domain) }}</h6>
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">
+                    Verification Status {{ verification_summary(domain) }}
+                  </h6>
                   <div class="d-flex flex-wrap">
                     {{ verification_badge(domain.ownership_verified, 'Ownership') }}
                     {{ verification_badge(domain.verified, 'MX') }}
