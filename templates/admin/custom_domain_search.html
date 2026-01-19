@@ -73,6 +73,347 @@
       padding: 3px 8px;
     }
   }
+
+  /* ========================================
+     Modern Admin Panel Color System
+     ======================================== */
+  :root {
+    /* Primary palette - Slate tones for professional look */
+    --color-primary: #1e293b;
+    --color-primary-light: #334155;
+    --color-primary-dark: #0f172a;
+
+    /* Semantic colors */
+    --color-success: #059669;
+    --color-success-light: #d1fae5;
+    --color-success-dark: #047857;
+
+    --color-warning: #d97706;
+    --color-warning-light: #fef3c7;
+    --color-warning-dark: #b45309;
+
+    --color-danger: #dc2626;
+    --color-danger-light: #fee2e2;
+    --color-danger-dark: #b91c1c;
+
+    --color-info: #0284c7;
+    --color-info-light: #e0f2fe;
+    --color-info-dark: #0369a1;
+
+    /* Neutral palette */
+    --color-neutral-50: #f8fafc;
+    --color-neutral-100: #f1f5f9;
+    --color-neutral-200: #e2e8f0;
+    --color-neutral-300: #cbd5e1;
+    --color-neutral-400: #94a3b8;
+    --color-neutral-500: #64748b;
+    --color-neutral-600: #475569;
+    --color-neutral-700: #334155;
+    --color-neutral-800: #1e293b;
+
+    /* Special purpose */
+    --color-caution: #ea580c;
+    --color-caution-light: #fff7ed;
+    --color-purple: #7c3aed;
+    --color-purple-light: #ede9fe;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Border radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+  }
+
+  /* ========================================
+     Base Styles
+     ======================================== */
+  .container-fluid {
+    background-color: var(--color-neutral-50);
+    min-height: 100vh;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+  }
+
+  /* ========================================
+     Card Styles
+     ======================================== */
+  .card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header {
+    border-bottom: none;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+  }
+
+  .card-header h5, .card-header h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  /* Header variants */
+  .header-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+  }
+
+  .header-success {
+    background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+    color: white;
+  }
+
+  .header-danger {
+    background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    color: white;
+  }
+
+  .header-warning {
+    background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+    color: white;
+  }
+
+  .header-info {
+    background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+    color: white;
+  }
+
+  .header-neutral {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-700);
+  }
+
+  .header-caution {
+    background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     Badge Styles
+     ======================================== */
+  .badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    letter-spacing: 0.025em;
+  }
+
+  .badge-success {
+    background-color: var(--color-success) !important;
+    color: white !important;
+  }
+
+  .badge-danger {
+    background-color: var(--color-danger) !important;
+    color: white !important;
+  }
+
+  .badge-warning {
+    background-color: var(--color-warning) !important;
+    color: white !important;
+  }
+
+  .badge-info {
+    background-color: var(--color-info) !important;
+    color: white !important;
+  }
+
+  .badge-secondary {
+    background-color: var(--color-neutral-500) !important;
+    color: white !important;
+  }
+
+  .badge-light {
+    background-color: var(--color-neutral-100) !important;
+    color: var(--color-neutral-700) !important;
+  }
+
+  /* ========================================
+     Button Styles
+     ======================================== */
+  .btn {
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary-modern {
+    background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-primary-modern:hover {
+    background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-success-modern {
+    background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-success-modern:hover {
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     Table Styles
+     ======================================== */
+  .table {
+    margin-bottom: 0;
+  }
+
+  .table thead th {
+    background-color: var(--color-neutral-100);
+    border-bottom: 2px solid var(--color-neutral-200);
+    color: var(--color-neutral-600);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+  }
+
+  .table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-neutral-100);
+    color: var(--color-neutral-700);
+  }
+
+  .table tbody tr:hover {
+    background-color: var(--color-neutral-50);
+  }
+
+  .table code {
+    background-color: var(--color-neutral-100);
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    color: var(--color-neutral-700);
+  }
+
+  /* ========================================
+     Form Styles
+     ======================================== */
+  .form-control {
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .form-control:focus {
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 3px var(--color-info-light);
+  }
+
+  .form-control-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* ========================================
+     Section Headers
+     ======================================== */
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-500);
+    border-bottom: 2px solid var(--color-neutral-200);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ========================================
+     Actions Card
+     ======================================== */
+  .actions-card {
+    border: 2px solid var(--color-caution) !important;
+    border-radius: var(--radius-lg);
+  }
+
+  .actions-card .card-header {
+    background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+  }
+
+  .actions-card .card-body {
+    background-color: var(--color-caution-light);
+  }
+
+  /* ========================================
+     Alert Styles
+     ======================================== */
+  .alert {
+    border: none;
+    border-radius: var(--radius-md);
+  }
+
+  .alert-warning {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+  }
+
+  .alert-info {
+    background-color: var(--color-info-light);
+    color: var(--color-info-dark);
+  }
+
+  .alert-danger {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+  }
+
+  /* ========================================
+     Modal Styles
+     ======================================== */
+  .modal-content {
+    border: none;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    border-bottom: none;
+  }
+
+  .modal-header.modal-danger {
+    background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     DNS Section
+     ======================================== */
+  .dns-section {
+    background-color: var(--color-neutral-50);
+    border-radius: var(--radius-lg);
+  }
+
+  .dns-section .card-header {
+    background-color: var(--color-neutral-100);
+  }
   </style>
 {% endblock %}
 {# Badge helper macro #}
@@ -87,7 +428,7 @@
 {# User summary card with link to email search #}
 {% macro user_summary_card(user) -%}
   <div class="card mb-3 border-0 shadow-sm">
-    <div class="card-header text-white" style="background-color: #2c3e50;">
+    <div class="card-header text-white" class="header-primary">
       <h6 class="mb-0">
         <i class="fa fa-user mr-2"></i>Domain Owner
       </h6>
@@ -237,9 +578,7 @@
       {% for dkim_selector in dkim_expected %}
 
         {% set full_domain = dkim_selector + "." + domain.domain %}
-        <div class="mb-2 p-2"
-             style="background-color: #f8f9fa;
-                    border-radius: 4px">
+        <div class="mb-2 p-2 dns-record">
           <small class="text-muted d-block">Selector: <code>{{ full_domain }}</code></small>
           <div class="dns-record dns-record-expected mt-1">{{ dkim_expected[dkim_selector].recommended }}</div>
           {% if dkim_validation.get(full_domain) %}
@@ -269,8 +608,7 @@
 {% macro domain_card(domain_data) -%}
   {% set domain = domain_data.domain %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: {% if domain.pending_deletion %}
-       #e74c3c{% else %}#27ae60{% endif %};">
+    <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}header-danger{% else %}header-success{% endif %}">
       <h5 class="mb-0">
         <i class="fa fa-globe mr-2"></i>{{ domain.domain }}
         {% if domain.pending_deletion %}<span class="badge badge-light ml-2">Pending Deletion</span>{% endif %}
@@ -285,7 +623,7 @@
         {# Domain Information - 3/4 width #}
         <div class="col-lg-9 mb-3 mb-lg-0">
           <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header text-white" style="background-color: #2c3e50;">
+            <div class="card-header header-primary">
               <h6 class="mb-0">
                 <i class="fa fa-info-circle mr-2"></i>Domain Information
               </h6>
@@ -295,9 +633,7 @@
               <div class="row mb-3 info-section">
                 <div class="col-md-6 mb-3 mb-md-0">
                   <h6 class="text-muted border-bottom pb-1 mb-2"
-                      style="font-size: 0.8rem;
-                             text-transform: uppercase;
-                             letter-spacing: 0.5px">Details</h6>
+                      class="section-title">Details</h6>
                   <table class="table table-sm table-borderless mb-0">
                     <tr>
                       <td class="text-muted text-nowrap py-1" style="width: 100px;">ID:</td>
@@ -332,9 +668,7 @@
                 </div>
                 <div class="col-md-6">
                   <h6 class="text-muted border-bottom pb-1 mb-2"
-                      style="font-size: 0.8rem;
-                             text-transform: uppercase;
-                             letter-spacing: 0.5px">Settings</h6>
+                      class="section-title">Settings</h6>
                   <table class="table table-sm table-borderless mb-0">
                     <tr>
                       <td class="text-muted text-nowrap py-1" style="width: 120px;">Catch-All:</td>
@@ -366,9 +700,7 @@
               <div class="row">
                 <div class="col-12">
                   <h6 class="text-muted border-bottom pb-1 mb-2"
-                      style="font-size: 0.8rem;
-                             text-transform: uppercase;
-                             letter-spacing: 0.5px">Verification Status {{ verification_summary(domain) }}</h6>
+                      class="section-title">Verification Status {{ verification_summary(domain) }}</h6>
                   <div class="d-flex flex-wrap">
                     {{ verification_badge(domain.ownership_verified, 'Ownership') }}
                     {{ verification_badge(domain.verified, 'MX') }}
@@ -383,16 +715,14 @@
         </div>
         {# Admin Actions - 1/4 width #}
         <div class="col-lg-3">
-          <div class="card h-100 shadow-sm" style="border: 2px solid #e67e22;">
-            <div class="card-header text-white py-2"
-                 style="background-color: #e67e22">
+          <div class="card h-100 actions-card">
+            <div class="card-header text-white py-2 header-caution">
               <h6 class="mb-0 d-flex justify-content-between align-items-center">
                 <span><i class="fa fa-tools mr-2"></i>Actions</span>
                 <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
               </h6>
             </div>
-            <div class="card-body py-3 d-flex flex-column"
-                 style="background-color: #fef9f3">
+            <div class="card-body py-3 d-flex flex-column">
               {% if not domain.pending_deletion %}
 
                 {# Spacer to push delete to bottom #}
@@ -417,8 +747,8 @@
         </div>
       </div>
       {# DNS Records Section #}
-      <div class="card mb-3 border-0" style="background-color: #f8f9fa;">
-        <div class="card-header" style="background-color: #ecf0f1;">
+      <div class="card mb-3 border-0 dns-section">
+        <div class="card-header header-neutral">
           <h6 class="mb-0">
             <i class="fa fa-server mr-2"></i>DNS Records
           </h6>
@@ -445,7 +775,7 @@
         <div class="col-lg-6 mb-3 mb-lg-0">
           <div class="card mb-3 border-0 shadow-sm">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-                 style="background-color: #ecf0f1">
+                 class="header-neutral">
               <h6 class="mb-0">
                 <i class="fa fa-at mr-2"></i>Aliases
                 <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
@@ -493,7 +823,7 @@
         <div class="col-lg-6">
           <div class="card mb-3 border-0 shadow-sm">
             <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-                 style="background-color: #ecf0f1">
+                 class="header-neutral">
               <h6 class="mb-0">
                 <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
@@ -620,7 +950,7 @@
   <div class="container-fluid px-4">
     {# Search Form #}
     <div class="card mb-4 shadow-sm">
-      <div class="card-header text-white" style="background-color: #2c3e50;">
+      <div class="card-header header-primary">
         <h5 class="mb-0">
           <i class="fa fa-search mr-2"></i>Custom Domain Search
         </h5>
@@ -639,10 +969,7 @@
               <i class="fa fa-info-circle mr-1"></i>Search by domain name, user email, user ID, or use POSIX regex patterns (limited to 10 results).
             </small>
           </div>
-          <button type="submit"
-                  class="btn btn-lg"
-                  style="background-color: #27ae60;
-                         color: white">
+          <button type="submit" class="btn btn-lg btn-success-modern">
             <i class="fa fa-search mr-2"></i>Search
           </button>
         </form>
