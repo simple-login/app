@@ -20,9 +20,9 @@
   {% set pu = helper.partner_user(user) %}
   {% set active_sub = user.get_active_subscription() %}
   {% set sub_end = user.get_active_subscription_end() %}
-  <div class="row mb-4">
+  <div class="row mb-4 user-info-row">
     {# Account Information - 3/4 width #}
-    <div class="col-lg-9">
+    <div class="col-lg-9 mb-3 mb-lg-0">
       <div class="card h-100 border-0 shadow-sm">
         <div class="card-header text-white" style="background-color: #2c3e50;">
           <h6 class="mb-0">
@@ -31,8 +31,8 @@
         </div>
         <div class="card-body py-3">
           {# Row 1: Identity & Subscription #}
-          <div class="row mb-3">
-            <div class="col-md-6">
+          <div class="row mb-3 info-section">
+            <div class="col-md-6 mb-3 mb-md-0">
               <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Identity</h6>
               <table class="table table-sm table-borderless mb-0">
                 <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td><td class="py-1"><code>{{ user.id }}</code></td></tr>
@@ -68,8 +68,8 @@
             </div>
           </div>
           {# Row 2: Status & Dates/Quotas #}
-          <div class="row">
-            <div class="col-md-6">
+          <div class="row info-section">
+            <div class="col-md-6 mb-3 mb-md-0">
               <h6 class="text-muted border-bottom pb-1 mb-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Status</h6>
               <table class="table table-sm table-borderless mb-0">
                 <tr><td class="text-muted text-nowrap py-1" style="width: 80px;">Verified:</td><td class="py-1">{{ badge_status(user.activated, 'Yes', 'No', 'success', 'warning') }}</td></tr>
@@ -141,12 +141,12 @@
           {# Quotas #}
           <div class="mb-3">
             <small class="text-muted text-uppercase d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">Update Quotas</small>
-            <div class="input-group input-group-sm mb-2">
+            <div class="input-group input-group-sm mb-2 quota-input-group">
               <div class="input-group-prepend"><span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Subdomain</span></div>
               <input type="number" id="subdomainQuotaInput{{ user.id }}" value="{{ user._subdomain_quota }}" class="form-control" min="0" max="1000">
               <div class="input-group-append"><button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#subdomainQuotaModal{{ user.id }}" onclick="document.getElementById('subdomainQuotaHidden{{ user.id }}').value = document.getElementById('subdomainQuotaInput{{ user.id }}').value; document.getElementById('subdomainQuotaDisplay{{ user.id }}').textContent = document.getElementById('subdomainQuotaInput{{ user.id }}').value;"><i class="fa fa-save"></i></button></div>
             </div>
-            <div class="input-group input-group-sm">
+            <div class="input-group input-group-sm quota-input-group">
               <div class="input-group-prepend"><span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Directory</span></div>
               <input type="number" id="directoryQuotaInput{{ user.id }}" value="{{ user._directory_quota }}" class="form-control" min="0" max="1000">
               <div class="input-group-append"><button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#directoryQuotaModal{{ user.id }}" onclick="document.getElementById('directoryQuotaHidden{{ user.id }}').value = document.getElementById('directoryQuotaInput{{ user.id }}').value; document.getElementById('directoryQuotaDisplay{{ user.id }}').textContent = document.getElementById('directoryQuotaInput{{ user.id }}').value;"><i class="fa fa-save"></i></button></div>
@@ -490,7 +490,7 @@
 {%- endmacro %}
 {% macro mailboxes_table(message, mbox_count, mboxes, is_regex, highlight_mailbox_email=none) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center"
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
          style="background-color: #ecf0f1">
       <h6 class="mb-0">
         <i class="fa fa-inbox mr-2"></i>{{ message }}
@@ -500,6 +500,7 @@
       {% if is_regex %}<span class="badge" style="background-color: #3498db; color: white;">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -584,12 +585,13 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
 {% macro aliases_table(alias_count, aliases, is_regex) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center"
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
          style="background-color: #ecf0f1">
       <h6 class="mb-0">
         <i class="fa fa-at mr-2"></i>Aliases
@@ -599,6 +601,7 @@
       {% if is_regex %}<span class="badge" style="background-color: #3498db; color: white;">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -630,12 +633,13 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
 {% macro custom_domains_table(domains) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center"
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
          style="background-color: #ecf0f1">
       <h6 class="mb-0">
         <i class="fa fa-globe mr-2"></i>Custom Domains
@@ -644,7 +648,7 @@
     </div>
     <div class="card-body p-0">
       {% if domains %}
-
+        <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead class="thead-light">
             <tr>
@@ -685,6 +689,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
       {% else %}
         <div class="p-3 text-muted text-center">
           <i class="fa fa-info-circle mr-1"></i>No custom domains
@@ -695,7 +700,7 @@
 {% endmacro %}
 {% macro deleted_aliases_table(deleted_aliases, is_regex) %}
   <div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
       <h6 class="mb-0">
         <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
         {% if deleted_aliases|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
@@ -703,6 +708,7 @@
       {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -728,12 +734,13 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
 {% macro domain_deleted_aliases_table(domain_deleted_aliases, is_regex) %}
   <div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
       <h6 class="mb-0">
         <i class="fa fa-globe mr-2"></i>Domain Deleted Aliases
         {% if domain_deleted_aliases|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
@@ -741,6 +748,7 @@
       {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -769,6 +777,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
@@ -780,6 +789,7 @@
       </h6>
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover table-sm mb-0">
         <thead class="thead-light">
           <tr>
@@ -802,6 +812,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
@@ -909,7 +920,7 @@
 {% endmacro %}
 {% macro users_table(users, is_regex) %}
   <div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
       <h6 class="mb-0">
         <i class="fa fa-users mr-2"></i>Users Found
         {% if users|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
@@ -917,6 +928,7 @@
       {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -944,12 +956,13 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
 {% macro partner_users_table(partner_users, is_regex) %}
   <div class="card mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
       <h6 class="mb-0">
         <i class="fa fa-handshake mr-2"></i>Partner Users
         {% if partner_users|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
@@ -957,6 +970,7 @@
       {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
     </div>
     <div class="card-body p-0">
+      <div class="table-responsive">
       <table class="table table-hover mb-0">
         <thead class="thead-light">
           <tr>
@@ -986,6 +1000,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endmacro %}
@@ -999,6 +1014,44 @@
     /* Also prevent User ID column from wrapping in partner_users table */
     .table td code {
       white-space: nowrap;
+    }
+    /* Responsive fixes for narrow screens */
+    @media (max-width: 991.98px) {
+      /* Stack Action card below info card on medium screens */
+      .user-info-row .col-lg-9,
+      .user-info-row .col-lg-3 {
+        margin-bottom: 1rem;
+      }
+      /* Audit log cards stack vertically */
+      .audit-log-row .col-lg-4 {
+        margin-bottom: 1rem;
+      }
+    }
+    @media (max-width: 767.98px) {
+      /* Stack info sections vertically on small screens */
+      .info-section .col-md-6 {
+        margin-bottom: 1rem;
+      }
+      /* Reduce padding on cards */
+      .card-body {
+        padding: 0.75rem;
+      }
+      /* Make quota inputs stack if needed */
+      .quota-input-group .input-group-prepend .input-group-text {
+        width: auto !important;
+        min-width: 70px;
+        font-size: 0.7rem !important;
+      }
+    }
+    @media (max-width: 575.98px) {
+      /* Further reduce padding on very small screens */
+      .card-body {
+        padding: 0.5rem;
+      }
+      /* Make action buttons full width */
+      .action-btn {
+        font-size: 0.75rem;
+      }
     }
   </style>
   <div class="container-fluid px-4">
@@ -1170,14 +1223,14 @@
               </div>
               {{ custom_domains_table(helper.custom_domain_list(data.users[0]) ) }}
               {# Audit Logs Section #}
-              <div class="row">
-                <div class="col-lg-4">
+              <div class="row audit-log-row">
+                <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                   {% if data.user_audit_log %}{{ user_audit_log_table(data.user_audit_log) }}{% endif %}
                 </div>
-                <div class="col-lg-4">
+                <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                   {% if data.abuser_audit_log %}{{ abuser_audit_log_table(data.abuser_audit_log) }}{% endif %}
                 </div>
-                <div class="col-lg-4">
+                <div class="col-xl-4 col-lg-12">
                   {% if data.admin_audit_log %}{{ admin_audit_log_table(data.admin_audit_log) }}{% endif %}
                 </div>
               </div>
@@ -1247,14 +1300,14 @@
                   {% set admin_audit = helper.admin_audit_log(mailbox.user) %}
                   {% if user_audit or abuser_audit or admin_audit %}
 
-                    <div class="row">
-                      <div class="col-lg-4">
+                    <div class="row audit-log-row">
+                      <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                         {% if user_audit %}{{ user_audit_log_table(user_audit) }}{% endif %}
                       </div>
-                      <div class="col-lg-4">
+                      <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                         {% if abuser_audit %}{{ abuser_audit_log_table(abuser_audit) }}{% endif %}
                       </div>
-                      <div class="col-lg-4">
+                      <div class="col-xl-4 col-lg-12">
                         {% if admin_audit %}{{ admin_audit_log_table(admin_audit) }}{% endif %}
                       </div>
                     </div>
@@ -1312,14 +1365,14 @@
                 {% set admin_audit = helper.admin_audit_log(pu.user) %}
                 {% if user_audit or abuser_audit or admin_audit %}
 
-                  <div class="row">
-                    <div class="col-lg-4">
+                  <div class="row audit-log-row">
+                    <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                       {% if user_audit %}{{ user_audit_log_table(user_audit) }}{% endif %}
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
                       {% if abuser_audit %}{{ abuser_audit_log_table(abuser_audit) }}{% endif %}
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-xl-4 col-lg-12">
                       {% if admin_audit %}{{ admin_audit_log_table(admin_audit) }}{% endif %}
                     </div>
                   </div>
