@@ -23,8 +23,8 @@
   <div class="row mb-4 user-info-row">
     {# Account Information - 3/4 width #}
     <div class="col-lg-9 mb-3 mb-lg-0">
-      <div class="card h-100 border-0 shadow-sm">
-        <div class="card-header text-white" style="background-color: #2c3e50;">
+      <div class="card h-100">
+        <div class="card-header header-primary">
           <h6 class="mb-0">
             <i class="fa fa-id-card mr-2"></i>Account Information
           </h6>
@@ -33,10 +33,7 @@
           {# Row 1: Identity & Subscription #}
           <div class="row mb-3 info-section">
             <div class="col-md-6 mb-3 mb-md-0">
-              <h6 class="text-muted border-bottom pb-1 mb-2"
-                  style="font-size: 0.8rem;
-                         text-transform: uppercase;
-                         letter-spacing: 0.5px">Identity</h6>
+              <h6 class="section-title">Identity</h6>
               <table class="table table-sm table-borderless mb-0">
                 <tr>
                   <td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td>
@@ -80,33 +77,30 @@
               </table>
             </div>
             <div class="col-md-6">
-              <h6 class="text-muted border-bottom pb-1 mb-2"
-                  style="font-size: 0.8rem;
-                         text-transform: uppercase;
-                         letter-spacing: 0.5px">Subscription</h6>
+              <h6 class="section-title">Subscription</h6>
               <table class="table table-sm table-borderless mb-0">
                 <tr>
                   <td class="text-muted text-nowrap py-1" style="width: 80px;">Type:</td>
                   <td class="py-1">
                     {% if user.lifetime %}
 
-                      <span class="badge" style="background-color: #27ae60; color: white;">Lifetime
+                      <span class="badge badge-success">Lifetime
                         {% if user.paid_lifetime %}(Paid){% endif %}
                       </span>
                     {% elif active_sub %}
                       {% if active_sub.__class__.__name__ == 'Subscription' %}
 
-                        <span class="badge" style="background-color: #3498db; color: white;">Paddle</span>
+                        <span class="badge badge-info">Paddle</span>
                       {% elif active_sub.__class__.__name__ == 'AppleSubscription' %}
                         <span class="badge badge-dark">Apple</span>
                       {% elif active_sub.__class__.__name__ == 'ManualSubscription' %}
-                        <span class="badge" style="background-color: #8e44ad; color: white;">Manual
+                        <span class="badge badge-purple">Manual
                           {% if active_sub.is_giveaway %}(Giveaway){% endif %}
                         </span>
                       {% elif active_sub.__class__.__name__ == 'CoinbaseSubscription' %}
-                        <span class="badge" style="background-color: #f39c12; color: white;">Coinbase</span>
+                        <span class="badge badge-caution">Coinbase</span>
                       {% elif active_sub.__class__.__name__ == 'PartnerSubscription' %}
-                        <span class="badge" style="background-color: #9b59b6; color: white;">Partner</span>
+                        <span class="badge badge-purple">Partner</span>
                       {% else %}
                         <span class="badge badge-secondary">{{ active_sub.__class__.__name__ }}</span>
                       {% endif %}
@@ -160,10 +154,7 @@
                 {# Row 2: Status & Dates/Quotas #}
                 <div class="row info-section">
                   <div class="col-md-6 mb-3 mb-md-0">
-                    <h6 class="text-muted border-bottom pb-1 mb-2"
-                        style="font-size: 0.8rem;
-                               text-transform: uppercase;
-                               letter-spacing: 0.5px">Status</h6>
+                    <h6 class="section-title">Status</h6>
                     <table class="table table-sm table-borderless mb-0">
                       <tr>
                         <td class="text-muted text-nowrap py-1" style="width: 80px;">Verified:</td>
@@ -195,10 +186,7 @@
                     </table>
                   </div>
                   <div class="col-md-6">
-                    <h6 class="text-muted border-bottom pb-1 mb-2"
-                        style="font-size: 0.8rem;
-                               text-transform: uppercase;
-                               letter-spacing: 0.5px">Dates & Quotas</h6>
+                    <h6 class="section-title">Dates & Quotas</h6>
                     <table class="table table-sm table-borderless mb-0">
                       <tr>
                         <td class="text-muted text-nowrap py-1" style="width: 80px;">Created:</td>
@@ -235,36 +223,28 @@
           </div>
           {# Admin Actions - 1/4 width #}
           <div class="col-lg-3">
-            <div class="card h-100 shadow-sm" style="border: 2px solid #e67e22;">
-              <div class="card-header text-white py-2"
-                   style="background-color: #e67e22">
+            <div class="card h-100 actions-card">
+              <div class="card-header text-white py-2 header-caution">
                 <h6 class="mb-0 d-flex justify-content-between align-items-center">
                   <span><i class="fa fa-tools mr-2"></i>Actions</span>
                   <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
                 </h6>
               </div>
-              <div class="card-body py-3 d-flex flex-column"
-                   style="background-color: #fef9f3">
+              <div class="card-body py-3 d-flex flex-column">
                 {# Action Buttons #}
                 <div class="mb-3">
-                  <small class="text-muted text-uppercase d-block mb-2"
-                         style="font-size: 0.7rem;
-                                letter-spacing: 0.5px">User Actions</small>
+                  <small class="action-section-title d-block">User Actions</small>
                   {% if user.disabled %}
 
                     <button type="button"
-                            class="btn btn-sm btn-block mb-2"
-                            style="background-color: #27ae60;
-                                   color: white"
+                            class="btn btn-sm btn-block mb-2 btn-success-modern"
                             data-toggle="modal"
                             data-target="#unmarkAbuserModal{{ user.id }}">
                       <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
                     </button>
                   {% else %}
                     <button type="button"
-                            class="btn btn-sm btn-block mb-2"
-                            style="background-color: #c0392b;
-                                   color: white"
+                            class="btn btn-sm btn-block mb-2 btn-danger-modern"
                             data-toggle="modal"
                             data-target="#markAbuserModal{{ user.id }}">
                       <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
@@ -273,9 +253,7 @@
                   {% if pu %}
 
                     <button type="button"
-                            class="btn btn-sm btn-block mb-2"
-                            style="background-color: #7f8c8d;
-                                   color: white"
+                            class="btn btn-sm btn-block mb-2 btn-neutral-modern"
                             data-toggle="modal"
                             data-target="#unlinkProtonModal{{ user.id }}">
                       <i class="fa fa-unlink mr-1"></i>Unlink Proton
@@ -288,9 +266,7 @@
                           class="mb-2">
                       <input type="hidden" name="user_id" value="{{ user.id }}">
                       <button type="submit"
-                              class="btn btn-sm btn-block"
-                              style="background-color: #e67e22;
-                                     color: white"
+                              class="btn btn-sm btn-block btn-caution-modern"
                               onclick="return confirm('Disable 2FA for this user?');">
                         <i class="fa fa-shield-alt mr-1"></i>Disable 2FA
                         {% if user.enable_otp and user.fido_uuid %}
@@ -311,9 +287,7 @@
                           class="mb-2">
                       <input type="hidden" name="user_id" value="{{ user.id }}">
                       <button type="submit"
-                              class="btn btn-sm btn-block"
-                              style="background-color: #e74c3c;
-                                     color: white"
+                              class="btn btn-sm btn-block btn-danger-modern"
                               onclick="return confirm('Cancel scheduled deletion?');">
                         <i class="fa fa-ban mr-1"></i>Stop Deletion
                       </button>
@@ -322,9 +296,7 @@
                 </div>
                 {# Quotas #}
                 <div class="mb-3">
-                  <small class="text-muted text-uppercase d-block mb-2"
-                         style="font-size: 0.7rem;
-                                letter-spacing: 0.5px">Update Quotas</small>
+                  <small class="action-section-title d-block">Update Quotas</small>
                   <div class="input-group input-group-sm mb-2 quota-input-group">
                     <div class="input-group-prepend">
                       <span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Subdomain</span>
@@ -394,7 +366,7 @@
              aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
-              <div class="modal-header text-white" style="background-color: #c0392b;">
+              <div class="modal-header modal-danger">
                 <h5 class="modal-title" id="markAbuserModalLabel{{ user.id }}">
                   <i class="fa fa-user-slash mr-2"></i>Mark User as Abuser
                 </h5>
@@ -425,10 +397,7 @@
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-                  <button type="submit"
-                          class="btn"
-                          style="background-color: #c0392b;
-                                 color: white">
+                  <button type="submit" class="btn btn-danger-modern">
                     <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
                   </button>
                 </div>
@@ -445,7 +414,7 @@
              aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
-              <div class="modal-header text-white" style="background-color: #27ae60;">
+              <div class="modal-header modal-success">
                 <h5 class="modal-title" id="unmarkAbuserModalLabel{{ user.id }}">
                   <i class="fa fa-user-check mr-2"></i>Unmark User as Abuser
                 </h5>
@@ -475,10 +444,7 @@
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
-                  <button type="submit"
-                          class="btn"
-                          style="background-color: #27ae60;
-                                 color: white">
+                  <button type="submit" class="btn btn-success-modern">
                     <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
                   </button>
                 </div>
@@ -497,7 +463,7 @@
                aria-hidden="true">
             <div class="modal-dialog" role="document">
               <div class="modal-content">
-                <div class="modal-header text-white" style="background-color: #7f8c8d;">
+                <div class="modal-header modal-neutral">
                   <h5 class="modal-title" id="unlinkProtonModalLabel{{ user.id }}">
                     <i class="fa fa-unlink mr-2"></i>Unlink from Proton Account
                   </h5>
@@ -535,9 +501,7 @@
                   <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit"
-                            class="btn"
-                            style="background-color: #7f8c8d;
-                                   color: white"
+                            class="btn btn-neutral-modern"
                             id="unlinkProtonBtn{{ user.id }}"
                             disabled>
                       <i class="fa fa-unlink mr-1"></i>Unlink from Proton
@@ -640,9 +604,7 @@
              role="dialog">
           <div class="modal-dialog modal-sm" role="document">
             <div class="modal-content">
-              <div class="modal-header py-2"
-                   style="background-color: #34495e;
-                          color: white">
+              <div class="modal-header py-2 header-primary">
                 <h6 class="modal-title">
                   <i class="fa fa-edit mr-2"></i>Confirm Update
                 </h6>
@@ -678,9 +640,7 @@
              role="dialog">
           <div class="modal-dialog modal-sm" role="document">
             <div class="modal-content">
-              <div class="modal-header py-2"
-                   style="background-color: #34495e;
-                          color: white">
+              <div class="modal-header py-2 header-primary">
                 <h6 class="modal-title">
                   <i class="fa fa-edit mr-2"></i>Confirm Update
                 </h6>
@@ -712,7 +672,7 @@
       {%- endmacro %}
       {% macro user_quotas_card(user) -%}
         <div class="card mb-4 border-0 shadow-sm">
-          <div class="card-header text-white" style="background-color: #34495e;">
+          <div class="card-header header-primary">
             <h6 class="mb-0">
               <i class="fa fa-sliders-h mr-2"></i>Quotas
             </h6>
@@ -772,13 +732,13 @@
       {% macro mailboxes_table(message, mbox_count, mboxes, is_regex, highlight_mailbox_email=none) %}
         <div class="card mb-4 border-0 shadow-sm">
           <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-               style="background-color: #ecf0f1">
+               class="header-neutral">
             <h6 class="mb-0">
               <i class="fa fa-inbox mr-2"></i>{{ message }}
               <span class="badge badge-secondary ml-2">{{ mbox_count }} total</span>
               {% if mbox_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
             </h6>
-            {% if is_regex %}<span class="badge" style="background-color: #3498db; color: white;">Regex Match</span>{% endif %}
+            {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -822,13 +782,13 @@
       {% macro aliases_table(alias_count, aliases, is_regex) %}
         <div class="card mb-4 border-0 shadow-sm">
           <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-               style="background-color: #ecf0f1">
+               class="header-neutral">
             <h6 class="mb-0">
               <i class="fa fa-at mr-2"></i>Aliases
               <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
               {% if alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
             </h6>
-            {% if is_regex %}<span class="badge" style="background-color: #3498db; color: white;">Regex Match</span>{% endif %}
+            {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -870,7 +830,7 @@
       {% macro custom_domains_table(domains) %}
         <div class="card mb-4 border-0 shadow-sm">
           <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-               style="background-color: #ecf0f1">
+               class="header-neutral">
             <h6 class="mb-0">
               <i class="fa fa-globe mr-2"></i>Custom Domains
               <span class="badge badge-secondary ml-2">{{ domains|length }} total</span>
@@ -1015,7 +975,7 @@
       {% endmacro %}
       {% macro alias_audit_log_table(alias_audit_log) %}
         <div class="card mb-4">
-          <div class="card-header bg-warning text-dark">
+          <div class="card-header header-warning">
             <h6 class="mb-0">
               <i class="fa fa-history mr-2"></i>Alias Audit Log
             </h6>
@@ -1059,7 +1019,7 @@
       {% endmacro %}
       {% macro user_audit_log_table(user_audit_log) %}
         <div class="card mb-4 border-0 shadow-sm">
-          <div class="card-header text-white" style="background-color: #2c3e50;">
+          <div class="card-header text-white" class="header-primary">
             <h6 class="mb-0">
               <i class="fa fa-clipboard-list mr-2"></i>User Audit Log <span class="badge badge-light">{{ user_audit_log|length }}</span>
             </h6>
@@ -1095,7 +1055,7 @@
       {% endmacro %}
       {% macro abuser_audit_log_table(abuser_audit_log) %}
         <div class="card mb-4 border-0 shadow-sm">
-          <div class="card-header text-white" style="background-color: #c0392b;">
+          <div class="card-header header-danger">
             <h6 class="mb-0">
               <i class="fa fa-exclamation-triangle mr-2"></i>Abuse Audit Log <span class="badge badge-light">{{ abuser_audit_log|length }}</span>
             </h6>
@@ -1133,7 +1093,7 @@
                         {% endif %}
                       </td>
                       <td>
-                        <span class="badge" style="background-color: #c0392b; color: white;">{{ entry.action }}</span>
+                        <span class="badge badge-danger">{{ entry.action }}</span>
                       </td>
                       <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.message or '-' }}</td>
                     </tr>
@@ -1146,7 +1106,7 @@
       {% endmacro %}
       {% macro admin_audit_log_table(admin_audit_log) %}
         <div class="card mb-4 border-0 shadow-sm">
-          <div class="card-header text-white" style="background-color: #2c3e50;">
+          <div class="card-header text-white" class="header-primary">
             <h6 class="mb-0">
               <i class="fa fa-user-shield mr-2"></i>Admin Actions <span class="badge badge-light">{{ admin_audit_log|length }}</span>
             </h6>
@@ -1277,49 +1237,646 @@
       {% endmacro %}
       {% block body %}
         <style>
+    /* ========================================
+       Modern Admin Panel Color System
+       ======================================== */
+    :root {
+      /* Primary palette - Slate tones for professional look */
+      --color-primary: #1e293b;
+      --color-primary-light: #334155;
+      --color-primary-dark: #0f172a;
+
+      /* Semantic colors */
+      --color-success: #059669;
+      --color-success-light: #d1fae5;
+      --color-success-dark: #047857;
+
+      --color-warning: #d97706;
+      --color-warning-light: #fef3c7;
+      --color-warning-dark: #b45309;
+
+      --color-danger: #dc2626;
+      --color-danger-light: #fee2e2;
+      --color-danger-dark: #b91c1c;
+
+      --color-info: #0284c7;
+      --color-info-light: #e0f2fe;
+      --color-info-dark: #0369a1;
+
+      /* Neutral palette */
+      --color-neutral-50: #f8fafc;
+      --color-neutral-100: #f1f5f9;
+      --color-neutral-200: #e2e8f0;
+      --color-neutral-300: #cbd5e1;
+      --color-neutral-400: #94a3b8;
+      --color-neutral-500: #64748b;
+      --color-neutral-600: #475569;
+      --color-neutral-700: #334155;
+      --color-neutral-800: #1e293b;
+
+      /* Special purpose */
+      --color-caution: #ea580c;
+      --color-caution-light: #fff7ed;
+      --color-purple: #7c3aed;
+      --color-purple-light: #ede9fe;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+      /* Border radius */
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+    }
+
+    /* ========================================
+       Base Styles
+       ======================================== */
+    .container-fluid {
+      background-color: var(--color-neutral-50);
+      min-height: 100vh;
+      padding-top: 1.5rem;
+      padding-bottom: 2rem;
+    }
+
+    /* ========================================
+       Card Styles
+       ======================================== */
+    .card {
+      border: none;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+      border-bottom: none;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+    }
+
+    .card-header h5, .card-header h6 {
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    /* Header variants */
+    .header-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+      color: white;
+    }
+
+    .header-success {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      color: white;
+    }
+
+    .header-danger {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      color: white;
+    }
+
+    .header-warning {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+      color: white;
+    }
+
+    .header-info {
+      background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+      color: white;
+    }
+
+    .header-neutral {
+      background: var(--color-neutral-100);
+      color: var(--color-neutral-700);
+    }
+
+    .header-caution {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+      color: white;
+    }
+
+    .header-purple {
+      background: linear-gradient(135deg, #6d28d9 0%, var(--color-purple) 100%);
+      color: white;
+    }
+
+    /* ========================================
+       Badge Styles
+       ======================================== */
+    .badge {
+      font-weight: 500;
+      padding: 0.35em 0.65em;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      letter-spacing: 0.025em;
+    }
+
+    .badge-success {
+      background-color: var(--color-success) !important;
+      color: white !important;
+    }
+
+    .badge-danger {
+      background-color: var(--color-danger) !important;
+      color: white !important;
+    }
+
+    .badge-warning {
+      background-color: var(--color-warning) !important;
+      color: white !important;
+    }
+
+    .badge-info {
+      background-color: var(--color-info) !important;
+      color: white !important;
+    }
+
+    .badge-secondary {
+      background-color: var(--color-neutral-500) !important;
+      color: white !important;
+    }
+
+    .badge-dark {
+      background-color: var(--color-primary) !important;
+      color: white !important;
+    }
+
+    .badge-light {
+      background-color: var(--color-neutral-100) !important;
+      color: var(--color-neutral-700) !important;
+    }
+
+    .badge-purple {
+      background-color: var(--color-purple) !important;
+      color: white !important;
+    }
+
+    .badge-caution {
+      background-color: var(--color-caution) !important;
+      color: white !important;
+    }
+
+    /* Status badges with subtle backgrounds */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-success {
+      background-color: var(--color-success-light);
+      color: var(--color-success-dark);
+    }
+
+    .status-danger {
+      background-color: var(--color-danger-light);
+      color: var(--color-danger-dark);
+    }
+
+    .status-warning {
+      background-color: var(--color-warning-light);
+      color: var(--color-warning-dark);
+    }
+
+    .status-info {
+      background-color: var(--color-info-light);
+      color: var(--color-info-dark);
+    }
+
+    .status-neutral {
+      background-color: var(--color-neutral-200);
+      color: var(--color-neutral-600);
+    }
+
+    /* ========================================
+       Button Styles
+       ======================================== */
+    .btn {
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary-modern {
+      background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-primary-modern:hover {
+      background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-danger-modern {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-danger-modern:hover {
+      background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .btn-success-modern {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-success-modern:hover {
+      background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+      color: white;
+    }
+
+    .btn-caution-modern {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-caution-modern:hover {
+      background: linear-gradient(135deg, var(--color-caution) 0%, #c2410c 100%);
+      color: white;
+    }
+
+    .btn-neutral-modern {
+      background: var(--color-neutral-500);
+      border: none;
+      color: white;
+    }
+
+    .btn-neutral-modern:hover {
+      background: var(--color-neutral-600);
+      color: white;
+    }
+
+    /* ========================================
+       Table Styles
+       ======================================== */
+    .table {
+      margin-bottom: 0;
+    }
+
+    .table thead th {
+      background-color: var(--color-neutral-100);
+      border-bottom: 2px solid var(--color-neutral-200);
+      color: var(--color-neutral-600);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+    }
+
+    .table tbody td {
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--color-neutral-100);
+      color: var(--color-neutral-700);
+    }
+
+    .table tbody tr:hover {
+      background-color: var(--color-neutral-50);
+    }
+
+    .table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table code {
+      background-color: var(--color-neutral-100);
+      padding: 0.125rem 0.375rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      color: var(--color-neutral-700);
+    }
+
     /* Prevent ID columns from wrapping */
     .table th:first-child,
     .table td:first-child {
       white-space: nowrap;
     }
-    /* Also prevent User ID column from wrapping in partner_users table */
+
     .table td code {
       white-space: nowrap;
     }
-    /* Responsive fixes for narrow screens */
+
+    /* ========================================
+       Form Styles
+       ======================================== */
+    .form-control {
+      border: 1px solid var(--color-neutral-300);
+      border-radius: var(--radius-md);
+      padding: 0.625rem 0.875rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--color-info);
+      box-shadow: 0 0 0 3px var(--color-info-light);
+    }
+
+    .form-control-lg {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+    }
+
+    .input-group-text {
+      background-color: var(--color-neutral-100);
+      border: 1px solid var(--color-neutral-300);
+      color: var(--color-neutral-600);
+    }
+
+    /* ========================================
+       Search Type Toggle
+       ======================================== */
+    .input-group-prepend .btn-group-toggle {
+      display: flex;
+      margin-right: 0.5rem;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn {
+      border-radius: 0;
+      margin: 0;
+      border: 1px solid var(--color-neutral-300);
+      background: white;
+      color: var(--color-neutral-600);
+      padding: 0.5rem 1rem;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn + .btn {
+      margin-left: -1px;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:first-child {
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:last-child {
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:hover {
+      border-color: var(--color-info);
+      color: var(--color-info);
+      z-index: 1;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn.active {
+      background: var(--color-info);
+      border-color: var(--color-info);
+      color: white;
+      z-index: 2;
+    }
+
+    /* Responsive: stack on small screens */
+    @media (max-width: 767.98px) {
+      .input-group-lg {
+        flex-wrap: wrap;
+      }
+      .input-group-lg .input-group-prepend {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle {
+        width: 100%;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn {
+        flex: 1;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn:first-child {
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn:last-child {
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      }
+      .input-group-lg .form-control {
+        border-radius: var(--radius-md) 0 0 var(--radius-md) !important;
+      }
+      .input-group-lg .input-group-append {
+        flex: 0 0 auto;
+      }
+      .input-group-lg .input-group-append .btn {
+        border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+      }
+    }
+
+    /* ========================================
+       Section Headers
+       ======================================== */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-neutral-500);
+      border-bottom: 2px solid var(--color-neutral-200);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ========================================
+       Info Card Styles
+       ======================================== */
+    .info-table {
+      width: 100%;
+    }
+
+    .info-table td {
+      padding: 0.375rem 0;
+    }
+
+    .info-table .label {
+      color: var(--color-neutral-500);
+      font-size: 0.8125rem;
+      width: 100px;
+    }
+
+    .info-table .value {
+      color: var(--color-neutral-700);
+    }
+
+    .info-table a {
+      color: var(--color-info);
+      text-decoration: none;
+    }
+
+    .info-table a:hover {
+      color: var(--color-info-dark);
+      text-decoration: underline;
+    }
+
+    /* ========================================
+       Actions Card
+       ======================================== */
+    .actions-card {
+      border: 2px solid var(--color-caution) !important;
+      border-radius: var(--radius-lg);
+    }
+
+    .actions-card .card-header {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+    }
+
+    .actions-card .card-body {
+      background-color: var(--color-caution-light);
+    }
+
+    .action-section-title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-neutral-500);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ========================================
+       Alert Styles
+       ======================================== */
+    .alert {
+      border: none;
+      border-radius: var(--radius-md);
+    }
+
+    .alert-warning {
+      background-color: var(--color-warning-light);
+      color: var(--color-warning-dark);
+    }
+
+    .alert-info {
+      background-color: var(--color-info-light);
+      color: var(--color-info-dark);
+    }
+
+    .alert-danger {
+      background-color: var(--color-danger-light);
+      color: var(--color-danger-dark);
+    }
+
+    /* ========================================
+       Audit Log Styles
+       ======================================== */
+    .audit-card {
+      max-height: 400px;
+      overflow: hidden;
+    }
+
+    .audit-card .card-body {
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .audit-card.audit-user .card-header {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+    }
+
+    .audit-card.audit-abuser .card-header {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    }
+
+    .audit-card.audit-admin .card-header {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
+    }
+
+    .audit-card.audit-alias .card-header {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+    }
+
+    /* ========================================
+       Modal Styles
+       ======================================== */
+    .modal-content {
+      border: none;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      border-bottom: none;
+    }
+
+    .modal-header.modal-danger {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-success {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-warning {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-neutral {
+      background: var(--color-neutral-500);
+      color: white;
+    }
+
+    .modal-header.modal-primary {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+      color: white;
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--color-neutral-200);
+      background-color: var(--color-neutral-50);
+    }
+
+    /* ========================================
+       Responsive Fixes
+       ======================================== */
     @media (max-width: 991.98px) {
-      /* Stack Action card below info card on medium screens */
       .user-info-row .col-lg-9,
       .user-info-row .col-lg-3 {
         margin-bottom: 1rem;
       }
-      /* Audit log cards stack vertically */
       .audit-log-row .col-lg-4 {
         margin-bottom: 1rem;
       }
     }
+
     @media (max-width: 767.98px) {
-      /* Stack info sections vertically on small screens */
       .info-section .col-md-6 {
         margin-bottom: 1rem;
       }
-      /* Reduce padding on cards */
       .card-body {
         padding: 0.75rem;
       }
-      /* Make quota inputs stack if needed */
       .quota-input-group .input-group-prepend .input-group-text {
         width: auto !important;
         min-width: 70px;
         font-size: 0.7rem !important;
       }
     }
+
     @media (max-width: 575.98px) {
-      /* Further reduce padding on very small screens */
       .card-body {
         padding: 0.5rem;
       }
-      /* Make action buttons full width */
       .action-btn {
         font-size: 0.75rem;
       }
@@ -1327,8 +1884,8 @@
         </style>
         <div class="container-fluid px-4">
           <!-- Search Form -->
-          <div class="card mb-4 border-0 shadow-sm">
-            <div class="card-header text-white" style="background-color: #2c3e50;">
+          <div class="card mb-4">
+            <div class="card-header header-primary">
               <h5 class="mb-0">
                 <i class="fa fa-search mr-2"></i>Email Search
               </h5>
@@ -1336,29 +1893,33 @@
             <div class="card-body">
               <form method="get">
                 <div class="mb-3">
-                  <label class="font-weight-bold d-block mb-2">Search Type</label>
-                  <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                    <label class="btn btn-outline-primary {{ 'active' if search_type == 'email' else '' }}">
-                      <input type="radio" name="search_type" value="email" {{ 'checked' if search_type == 'email' else '' }}>
-                      <i class="fa fa-envelope mr-1"></i>Email
-                    </label>
-                    <label class="btn btn-outline-primary {{ 'active' if search_type == 'alias' else '' }}">
-                      <input type="radio" name="search_type" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
-                      <i class="fa fa-at mr-1"></i>Alias
-                    </label>
-                  </div>
-                  <small class="form-text text-muted">
-                    Email: search mailboxes, users, partner users. Alias: search aliases and deleted aliases.
-                  </small>
-                </div>
-                <div class="mb-3">
                   <label for="query" class="font-weight-bold">Search Query</label>
-                  <input type="text"
-                         class="form-control form-control-lg"
-                         name="query"
-                         id="query"
-                         value="{{ query or '' }}"
-                         placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else 'email@example.com, user ID, or POSIX regex pattern' }}">
+                  <div class="input-group input-group-lg">
+                    <div class="input-group-prepend">
+                      <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-outline-primary {{ 'active' if search_type == 'email' else '' }}">
+                          <input type="radio" name="search_type" value="email" {{ 'checked' if search_type == 'email' else '' }}>
+                          <i class="fa fa-envelope mr-1"></i>Email
+                        </label>
+                        <label class="btn btn-outline-primary {{ 'active' if search_type == 'alias' else '' }}">
+                          <input type="radio" name="search_type" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
+                          <i class="fa fa-at mr-1"></i>Alias
+                        </label>
+                      </div>
+                    </div>
+                    <input type="text"
+                           class="form-control"
+                           name="query"
+                           id="query"
+                           value="{{ query or '' }}"
+                           placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else 'email@example.com, user ID, or POSIX regex pattern' }}">
+                    <div class="input-group-append">
+                      <button type="submit" class="btn btn-primary-modern" id="searchBtn">
+                        <span class="search-icon"><i class="fa fa-search mr-1"></i>Search</span>
+                        <span class="search-spinner d-none"><i class="fa fa-spinner fa-spin mr-1"></i>Searching...</span>
+                      </button>
+                    </div>
+                  </div>
                   <small class="form-text text-muted" id="search-help">
                     {% if search_type == 'alias' %}
 
@@ -1368,12 +1929,6 @@
                     {% endif %}
                   </small>
                 </div>
-                <button type="submit"
-                        class="btn btn-lg"
-                        style="background-color: #3498db;
-                               color: white">
-                  <i class="fa fa-search mr-2"></i>Search
-                </button>
               </form>
             </div>
           </div>
@@ -1390,7 +1945,7 @@
             {% if data.aliases %}
 
               <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header header-success">
                   <h5 class="mb-0">
                     <i class="fa fa-at mr-2"></i>
                     {% if data.aliases_found_by_regex %}
@@ -1416,7 +1971,7 @@
             {% if data.deleted_aliases %}
 
               <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header header-neutral">
                   <h5 class="mb-0">
                     <i class="fa fa-trash-alt mr-2"></i>
                     {% if data.deleted_aliases_found_by_regex %}
@@ -1439,7 +1994,7 @@
             {% if data.domain_deleted_aliases %}
 
               <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header header-primary">
                   <h5 class="mb-0">
                     <i class="fa fa-globe mr-2"></i>
                     {% if data.domain_deleted_aliases_found_by_regex %}
@@ -1469,7 +2024,7 @@
             {% if data.users %}
 
               <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header header-success">
                   <h5 class="mb-0">
                     <i class="fa fa-user mr-2"></i>
                     {% if data.users_found_by_regex %}
@@ -1516,7 +2071,7 @@
             {% if data.user_audit_log and not data.users %}
 
               <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header header-warning">
                   <h5 class="mb-0">
                     <i class="fa fa-history mr-2"></i>Audit log entries for: {{ data.query }}
                   </h5>
@@ -1529,7 +2084,7 @@
 
                 {# Regex search: show mailboxes table only #}
                 <div class="card mb-4 shadow-sm">
-                  <div class="card-header bg-info text-white">
+                  <div class="card-header header-info">
                     <h5 class="mb-0">
                       <i class="fa fa-inbox mr-2"></i>
                       {{ data.mailbox_count }} Mailboxes matching "{{ query }}"
@@ -1547,7 +2102,7 @@
 
                     {% set ns.seen_user_ids = ns.seen_user_ids + [mailbox.user_id] %}
                     <div class="card mb-4 shadow-sm">
-                      <div class="card-header bg-success text-white">
+                      <div class="card-header header-success">
                         <h5 class="mb-0">
                           <i class="fa fa-user mr-2"></i>
                           User: {{ mailbox.user.email }}
@@ -1598,8 +2153,7 @@
 
                 {# Regex search: show partner users table only #}
                 <div class="card mb-4 shadow-sm">
-                  <div class="card-header bg-purple text-white"
-                       style="background-color: #6f42c1">
+                  <div class="card-header header-purple">
                     <h5 class="mb-0">
                       <i class="fa fa-handshake mr-2"></i>
                       {{ data.partner_users|length }} Partner Users matching "{{ query }}"
@@ -1614,7 +2168,7 @@
 
                   {% set ns.seen_user_ids = ns.seen_user_ids + [pu.user_id] %}
                   <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-success text-white">
+                    <div class="card-header header-success">
                       <h5 class="mb-0">
                         <i class="fa fa-user mr-2"></i>
                         User: {{ pu.user.email }}
@@ -1664,6 +2218,8 @@
       var queryInput = document.getElementById('query');
       var searchHelp = document.getElementById('search-help');
       var btnGroupLabels = document.querySelectorAll('.btn-group-toggle label');
+      var searchBtn = document.getElementById('searchBtn');
+      var searchForm = searchBtn ? searchBtn.closest('form') : null;
 
       function updateSearchHelp(searchType) {
         if (searchType === 'alias') {
@@ -1683,6 +2239,19 @@
           }
         });
       });
+
+      // Show spinner on form submit
+      if (searchForm && searchBtn) {
+        searchForm.addEventListener('submit', function() {
+          var searchIcon = searchBtn.querySelector('.search-icon');
+          var searchSpinner = searchBtn.querySelector('.search-spinner');
+          if (searchIcon && searchSpinner) {
+            searchIcon.classList.add('d-none');
+            searchSpinner.classList.remove('d-none');
+            searchBtn.disabled = true;
+          }
+        });
+      }
     });
         </script>
       {% endblock %}
