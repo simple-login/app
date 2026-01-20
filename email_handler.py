@@ -52,6 +52,7 @@ from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
+from sl_pgp import PgpContext
 from sqlalchemy.exc import IntegrityError
 
 from app import pgp_utils, s3, config, contact_utils
@@ -153,7 +154,10 @@ from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
 from app.mail_sender import sl_sendmail
-from app.mailbox_utils import get_mailbox_for_reply_phase
+from app.mailbox_utils import (
+    get_mailbox_for_reply_phase,
+    quarantine_disabled_mailbox_email,
+)
 from app.message_utils import message_to_bytes
 from app.models import (
     Alias,
@@ -179,12 +183,9 @@ from app.pgp_utils import (
     load_public_key_and_check,
     create_pgp_context,
 )
-
-
 from app.utils import sanitize_email
 from init_app import load_pgp_public_keys
 from server import create_light_app
-from sl_pgp import PgpContext
 
 
 @sentry_sdk.trace
@@ -769,6 +770,7 @@ def forward_email_to_mailbox(
 
     if mailbox.is_admin_disabled():
         LOG.d(f"{mailbox} admin_disabled, do not forward")
+        quarantine_disabled_mailbox_email(alias, contact, mailbox, envelope, msg)
         return True, status.E207
 
     # sanity check: make sure mailbox is not actually an alias
