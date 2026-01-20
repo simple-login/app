@@ -1,23 +1,31 @@
 import dataclasses
 import secrets
+import uuid
+from email.message import Message
 from enum import Enum
+from io import BytesIO
 from typing import Optional
 
 import arrow
+from aiosmtpd.smtp import Envelope
 from sqlalchemy.exc import IntegrityError
 
-from app import config
+from app import config, s3
+from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.constants import JobType
 from app.db import Session
+from app.email import headers
 from app.email_utils import (
     mailbox_already_used,
     email_can_be_used_as_mailbox_with_reason,
     send_email,
     render,
     get_email_domain_part,
+    add_or_replace_header,
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
+from app.message_utils import message_to_bytes
 from app.models import (
     User,
     Mailbox,
@@ -27,9 +35,11 @@ from app.models import (
     AliasMailbox,
     AdminAuditLog,
     AuditLogActionEnum,
+    RefusedEmail,
+    EmailLog,
+    Contact,
 )
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
-from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.utils import canonicalize_email, sanitize_email
 
 
@@ -656,3 +666,32 @@ def send_admin_reenable_mailbox_email(mailbox: Mailbox):
             mailbox=mailbox,
         ),
     )
+
+
+def quarantine_disabled_mailbox_email(
+    alias: Alias, contact: Contact, mailbox: Mailbox, envelope: Envelope, msg: Message
+) -> EmailLog:
+    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
+    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+    random_name = str(uuid.uuid4())
+    s3_report_path = f"refused-emails/mailbox-disabled-{random_name}.eml"
+    s3.upload_email_from_bytesio(
+        s3_report_path,
+        BytesIO(message_to_bytes(msg)),
+        f"mailbox-disabled-{random_name}",
+    )
+    refused_email = RefusedEmail.create(
+        full_report_path=s3_report_path, user_id=alias.user_id, flush=True
+    )
+    email_log = EmailLog.create(
+        user_id=alias.user_id,
+        mailbox_id=mailbox.id,
+        contact_id=contact.id,
+        alias_id=alias.id,
+        message_id=str(msg[headers.MESSAGE_ID]),
+        refused_email_id=refused_email.id,
+        is_spam=False,
+        blocked=True,
+        commit=True,
+    )
+    return email_log
