@@ -43,6 +43,7 @@ from app.errors import (
 from app.handler.unsubscribe_encoder import UnsubscribeAction, UnsubscribeEncoder
 from app.log import LOG
 from app.oauth_models import Scope
+from app.partner_utils import PartnerData
 from app.pw_models import PasswordOracle
 from app.utils import (
     convert_to_id,
@@ -316,7 +317,7 @@ class IntEnumType(sa.types.TypeDecorator):
 @dataclasses.dataclass
 class AliasOptions:
     show_sl_domains: bool = True
-    show_partner_domains: Optional[Partner] = None
+    show_partner_domains: Optional[PartnerData] = None
     show_partner_premium: Optional[bool] = None
 
 
@@ -3350,6 +3351,9 @@ class Partner(Base, ModelMixin):
             partner, partner_api_token = res
             return partner
         return None
+
+    def to_partner_data(self) -> PartnerData:
+        return PartnerData(id=self.id, name=self.name, contact_email=self.contact_email)
 
 
 class SLDomain(Base, ModelMixin):

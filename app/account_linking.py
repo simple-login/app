@@ -23,12 +23,12 @@ from app.events.generated.event_pb2 import UserPlanChanged, EventContent
 from app.log import LOG
 from app.models import (
     PartnerSubscription,
-    Partner,
     PartnerUser,
     User,
     Alias,
 )
 from app.partner_user_utils import create_partner_user, create_partner_subscription
+from app.partner_utils import PartnerData
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
 from app.utils import sanitize_email, canonicalize_email
@@ -123,7 +123,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
     Session.commit()
 
 
-def set_plan_for_user(user: User, plan: SLPlan, partner: Partner):
+def set_plan_for_user(user: User, plan: SLPlan, partner: PartnerData):
     partner_user = PartnerUser.get_by(partner_id=partner.id, user_id=user.id)
     if partner_user is None:
         return
@@ -131,7 +131,7 @@ def set_plan_for_user(user: User, plan: SLPlan, partner: Partner):
 
 
 def ensure_partner_user_exists_for_user(
-    link_request: PartnerLinkRequest, sl_user: User, partner: Partner
+    link_request: PartnerLinkRequest, sl_user: User, partner: PartnerData
 ) -> PartnerUser:
     # Find partner_user by user_id
     res = PartnerUser.get_by(user_id=sl_user.id)
@@ -173,7 +173,7 @@ class ClientMergeStrategy(ABC):
         self,
         link_request: PartnerLinkRequest,
         user: Optional[User],
-        partner: Partner,
+        partner: PartnerData,
     ):
         if self.__class__ == ClientMergeStrategy:
             raise RuntimeError("Cannot directly instantiate a ClientMergeStrategy")
@@ -278,7 +278,7 @@ class LinkedWithAnotherPartnerUserStrategy(ClientMergeStrategy):
 
 
 def get_login_strategy(
-    link_request: PartnerLinkRequest, user: Optional[User], partner: Partner
+    link_request: PartnerLinkRequest, user: Optional[User], partner: PartnerData
 ) -> ClientMergeStrategy:
     if user is None:
         # We couldn't find any SimpleLogin user with the requested e-mail
@@ -298,7 +298,7 @@ def check_alias(email: str):
 
 
 def process_login_case(
-    link_request: PartnerLinkRequest, partner: Partner
+    link_request: PartnerLinkRequest, partner: PartnerData
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
@@ -335,7 +335,7 @@ def process_login_case(
 
 
 def link_user(
-    link_request: PartnerLinkRequest, current_user: User, partner: Partner
+    link_request: PartnerLinkRequest, current_user: User, partner: PartnerData
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)
@@ -402,7 +402,7 @@ def switch_already_linked_user(
 def process_link_case(
     link_request: PartnerLinkRequest,
     current_user: User,
-    partner: Partner,
+    partner: PartnerData,
 ) -> LinkResult:
     # Sanitize email just in case
     link_request.email = sanitize_email(link_request.email)

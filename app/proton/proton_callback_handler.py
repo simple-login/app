@@ -1,16 +1,18 @@
 from dataclasses import dataclass
 from enum import Enum
-from flask import url_for
 from typing import Optional
 
-from app.errors import LinkException
-from app.models import User, Partner
-from app.proton.proton_client import ProtonClient, ProtonUser
+from flask import url_for
+
 from app.account_linking import (
     process_login_case,
     process_link_case,
     PartnerLinkRequest,
 )
+from app.errors import LinkException
+from app.models import User
+from app.partner_utils import PartnerData
+from app.proton.proton_client import ProtonClient, ProtonUser
 
 
 class Action(Enum):
@@ -41,7 +43,7 @@ class ProtonCallbackHandler:
     def __init__(self, proton_client: ProtonClient):
         self.proton_client = proton_client
 
-    def handle_login(self, partner: Partner) -> ProtonCallbackResult:
+    def handle_login(self, partner: PartnerData) -> ProtonCallbackResult:
         try:
             user = self.__get_partner_user()
             if user is None:
@@ -66,7 +68,7 @@ class ProtonCallbackHandler:
     def handle_link(
         self,
         current_user: Optional[User],
-        partner: Partner,
+        partner: PartnerData,
     ) -> ProtonCallbackResult:
         if current_user is None:
             raise Exception("Cannot link account with current_user being None")
