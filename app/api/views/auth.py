@@ -8,8 +8,8 @@ from flask_login import login_user
 from itsdangerous import Signer
 
 from app import email_utils
-from app.api.base import api_bp
 from app.abuser_utils import check_if_abuser_email
+from app.api.base import api_bp
 from app.config import FLASK_SECRET, DISABLE_REGISTRATION
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
@@ -228,6 +228,9 @@ def auth_reactivate():
     # do not use a different message to avoid exposing existing email
     if not user or user.activated:
         return jsonify(error="Something went wrong"), 400
+
+    if not user.can_send_or_receive():
+        return jsonify(error="User is disabled"), 400
 
     account_activation = AccountActivation.get_by(user_id=user.id)
     if account_activation:

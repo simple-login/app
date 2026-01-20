@@ -1,12 +1,10 @@
 import base64
-import binascii
 import enum
 import hmac
 import json
 import os
 import quopri
 import random
-import time
 import uuid
 from copy import deepcopy
 from email import policy, message_from_bytes, message_from_string
@@ -19,10 +17,12 @@ from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
 import arrow
+import binascii
 import dkim
 import re2 as re
 import sentry_sdk
 import spf
+import time
 from aiosmtpd.smtp import Envelope
 from cachetools import cached, TTLCache
 from email_validator import (
@@ -125,6 +125,8 @@ def send_trial_end_soon_email(user):
 
 
 def send_activation_email(user: User, activation_link):
+    if not user.can_send_or_receive():
+        return
     send_email(
         user.email,
         "Just one more step to join SimpleLogin",
@@ -144,6 +146,8 @@ def send_activation_email(user: User, activation_link):
 
 
 def send_reset_password_email(user: User, reset_password_link):
+    if not user.can_send_or_receive():
+        return
     send_email(
         user.email,
         "Reset your password on SimpleLogin",
@@ -161,6 +165,8 @@ def send_reset_password_email(user: User, reset_password_link):
 
 
 def send_change_email(user: User, new_email, link):
+    if not user.can_send_or_receive():
+        return
     send_email(
         new_email,
         "Confirm email update on SimpleLogin",
@@ -181,7 +187,9 @@ def send_change_email(user: User, new_email, link):
     )
 
 
-def send_invalid_totp_login_email(user, totp_type):
+def send_invalid_totp_login_email(user: User, totp_type):
+    if not user.can_send_or_receive():
+        return
     send_email_with_rate_control(
         user,
         config.ALERT_INVALID_TOTP_LOGIN,
@@ -202,6 +210,8 @@ def send_invalid_totp_login_email(user, totp_type):
 
 
 def send_test_email_alias(user: User, email: str):
+    if not user.can_send_or_receive():
+        return
     send_email(
         email,
         f"This email is sent to {email}",
@@ -220,10 +230,12 @@ def send_test_email_alias(user: User, email: str):
     )
 
 
-def send_cannot_create_directory_alias(user, alias_address, directory_name):
+def send_cannot_create_directory_alias(user: User, alias_address, directory_name):
     """when user cancels their subscription, they cannot create alias on the fly.
     If this happens, send them an email to notify
     """
+    if not user.can_send_or_receive():
+        return
     send_email(
         user.email,
         f"Alias {alias_address} cannot be created",
@@ -242,10 +254,14 @@ def send_cannot_create_directory_alias(user, alias_address, directory_name):
     )
 
 
-def send_cannot_create_directory_alias_disabled(user, alias_address, directory_name):
+def send_cannot_create_directory_alias_disabled(
+    user: User, alias_address, directory_name
+):
     """when the directory is disabled, new alias can't be created on-the-fly.
     Send user an email to notify of an attempt
     """
+    if not user.can_send_or_receive():
+        return
     send_email_with_rate_control(
         user,
         config.ALERT_DIRECTORY_DISABLED_ALIAS_CREATION,
@@ -266,10 +282,12 @@ def send_cannot_create_directory_alias_disabled(user, alias_address, directory_n
     )
 
 
-def send_cannot_create_domain_alias(user, alias, domain):
+def send_cannot_create_domain_alias(user: User, alias, domain):
     """when user cancels their subscription, they cannot create alias on the fly with custom domain.
     If this happens, send them an email to notify
     """
+    if not user.can_send_or_receive():
+        return
     send_email(
         user.email,
         f"Alias {alias} cannot be created",

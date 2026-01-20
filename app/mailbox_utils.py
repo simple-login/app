@@ -616,6 +616,8 @@ def admin_reenable_mailbox(
 
 def send_admin_disable_mailbox_warning_email(mailbox: Mailbox):
     """Send warning that mailbox will be admin-disabled."""
+    if not mailbox.can_send_or_receive():
+        return
     send_email(
         mailbox.email,
         f"Action Required: Your mailbox {mailbox.email} will be disabled",
@@ -634,6 +636,8 @@ def send_admin_disable_mailbox_warning_email(mailbox: Mailbox):
 
 def send_admin_disable_mailbox_email(mailbox: Mailbox):
     """Send notification that mailbox has been admin-disabled."""
+    if not mailbox.can_send_or_receive():
+        return
     send_email(
         mailbox.email,
         f"Your mailbox {mailbox.email} has been disabled",
@@ -652,6 +656,8 @@ def send_admin_disable_mailbox_email(mailbox: Mailbox):
 
 def send_admin_reenable_mailbox_email(mailbox: Mailbox):
     """Send notification that mailbox has been re-enabled."""
+    if not mailbox.can_send_or_receive():
+        return
     send_email(
         mailbox.email,
         f"Your mailbox {mailbox.email} has been re-enabled",

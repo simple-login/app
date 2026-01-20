@@ -168,21 +168,22 @@ def notify_premium_end():
 
             LOG.d(f"Send subscription ending soon email to user {user}")
 
-            send_email(
-                user.email,
-                "Your subscription will end soon",
-                render(
-                    "transactional/subscription-end.txt",
-                    user=user,
-                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
-                ),
-                render(
-                    "transactional/subscription-end.html",
-                    user=user,
-                    next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
-                ),
-                retries=3,
-            )
+            if user.can_send_or_receive():
+                send_email(
+                    user.email,
+                    "Your subscription will end soon",
+                    render(
+                        "transactional/subscription-end.txt",
+                        user=user,
+                        next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                    ),
+                    render(
+                        "transactional/subscription-end.html",
+                        user=user,
+                        next_bill_date=sub.next_bill_date.strftime("%Y-%m-%d"),
+                    ),
+                    retries=3,
+                )
 
 
 def notify_manual_sub_end():
@@ -225,21 +226,22 @@ def notify_manual_sub_end():
                     continue
 
             LOG.d("Remind user %s that their manual sub is ending soon", user)
-            send_email(
-                user.email,
-                "Your subscription will end soon",
-                render(
-                    "transactional/manual-subscription-end.txt",
-                    user=user,
-                    manual_sub=manual_sub,
-                ),
-                render(
-                    "transactional/manual-subscription-end.html",
-                    user=user,
-                    manual_sub=manual_sub,
-                ),
-                retries=3,
-            )
+            if user.can_send_or_receive():
+                send_email(
+                    user.email,
+                    "Your subscription will end soon",
+                    render(
+                        "transactional/manual-subscription-end.txt",
+                        user=user,
+                        manual_sub=manual_sub,
+                    ),
+                    render(
+                        "transactional/manual-subscription-end.html",
+                        user=user,
+                        manual_sub=manual_sub,
+                    ),
+                    retries=3,
+                )
 
     extend_subscription_url = config.URL + "/dashboard/coinbase_checkout"
     for coinbase_subscription in CoinbaseSubscription.all():
@@ -265,23 +267,24 @@ def notify_manual_sub_end():
             LOG.d(
                 "Remind user %s that their coinbase subscription is ending soon", user
             )
-            send_email(
-                user.email,
-                "Your SimpleLogin subscription will end soon",
-                render(
-                    "transactional/coinbase/reminder-subscription.txt",
-                    user=user,
-                    coinbase_subscription=coinbase_subscription,
-                    extend_subscription_url=extend_subscription_url,
-                ),
-                render(
-                    "transactional/coinbase/reminder-subscription.html",
-                    user=user,
-                    coinbase_subscription=coinbase_subscription,
-                    extend_subscription_url=extend_subscription_url,
-                ),
-                retries=3,
-            )
+            if user.can_send_or_receive():
+                send_email(
+                    user.email,
+                    "Your SimpleLogin subscription will end soon",
+                    render(
+                        "transactional/coinbase/reminder-subscription.txt",
+                        user=user,
+                        coinbase_subscription=coinbase_subscription,
+                        extend_subscription_url=extend_subscription_url,
+                    ),
+                    render(
+                        "transactional/coinbase/reminder-subscription.html",
+                        user=user,
+                        coinbase_subscription=coinbase_subscription,
+                        extend_subscription_url=extend_subscription_url,
+                    ),
+                    retries=3,
+                )
 
 
 def poll_apple_subscription():
@@ -834,7 +837,10 @@ def check_mailbox_valid_domain():
 
             # send a warning
             if mailbox.nb_failed_checks == 5:
-                if mailbox.user.email != mailbox.email:
+                if (
+                    mailbox.user.email != mailbox.email
+                    and mailbox.can_send_or_receive()
+                ):
                     send_email(
                         mailbox.user.email,
                         f"Mailbox {mailbox.email} is disabled",
@@ -855,7 +861,10 @@ def check_mailbox_valid_domain():
             if mailbox.nb_failed_checks > 10 and nb_email_log > 100:
                 mailbox.disabled = True
 
-                if mailbox.user.email != mailbox.email:
+                if (
+                    mailbox.user.email != mailbox.email
+                    and mailbox.can_send_or_receive()
+                ):
                     send_email(
                         mailbox.user.email,
                         f"Mailbox {mailbox.email} is disabled",
@@ -905,16 +914,17 @@ def check_mailbox_valid_pgp_keys():
                 message=f"[Cron] Automatically disabled PGP for mailbox {mailbox.id} due to invalid PGP key",
             )
             Session.commit()
-            send_email(
-                mailbox.user.email,
-                f"Mailbox {mailbox.email}'s PGP Key is invalid",
-                render(
-                    "transactional/invalid-mailbox-pgp-key.txt.jinja2",
-                    user=mailbox.user,
-                    mailbox=mailbox,
-                ),
-                retries=3,
-            )
+            if mailbox.can_send_or_receive():
+                send_email(
+                    mailbox.user.email,
+                    f"Mailbox {mailbox.email}'s PGP Key is invalid",
+                    render(
+                        "transactional/invalid-mailbox-pgp-key.txt.jinja2",
+                        user=mailbox.user,
+                        mailbox=mailbox,
+                    ),
+                    retries=3,
+                )
 
 
 def delete_old_monitoring():
@@ -1163,6 +1173,8 @@ def notify_hibp():
             .filter(Alias.hibp_breaches.any(), Alias.user_id == user.id)
             .all()
         )
+        if not user.can_send_or_receive():
+            continue
 
         LOG.d(
             "Send new breaches found email to %s for %s breaches aliases",

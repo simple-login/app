@@ -11,6 +11,8 @@ from app.models import NewsletterUser, Alias
 
 def send_newsletter_to_user(newsletter, user) -> (bool, str):
     """Return whether the newsletter is sent successfully and the error if not"""
+    if not user.can_send_or_receive():
+        return False, f"{user} not allowed to receive newsletter"
     try:
         templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
         env = Environment(loader=FileSystemLoader(templates_dir))
@@ -59,6 +61,8 @@ def send_newsletter_to_user(newsletter, user) -> (bool, str):
 
 def send_newsletter_to_address(newsletter, user, to_address) -> (bool, str):
     """Return whether the newsletter is sent successfully and the error if not"""
+    if not user.can_send_or_receive():
+        return False, f"{user} not allowed to receive newsletter"
     try:
         templates_dir = os.path.join(ROOT_DIR, "templates", "emails")
         env = Environment(loader=FileSystemLoader(templates_dir))

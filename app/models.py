@@ -2978,6 +2978,13 @@ class Mailbox(Base, ModelMixin):
         """Check if mailbox has been disabled by admin."""
         return self.flags & Mailbox.FLAG_ADMIN_DISABLED == Mailbox.FLAG_ADMIN_DISABLED
 
+    def can_send_or_receive(self):
+        if self.is_admin_disabled():
+            return False
+        if self.disabled:
+            return False
+        return self.user.can_send_or_receive()
+
     def nb_alias(self):
         from app.mailbox_utils import count_mailbox_aliases
 
