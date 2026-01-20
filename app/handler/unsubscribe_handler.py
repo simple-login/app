@@ -110,22 +110,23 @@ class UnsubscribeHandler:
         Session.commit()
         enable_alias_url = config.URL + f"/dashboard/?highlight_alias_id={alias.id}"
         for mailbox in alias.mailboxes:
-            send_email(
-                mailbox.email,
-                f"Alias {alias.email} has been disabled successfully",
-                render(
-                    "transactional/unsubscribe-disable-alias.txt",
-                    user=alias.user,
-                    alias=alias.email,
-                    enable_alias_url=enable_alias_url,
-                ),
-                render(
-                    "transactional/unsubscribe-disable-alias.html",
-                    user=alias.user,
-                    alias=alias.email,
-                    enable_alias_url=enable_alias_url,
-                ),
-            )
+            if mailbox.can_send_or_receive():
+                send_email(
+                    mailbox.email,
+                    f"Alias {alias.email} has been disabled successfully",
+                    render(
+                        "transactional/unsubscribe-disable-alias.txt",
+                        user=alias.user,
+                        alias=alias.email,
+                        enable_alias_url=enable_alias_url,
+                    ),
+                    render(
+                        "transactional/unsubscribe-disable-alias.html",
+                        user=alias.user,
+                        alias=alias.email,
+                        enable_alias_url=enable_alias_url,
+                    ),
+                )
         return status.E202
 
     def _disable_contact(
@@ -152,17 +153,18 @@ class UnsubscribeHandler:
             + f"/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
         )
         for mailbox in alias.mailboxes:
-            send_email(
-                mailbox.email,
-                f"Emails from {contact.website_email} to {alias.email} are now blocked",
-                render(
-                    "transactional/unsubscribe-block-contact.txt.jinja2",
-                    user=alias.user,
-                    alias=alias,
-                    contact=contact,
-                    unblock_contact_url=unblock_contact_url,
-                ),
-            )
+            if mailbox.can_send_or_receive():
+                send_email(
+                    mailbox.email,
+                    f"Emails from {contact.website_email} to {alias.email} are now blocked",
+                    render(
+                        "transactional/unsubscribe-block-contact.txt.jinja2",
+                        user=alias.user,
+                        alias=alias,
+                        contact=contact,
+                        unblock_contact_url=unblock_contact_url,
+                    ),
+                )
         return status.E202
 
     def _unsubscribe_user_from_newsletter(
@@ -180,18 +182,19 @@ class UnsubscribeHandler:
         user.notification = False
         Session.commit()
 
-        send_email(
-            user.email,
-            "You have been unsubscribed from SimpleLogin newsletter",
-            render(
-                "transactional/unsubscribe-newsletter.txt",
-                user=user,
-            ),
-            render(
-                "transactional/unsubscribe-newsletter.html",
-                user=user,
-            ),
-        )
+        if user.can_send_or_receive():
+            send_email(
+                user.email,
+                "You have been unsubscribed from SimpleLogin newsletter",
+                render(
+                    "transactional/unsubscribe-newsletter.txt",
+                    user=user,
+                ),
+                render(
+                    "transactional/unsubscribe-newsletter.html",
+                    user=user,
+                ),
+            )
         return status.E202
 
     def _check_email_is_authorized_for_alias(
@@ -229,6 +232,8 @@ class UnsubscribeHandler:
         if not alias:
             return status.E508
         if alias.user_id != user.id:
+            return status.E509
+        if not alias.user.can_send_or_receive():
             return status.E509
         email_domain = get_email_domain_part(alias.email)
         to_email = sanitize_email(original_unsub_data.recipient)

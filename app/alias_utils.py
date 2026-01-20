@@ -447,20 +447,21 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
 
     # inform previous owner
     old_user = alias.user
-    send_email(
-        old_user.email,
-        f"Alias {alias.email} has been received",
-        render(
-            "transactional/alias-transferred.txt",
-            user=old_user,
-            alias=alias,
-        ),
-        render(
-            "transactional/alias-transferred.html",
-            user=old_user,
-            alias=alias,
-        ),
-    )
+    if alias.user.can_send_or_receive():
+        send_email(
+            old_user.email,
+            f"Alias {alias.email} has been received",
+            render(
+                "transactional/alias-transferred.txt",
+                user=old_user,
+                alias=alias,
+            ),
+            render(
+                "transactional/alias-transferred.html",
+                user=old_user,
+                alias=alias,
+            ),
+        )
 
     # now the alias belongs to the new user
     alias.user_id = new_user.id

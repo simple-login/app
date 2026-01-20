@@ -49,7 +49,7 @@ class DeleteCustomDomainJob:
 
         LOG.d("Domain %s deleted", domain_name)
 
-        if custom_domain_partner_id is None:
+        if custom_domain_partner_id is None and user.can_send_or_receive():
             send_email(
                 user.email,
                 f"Your domain {domain_name} has been deleted",

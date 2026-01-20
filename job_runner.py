@@ -3,11 +3,11 @@ Run scheduled jobs.
 Not meant for running job at precise time (+- 1h)
 """
 
-import time
 from typing import List, Optional
 
 import arrow
 import newrelic.agent
+import time
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import ObjectDeletedError
@@ -42,6 +42,8 @@ def onboarding_send_from_alias(user):
     comm_email, unsubscribe_link, via_email = user.get_communication_email()
     if not comm_email:
         return
+    if not user.can_send_or_receive():
+        return
 
     send_email(
         comm_email,
@@ -63,6 +65,8 @@ def onboarding_pgp(user):
     comm_email, unsubscribe_link, via_email = user.get_communication_email()
     if not comm_email:
         return
+    if not user.can_send_or_receive():
+        return
 
     send_email(
         comm_email,
@@ -79,6 +83,8 @@ def onboarding_pgp(user):
 def onboarding_browser_extension(user):
     comm_email, unsubscribe_link, via_email = user.get_communication_email()
     if not comm_email:
+        return
+    if not user.can_send_or_receive():
         return
 
     send_email(
@@ -105,6 +111,8 @@ def onboarding_mailbox(user):
     comm_email, unsubscribe_link, via_email = user.get_communication_email()
     if not comm_email:
         return
+    if not user.can_send_or_receive():
+        return
 
     send_email(
         comm_email,
@@ -121,6 +129,8 @@ def onboarding_mailbox(user):
 def welcome_proton(user):
     comm_email, _, _ = user.get_communication_email()
     if not comm_email:
+        return
+    if not user.can_send_or_receive():
         return
 
     send_email(
@@ -179,26 +189,27 @@ def delete_mailbox_job(job: Job):
 
     if not job.payload.get("send_mail", True):
         return
-    if alias_transferred_to:
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} and its alias have been transferred to {alias_transferred_to}.
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
-    else:
-        send_email(
-            user.email,
-            f"Your mailbox {mailbox_email} has been deleted",
-            f"""Mailbox {mailbox_email} along with its aliases have been deleted successfully.
-Regards,
-SimpleLogin team.
-""",
-            retries=3,
-        )
+    if user.can_send_or_receive():
+        if alias_transferred_to:
+            send_email(
+                user.email,
+                f"Your mailbox {mailbox_email} has been deleted",
+                f"""Mailbox {mailbox_email} and its alias have been transferred to {alias_transferred_to}.
+    Regards,
+    SimpleLogin team.
+    """,
+                retries=3,
+            )
+        else:
+            send_email(
+                user.email,
+                f"Your mailbox {mailbox_email} has been deleted",
+                f"""Mailbox {mailbox_email} along with its aliases have been deleted successfully.
+    Regards,
+    SimpleLogin team.
+    """,
+                retries=3,
+            )
 
 
 def process_job(job: Job):
