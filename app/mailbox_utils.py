@@ -635,9 +635,11 @@ def send_admin_disable_mailbox_warning_email(mailbox: Mailbox):
 
 
 def send_admin_disable_mailbox_email(mailbox: Mailbox):
+    if not mailbox.user.can_send_or_receive():
+        return
     """Send notification that mailbox has been admin-disabled."""
     send_email(
-        mailbox.email,
+        mailbox.user.email,
         f"Your mailbox {mailbox.email} has been disabled",
         render(
             "transactional/admin-disable-mailbox.txt.jinja2",
@@ -653,6 +655,8 @@ def send_admin_disable_mailbox_email(mailbox: Mailbox):
 
 
 def send_admin_reenable_mailbox_email(mailbox: Mailbox):
+    if not mailbox.user.can_send_or_receive():
+        return
     """Send notification that mailbox has been re-enabled."""
     send_email(
         mailbox.email,
