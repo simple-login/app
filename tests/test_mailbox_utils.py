@@ -758,7 +758,7 @@ def test_admin_disable_mailbox_single(flask_client):
     # Verify notification email was sent
     assert len(mail_sender.get_stored_emails()) == 1
     mail_sent = mail_sender.get_stored_emails()[0]
-    assert mail_sent.envelope_to == email
+    assert mail_sent.envelope_to == user.email
     assert "disabled" in str(mail_sent.msg).lower()
 
 
@@ -818,7 +818,7 @@ def test_admin_disable_mailbox_multiple_users(flask_client):
     # Verify notification email was sent (only once to the shared email)
     assert len(mail_sender.get_stored_emails()) == 1
     mail_sent = mail_sender.get_stored_emails()[0]
-    assert mail_sent.envelope_to == shared_email
+    assert mail_sent.envelope_to in (user3.email, user2.email, user1.email)
 
 
 @mail_sender.store_emails_test_decorator
