@@ -1054,7 +1054,7 @@ def handle_reply(
     envelope,
     msg: Message,
     rcpt_to: str,
-    notified_mailboxes: Optional[Set[int]] = None,
+    notified_mailboxes: Set[int],
 ) -> (bool, str):
     """
     Return whether an email has been delivered and
@@ -1333,19 +1333,16 @@ def handle_reply(
             is_forward=False,
         )
 
-        if notified_mailboxes is not None:
-            # if alias belongs to several mailboxes, notify other mailboxes about this email
-            # Skip mailboxes that have already been notified in this transaction
-            # to prevent duplicate notifications when sending to multiple reverse aliases
-            other_mailboxes = [
-                mb for mb in alias.mailboxes if mb.email != mailbox.email
-            ]
-            for mb in other_mailboxes:
-                if mb.id in notified_mailboxes:
-                    LOG.d(f"Skipping notification to {mb.email}, already notified")
-                    continue
-                notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
-                notified_mailboxes.add(mb.id)
+        # if alias belongs to several mailboxes, notify other mailboxes about this email
+        # Skip mailboxes that have already been notified in this transaction
+        # to prevent duplicate notifications when sending to multiple reverse aliases
+        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
+        for mb in other_mailboxes:
+            if mb.id in notified_mailboxes:
+                LOG.d(f"Skipping notification to {mb.email}, already notified")
+                continue
+            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+            notified_mailboxes.add(mb.id)
 
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
