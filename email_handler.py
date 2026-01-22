@@ -42,7 +42,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 import newrelic.agent
 import sentry_sdk
@@ -1050,7 +1050,12 @@ def replace_sl_message_id_by_original_message_id(msg):
 
 
 @sentry_sdk.trace
-def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
+def handle_reply(
+    envelope,
+    msg: Message,
+    rcpt_to: str,
+    notified_mailboxes: Optional[Set[int]] = None,
+) -> (bool, str):
     """
     Return whether an email has been delivered and
     the smtp status ("250 Message accepted", "550 Non-existent email address", etc)
@@ -1328,10 +1333,19 @@ def handle_reply(envelope, msg: Message, rcpt_to: str) -> (bool, str):
             is_forward=False,
         )
 
-        # if alias belongs to several mailboxes, notify other mailboxes about this email
-        other_mailboxes = [mb for mb in alias.mailboxes if mb.email != mailbox.email]
-        for mb in other_mailboxes:
-            notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+        if notified_mailboxes is not None:
+            # if alias belongs to several mailboxes, notify other mailboxes about this email
+            # Skip mailboxes that have already been notified in this transaction
+            # to prevent duplicate notifications when sending to multiple reverse aliases
+            other_mailboxes = [
+                mb for mb in alias.mailboxes if mb.email != mailbox.email
+            ]
+            for mb in other_mailboxes:
+                if mb.id in notified_mailboxes:
+                    LOG.d(f"Skipping notification to {mb.email}, already notified")
+                    continue
+                notify_mailbox(alias, mailbox, mb, msg, orig_to, orig_cc, alias_domain)
+                notified_mailboxes.add(mb.id)
 
     except Exception:
         LOG.w("Cannot send email from %s to %s", alias, contact)
@@ -2259,6 +2273,10 @@ def handle(envelope: Envelope, msg: Message) -> str:
     # each element is a couple of whether the delivery is successful and the smtp status
     res: [(bool, str)] = []
 
+    # Track mailboxes that have been notified to prevent duplicate notifications
+    # when sending to multiple reverse aliases in the same transaction
+    notified_mailboxes: Set[int] = set()
+
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
         if rcpt_to in config.NOREPLIES:
@@ -2279,7 +2297,9 @@ def handle(envelope: Envelope, msg: Message) -> str:
             LOG.d(
                 "Reply phase %s(%s) -> %s", mail_from, copy_msg[headers.FROM], rcpt_to
             )
-            is_delivered, smtp_status = handle_reply(envelope, copy_msg, rcpt_to)
+            is_delivered, smtp_status = handle_reply(
+                envelope, copy_msg, rcpt_to, notified_mailboxes
+            )
             res.append((is_delivered, smtp_status))
         else:  # Forward case
             LOG.d(
