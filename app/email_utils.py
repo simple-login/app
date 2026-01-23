@@ -1177,13 +1177,13 @@ def generate_reply_email(contact_email: str, alias: Alias) -> str:
         include_sender_in_reverse_alias = user.include_sender_in_reverse_alias
 
     if include_sender_in_reverse_alias and contact_email:
+        # use _ instead of . to avoid AC_FROM_MANY_DOTS SpamAssassin rule
+        contact_email = contact_email.replace("@", "_at_")
+        contact_email = contact_email.replace(".", "_")
         # make sure contact_email can be ascii-encoded
         contact_email = convert_to_id(contact_email)
         contact_email = sanitize_email(contact_email)
         contact_email = contact_email[:45]
-        # use _ instead of . to avoid AC_FROM_MANY_DOTS SpamAssassin rule
-        contact_email = contact_email.replace("@", "_at_")
-        contact_email = contact_email.replace(".", "_")
         contact_email = convert_to_alphanumeric(contact_email)
 
     reply_domain = config.EMAIL_DOMAIN
