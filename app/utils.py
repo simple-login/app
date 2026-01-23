@@ -47,15 +47,6 @@ def random_string(length=10, include_digits=False):
     return "".join(secrets.choice(letters) for _ in range(length))
 
 
-def convert_to_id(s: str):
-    """convert a string to id-like: remove space, remove special accent"""
-    s = s.lower()
-    s = unidecode(s)
-    s = s.replace(" ", "")
-
-    return s[:256]
-
-
 _ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-."
 
 
@@ -69,6 +60,15 @@ def convert_to_alphanumeric(s: str) -> str:
             ret.append(c)
 
     return "".join(ret)
+
+
+def convert_to_id(s: str):
+    """convert a string to id-like: remove space, remove special accent"""
+    s = s.lower()
+    s = unidecode(s)
+    s = s.replace(" ", "")
+
+    return convert_to_alphanumeric(s)[:64]
 
 
 def encode_url(url):
