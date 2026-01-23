@@ -2324,7 +2324,7 @@ class EmailLog(Base, ModelMixin):
     @classmethod
     def create(cls, *args, **kwargs):
         commit = kwargs.pop("commit", False)
-        if "message_id" in kwargs:
+        if "message_id" in kwargs and kwargs["message_id"]:
             kwargs["message_id"] = kwargs["message_id"][:250]
         email_log = super().create(*args, **kwargs)
         Session.flush()

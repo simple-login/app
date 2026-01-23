@@ -31,6 +31,8 @@ from tests.utils import load_eml_file, create_new_user, random_email
 
 
 def test_should_ignore(flask_client):
+    IgnoredEmail.filter_by(rcpt_to="rcpt_to").delete()
+
     assert should_ignore("mail_from", []) is False
 
     assert not should_ignore("mail_from", ["rcpt_to"])
