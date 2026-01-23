@@ -38,7 +38,7 @@ def handle_batch_import(batch_import: BatchImport):
     import_from_csv(batch_import, user, lines)
 
 
-def import_from_csv(batch_import: BatchImport, user: User, lines):
+def import_from_csv(batch_import: BatchImport, user: User, lines: list[str]):
     reader = csv.DictReader(lines)
 
     for row in reader:
@@ -70,7 +70,7 @@ def import_from_csv(batch_import: BatchImport, user: User, lines):
 
         mailboxes = []
 
-        if "mailboxes" in row:
+        if "mailboxes" in row and row["mailboxes"]:
             for mailbox_email in row["mailboxes"].split():
                 mailbox_email = canonicalize_email(mailbox_email)
                 mailbox = Mailbox.get_by(email=mailbox_email)
