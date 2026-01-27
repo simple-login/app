@@ -3,23 +3,37 @@
 {% block content %}
 
   {% call text() %}
-    <h1>Action Required: {{ mailbox.email }} will be disabled.</h1>
+    <h1>Your mailbox {{ mailbox.email }} needs attention</h1>
   {% endcall %}
 
   {% call text() %}
-    This is a warning that your mailbox may be disabled by {{ SERVICE_PROVIDER }} administrators.
-    <br />
-    If no action is taken, you will not be able to receive emails forwarded to this mailbox.
+    Hi,
   {% endcall %}
 
   {% call text() %}
-    If you have any questions or concerns, please contact support immediately.
+    We noticed something unusual with the setup of your mailbox <strong>{{ mailbox.email }}</strong> that could be associated with abuse.
+  {% endcall %}
+
+  {% if reason %}
+    {% call text() %}
+      <strong>Here's what we found:</strong> {{ reason }}
+    {% endcall %}
+  {% endif %}
+
+  {% call text() %}
+    To keep your account in good standing, please review your mailbox configuration.
+    If we don't hear from you or see changes, we may need to disable this mailbox,
+    which means you won't receive any emails forwarded to it.
+  {% endcall %}
+
+  {% call text() %}
+    If you believe this is a mistake or have any questions, please reach out to our support team - we're happy to help clarify things.
   {% endcall %}
 
   {% call text() %}
     Best,
     <br />
-    SimpleLogin Team.
+    {{ SERVICE_PROVIDER }} Team.
   {% endcall %}
 
 {% endblock %}

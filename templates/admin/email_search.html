@@ -942,9 +942,16 @@
                             <i class="fa fa-exclamation-triangle mr-1"></i>
                             This will send a warning email to the user about mailbox <strong>{{ mailbox.email }}</strong>.
                           </div>
-                          <p class="text-muted small mb-0">
-                            The user will be notified that their mailbox may be disabled if they don't take action.
-                          </p>
+                          <p class="text-muted small">The user will be notified that their mailbox may be disabled if they don't take action.</p>
+                          <div class="form-group mb-0">
+                            <label for="warnMailboxNote{{ mailbox.id }}" class="font-weight-bold">Reason (required)</label>
+                            <textarea class="form-control"
+                                      id="warnMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for the warning..."></textarea>
+                          </div>
                         </div>
                         <div class="modal-footer">
                           <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>

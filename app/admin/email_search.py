@@ -893,7 +893,16 @@ class EmailSearchAdmin(BaseView):
             flash("Mailbox not found", "error")
             return redirect(url_for("admin.email_search.index"))
 
-        send_admin_disable_mailbox_warning_email(mailbox)
+        note = request.form.get("note", "").strip()
+        if not note:
+            flash("Note is required", "error")
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=mailbox.email, search_type="email"
+                )
+            )
+
+        send_admin_disable_mailbox_warning_email(mailbox, reason=note)
 
         flash(f"Warning email sent to {mailbox.email}", "success")
         LOG.info(
