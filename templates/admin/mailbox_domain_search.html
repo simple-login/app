@@ -25,7 +25,7 @@
       <tr>
         <td>{{ user.id }}</td>
         <td>
-          <a href="{{ url_for("admin.email_search.index", query=user.email) }}">{{ user.email }}</a>
+          <a href="{{ url_for('admin.email_search.index', query=user.email) }}">{{ user.email }}</a>
         </td>
         {% if user.activated %}
 
@@ -40,7 +40,7 @@
           <td class="text-success">
             Enabled
             <form class="d-inline"
-                  action="{{ url_for("admin.email_domain_search.disable_user") }}"
+                  action="{{ url_for('admin.email_domain_search.disable_user') }}"
                   method="POST">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <input type="hidden" name="query" value="{{ query }}">
@@ -65,7 +65,7 @@
         <td>{{ user.updated_at }}</td>
         <td>
           <form class="d-inline"
-                action="{{ url_for("admin.email_search.update_subdomain_quota") }}"
+                action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
                 method="POST">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <div class="input-group input-group-sm" style="max-width: 120px;">
@@ -89,7 +89,7 @@
           <td class="flex">
             <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
             <form class="d-inline"
-                  action="{{ url_for("admin.email_search.delete_partner_link") }}"
+                  action="{{ url_for('admin.email_search.delete_partner_link') }}"
                   method="POST">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <button type="submit"
@@ -104,7 +104,7 @@
 
           <td>
             <form class="d-inline"
-                  action="{{ url_for("admin.email_search.stop_user_deletion") }}"
+                  action="{{ url_for('admin.email_search.stop_user_deletion') }}"
                   method="POST">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <button type="submit"

@@ -443,7 +443,7 @@ wheels = [
 
 [[package]]
 name = "djlint"
-version = "1.34.1"
+version = "1.35.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -458,9 +458,9 @@ dependencies = [
     { name = "regex" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/a8/b8ed0b5e924985d3b4272940f785a7bf5baa41713dc30a0c087939aaf7c8/djlint-1.34.1.tar.gz", hash = "sha256:db93fa008d19eaadb0454edf1704931d14469d48508daba2df9941111f408346", size = 44066, upload-time = "2023-12-20T19:26:20.13Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/e6/4b633476fa2ebbd09ade007f052617227fb0c250e7f708d6e56e9f6c4b85/djlint-1.35.3.tar.gz", hash = "sha256:780ea3e25662fca89033fa96ecf656099954d6f81dce039eac90f4bba3cbe850", size = 45902, upload-time = "2024-10-30T07:59:59.674Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/0c/bf400cf2a7af5aaa45cc3c54805220dea0bc88b500b414379d37fd0aff12/djlint-1.34.1-py3-none-any.whl", hash = "sha256:96ff1c464fb6f061130ebc88663a2ea524d7ec51f4b56221a2b3f0320a3cfce8", size = 48988, upload-time = "2023-12-20T19:26:17.319Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/f9/1788c861b4f8aea24bc8f216e57877354f138a3730cafb407f8ec4cc6cd2/djlint-1.35.3-py3-none-any.whl", hash = "sha256:bf2f23798909f9c5a110925c369538383de0141f9a2be37ee0d26422d41b7543", size = 50744, upload-time = "2024-10-30T07:59:58.293Z" },
 ]
 
 [[package]]
@@ -1912,7 +1912,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = "~=22.1.0" },
-    { name = "djlint", specifier = "==1.34.1" },
+    { name = "djlint", specifier = "==1.35.3" },
     { name = "pre-commit", specifier = "~=4.1.0" },
     { name = "pylint", specifier = "~=2.14.4" },
     { name = "pytest", specifier = "~=7.0.0" },
