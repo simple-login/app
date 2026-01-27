@@ -1,10 +1,17 @@
 {% extends "base.txt.jinja2" %}
 
 {% block content %}
-Action Required: {{ mailbox.email }} will be disabled.
+Your mailbox {{ mailbox.email }} needs attention
 
-This is a warning that your mailbox may be disabled by {{ SERVICE_PROVIDER }} administrators.
-If no action is taken, you will not be able to receive emails forwarded to this mailbox.
+Hi,
 
-If you have any questions or concerns, please contact support immediately.
+We noticed something unusual with the setup of your mailbox {{ mailbox.email }} that could be associated with abuse.
+{% if reason %}
+
+Here's what we found: {{ reason }}
+{% endif %}
+
+To keep your account in good standing, please review your mailbox configuration. If we don't hear from you or see changes, we may need to disable this mailbox, which means you won't receive any emails forwarded to it.
+
+If you believe this is a mistake or have any questions, please reach out to our support team - we're happy to help clarify things.
 {% endblock %}
