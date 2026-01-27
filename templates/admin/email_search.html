@@ -59,7 +59,8 @@
                   <td class="py-1">
                     {% if pu %}
 
-                      <a href="?query={{ pu.partner_email }}&search_type=email">{{ pu.partner_email }}</a>
+                      <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>
+                      <br><small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a></small>
                     {% else %}
                       <span class="text-muted">Not linked</span>
                     {% endif %}
@@ -2143,6 +2144,10 @@
                     <input type="radio" name="search_type" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
                     <i class="fa fa-at mr-1"></i>Alias
                   </label>
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'partner' else '' }}">
+                    <input type="radio" name="search_type" value="partner" {{ 'checked' if search_type == 'partner' else '' }}>
+                    <i class="fa fa-handshake mr-1"></i>Partner
+                  </label>
                 </div>
               </div>
               <input type="text"
@@ -2150,7 +2155,7 @@
                      name="query"
                      id="query"
                      value="{{ query or '' }}"
-                     placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else 'email@example.com, user ID, or POSIX regex pattern' }}">
+                     placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else 'email@example.com, user ID, or POSIX regex pattern') }}">
               <div class="input-group-append">
                 <button type="submit" class="btn btn-primary-modern" id="searchBtn">
                   <span class="search-icon"><i class="fa fa-search mr-1"></i>Search</span>
@@ -2162,6 +2167,8 @@
               {% if search_type == 'alias' %}
 
                 <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.
+              {% elif search_type == 'partner' %}
+                <i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.
               {% else %}
                 <i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).
               {% endif %}
@@ -2175,7 +2182,7 @@
 
       <div class="alert alert-warning shadow-sm" role="alert">
         <i class="fa fa-exclamation-triangle mr-2"></i>
-        No results found for "<strong>{{ query }}</strong>" in {{ 'aliases' if search_type == 'alias' else 'emails' }}
+        No results found for "<strong>{{ query }}</strong>" in {{ 'aliases' if search_type == 'alias' else ('partner users' if search_type == 'partner' else 'emails') }}
       </div>
     {% endif %}
     <!-- Alias Search Results -->
@@ -2281,14 +2288,8 @@
               {% set ns.seen_user_ids = ns.seen_user_ids + [data.users[0].id] %}
               {{ user_info_card(data.users[0]) }}
               {{ user_actions_card(data.users[0]) }}
-              <div class="row">
-                <div class="col-lg-6">
-                  {{ mailboxes_table("User Mailboxes", helper.mailbox_count(data.users[0]) , helper.mailbox_list(data.users[0]), false) }}
-                </div>
-                <div class="col-lg-6">
-                  {{ aliases_table(helper.alias_count(data.users[0]) , helper.alias_list(data.users[0]), false) }}
-                </div>
-              </div>
+              {{ mailboxes_table("User Mailboxes", helper.mailbox_count(data.users[0]) , helper.mailbox_list(data.users[0]), false) }}
+              {{ aliases_table(helper.alias_count(data.users[0]) , helper.alias_list(data.users[0]), false) }}
               {{ custom_domains_table(helper.custom_domain_list(data.users[0]) ) }}
               {# Audit Logs Section #}
               <div class="row audit-log-row">
@@ -2353,14 +2354,8 @@
                   </div>
                   {{ user_info_card(mailbox.user) }}
                   {{ user_actions_card(mailbox.user) }}
-                  <div class="row">
-                    <div class="col-lg-6">
-                      {{ mailboxes_table("User Mailboxes", helper.mailbox_count(mailbox.user) , helper.mailbox_list(mailbox.user, mailbox.id), false, mailbox.email) }}
-                    </div>
-                    <div class="col-lg-6">
-                      {{ aliases_table(helper.alias_count(mailbox.user) , helper.alias_list(mailbox.user), false) }}
-                    </div>
-                  </div>
+                  {{ mailboxes_table("User Mailboxes", helper.mailbox_count(mailbox.user) , helper.mailbox_list(mailbox.user, mailbox.id), false, mailbox.email) }}
+                  {{ aliases_table(helper.alias_count(mailbox.user) , helper.alias_list(mailbox.user), false) }}
                   {{ custom_domains_table(helper.custom_domain_list(mailbox.user) ) }}
                   {# Audit Logs Section #}
                   {% set user_audit = helper.user_audit_log(mailbox.user) %}
@@ -2419,12 +2414,8 @@
                 </div>
                 {{ user_info_card(pu.user) }}
                 {{ user_actions_card(pu.user) }}
-                <div class="row">
-                  <div class="col-lg-6">
-                    {{ mailboxes_table("User Mailboxes", helper.mailbox_count(pu.user) , helper.mailbox_list(pu.user), false) }}
-                  </div>
-                  <div class="col-lg-6">{{ aliases_table(helper.alias_count(pu.user) , helper.alias_list(pu.user), false) }}</div>
-                </div>
+                {{ mailboxes_table("User Mailboxes", helper.mailbox_count(pu.user) , helper.mailbox_list(pu.user), false) }}
+                {{ aliases_table(helper.alias_count(pu.user) , helper.alias_list(pu.user), false) }}
                 {{ custom_domains_table(helper.custom_domain_list(pu.user) ) }}
                 {# Audit Logs Section #}
                 {% set user_audit = helper.user_audit_log(pu.user) %}
@@ -2463,6 +2454,9 @@
         if (searchType === 'alias') {
           queryInput.placeholder = 'alias@example.com (exact match only)';
           searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.';
+        } else if (searchType === 'partner') {
+          queryInput.placeholder = 'partner email or external user ID';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.';
         } else {
           queryInput.placeholder = 'email@example.com, user ID, or POSIX regex pattern';
           searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).';
