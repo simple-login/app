@@ -751,6 +751,9 @@
               <th>Verified</th>
               <th>Default</th>
               <th>Admin Disabled</th>
+              <th>PGP</th>
+              <th>Generic Subject</th>
+              <th>Flags</th>
               <th># Aliases</th>
               <th>Created</th>
               <th>Actions</th>
@@ -777,6 +780,29 @@
                 <td>{{ badge_status(mailbox.verified, 'Yes', 'No', 'success', 'warning') }}</td>
                 <td>{{ badge_status(mailbox.user.default_mailbox_id == mailbox.id, 'Yes', 'No', 'info', 'secondary') }}</td>
                 <td>{{ badge_status(mailbox.is_admin_disabled() , 'Yes', 'No', 'danger', 'success') }}</td>
+                <td>
+                  {% if mailbox.pgp_finger_print %}
+                    {{ badge_status(mailbox.pgp_enabled(), 'Enabled', 'Disabled', 'success', 'warning') }}
+                    <br>
+                    <small class="text-muted" title="{{ mailbox.pgp_finger_print }}">
+                      {{ mailbox.pgp_finger_print[:16] }}...
+                    </small>
+                  {% else %}
+                    <span class="badge badge-secondary">No PGP</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if mailbox.generic_subject %}
+                    <span class="badge badge-info" title="{{ mailbox.generic_subject }}">{{ mailbox.generic_subject[:20] }}{% if mailbox.generic_subject|length > 20 %}...{% endif %}</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <code>{{ mailbox.flags or 0 }}</code>
+                  {% set mbox_flag_names = helper.mailbox_flags(mailbox) %}
+                  {% if mbox_flag_names %}<small class="text-muted d-block">{{ mbox_flag_names|join(", ") }}</small>{% endif %}
+                </td>
                 <td>
                   <span class="badge badge-secondary">{{ mailbox.nb_alias() }}</span>
                 </td>
@@ -1040,13 +1066,17 @@
               <th>ID</th>
               <th>Email</th>
               <th>Enabled</th>
+              <th>Custom Domain</th>
+              <th>Emails</th>
+              <th>Contacts</th>
+              <th>Mailboxes</th>
               <th>Flags</th>
               <th>Created</th>
             </tr>
           </thead>
           <tbody>
             {% for alias in aliases %}
-
+              {% set alias_mailboxes = helper.alias_mailboxes(alias) %}
               <tr>
                 <td>
                   <code>{{ alias.id }}</code>
@@ -1055,6 +1085,39 @@
                   <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>
                 </td>
                 <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                <td>
+                  {% if alias.custom_domain %}
+                    <a href="{{ url_for('admin.custom_domain_search.index', query=alias.custom_domain.domain) }}">
+                      {{ alias.custom_domain.domain }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-info" title="Received (forwarded)">
+                    <i class="fa fa-arrow-down mr-1"></i>{{ helper.alias_email_received_count(alias) }}
+                  </span>
+                  <span class="badge badge-secondary" title="Sent (replies)">
+                    <i class="fa fa-arrow-up mr-1"></i>{{ helper.alias_email_sent_count(alias) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ helper.alias_contact_count(alias) }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ helper.alias_mailbox_count(alias) }}</span>
+                  {% if alias_mailboxes %}
+                    <small class="d-block text-muted">
+                      {% for mb in alias_mailboxes[:3] %}
+                        <a href="?query={{ mb.email }}&search_type=email" title="{{ mb.email }}">{{ mb.email[:20] }}{% if mb.email|length > 20 %}...{% endif %}</a>{% if not loop.last %}, {% endif %}
+                      {% endfor %}
+                      {% if alias_mailboxes|length > 3 %}
+                        <span class="text-muted">+{{ alias_mailboxes|length - 3 }} more</span>
+                      {% endif %}
+                    </small>
+                  {% endif %}
+                </td>
                 <td>
                   <code>{{ alias.flags or 0 }}</code>
                   {% set alias_flag_names = helper.alias_flags(alias) %}

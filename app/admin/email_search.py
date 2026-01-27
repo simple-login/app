@@ -25,6 +25,8 @@ from app.models import (
     AuditLogActionEnum,
     AbuserAuditLog,
     CustomDomain,
+    Contact,
+    EmailLog,
 )
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
@@ -434,6 +436,36 @@ class EmailSearchHelpers:
         if flags & Alias.FLAG_PARTNER_CREATED:
             result.append("PARTNER_CREATED")
         return result
+
+    @staticmethod
+    def mailbox_flags(mailbox: Mailbox) -> list[str]:
+        """Decode mailbox flags into human-readable list."""
+        flags = mailbox.flags or 0
+        result = []
+        if flags & Mailbox.FLAG_ADMIN_DISABLED:
+            result.append("ADMIN_DISABLED")
+        return result
+
+    @staticmethod
+    def alias_contact_count(alias: Alias) -> int:
+        """Get count of contacts for an alias."""
+        return Contact.filter(Contact.alias_id == alias.id).count()
+
+    @staticmethod
+    def alias_email_received_count(alias: Alias) -> int:
+        """Get count of emails received (forwarded) for an alias."""
+        return EmailLog.filter(
+            EmailLog.alias_id == alias.id,
+            EmailLog.is_reply == False,  # noqa: E712
+        ).count()
+
+    @staticmethod
+    def alias_email_sent_count(alias: Alias) -> int:
+        """Get count of emails sent (replies) from an alias."""
+        return EmailLog.filter(
+            EmailLog.alias_id == alias.id,
+            EmailLog.is_reply == True,  # noqa: E712
+        ).count()
 
     @staticmethod
     def custom_domain_list(user: User) -> list[CustomDomain]:
