@@ -7,6 +7,12 @@ repos:
     hooks:
       - id: check-yaml
       - id: trailing-whitespace
+  - repo: https://github.com/trim21/dprint-pre-commit
+    rev: "d93f30aac23560a1999a1f4a0f290323fda0c1a4"
+    hooks:
+      - id: dprint
+        types: [file]
+        files: \.html$
   - repo: https://github.com/djlint/djLint
     rev: v1.36.4
     hooks:
