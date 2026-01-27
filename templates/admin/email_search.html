@@ -61,9 +61,7 @@
 
                       <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>
                       <br>
-                      <small class="text-muted" title="{{ pu.external_user_id }}"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id[:15] }}
-                        {% if pu.external_user_id|length > 15 %}...{% endif %}
-                      </a></small>
+                      <small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a></small>
                     {% else %}
                       <span class="text-muted">Not linked</span>
                     {% endif %}
