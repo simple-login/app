@@ -295,7 +295,7 @@ class EmailSearchResult:
 
 
 class EmailSearchHelpers:
-    PAGE_SIZE = 50
+    PAGE_SIZE = 25
 
     @staticmethod
     def mailbox_list(
@@ -493,6 +493,55 @@ class EmailSearchHelpers:
         return Contact.filter(Contact.alias_id == alias.id).count()
 
     @staticmethod
+    def contact_list(alias: Alias, page: int = 1) -> list[Contact]:
+        """Get contacts for alias with pagination.
+
+        Args:
+            alias: The alias to get contacts for
+            page: Page number (1-indexed)
+        """
+        offset = (page - 1) * EmailSearchHelpers.PAGE_SIZE
+        return (
+            Contact.filter(Contact.alias_id == alias.id)
+            .order_by(Contact.id.desc())
+            .offset(offset)
+            .limit(EmailSearchHelpers.PAGE_SIZE)
+            .all()
+        )
+
+    @staticmethod
+    def contact_total_pages(alias: Alias) -> int:
+        """Get total number of pages for contacts."""
+        count = EmailSearchHelpers.alias_contact_count(alias)
+        return (
+            count + EmailSearchHelpers.PAGE_SIZE - 1
+        ) // EmailSearchHelpers.PAGE_SIZE
+
+    @staticmethod
+    def contact_email_received_count(contact: Contact) -> int:
+        """Get count of emails received (forwarded) for a contact."""
+        return EmailLog.filter(
+            EmailLog.contact_id == contact.id,
+            EmailLog.is_reply == False,  # noqa: E712
+        ).count()
+
+    @staticmethod
+    def contact_email_sent_count(contact: Contact) -> int:
+        """Get count of emails sent (replies) to a contact."""
+        return EmailLog.filter(
+            EmailLog.contact_id == contact.id,
+            EmailLog.is_reply == True,  # noqa: E712
+        ).count()
+
+    @staticmethod
+    def contact_email_blocked_count(contact: Contact) -> int:
+        """Get count of blocked emails for a contact."""
+        return EmailLog.filter(
+            EmailLog.contact_id == contact.id,
+            EmailLog.blocked == True,  # noqa: E712
+        ).count()
+
+    @staticmethod
     def alias_email_received_count(alias: Alias) -> int:
         """Get count of emails received (forwarded) for an alias."""
         return EmailLog.filter(
@@ -509,15 +558,34 @@ class EmailSearchHelpers:
         ).count()
 
     @staticmethod
-    def custom_domain_list(user: User) -> list[CustomDomain]:
-        """Get list of custom domains for a user."""
-        # user.custom_domains is a backref relationship (InstrumentedList)
-        return list(user.custom_domains)  # type: ignore[arg-type]
+    def custom_domain_list(user: User, page: int = 1) -> list[CustomDomain]:
+        """Get list of custom domains for a user with pagination.
+
+        Args:
+            user: The user to get custom domains for
+            page: Page number (1-indexed)
+        """
+        offset = (page - 1) * EmailSearchHelpers.PAGE_SIZE
+        return (
+            CustomDomain.filter_by(user_id=user.id)
+            .order_by(CustomDomain.id.asc())
+            .offset(offset)
+            .limit(EmailSearchHelpers.PAGE_SIZE)
+            .all()
+        )
 
     @staticmethod
     def custom_domain_count(user: User) -> int:
         """Get count of custom domains for a user."""
-        return len(user.custom_domains)  # type: ignore[arg-type]
+        return CustomDomain.filter_by(user_id=user.id).count()
+
+    @staticmethod
+    def custom_domain_total_pages(user: User) -> int:
+        """Get total number of pages for custom domains."""
+        count = EmailSearchHelpers.custom_domain_count(user)
+        return (
+            count + EmailSearchHelpers.PAGE_SIZE - 1
+        ) // EmailSearchHelpers.PAGE_SIZE
 
     @staticmethod
     def domain_alias_count(domain: CustomDomain) -> int:
@@ -587,6 +655,16 @@ class EmailSearchAdmin(BaseView):
         except (ValueError, TypeError):
             alias_page = 1
 
+        try:
+            domain_page = max(1, int(request.args.get("domain_page", 1)))
+        except (ValueError, TypeError):
+            domain_page = 1
+
+        try:
+            contact_page = max(1, int(request.args.get("contact_page", 1)))
+        except (ValueError, TypeError):
+            contact_page = 1
+
         return self.render(
             "admin/email_search.html",
             query=query,
@@ -596,6 +674,8 @@ class EmailSearchAdmin(BaseView):
             now=arrow.now(),
             mailbox_page=mailbox_page,
             alias_page=alias_page,
+            domain_page=domain_page,
+            contact_page=contact_page,
             page_size=EmailSearchHelpers.PAGE_SIZE,
         )
 

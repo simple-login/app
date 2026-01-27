@@ -61,7 +61,9 @@
 
                       <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>
                       <br>
-                      <small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a></small>
+                      <small class="text-muted" title="{{ pu.external_user_id }}"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id[:15] }}
+                        {% if pu.external_user_id|length > 15 %}...{% endif %}
+                      </a></small>
                     {% else %}
                       <span class="text-muted">Not linked</span>
                     {% endif %}
@@ -755,7 +757,6 @@
               <th>Default</th>
               <th>Admin Disabled</th>
               <th>PGP</th>
-              <th>Generic Subject</th>
               <th>Flags</th>
               <th># Aliases</th>
               <th>Created</th>
@@ -788,19 +789,9 @@
 
                     {{ badge_status(mailbox.pgp_enabled() , 'Enabled', 'Disabled', 'success', 'warning') }}
                     <br>
-                    <small class="text-muted" title="{{ mailbox.pgp_finger_print }}">{{ mailbox.pgp_finger_print[:16] }}...</small>
+                    <small class="text-muted">{{ mailbox.pgp_finger_print }}</small>
                   {% else %}
                     <span class="badge badge-secondary">No PGP</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if mailbox.generic_subject %}
-
-                    <span class="badge badge-info" title="{{ mailbox.generic_subject }}">{{ mailbox.generic_subject[:20] }}
-                      {% if mailbox.generic_subject|length > 20 %}...{% endif %}
-                    </span>
-                  {% else %}
-                    <span class="text-muted">-</span>
                   {% endif %}
                 </td>
                 <td>
@@ -1131,10 +1122,9 @@
               <th>ID</th>
               <th>Email</th>
               <th>Enabled</th>
-              <th>Custom Domain</th>
               <th>Emails</th>
               <th>Contacts</th>
-              <th>Mailboxes</th>
+              <th style="min-width: 200px;">Mailboxes</th>
               <th>Flags</th>
               <th>Created</th>
             </tr>
@@ -1152,16 +1142,6 @@
                 </td>
                 <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
                 <td>
-                  {% if alias.custom_domain %}
-
-                    <a href="{{ url_for('admin.custom_domain_search.index', query=alias.custom_domain.domain) }}">
-                      {{ alias.custom_domain.domain }}
-                    </a>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td>
                   <span class="badge badge-info" title="Received (forwarded)">
                     <i class="fa fa-arrow-down mr-1"></i>{{ helper.alias_email_received_count(alias) }}
                   </span>
@@ -1176,15 +1156,12 @@
                   <span class="badge badge-secondary">{{ helper.alias_mailbox_count(alias) }}</span>
                   {% if alias_mailboxes %}
 
-                    <small class="d-block text-muted">
-                      {% for mb in alias_mailboxes[:3] %}
+                    <small class="d-block">
+                      {% for mb in alias_mailboxes %}
 
-                        <a href="?query={{ mb.email }}&search_type=email" title="{{ mb.email }}">{{ mb.email[:20] }}
-                          {% if mb.email|length > 20 %}...{% endif %}
-                        </a>
+                        <a href="?query={{ mb.email }}&search_type=email">{{ mb.email }}</a>
                         {% if not loop.last %},{% endif %}
                       {% endfor %}
-                      {% if alias_mailboxes|length > 3 %}<span class="text-muted">+{{ alias_mailboxes|length - 3 }} more</span>{% endif %}
                     </small>
                   {% endif %}
                 </td>
@@ -1259,13 +1236,168 @@
     </div>
   </div>
 {% endmacro %}
-{% macro custom_domains_table(domains) %}
+{% macro contacts_table(contacts, contact_count, current_page=1, total_pages=1, page_size=25) %}
   <div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
-         class="header-neutral">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
+      <h6 class="mb-0">
+        <i class="fa fa-address-book mr-2"></i>Contacts
+        <span class="badge badge-secondary ml-2">{{ contact_count }} total</span>
+        {% if contact_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
+        {% endif %}
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      {% if contacts %}
+
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>ID</th>
+                <th>Website Email</th>
+                <th>Reply Email</th>
+                <th>PGP</th>
+                <th>Status</th>
+                <th>Emails</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for contact in contacts %}
+
+                <tr>
+                  <td>
+                    <code>{{ contact.id }}</code>
+                  </td>
+                  <td>
+                    <span title="{{ contact.website_email }}">{{ contact.website_email }}</span>
+                    {% if contact.name %}
+
+                      <br>
+                      <small class="text-muted">{{ contact.name }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small><code>{{ contact.reply_email }}</code></small>
+                  </td>
+                  <td>
+                    {% if contact.pgp_finger_print %}
+
+                      <span class="badge badge-success">Has PGP</span>
+                      <br>
+                      <small class="text-muted">{{ contact.pgp_finger_print }}</small>
+                    {% else %}
+                      <span class="badge badge-secondary">No PGP</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if contact.block_forward %}
+
+                      <span class="badge badge-danger">Blocked</span>
+                    {% elif contact.invalid_email %}
+                      <span class="badge badge-warning">Invalid</span>
+                    {% else %}
+                      <span class="badge badge-success">Active</span>
+                    {% endif %}
+                    {% if contact.is_cc %}<span class="badge badge-info">CC</span>{% endif %}
+                  </td>
+                  <td>
+                    <span class="badge badge-info" title="Received (forwarded)">
+                      <i class="fa fa-arrow-down mr-1"></i>{{ helper.contact_email_received_count(contact) }}
+                    </span>
+                    <span class="badge badge-secondary" title="Sent (replies)">
+                      <i class="fa fa-arrow-up mr-1"></i>{{ helper.contact_email_sent_count(contact) }}
+                    </span>
+                    {% set blocked_count = helper.contact_email_blocked_count(contact) %}
+                    {% if blocked_count > 0 %}
+
+                      <span class="badge badge-danger" title="Blocked">
+                        <i class="fa fa-ban mr-1"></i>{{ blocked_count }}
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ contact.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if total_pages > 1 %}
+
+          <div class="card-footer bg-light">
+            <nav aria-label="Contact pagination">
+              <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if current_page > 1 %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ current_page - 1 }}">
+                      <i class="fa fa-chevron-left"></i> Prev
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                  </li>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+                  {% if p == current_page %}
+
+                    <li class="page-item active">
+                      <span class="page-link">{{ p }}</span>
+                    </li>
+                  {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                    <li class="page-item">
+                      <a class="page-link"
+                         href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ p }}">{{ p }}</a>
+                    </li>
+                  {% elif p == 4 and current_page > 5 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+                {% if current_page < total_pages %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ current_page + 1 }}">
+                      Next <i class="fa fa-chevron-right"></i>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="p-3 text-muted text-center">
+          <i class="fa fa-info-circle mr-1"></i>No contacts
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+{% macro custom_domains_table(domains, domain_count, current_page=1, total_pages=1, page_size=25) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
       <h6 class="mb-0">
         <i class="fa fa-globe mr-2"></i>Custom Domains
-        <span class="badge badge-secondary ml-2">{{ domains|length }} total</span>
+        <span class="badge badge-secondary ml-2">{{ domain_count }} total</span>
+        {% if domain_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
+        {% endif %}
       </h6>
     </div>
     <div class="card-body p-0">
@@ -1313,6 +1445,63 @@
             </tbody>
           </table>
         </div>
+        {% if total_pages > 1 %}
+
+          <div class="card-footer bg-light">
+            <nav aria-label="Custom domain pagination">
+              <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if current_page > 1 %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ current_page - 1 }}">
+                      <i class="fa fa-chevron-left"></i> Prev
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                  </li>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+
+                  {% if p == current_page %}
+
+                    <li class="page-item active">
+                      <span class="page-link">{{ p }}</span>
+                    </li>
+                  {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                    <li class="page-item">
+                      <a class="page-link"
+                         href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ p }}">{{ p }}</a>
+                    </li>
+                  {% elif p == 4 and current_page > 5 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+                {% if current_page < total_pages %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ current_page + 1 }}">
+                      Next <i class="fa fa-chevron-right"></i>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
       {% else %}
         <div class="p-3 text-muted text-center">
           <i class="fa fa-info-circle mr-1"></i>No custom domains
@@ -2407,6 +2596,7 @@
             {% if not data.aliases_found_by_regex and data.aliases|length == 1 %}
 
               {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
+              {{ contacts_table(helper.contact_list(data.aliases[0], page=contact_page) , helper.alias_contact_count(data.aliases[0]), contact_page, helper.contact_total_pages(data.aliases[0]), page_size) }}
               {{ user_info_card(data.aliases[0].user) }}
               {{ user_actions_card(data.aliases[0].user) }}
             {% endif %}
@@ -2487,7 +2677,7 @@
               {{ user_actions_card(data.users[0]) }}
               {{ mailboxes_table("User Mailboxes", helper.mailbox_count(data.users[0]) , helper.mailbox_list(data.users[0], page=mailbox_page), false, none, mailbox_page, helper.mailbox_total_pages(data.users[0]), page_size) }}
               {{ aliases_table(helper.alias_count(data.users[0]) , helper.alias_list(data.users[0], page=alias_page), false, alias_page, helper.alias_total_pages(data.users[0]), page_size) }}
-              {{ custom_domains_table(helper.custom_domain_list(data.users[0]) ) }}
+              {{ custom_domains_table(helper.custom_domain_list(data.users[0], page=domain_page) , helper.custom_domain_count(data.users[0]), domain_page, helper.custom_domain_total_pages(data.users[0]), page_size) }}
               {# Audit Logs Section #}
               <div class="row audit-log-row">
                 <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
@@ -2553,7 +2743,7 @@
                   {{ user_actions_card(mailbox.user) }}
                   {{ mailboxes_table("User Mailboxes", helper.mailbox_count(mailbox.user) , helper.mailbox_list(mailbox.user, mailbox.id, page=mailbox_page), false, mailbox.email, mailbox_page, helper.mailbox_total_pages(mailbox.user), page_size) }}
                   {{ aliases_table(helper.alias_count(mailbox.user) , helper.alias_list(mailbox.user, page=alias_page), false, alias_page, helper.alias_total_pages(mailbox.user), page_size) }}
-                  {{ custom_domains_table(helper.custom_domain_list(mailbox.user) ) }}
+                  {{ custom_domains_table(helper.custom_domain_list(mailbox.user, page=domain_page) , helper.custom_domain_count(mailbox.user), domain_page, helper.custom_domain_total_pages(mailbox.user), page_size) }}
                   {# Audit Logs Section #}
                   {% set user_audit = helper.user_audit_log(mailbox.user) %}
                   {% set abuser_audit = helper.abuser_audit_log(mailbox.user) %}
@@ -2613,7 +2803,7 @@
                 {{ user_actions_card(pu.user) }}
                 {{ mailboxes_table("User Mailboxes", helper.mailbox_count(pu.user) , helper.mailbox_list(pu.user, page=mailbox_page), false, none, mailbox_page, helper.mailbox_total_pages(pu.user), page_size) }}
                 {{ aliases_table(helper.alias_count(pu.user) , helper.alias_list(pu.user, page=alias_page), false, alias_page, helper.alias_total_pages(pu.user), page_size) }}
-                {{ custom_domains_table(helper.custom_domain_list(pu.user) ) }}
+                {{ custom_domains_table(helper.custom_domain_list(pu.user, page=domain_page) , helper.custom_domain_count(pu.user), domain_page, helper.custom_domain_total_pages(pu.user), page_size) }}
                 {# Audit Logs Section #}
                 {% set user_audit = helper.user_audit_log(pu.user) %}
                 {% set abuser_audit = helper.abuser_audit_log(pu.user) %}
