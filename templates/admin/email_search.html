@@ -16,6 +16,11 @@
     <span class="badge badge-{{ false_class }}">{{ false_text }}</span>
   {% endif %}
 {%- endmacro %}
+{% macro copy_btn(text) -%}
+  <button type="button" class="btn btn-sm btn-link p-0 ml-1 copy-btn" data-copy="{{ text }}" title="Copy to clipboard">
+    <i class="fa fa-copy text-muted"></i>
+  </button>
+{%- endmacro %}
 {% macro user_info_card(user) -%}
   {% set pu = helper.partner_user(user) %}
   {% set active_sub = user.get_active_subscription() %}
@@ -44,7 +49,7 @@
                 <tr>
                   <td class="text-muted text-nowrap py-1">Email:</td>
                   <td class="py-1">
-                    <a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a>
+                    <a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a>{{ copy_btn(user.email) }}
                   </td>
                 </tr>
                 {% if user.name %}
@@ -59,9 +64,9 @@
                   <td class="py-1">
                     {% if pu %}
 
-                      <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>
+                      <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>{{ copy_btn(pu.partner_email) }}
                       <br>
-                      <small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a></small>
+                      <small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a>{{ copy_btn(pu.external_user_id) }}</small>
                     {% else %}
                       <span class="text-muted">Not linked</span>
                     {% endif %}
@@ -777,7 +782,7 @@
                     {% else %}
                       {{ highlight_email(mailbox.email, query, is_regex) }}
                     {% endif %}
-                  </a>
+                  </a>{{ copy_btn(mailbox.email) }}
                 </td>
                 <td>{{ badge_status(mailbox.verified, 'Yes', 'No', 'success', 'warning') }}</td>
                 <td>{{ badge_status(mailbox.user.default_mailbox_id == mailbox.id, 'Yes', 'No', 'info', 'secondary') }}</td>
@@ -787,7 +792,7 @@
 
                     {{ badge_status(mailbox.pgp_enabled() , 'Enabled', 'Disabled', 'success', 'warning') }}
                     <br>
-                    <small class="text-muted">{{ mailbox.pgp_finger_print }}</small>
+                    <small class="text-muted">{{ mailbox.pgp_finger_print }}{{ copy_btn(mailbox.pgp_finger_print) }}</small>
                   {% else %}
                     <span class="badge badge-secondary">No PGP</span>
                   {% endif %}
@@ -1136,7 +1141,7 @@
                   <code>{{ alias.id }}</code>
                 </td>
                 <td>
-                  <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>
+                  <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>{{ copy_btn(alias.email) }}
                 </td>
                 <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
                 <td>
@@ -1270,7 +1275,7 @@
                     <code>{{ contact.id }}</code>
                   </td>
                   <td>
-                    <span title="{{ contact.website_email }}">{{ contact.website_email }}</span>
+                    <span title="{{ contact.website_email }}">{{ contact.website_email }}</span>{{ copy_btn(contact.website_email) }}
                     {% if contact.name %}
 
                       <br>
@@ -1278,14 +1283,14 @@
                     {% endif %}
                   </td>
                   <td>
-                    <small><code>{{ contact.reply_email }}</code></small>
+                    <small><code>{{ contact.reply_email }}</code></small>{{ copy_btn(contact.reply_email) }}
                   </td>
                   <td>
                     {% if contact.pgp_finger_print %}
 
                       <span class="badge badge-success">Has PGP</span>
                       <br>
-                      <small class="text-muted">{{ contact.pgp_finger_print }}</small>
+                      <small class="text-muted">{{ contact.pgp_finger_print }}{{ copy_btn(contact.pgp_finger_print) }}</small>
                     {% else %}
                       <span class="badge badge-secondary">No PGP</span>
                     {% endif %}
@@ -1421,7 +1426,7 @@
                     <code>{{ domain.id }}</code>
                   </td>
                   <td>
-                    <a href="{{ url_for('admin.custom_domain_search.index', query=domain.domain) }}">{{ domain.domain }}</a>
+                    <a href="{{ url_for('admin.custom_domain_search.index', query=domain.domain) }}">{{ domain.domain }}</a>{{ copy_btn(domain.domain) }}
                   </td>
                   <td>
                     {% if domain.verified and domain.ownership_verified %}
@@ -2869,6 +2874,23 @@
           }
         });
       }
+
+      // Copy to clipboard functionality
+      document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var text = this.getAttribute('data-copy');
+          navigator.clipboard.writeText(text).then(function() {
+            var icon = btn.querySelector('i');
+            icon.classList.remove('fa-copy', 'text-muted');
+            icon.classList.add('fa-check', 'text-success');
+            setTimeout(function() {
+              icon.classList.remove('fa-check', 'text-success');
+              icon.classList.add('fa-copy', 'text-muted');
+            }, 1500);
+          });
+        });
+      });
     });
   </script>
 {% endblock %}

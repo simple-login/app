@@ -424,6 +424,11 @@
     <span class="badge badge-{{ false_class }}">{{ false_text }}</span>
   {% endif %}
 {%- endmacro %}
+{% macro copy_btn(text) -%}
+  <button type="button" class="btn btn-sm btn-link p-0 ml-1 copy-btn" data-copy="{{ text }}" title="Copy to clipboard">
+    <i class="fa fa-copy text-muted"></i>
+  </button>
+{%- endmacro %}
 {# User summary card with link to email search #}
 {% macro user_summary_card(user) -%}
   <div class="card mb-3 border-0 shadow-sm">
@@ -610,7 +615,7 @@
     <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}
        header-danger{% else %}header-success{% endif %}">
       <h5 class="mb-0">
-        <i class="fa fa-globe mr-2"></i>{{ domain.domain }}
+        <i class="fa fa-globe mr-2"></i>{{ domain.domain }}{{ copy_btn(domain.domain) }}
         {% if domain.pending_deletion %}<span class="badge badge-light ml-2">Pending Deletion</span>{% endif %}
       </h5>
       <span class="badge badge-light">ID: {{ domain.id }}</span>
@@ -643,7 +648,7 @@
                     <tr>
                       <td class="text-muted text-nowrap py-1">Domain:</td>
                       <td class="py-1">
-                        <code>{{ domain.domain }}</code>
+                        <code>{{ domain.domain }}</code>{{ copy_btn(domain.domain) }}
                       </td>
                     </tr>
                     {% if domain.name %}
@@ -993,4 +998,24 @@
     {# Domain Results #}
     {% for domain_data in data.domains %}{{ domain_card(domain_data) }}{% endfor %}
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Copy to clipboard functionality
+      document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var text = this.getAttribute('data-copy');
+          navigator.clipboard.writeText(text).then(function() {
+            var icon = btn.querySelector('i');
+            icon.classList.remove('fa-copy', 'text-muted');
+            icon.classList.add('fa-check', 'text-success');
+            setTimeout(function() {
+              icon.classList.remove('fa-check', 'text-success');
+              icon.classList.add('fa-copy', 'text-muted');
+            }, 1500);
+          });
+        });
+      });
+    });
+  </script>
 {% endblock %}
