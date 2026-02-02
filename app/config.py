@@ -710,3 +710,5 @@ ABUSER_HKDF_SALT = read_hex_data(
 INVALID_MX_IPS = get_env_csv("INVALID_MX_IPS", [])
 
 USE_RUST_PGP = "USE_RUST_PGP" in os.environ
+
+SMTP_SIZE_LIMIT = int(os.environ.get("SMTP_SIZE_LIMIT", 41943040))  # 40MiB
