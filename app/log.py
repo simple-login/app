@@ -1,12 +1,10 @@
 import logging
+
+import coloredlogs
 import sys
 import time
 
-import coloredlogs
-
-from app.config import (
-    COLOR_LOG,
-)
+from app import config
 
 # this format allows clickable link to code source in PyCharm
 _log_format = (
@@ -74,7 +72,7 @@ def _get_logger(name) -> logging.Logger:
     # no propagation to avoid propagating to root logger
     logger.propagate = False
 
-    if COLOR_LOG:
+    if config.COLOR_LOG:
         coloredlogs.install(level="DEBUG", logger=logger, fmt=_log_format)
 
     return logger
@@ -92,4 +90,4 @@ logging.Logger.i = logging.Logger.info
 logging.Logger.w = logging.Logger.warning
 logging.Logger.e = logging.Logger.exception
 
-LOG = _get_logger("SL")
+LOG = _get_logger(config.DB_CONN_NAME)

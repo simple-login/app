@@ -2484,7 +2484,12 @@ class MailHandler:
 
 def main(port: int):
     """Use aiosmtpd Controller"""
-    controller = Controller(MailHandler(), hostname="0.0.0.0", port=port)
+    controller = Controller(
+        MailHandler(),
+        hostname="0.0.0.0",
+        port=port,
+        data_size_limit=config.SMTP_SIZE_LIMIT,
+    )
 
     controller.start()
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
