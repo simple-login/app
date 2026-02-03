@@ -1125,6 +1125,7 @@
               <th>ID</th>
               <th>Email</th>
               <th>Enabled</th>
+              <th>PGP</th>
               <th>Emails</th>
               <th>Contacts</th>
               <th style="min-width: 200px;">Mailboxes</th>
@@ -1144,6 +1145,7 @@
                   <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>{{ copy_btn(alias.email) }}
                 </td>
                 <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                <td>{{ badge_status(alias.pgp_enabled(), 'Yes', 'No', 'success', 'secondary') }}</td>
                 <td>
                   <span class="badge badge-info" title="Received (forwarded)">
                     <i class="fa fa-arrow-down mr-1"></i>{{ helper.alias_email_received_count(alias) }}
