@@ -17,7 +17,10 @@
   {% endif %}
 {%- endmacro %}
 {% macro copy_btn(text) -%}
-  <button type="button" class="btn btn-sm btn-link p-0 ml-1 copy-btn" data-copy="{{ text }}" title="Copy to clipboard">
+  <button type="button"
+          class="btn btn-sm btn-link p-0 ml-1 copy-btn"
+          data-copy="{{ text }}"
+          title="Copy to clipboard">
     <i class="fa fa-copy text-muted"></i>
   </button>
 {%- endmacro %}
@@ -763,6 +766,7 @@
               <th>Flags</th>
               <th># Aliases</th>
               <th>Created</th>
+              <th>Updated</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -806,6 +810,7 @@
                   <span class="badge badge-secondary">{{ mailbox.nb_alias() }}</span>
                 </td>
                 <td class="text-nowrap">{{ mailbox.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td class="text-nowrap">{{ mailbox.updated_at.strftime("%Y-%m-%d %H:%M") if mailbox.updated_at else "Never" }}</td>
                 <td>
                   <div class="d-flex flex-column">
                     {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
@@ -1131,6 +1136,7 @@
               <th style="min-width: 200px;">Mailboxes</th>
               <th>Flags</th>
               <th>Created</th>
+              <th>Updated</th>
             </tr>
           </thead>
           <tbody>
@@ -1145,7 +1151,7 @@
                   <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>{{ copy_btn(alias.email) }}
                 </td>
                 <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
-                <td>{{ badge_status(alias.pgp_enabled(), 'Yes', 'No', 'success', 'secondary') }}</td>
+                <td>{{ badge_status(alias.pgp_enabled() , 'Yes', 'No', 'success', 'secondary') }}</td>
                 <td>
                   <span class="badge badge-info" title="Received (forwarded)">
                     <i class="fa fa-arrow-down mr-1"></i>{{ helper.alias_email_received_count(alias) }}
@@ -1176,6 +1182,7 @@
                   {% if alias_flag_names %}<small class="text-muted d-block">{{ alias_flag_names|join(", ") }}</small>{% endif %}
                 </td>
                 <td>{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -1348,6 +1355,7 @@
                   </li>
                 {% endif %}
                 {% for p in range(1, total_pages + 1) %}
+
                   {% if p == current_page %}
 
                     <li class="page-item active">

@@ -425,7 +425,10 @@
   {% endif %}
 {%- endmacro %}
 {% macro copy_btn(text) -%}
-  <button type="button" class="btn btn-sm btn-link p-0 ml-1 copy-btn" data-copy="{{ text }}" title="Copy to clipboard">
+  <button type="button"
+          class="btn btn-sm btn-link p-0 ml-1 copy-btn"
+          data-copy="{{ text }}"
+          title="Copy to clipboard">
     <i class="fa fa-copy text-muted"></i>
   </button>
 {%- endmacro %}
