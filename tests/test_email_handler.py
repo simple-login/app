@@ -1,5 +1,8 @@
 import random
 from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
 from typing import List
 
 import arrow
@@ -402,3 +405,133 @@ def test_not_send_to_pending_to_delete_users(flask_client):
     msg = EmailMessage()
     result = email_handler.handle(envelope, msg)
     assert result == status.E504
+
+
+@mail_sender.store_emails_test_decorator
+def test_forward_preserves_pgp_key_attachment(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    msg = MIMEMultipart("mixed")
+    msg[headers.FROM] = "sender@external.com"
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = "Signed message with public key"
+    msg.attach(MIMEText("Hello, here is my signed message.", "plain"))
+
+    pgp_key = MIMEBase("application", "pgp-keys")
+    pgp_key.set_payload(
+        b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nfake\n-----END PGP PUBLIC KEY BLOCK-----"
+    )
+    pgp_key.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename="publickey - sender@external.com.asc",
+    )
+    msg.attach(pgp_key)
+
+    envelope = Envelope()
+    envelope.mail_from = "sender@external.com"
+    envelope.rcpt_tos = [alias.email]
+
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    forwarded_msg = sent_mails[0].msg
+
+    # The PGP public key attachment should still be present in the forwarded email
+    attachments = [
+        part
+        for part in forwarded_msg.walk()
+        if part.get_content_type() == "application/pgp-keys"
+    ]
+    assert len(attachments) == 1
+    assert attachments[0].get_filename() == "publickey - sender@external.com.asc"
+
+
+def _create_reply_with_pgp_key_attachment(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+
+    msg = MIMEMultipart("mixed")
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = "Re: signed reply"
+    msg.attach(MIMEText("Here is my reply.", "plain"))
+
+    pgp_key = MIMEBase("application", "pgp-keys")
+    pgp_key.set_payload(
+        b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nfake\n-----END PGP PUBLIC KEY BLOCK-----"
+    )
+    pgp_key.add_header(
+        "Content-Disposition",
+        "attachment",
+        filename=f"publickey - {user.email}.asc",
+    )
+    msg.attach(pgp_key)
+
+    envelope = Envelope()
+    envelope.mail_from = user.email
+    envelope.rcpt_tos = [contact.reply_email]
+
+    return user, msg, envelope
+
+
+@mail_sender.store_emails_test_decorator
+def test_reply_strips_pgp_key_when_config_enabled(flask_client):
+    # Verify that when DROP_PGP_KEY_ATTACHMENTS_ON_REPLY is enabled,
+    # PGP public key attachments should be removed from replies
+    original = config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY
+    config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = True
+    try:
+        _, msg, envelope = _create_reply_with_pgp_key_attachment(flask_client)
+        result = email_handler.handle(envelope, msg)
+        assert result == status.E200
+
+        sent_mails = mail_sender.get_stored_emails()
+        assert len(sent_mails) == 1
+        reply_msg = sent_mails[0].msg
+
+        pgp_attachments = [
+            part
+            for part in reply_msg.walk()
+            if part.get_content_type() == "application/pgp-keys"
+        ]
+        assert len(pgp_attachments) == 0
+    finally:
+        config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = original
+
+
+@mail_sender.store_emails_test_decorator
+def test_reply_preserves_pgp_key_when_config_disabled(flask_client):
+    # Verify that when DROP_PGP_KEY_ATTACHMENTS_ON_REPLY is disabled (default),
+    # PGP public key attachments should be preserved in replies
+    original = config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY
+    config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = False
+    try:
+        user, msg, envelope = _create_reply_with_pgp_key_attachment(flask_client)
+        result = email_handler.handle(envelope, msg)
+        assert result == status.E200
+
+        sent_mails = mail_sender.get_stored_emails()
+        assert len(sent_mails) == 1
+        reply_msg = sent_mails[0].msg
+
+        pgp_attachments = [
+            part
+            for part in reply_msg.walk()
+            if part.get_content_type() == "application/pgp-keys"
+        ]
+        assert len(pgp_attachments) == 1
+        assert pgp_attachments[0].get_filename() == f"publickey - {user.email}.asc"
+    finally:
+        config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = original
