@@ -1091,6 +1091,67 @@ def add_header(
     return msg
 
 
+def remove_sender_pgp_key_attachment(msg: Message) -> Message:
+    """Remove PGP public key attachments from the message.
+
+    When a user replies to an email and their client is configured to sign emails and attach the public key,
+    this attachment leaks the user's real email address, so we strip it before forwarding the reply to the
+    external contact.
+
+    IT also removes PGP signature attachments (application/pgp-signature) for the same privacy reason.
+    """
+    content_type = msg.get_content_type()
+
+    if not content_type.startswith("multipart/"):
+        return msg
+
+    payload = msg.get_payload()
+    if not isinstance(payload, list):
+        return msg
+
+    new_parts = []
+    changed = False
+    for part in payload:
+        if _is_pgp_key_or_signature_attachment(part):
+            LOG.i(
+                "Removing PGP key/signature attachment: %s (%s)",
+                part.get_filename(),
+                part.get_content_type(),
+            )
+            changed = True
+            continue
+        # Recurse into nested multipart parts
+        new_part = remove_sender_pgp_key_attachment(part)
+        if new_part is not part:
+            changed = True
+        new_parts.append(new_part)
+
+    if not changed:
+        return msg
+
+    # Clone the message to avoid modifying the original one, so we don't lose metadata
+    # in case we need to store it
+    clone_msg = copy(msg)
+    clone_msg.set_payload(new_parts)
+    return clone_msg
+
+
+def _is_pgp_key_or_signature_attachment(part: Message) -> bool:
+    content_type = part.get_content_type()
+
+    if content_type in ["application/pgp-signature", "application/pgp-keys"]:
+        return True
+
+    # Check for attachments that don't have the right content-type set
+    filename = part.get_filename()
+    if not filename:
+        return False
+
+    filename = filename.lower()
+
+    return filename.startswith("publickey") and filename.endswith(".asc")
+
+
 def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
     if isinstance(msg, str):
         msg = msg.replace(old, new)
