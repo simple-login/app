@@ -116,6 +116,7 @@ from app.email_utils import (
     generate_reply_email,
     is_reverse_alias,
     replace,
+    remove_sender_pgp_key_attachment,
     should_disable,
     parse_id_from_bounce,
     spf_pass,
@@ -1212,6 +1213,10 @@ def handle_reply(
         ]
         + headers.MIME_HEADERS,
     )
+
+    # Remove PGP public key attachments that could leak the user's real email address
+    if config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY:
+        msg = remove_sender_pgp_key_attachment(msg)
 
     orig_to = msg[headers.TO]
     orig_cc = msg[headers.CC]
