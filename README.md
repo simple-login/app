@@ -237,10 +237,10 @@ docker run -d \
     -e POSTGRES_USER=myuser \
     -e POSTGRES_DB=simplelogin \
     -p 127.0.0.1:5432:5432 \
-    -v $(pwd)/sl/db:/var/lib/postgresql/data \
+    -v $(pwd)/sl/db:/var/lib/postgresql \
     --restart always \
     --network="sl-network" \
-    postgres:12.1
+    postgres:18.1
 ```
 
 To test whether the database operates correctly or not, run the following command:
