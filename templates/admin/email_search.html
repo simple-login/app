@@ -2547,6 +2547,10 @@
                     <input type="radio" name="search_type" value="partner" {{ 'checked' if search_type == 'partner' else '' }}>
                     <i class="fa fa-handshake mr-1"></i>Partner
                   </label>
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'regex' else '' }}">
+                    <input type="radio" name="search_type" value="regex" {{ 'checked' if search_type == 'regex' else '' }}>
+                    <i class="fa fa-code mr-1"></i>Regex
+                  </label>
                 </div>
               </div>
               <input type="text"
@@ -2554,7 +2558,7 @@
                      name="query"
                      id="query"
                      value="{{ query or '' }}"
-                     placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else 'email@example.com, user ID, or POSIX regex pattern') }}">
+                     placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else ('POSIX regex pattern' if search_type == 'regex' else 'email@example.com or user ID (exact match only)')) }}">
               <div class="input-group-append">
                 <button type="submit" class="btn btn-primary-modern" id="searchBtn">
                   <span class="search-icon"><i class="fa fa-search mr-1"></i>Search</span>
@@ -2568,8 +2572,10 @@
                 <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.
               {% elif search_type == 'partner' %}
                 <i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.
+              {% elif search_type == 'regex' %}
+                <i class="fa fa-info-circle mr-1"></i>Search using POSIX regex pattern in user email, mailbox email, and partner email. Limited to 10 results per table.
               {% else %}
-                <i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).
+                <i class="fa fa-info-circle mr-1"></i>Search by user email, mailbox email, partner email, or user ID. Only exact matches are returned.
               {% endif %}
             </small>
           </div>
@@ -2581,7 +2587,7 @@
 
       <div class="alert alert-warning shadow-sm" role="alert">
         <i class="fa fa-exclamation-triangle mr-2"></i>
-        No results found for "<strong>{{ query }}</strong>" in {{ 'aliases' if search_type == 'alias' else ('partner users' if search_type == 'partner' else 'emails') }}
+        No results found for "<strong>{{ query }}</strong>" in {{ 'aliases' if search_type == 'alias' else ('partner users' if search_type == 'partner' else ('user/mailbox/partner emails (regex search)' if search_type == 'regex' else 'emails')) }}
       </div>
     {% endif %}
     <!-- Alias Search Results -->
@@ -2857,9 +2863,12 @@
         } else if (searchType === 'partner') {
           queryInput.placeholder = 'partner email or external user ID';
           searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.';
+        } else if (searchType === 'regex') {
+          queryInput.placeholder = 'POSIX regex pattern';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search using POSIX regex pattern in user email, mailbox email, and partner email. Limited to 10 results per table.';
         } else {
-          queryInput.placeholder = 'email@example.com, user ID, or POSIX regex pattern';
-          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>First searches for exact match. If not found, uses POSIX regex (limited to 10 results).';
+          queryInput.placeholder = 'email@example.com or user ID (exact match only)';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by user email, mailbox email, partner email, or user ID. Only exact matches are returned.';
         }
       }
 
