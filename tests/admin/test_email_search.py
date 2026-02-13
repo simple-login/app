@@ -103,8 +103,8 @@ def test_email_search_user_by_id(flask_client):
     assert test_user.email.encode() in r.data
 
 
-def test_email_search_user_by_regex(flask_client):
-    """Test searching for users by regex pattern."""
+def test_email_search_no_regex_fallback(flask_client):
+    """Test that email search does NOT perform regex search, only exact matches."""
     login_admin(flask_client)
 
     # Create test users with similar emails
@@ -113,12 +113,17 @@ def test_email_search_user_by_regex(flask_client):
     create_new_user(email=f"regextest_{unique_id}_002@example.com")
     Session.commit()
 
+    # Regex pattern should NOT match in email search (exact match only)
     r = flask_client.get(
         url_for("admin.email_search.index"),
-        query_string={"query": "regextest_.*@example.com", "search_type": "email"},
+        query_string={
+            "query": f"regextest_{unique_id}_.*@example.com",
+            "search_type": "email",
+        },
     )
     assert r.status_code == 200
-    assert b"Regex Match" in r.data
+    # Should show no results since email search only does exact matches
+    assert b"No results found" in r.data
 
 
 def test_email_search_mailbox(flask_client):
@@ -648,3 +653,168 @@ def test_email_search_shows_domain_alias_counts(flask_client):
     # Should show the aliases column in the custom domains table
     assert b"Aliases" in r.data
     assert b"Deleted" in r.data
+
+
+# ============================================================================
+# Regex Search Tests
+# ============================================================================
+
+
+def test_regex_search_does_not_search_aliases(flask_client):
+    """Test that regex search does NOT search aliases."""
+    login_admin(flask_client)
+
+    # Create test aliases with similar patterns
+    test_user = create_new_user()
+    unique_id = random_token(8)
+    Alias.create(
+        user_id=test_user.id,
+        email=f"regextest_{unique_id}_001@sl.lan",
+        mailbox_id=test_user.default_mailbox_id,
+        flush=True,
+    )
+    Alias.create(
+        user_id=test_user.id,
+        email=f"regextest_{unique_id}_002@sl.lan",
+        mailbox_id=test_user.default_mailbox_id,
+        flush=True,
+    )
+    Session.commit()
+
+    # Regex search should NOT find aliases
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={
+            "query": f"regextest_{unique_id}_.*@sl.lan",
+            "search_type": "regex",
+        },
+    )
+    assert r.status_code == 200
+    # Should not find aliases in regex search
+    assert b"No results found" in r.data
+
+
+def test_regex_search_users(flask_client):
+    """Test regex search for users."""
+    login_admin(flask_client)
+
+    # Create test users with similar emails
+    unique_id = random_token(8)
+    create_new_user(email=f"regexuser_{unique_id}_001@example.com")
+    create_new_user(email=f"regexuser_{unique_id}_002@example.com")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={
+            "query": f"regexuser_{unique_id}_.*@example.com",
+            "search_type": "regex",
+        },
+    )
+    assert r.status_code == 200
+    assert f"regexuser_{unique_id}_001@example.com".encode() in r.data
+    assert f"regexuser_{unique_id}_002@example.com".encode() in r.data
+
+
+def test_regex_search_mailboxes(flask_client):
+    """Test regex search for mailboxes."""
+    login_admin(flask_client)
+
+    # Create test mailboxes with similar emails
+    test_user = create_new_user()
+    unique_id = random_token(8)
+    Mailbox.create(
+        user_id=test_user.id,
+        email=f"regexmailbox_{unique_id}_001@example.com",
+        verified=True,
+        flush=True,
+    )
+    Mailbox.create(
+        user_id=test_user.id,
+        email=f"regexmailbox_{unique_id}_002@example.com",
+        verified=True,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={
+            "query": f"regexmailbox_{unique_id}_.*@example.com",
+            "search_type": "regex",
+        },
+    )
+    assert r.status_code == 200
+    assert f"regexmailbox_{unique_id}_001@example.com".encode() in r.data
+    assert f"regexmailbox_{unique_id}_002@example.com".encode() in r.data
+
+
+def test_regex_search_across_multiple_tables(flask_client):
+    """Test that regex search returns results from user and mailbox tables."""
+    login_admin(flask_client)
+
+    # Create test data across different tables
+    unique_id = random_token(8)
+
+    # Create user
+    test_user = create_new_user(email=f"alltest_{unique_id}@example.com")
+
+    # Create mailbox
+    Mailbox.create(
+        user_id=test_user.id,
+        email=f"alltest_{unique_id}_mailbox@example.com",
+        verified=True,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={
+            "query": f"alltest_{unique_id}.*",
+            "search_type": "regex",
+        },
+    )
+    assert r.status_code == 200
+    # Should show results from user and mailbox tables
+    assert f"alltest_{unique_id}@example.com".encode() in r.data
+    assert f"alltest_{unique_id}_mailbox@example.com".encode() in r.data
+
+
+def test_regex_search_radio_button_present(flask_client):
+    """Test that the regex radio button is present on the page."""
+    login_admin(flask_client)
+
+    r = flask_client.get(url_for("admin.email_search.index"))
+    assert r.status_code == 200
+    assert b'value="regex"' in r.data
+    assert b"Regex" in r.data
+
+
+def test_regex_search_type_preserved(flask_client):
+    """Test that regex search type is preserved in the form."""
+    login_admin(flask_client)
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": "test.*", "search_type": "regex"},
+    )
+    assert r.status_code == 200
+    # Check that regex option is checked (radio button)
+    assert b'value="regex" checked' in r.data
+
+
+def test_regex_search_no_results(flask_client):
+    """Test that regex search with no matches shows no results message."""
+    login_admin(flask_client)
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={
+            "query": "nonexistent_regex_pattern_.*",
+            "search_type": "regex",
+        },
+    )
+    assert r.status_code == 200
+    assert b"No results found" in r.data
+    assert b"user/mailbox/partner emails (regex search)" in r.data
