@@ -5,6 +5,7 @@ from .views import (
     custom_alias,
     subdomain,
     billing,
+    alias_detail,
     alias_log,
     alias_export,
     unsubscribe,
