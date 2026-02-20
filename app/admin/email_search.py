@@ -36,6 +36,7 @@ class EmailSearchResult:
     SEARCH_TYPE_ALIAS = "alias"
     SEARCH_TYPE_EMAIL = "email"
     SEARCH_TYPE_PARTNER = "partner"
+    SEARCH_TYPE_REGEX = "regex"
 
     def __init__(self):
         self.no_match: bool = True
@@ -110,19 +111,13 @@ class EmailSearchResult:
 
     @staticmethod
     def search_emails(query: str) -> EmailSearchResult:
-        """Search for mailboxes, users, and partner users by exact match or POSIX regex.
+        """Search for mailboxes, users, and partner users by exact match only.
 
-        Only performs regex search if no exact match is found on user.email,
-        mailbox.email, or partner_user.partner_email.
+        Searches by user ID if query is numeric, otherwise searches for exact email matches.
         """
         output = EmailSearchResult()
         output.query = query
         output.search_type = EmailSearchResult.SEARCH_TYPE_EMAIL
-
-        # Track if we found any exact match
-        has_exact_match = False
-
-        # --- First pass: Check for exact matches ---
 
         # Search mailboxes by exact match (eager load user relationship)
         mailbox = (
@@ -133,7 +128,6 @@ class EmailSearchResult:
             output.mailboxes_found_by_regex = False
             output.mailbox_count = 1
             output.no_match = False
-            has_exact_match = True
 
         # Search users by exact match (id or email)
         user = None
@@ -169,10 +163,8 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
-            has_exact_match = True
 
         # Search partner users by exact match
-        proton_partner = None
         try:
             proton_partner = get_proton_partner()
             partner_user = PartnerUser.filter_by(
@@ -182,66 +174,20 @@ class EmailSearchResult:
                 output.partner_users = [partner_user]
                 output.partner_users_found_by_regex = False
                 output.no_match = False
-                has_exact_match = True
         except ProtonPartnerNotSetUp:
             # Proton partner not configured, skip this search
             pass
 
-        # --- Second pass: Only do regex searches if no exact match was found ---
-
-        if not has_exact_match:
-            # Try regex search for mailboxes
-            mailboxes = (
-                Mailbox.filter(Mailbox.email.op("~")(query))
-                .options(joinedload(Mailbox.user))
-                .order_by(Mailbox.id.desc())
-                .limit(10)
+        # Check user audit log by user_email if no users found
+        if not output.users:
+            user_audit_log = (
+                UserAuditLog.filter_by(user_email=query)
+                .order_by(UserAuditLog.created_at.desc())
                 .all()
             )
-            if mailboxes:
-                output.mailboxes = mailboxes
-                output.mailboxes_found_by_regex = True
-                output.mailbox_count = len(mailboxes)
+            if user_audit_log:
+                output.user_audit_log = user_audit_log
                 output.no_match = False
-
-            # Try regex search for users
-            users = (
-                User.filter(User.email.op("~")(query))
-                .order_by(User.id.desc())
-                .limit(10)
-                .all()
-            )
-            if users:
-                output.users = users
-                output.users_found_by_regex = True
-                output.no_match = False
-
-            # Try regex search for partner users
-            if proton_partner:
-                partner_users = (
-                    PartnerUser.filter(
-                        PartnerUser.partner_id == proton_partner.id,
-                        PartnerUser.partner_email.op("~")(query),
-                    )
-                    .order_by(PartnerUser.id.desc())
-                    .limit(10)
-                    .all()
-                )
-                if partner_users:
-                    output.partner_users = partner_users
-                    output.partner_users_found_by_regex = True
-                    output.no_match = False
-
-            # Also check user audit log by user_email if no users found
-            if not output.users:
-                user_audit_log = (
-                    UserAuditLog.filter_by(user_email=query)
-                    .order_by(UserAuditLog.created_at.desc())
-                    .all()
-                )
-                if user_audit_log:
-                    output.user_audit_log = user_audit_log
-                    output.no_match = False
 
         return output
 
@@ -284,12 +230,73 @@ class EmailSearchResult:
         return output
 
     @staticmethod
+    def search_regex(query: str) -> EmailSearchResult:
+        """Search for users, mailboxes, and partner users using POSIX regex.
+
+        Always performs regex search on user email, mailbox email, and partner_email only.
+        Returns up to 10 results per table.
+        """
+        output = EmailSearchResult()
+        output.query = query
+        output.search_type = EmailSearchResult.SEARCH_TYPE_REGEX
+
+        # Search mailboxes by regex
+        mailboxes = (
+            Mailbox.filter(Mailbox.email.op("~")(query))
+            .options(joinedload(Mailbox.user))
+            .order_by(Mailbox.id.desc())
+            .limit(10)
+            .all()
+        )
+        if mailboxes:
+            output.mailboxes = mailboxes
+            output.mailboxes_found_by_regex = True
+            output.mailbox_count = len(mailboxes)
+            output.no_match = False
+
+        # Search users by regex
+        users = (
+            User.filter(User.email.op("~")(query))
+            .order_by(User.id.desc())
+            .limit(10)
+            .all()
+        )
+        if users:
+            output.users = users
+            output.users_found_by_regex = True
+            output.no_match = False
+
+        # Search partner users by regex
+        try:
+            proton_partner = get_proton_partner()
+            partner_users = (
+                PartnerUser.filter(
+                    PartnerUser.partner_id == proton_partner.id,
+                    PartnerUser.partner_email.op("~")(query),
+                )
+                .order_by(PartnerUser.id.desc())
+                .limit(10)
+                .all()
+            )
+            if partner_users:
+                output.partner_users = partner_users
+                output.partner_users_found_by_regex = True
+                output.no_match = False
+        except ProtonPartnerNotSetUp:
+            # Proton partner not configured, skip this search
+            pass
+
+        return output
+
+    @staticmethod
     def from_request(query: str, search_type: str) -> EmailSearchResult:
         """Main entry point for searching based on search type."""
         if search_type == EmailSearchResult.SEARCH_TYPE_ALIAS:
             return EmailSearchResult.search_aliases(query)
         elif search_type == EmailSearchResult.SEARCH_TYPE_PARTNER:
             return EmailSearchResult.search_partner(query)
+        elif search_type == EmailSearchResult.SEARCH_TYPE_REGEX:
+            return EmailSearchResult.search_regex(query)
         else:
             return EmailSearchResult.search_emails(query)
 

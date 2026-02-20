@@ -258,9 +258,19 @@ wheels = [
 
 [[package]]
 name = "cbor2"
-version = "5.2.0"
+version = "5.8.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/02/15/f4d7fb47753099fcd9d7f7c81920d422a3ab2e710400ec0f4a1b511b51ae/cbor2-5.2.0.tar.gz", hash = "sha256:a33aa2e5534fd74401ac95686886e655e3b2ce6383b3f958199b6e70a87c94bf", size = 81467, upload-time = "2020-09-30T09:59:42.1Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/8e/8b4fdde28e42ffcd741a37f4ffa9fb59cd4fe01625b544dfcfd9ccb54f01/cbor2-5.8.0.tar.gz", hash = "sha256:b19c35fcae9688ac01ef75bad5db27300c2537eb4ee00ed07e05d8456a0d4931", size = 107825, upload-time = "2025-12-30T18:44:22.455Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/4f/3a16e3e8fd7e5fd86751a4f1aad218a8d19a96e75ec3989c3e95a8fe1d8f/cbor2-5.8.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:4b3f91fa699a5ce22470e973601c62dd9d55dc3ca20ee446516ac075fcab27c9", size = 70270, upload-time = "2025-12-30T18:43:46.005Z" },
+    { url = "https://files.pythonhosted.org/packages/38/81/0d0cf0796fe8081492a61c45278f03def21a929535a492dd97c8438f5dbe/cbor2-5.8.0-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:518c118a5e00001854adb51f3164e647aa99b6a9877d2a733a28cb5c0a4d6857", size = 286242, upload-time = "2025-12-30T18:43:47.026Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/a9/fdab6c10190cfb8d639e01f2b168f2406fc847a2a6bc00e7de78c3381d0a/cbor2-5.8.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cff2a1999e49cd51c23d1b6786a012127fd8f722c5946e82bd7ab3eb307443f3", size = 285412, upload-time = "2025-12-30T18:43:48.563Z" },
+    { url = "https://files.pythonhosted.org/packages/31/59/746a8e630996217a3afd523f583fcf7e3d16640d63f9a03f0f4e4f74b5b1/cbor2-5.8.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:4c4492160212374973cdc14e46f0565f2462721ef922b40f7ea11e7d613dfb2a", size = 278041, upload-time = "2025-12-30T18:43:49.92Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/a3/f3bbeb6dedd45c6e0cddd627ea790dea295eaf82c83f0e2159b733365ebd/cbor2-5.8.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:546c7c7c4c6bcdc54a59242e0e82cea8f332b17b4465ae628718fef1fce401ca", size = 278185, upload-time = "2025-12-30T18:43:51.192Z" },
+    { url = "https://files.pythonhosted.org/packages/67/e5/9013d6b857ceb6cdb2851ffb5a887f53f2bab934a528c9d6fa73d9989d84/cbor2-5.8.0-cp312-cp312-win_amd64.whl", hash = "sha256:074f0fa7535dd7fdee247c2c99f679d94f3aa058ccb1ccf4126cc72d6d89cbae", size = 69817, upload-time = "2025-12-30T18:43:52.352Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/ab/7aa94ba3d44ecbc3a97bdb2fb6a8298063fe2e0b611e539a6fe41e36da20/cbor2-5.8.0-cp312-cp312-win_arm64.whl", hash = "sha256:f95fed480b2a0d843f294d2a1ef4cc0f6a83c7922927f9f558e1f5a8dc54b7ca", size = 64923, upload-time = "2025-12-30T18:43:53.719Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/4f/101071f880b4da05771128c0b89f41e334cff044dee05fb013c8f4be661c/cbor2-5.8.0-py3-none-any.whl", hash = "sha256:3727d80f539567b03a7aa11890e57798c67092c38df9e6c23abb059e0f65069c", size = 24374, upload-time = "2025-12-30T18:44:21.476Z" },
+]
 
 [[package]]
 name = "certifi"
@@ -1487,9 +1497,15 @@ wheels = [
 
 [[package]]
 name = "pyre2"
-version = "0.3.6"
+version = "0.3.10"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f6/71/e38ed302e3a01df2e233e77802e7ec92436621893a12824ad2f0e388dca0/pyre2-0.3.6.tar.gz", hash = "sha256:6fe972c0cadec49a5a055690e5aa29f8aebaed0fa9b7d8d3530e33719b61f91c", size = 1887208, upload-time = "2021-05-05T17:38:19.975Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/0c/860068ea3bbeca4de5b65fb00eaded2170ac5f7086976d08e13ccbe8ab08/pyre2-0.3.10.tar.gz", hash = "sha256:91803818ec15e75d0dfdfe588282f28f46fff5eef9a2c893cac95327f443c585", size = 1917556, upload-time = "2025-10-08T15:08:43.914Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/ef/5ff115767ec700861e183c88c7324efeb324bfa90bc27cdc7506810f478a/pyre2-0.3.10-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:ca09d74121f3c2cf7605c4c560a990c18b78ae2def2d147bf35c45d2342696f8", size = 775287, upload-time = "2025-10-08T15:08:34.421Z" },
+    { url = "https://files.pythonhosted.org/packages/84/a8/5913af6c57733576e431f83bde7f308995e04537844f13bbd4e4e9e7a65a/pyre2-0.3.10-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3cc9592d5d46b452a0847916c816c0ec85127af50aab3bb043557c85d9c6ec4a", size = 1130207, upload-time = "2025-10-08T15:08:35.681Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/84/ef52fecc6c145b6552dcb98a68ff5f949c18923edc040b12f67e7b41882e/pyre2-0.3.10-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c5afc0d6b4c0dfa9e760c9b98168ab1a441230d729e8b03ebdcce66744c153a1", size = 1143565, upload-time = "2025-10-08T15:08:37.101Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/66/3eaf2e50ab93c90c04eb258ddbedfc3fbb8c6c1c398c1c3521f2284f1d4a/pyre2-0.3.10-cp312-cp312-win_amd64.whl", hash = "sha256:604b0a12520a119948dd74ae053db558313f5812ea841d36edf13d7b852a2e8a", size = 1445568, upload-time = "2025-10-08T15:08:38.136Z" },
+]
 
 [[package]]
 name = "pyreadline"
