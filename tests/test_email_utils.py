@@ -1,6 +1,9 @@
 import email
 import os
 from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
 from email.utils import formataddr
 
 import arrow
@@ -27,6 +30,7 @@ from app.email_utils import (
     encode_text,
     EmailEncoding,
     replace,
+    remove_sender_pgp_key_attachment,
     should_disable,
     decode_text,
     parse_id_from_bounce,
@@ -962,3 +966,123 @@ def test_add_header_to_invalid_multipart():
     msg = add_header(msg, "test", "test")
     data = msg.as_string()
     assert data != ""
+
+
+def test_remove_sender_pgp_key_attachment_publickey_asc():
+    # Main message
+    msg = MIMEMultipart("mixed")
+
+    # PlainText
+    msg.attach(MIMEText("Hello, this is a reply", "plain"))
+
+    # PGP-key attachment
+    pgp_key = MIMEBase("application", "pgp-keys")
+    pgp_key.set_payload(
+        b"-----BEGIN PGP PUBLIC KEY BLOCK-----\nfake\n-----END PGP PUBLIC KEY BLOCK-----"
+    )
+    pgp_key.add_header(
+        "Content-Disposition", "attachment", filename="publickey - user@example.com.asc"
+    )
+    msg.attach(pgp_key)
+
+    # Verify that the pgp-key attachment gets removed and the plaintext one remains
+    assert len(msg.get_payload()) == 2
+    result = remove_sender_pgp_key_attachment(msg)
+    assert len(result.get_payload()) == 1
+    assert result.get_payload()[0].get_content_type() == "text/plain"
+
+
+def test_remove_sender_pgp_key_attachment_pgp_signature():
+    # Main message with a signature
+    msg = MIMEMultipart("signed", protocol="application/pgp-signature")
+
+    # PlainText
+    msg.attach(MIMEText("Hello, this is a signed reply", "plain"))
+
+    # Signature attachment
+    sig = MIMEBase("application", "pgp-signature")
+    sig.set_payload(b"-----BEGIN PGP SIGNATURE-----\nfake\n-----END PGP SIGNATURE-----")
+    sig.add_header("Content-Disposition", "attachment", filename="signature.asc")
+    msg.attach(sig)
+
+    # Verify that the signature attachment gets removed and the plaintext one remains
+    assert len(msg.get_payload()) == 2
+    result = remove_sender_pgp_key_attachment(msg)
+    assert len(result.get_payload()) == 1
+    assert result.get_payload()[0].get_content_type() == "text/plain"
+
+
+def test_remove_sender_pgp_key_attachment_preserves_normal_attachments():
+    # Main message
+    msg = MIMEMultipart("mixed")
+
+    # PlainText
+    msg.attach(MIMEText("Hello with attachment", "plain"))
+
+    # PDF attachment
+    pdf = MIMEBase("application", "pdf")
+    pdf.set_payload(b"fake pdf content")
+    pdf.add_header("Content-Disposition", "attachment", filename="document.pdf")
+    msg.attach(pdf)
+
+    # Verify that no attachment is modified
+    assert len(msg.get_payload()) == 2
+    result = remove_sender_pgp_key_attachment(msg)
+    assert len(result.get_payload()) == 2
+
+
+def test_remove_sender_pgp_key_attachment_removes_both_key_and_signature():
+    # Main message
+    msg = MIMEMultipart("mixed")
+    msg.attach(MIMEText("Hello with PGP", "plain"))
+
+    # PGP Key attachment
+    pgp_key = MIMEBase("application", "pgp-keys")
+    pgp_key.set_payload(b"fake key")
+    pgp_key.add_header(
+        "Content-Disposition", "attachment", filename="publickey - user@proton.me.asc"
+    )
+    msg.attach(pgp_key)
+
+    # PGP Signature attachment
+    sig = MIMEBase("application", "pgp-signature")
+    sig.set_payload(b"fake signature")
+    sig.add_header("Content-Disposition", "attachment", filename="signature.asc")
+    msg.attach(sig)
+
+    # PDF attachment
+    pdf = MIMEBase("application", "pdf")
+    pdf.set_payload(b"real attachment")
+    pdf.add_header("Content-Disposition", "attachment", filename="report.pdf")
+    msg.attach(pdf)
+
+    # Verify that pgp-key and signature get removed, but plaintext and PDF remain
+    assert len(msg.get_payload()) == 4
+    result = remove_sender_pgp_key_attachment(msg)
+    assert len(result.get_payload()) == 2
+    assert result.get_payload()[0].get_content_type() == "text/plain"
+    assert result.get_payload()[1].get_filename() == "report.pdf"
+
+
+def test_remove_sender_pgp_key_attachment_nested_multipart():
+    # Inner message
+    inner = MIMEMultipart("mixed")
+    inner.attach(MIMEText("Inner text", "plain"))
+
+    # PGP Key attached to inner message
+    pgp_key = MIMEBase("application", "pgp-keys")
+    pgp_key.set_payload(b"fake key")
+    pgp_key.add_header(
+        "Content-Disposition", "attachment", filename="publickey - user@pm.me.asc"
+    )
+    inner.attach(pgp_key)
+
+    # Attach inner message to main message (outer)
+    outer = MIMEMultipart("mixed")
+    outer.attach(inner)
+
+    # Verify how the PGP key gets removed but the inner message remains
+    result = remove_sender_pgp_key_attachment(outer)
+    inner_result = result.get_payload()[0]
+    assert len(inner_result.get_payload()) == 1
+    assert inner_result.get_payload()[0].get_content_type() == "text/plain"
