@@ -25,16 +25,44 @@ let getCookie = function(name) {
 }
 
 $(document).ready(function() {
-  /** Dark mode controller */
+  /** Dark mode controller with enhanced transitions */
   if (getCookie('dark-mode') === "true") {
     document.documentElement.setAttribute('data-theme', 'dark');
   }
+
   $('[data-toggle="dark-mode"]').on('click', function () {
-    if (getCookie('dark-mode') === "true") {
+    const isDarkMode = getCookie('dark-mode') === "true";
+    const newTheme = isDarkMode ? 'light' : 'dark';
+    const $icon = $(this).find('i');
+
+    // Add rotation animation to icon
+    $icon.css('transform', 'rotate(360deg)');
+
+    setTimeout(function() {
+      $icon.css('transform', 'rotate(0deg)');
+    }, 300);
+
+    // Toggle theme
+    if (isDarkMode) {
       setCookie('dark-mode', 'false', 30);
-      return document.documentElement.setAttribute('data-theme', 'light')
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      setCookie('dark-mode', 'true', 30);
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
-    setCookie('dark-mode', 'true', 30);
-    document.documentElement.setAttribute('data-theme', 'dark')
-  })
+
+    // Add slight page transition effect
+    $('body').css('opacity', '0.95');
+    setTimeout(function() {
+      $('body').css('opacity', '1');
+    }, 150);
+  });
+
+  // Optional: Add keyboard shortcut (Ctrl/Cmd + D) for dark mode toggle
+  $(document).on('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault();
+      $('[data-toggle="dark-mode"]').trigger('click');
+    }
+  });
 });
