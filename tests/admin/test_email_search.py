@@ -12,6 +12,9 @@ from app.models import (
     ManualSubscription,
     UserAuditLog,
     AbuserAuditLog,
+    Fido,
+    AdminAuditLog,
+    AuditLogActionEnum,
 )
 from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_token
@@ -818,3 +821,236 @@ def test_regex_search_no_results(flask_client):
     assert r.status_code == 200
     assert b"No results found" in r.data
     assert b"user/mailbox/partner emails (regex search)" in r.data
+
+
+# ============================================================================
+# Disable 2FA Tests
+# ============================================================================
+
+
+def _enable_totp(user: User) -> User:
+    """Enable TOTP on a user."""
+    user.enable_otp = True
+    user.otp_secret = random_token(16)
+    return user
+
+
+def _enable_fido(user: User) -> User:
+    """Enable FIDO on a user and create a FIDO credential entry."""
+    user.fido_uuid = random_token(16)
+    Session.flush()
+    Fido.create(
+        credential_id=random_token(32),
+        uuid=user.fido_uuid,
+        public_key=random_token(64),
+        sign_count=0,
+        name="Test Key",
+        user_id=user.id,
+        flush=True,
+    )
+    return user
+
+
+def test_disable_2fa_totp_only(flask_client):
+    """Test that disabling 2FA removes TOTP for a user with only TOTP enabled."""
+    login_admin(flask_client)
+
+    user = create_new_user()
+    _enable_totp(user)
+    Session.commit()
+    user_id = user.id
+
+    assert user.enable_otp is True
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": user_id},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    Session.expire_all()
+    user = User.get(user_id)
+    assert user.enable_otp is False
+    assert user.otp_secret is None
+    assert user.fido_uuid is None
+
+
+def test_disable_2fa_fido_only(flask_client):
+    """Test that disabling 2FA removes FIDO credentials for a user with only FIDO enabled."""
+    login_admin(flask_client)
+
+    user = create_new_user()
+    _enable_fido(user)
+    Session.commit()
+    user_id = user.id
+
+    assert user.fido_uuid is not None
+    assert Session.query(Fido).filter(Fido.user_id == user_id).count() == 1
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": user_id},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    Session.expire_all()
+    user = User.get(user_id)
+    assert user.fido_uuid is None
+    assert user.enable_otp is False
+    assert Session.query(Fido).filter(Fido.user_id == user_id).count() == 0
+
+
+def test_disable_2fa_totp_and_fido(flask_client):
+    """Test that disabling 2FA removes both TOTP and FIDO when both are enabled."""
+    login_admin(flask_client)
+
+    user = create_new_user()
+    _enable_totp(user)
+    _enable_fido(user)
+    Session.commit()
+    user_id = user.id
+
+    assert user.enable_otp is True
+    assert user.fido_uuid is not None
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": user_id},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    Session.expire_all()
+    user = User.get(user_id)
+    assert user.enable_otp is False
+    assert user.otp_secret is None
+    assert user.fido_uuid is None
+    assert Session.query(Fido).filter(Fido.user_id == user_id).count() == 0
+
+
+def test_disable_2fa_does_not_affect_other_users(flask_client):
+    """Test that disabling 2FA for one user does not affect other users' 2FA settings."""
+    login_admin(flask_client)
+
+    # Target user whose 2FA will be disabled
+    target_user = create_new_user()
+    _enable_totp(target_user)
+    _enable_fido(target_user)
+
+    # Bystander user with TOTP
+    totp_user = create_new_user()
+    _enable_totp(totp_user)
+
+    # Bystander user with FIDO
+    fido_user = create_new_user()
+    _enable_fido(fido_user)
+
+    # Bystander user with both
+    both_user = create_new_user()
+    _enable_totp(both_user)
+    _enable_fido(both_user)
+
+    Session.commit()
+
+    totp_user_id = totp_user.id
+    fido_user_id = fido_user.id
+    both_user_id = both_user.id
+    fido_user_fido_uuid = fido_user.fido_uuid
+    both_user_fido_uuid = both_user.fido_uuid
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": target_user.id},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    Session.expire_all()
+
+    # TOTP-only bystander is untouched
+    totp_user = User.get(totp_user_id)
+    assert totp_user.enable_otp is True
+    assert totp_user.otp_secret is not None
+
+    # FIDO-only bystander is untouched
+    fido_user = User.get(fido_user_id)
+    assert fido_user.fido_uuid == fido_user_fido_uuid
+    assert Session.query(Fido).filter(Fido.uuid == fido_user_fido_uuid).count() == 1
+
+    # Both-enabled bystander is untouched
+    both_user = User.get(both_user_id)
+    assert both_user.enable_otp is True
+    assert both_user.otp_secret is not None
+    assert both_user.fido_uuid == both_user_fido_uuid
+    assert Session.query(Fido).filter(Fido.uuid == both_user_fido_uuid).count() == 1
+
+
+def test_disable_2fa_creates_audit_log(flask_client):
+    """Test that disabling 2FA creates an admin audit log entry."""
+    login_admin(flask_client)
+
+    user = create_new_user()
+    _enable_totp(user)
+    Session.commit()
+    user_id = user.id
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": user_id},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    audit = (
+        Session.query(AdminAuditLog)
+        .filter_by(
+            model="User",
+            model_id=user_id,
+            action=AuditLogActionEnum.disable_2fa.value,
+        )
+        .order_by(AdminAuditLog.created_at.desc())
+        .first()
+    )
+    assert audit is not None
+    assert "TOTP" in audit.data["disabled_methods"]
+
+
+def test_disable_2fa_invalid_user_id(flask_client):
+    """Test that an invalid user_id returns an error."""
+    login_admin(flask_client)
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": "not_a_number"},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"Invalid user_id" in r.data
+
+
+def test_disable_2fa_nonexistent_user(flask_client):
+    """Test that a non-existent user_id returns an error."""
+    login_admin(flask_client)
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={"user_id": 999999999},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"User not found" in r.data
+
+
+def test_disable_2fa_missing_user_id(flask_client):
+    """Test that a missing user_id returns an error."""
+    login_admin(flask_client)
+
+    r = flask_client.post(
+        url_for("admin.email_search.disable_2fa"),
+        data={},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    assert b"Missing user_id" in r.data

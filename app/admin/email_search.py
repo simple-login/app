@@ -9,8 +9,8 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
 from app.db import Session
-from app.log import LOG
 from app.errors import ProtonPartnerNotSetUp
+from app.log import LOG
 from app.models import (
     User,
     AdminAuditLog,
@@ -27,6 +27,7 @@ from app.models import (
     CustomDomain,
     Contact,
     EmailLog,
+    Fido,
 )
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
@@ -965,6 +966,7 @@ class EmailSearchAdmin(BaseView):
 
         # Disable FIDO/WebAuthn
         if had_fido:
+            Session.query(Fido).filter(Fido.user_id == user_id).delete()
             user.fido_uuid = None
 
         # Log the action
