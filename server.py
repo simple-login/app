@@ -306,6 +306,20 @@ def setup_openid_metadata(app):
         res = {"keys": [get_jwk_key()]}
         return jsonify(res)
 
+def discover_openid_webfinger(app):
+    @app.route("/.well-known/webfinger")
+    @cross_origin()
+    def openid_webfinger():
+        res = {
+            "subject": request.args.get(resource),
+            "links": [{
+                    "rel": "http://openid.net/specs/connect/1.0/issuer",
+                    "href": URL
+            },],
+        }
+
+        return jsonify(res)
+
 
 def get_current_user():
     try:
