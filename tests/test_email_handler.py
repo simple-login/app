@@ -21,6 +21,8 @@ from app.models import (
     VerpType,
     Contact,
     SentAlert,
+    BlockedDomain,
+    BlockBehaviourEnum,
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
@@ -390,6 +392,39 @@ def test_preserve_headers(flask_client):
     msg = sent_mails[0].msg
     for header in headers_to_keep:
         assert msg[header] == header + "keep"
+
+
+def test_blocked_domain(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    BlockedDomain.create(
+        user_id=user.id,
+        domain="rainbow.com",
+        commit=True,
+    )
+    msg = load_eml_file("reference_encoded.eml")
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@rainbow.com"
+    envelope.rcpt_tos = [alias.email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+
+
+def test_blocked_domain_reject_behaviour(flask_client):
+    user = create_new_user()
+    user.block_behaviour = BlockBehaviourEnum.return_5xx
+    alias = Alias.create_new_random(user)
+    BlockedDomain.create(
+        user_id=user.id,
+        domain="rainbow.com",
+        commit=True,
+    )
+    msg = load_eml_file("reference_encoded.eml")
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@rainbow.com"
+    envelope.rcpt_tos = [alias.email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E502
 
 
 def test_not_send_to_pending_to_delete_users(flask_client):
