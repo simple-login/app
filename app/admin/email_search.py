@@ -32,6 +32,7 @@ from app.models import (
 )
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_delete import delete_alias as perform_alias_delete
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 
@@ -1054,7 +1055,7 @@ class EmailSearchAdmin(BaseView):
     @expose("/toggle_alias_status", methods=["POST"])
     def toggle_alias_status(self):
         alias_id = request.form.get("alias_id")
-        confirm_email = request.form.get("confirm_email", "").strip()
+        note = request.form.get("note", "").strip()
 
         if not alias_id:
             flash("Missing alias_id", "error")
@@ -1071,11 +1072,8 @@ class EmailSearchAdmin(BaseView):
             flash("Alias not found", "error")
             return redirect(url_for("admin.email_search.index"))
 
-        if confirm_email != alias.email:
-            flash(
-                "Email confirmation does not match. Alias status was not changed.",
-                "error",
-            )
+        if not note:
+            flash("A note is required.", "error")
             return redirect(
                 url_for(
                     "admin.email_search.index", query=alias.email, search_type="alias"
@@ -1089,7 +1087,12 @@ class EmailSearchAdmin(BaseView):
         emit_alias_audit_log(
             alias,
             AliasAuditLogAction.ChangeAliasStatus,
-            f"Alias {action_label} by admin {current_user.email}",
+            f"Alias {action_label} by admin {current_user.email}: {note}",
+        )
+        emit_user_audit_log(
+            alias.user,
+            UserAuditLogAction.UpdateAlias,
+            f"Admin {current_user.email} {action_label} alias {alias.email}: {note}",
         )
         AdminAuditLog.create(
             admin_user_id=current_user.id,
@@ -1100,6 +1103,7 @@ class EmailSearchAdmin(BaseView):
                 "email": alias.email,
                 "enabled": new_status,
                 "changed_by": current_user.email,
+                "note": note,
             },
         )
         Session.commit()
@@ -1116,6 +1120,7 @@ class EmailSearchAdmin(BaseView):
     def delete_alias(self):
         alias_id = request.form.get("alias_id")
         confirm_email = request.form.get("confirm_email", "").strip()
+        note = request.form.get("note", "").strip()
 
         if not alias_id:
             flash("Missing alias_id", "error")
@@ -1156,7 +1161,13 @@ class EmailSearchAdmin(BaseView):
             model="Alias",
             model_id=alias.id,
             action=AuditLogActionEnum.delete_object.value,
-            data={"email": alias_email, "deleted_by": current_user.email},
+            data={"email": alias_email, "deleted_by": current_user.email, "note": note},
+        )
+        emit_user_audit_log(
+            user,
+            UserAuditLogAction.DeleteAlias,
+            f"Admin {current_user.email} deleted alias {alias_email}"
+            + (f": {note}" if note else ""),
         )
         Session.commit()
 
