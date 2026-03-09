@@ -746,15 +746,13 @@
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
               <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
               <div class="form-group">
-                <label for="confirmDisableEmail{{ alias.id }}" class="font-weight-bold">
-                  Type <code>{{ alias.email }}</code> to confirm:
-                </label>
-                <input type="text"
-                       class="form-control"
-                       id="confirmDisableEmail{{ alias.id }}"
-                       name="confirm_email"
-                       required
-                       autocomplete="off">
+                <label for="disableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="disableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for disabling this alias..."></textarea>
               </div>
             </div>
             <div class="modal-footer">
@@ -772,12 +770,11 @@
     </div>
     <script>
       (function() {
-        var confirmInput = document.getElementById('confirmDisableEmail{{ alias.id }}');
+        var noteInput = document.getElementById('disableAliasNote{{ alias.id }}');
         var actionBtn = document.getElementById('disableAliasBtn{{ alias.id }}');
-        var expectedEmail = '{{ alias.email }}';
-        if (confirmInput && actionBtn) {
-          confirmInput.addEventListener('input', function() {
-            actionBtn.disabled = (confirmInput.value !== expectedEmail);
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
           });
         }
       })();
@@ -812,15 +809,13 @@
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
               <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
               <div class="form-group">
-                <label for="confirmEnableEmail{{ alias.id }}" class="font-weight-bold">
-                  Type <code>{{ alias.email }}</code> to confirm:
-                </label>
-                <input type="text"
-                       class="form-control"
-                       id="confirmEnableEmail{{ alias.id }}"
-                       name="confirm_email"
-                       required
-                       autocomplete="off">
+                <label for="enableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="enableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for enabling this alias..."></textarea>
               </div>
             </div>
             <div class="modal-footer">
@@ -838,12 +833,11 @@
     </div>
     <script>
       (function() {
-        var confirmInput = document.getElementById('confirmEnableEmail{{ alias.id }}');
+        var noteInput = document.getElementById('enableAliasNote{{ alias.id }}');
         var actionBtn = document.getElementById('enableAliasBtn{{ alias.id }}');
-        var expectedEmail = '{{ alias.email }}';
-        if (confirmInput && actionBtn) {
-          confirmInput.addEventListener('input', function() {
-            actionBtn.disabled = (confirmInput.value !== expectedEmail);
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
           });
         }
       })();
@@ -889,6 +883,14 @@
                      name="confirm_email"
                      required
                      autocomplete="off">
+            </div>
+            <div class="form-group mb-0">
+              <label for="deleteAliasNote{{ alias.id }}" class="font-weight-bold">Note (optional):</label>
+              <textarea class="form-control"
+                        id="deleteAliasNote{{ alias.id }}"
+                        name="note"
+                        rows="3"
+                        placeholder="Enter the reason for deleting this alias..."></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -1990,6 +1992,10 @@
                 </td>
                 <td class="text-truncate" style="max-width: 300px;">{{ entry.message or '-' }}</td>
               </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">No audit log entries</td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -2963,10 +2969,7 @@
                   {{ alias_actions_card(data.aliases[0]) }}
                 </div>
               </div>
-              {% if data.alias_audit_log %}
-
-                {{ alias_audit_log_table(data.alias_audit_log) }}
-              {% endif %}
+              {{ alias_audit_log_table(data.alias_audit_log) }}
               {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
               {{ contacts_table(helper.contact_list(data.aliases[0], page=contact_page) , helper.alias_contact_count(data.aliases[0]), contact_page, helper.contact_total_pages(data.aliases[0]), page_size) }}
               {{ user_info_card(data.aliases[0].user) }}
