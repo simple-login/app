@@ -1,0 +1,65 @@
+{% extends "default.html" %}
+
+{% set active_page = "setting" %}
+{% block title %}Admin Authentication{% endblock %}
+{% block head %}
+
+  <script src="{{ url_for('static', filename='assets/js/vendors/base64.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/vendors/webauthn.js') }}"></script>
+{% endblock %}
+{% block default_content %}
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h2">Admin Authentication Required</h1>
+      <p>The next page requires admin-level authentication.</p>
+      {% if hardware_required %}
+
+        <p>
+          Please use a <strong>hardware security key</strong> (e.g. YubiKey) to proceed.
+        </p>
+      {% else %}
+        <p>Please use your security key to proceed.</p>
+      {% endif %}
+      <form id="formVerifyKey" method="post">
+        {{ fido_token_form.csrf_token }}
+        {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
+        <div class="text-center mt-3">
+          <button id="btnVerifyKey"
+                  class="btn btn-lg btn-danger"
+                  onclick="verifyAdminKey();">Use your security key</button>
+        </div>
+      </form>
+      <script>
+        async function verifyAdminKey() {
+          $("#btnVerifyKey").prop('disabled', true);
+          $("#btnVerifyKey").text('Waiting for Security Key...');
+
+          const credentialRequestOptions = transformCredentialRequestOptions(
+            JSON.parse('{{webauthn_assertion_options|tojson|safe}}')
+          );
+
+          let assertion;
+          try {
+            assertion = await navigator.credentials.get({
+              publicKey: credentialRequestOptions
+            });
+            if (assertion === null) throw new TypeError('Credential is null');
+          } catch (err) {
+            toastr.error("An error occurred when trying to verify your key.");
+            $("#btnVerifyKey").prop('disabled', false);
+            $("#btnVerifyKey").text('Use your security key');
+            return console.error("Error when trying to get credential:", err);
+          }
+
+          const skAssertion = transformAssertionForServer(assertion);
+          skAssertion.authenticatorAttachment = assertion.authenticatorAttachment || null;
+          $('#sk_assertion').val(JSON.stringify(skAssertion));
+          $('#formVerifyKey').submit();
+        }
+
+        $(() => verifyAdminKey());
+      </script>
+    </div>
+  </div>
+{% endblock %}
