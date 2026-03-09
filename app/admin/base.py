@@ -9,8 +9,9 @@ from markupsafe import Markup
 from time import time
 
 from app import models
-from app.dashboard.views.enter_admin import _ADMIN_GAP
 from app.models import AdminAuditLog, AuditLogActionEnum
+
+_ADMIN_GAP = 900
 
 
 def _has_valid_admin_time() -> bool:
