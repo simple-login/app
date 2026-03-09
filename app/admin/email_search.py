@@ -15,6 +15,7 @@ from app.models import (
     User,
     AdminAuditLog,
     Alias,
+    AliasDeleteReason,
     Mailbox,
     DeletedAlias,
     DomainDeletedAlias,
@@ -29,6 +30,8 @@ from app.models import (
     EmailLog,
     Fido,
 )
+from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
+from app.alias_delete import delete_alias as perform_alias_delete
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 
@@ -1046,6 +1049,124 @@ class EmailSearchAdmin(BaseView):
             f"Admin {current_user.email} permanently deleted user {user_email} (id={user_id})"
         )
         flash(f"User {user_email} has been permanently deleted", "success")
+        return redirect(url_for("admin.email_search.index"))
+
+    @expose("/toggle_alias_status", methods=["POST"])
+    def toggle_alias_status(self):
+        alias_id = request.form.get("alias_id")
+        confirm_email = request.form.get("confirm_email", "").strip()
+
+        if not alias_id:
+            flash("Missing alias_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            alias_id = int(alias_id)
+        except ValueError:
+            flash("Invalid alias_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        alias = Alias.get(alias_id)
+        if alias is None:
+            flash("Alias not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if confirm_email != alias.email:
+            flash(
+                "Email confirmation does not match. Alias status was not changed.",
+                "error",
+            )
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=alias.email, search_type="alias"
+                )
+            )
+
+        new_status = not alias.enabled
+        alias.enabled = new_status
+        action_label = "enabled" if new_status else "disabled"
+
+        emit_alias_audit_log(
+            alias,
+            AliasAuditLogAction.ChangeAliasStatus,
+            f"Alias {action_label} by admin {current_user.email}",
+        )
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="Alias",
+            model_id=alias.id,
+            action=AuditLogActionEnum.update_object.value,
+            data={
+                "email": alias.email,
+                "enabled": new_status,
+                "changed_by": current_user.email,
+            },
+        )
+        Session.commit()
+
+        LOG.info(
+            f"Admin {current_user.email} {action_label} alias {alias.email} (id={alias_id})"
+        )
+        flash(f"Alias {alias.email} has been {action_label}", "success")
+        return redirect(
+            url_for("admin.email_search.index", query=alias.email, search_type="alias")
+        )
+
+    @expose("/delete_alias", methods=["POST"])
+    def delete_alias(self):
+        alias_id = request.form.get("alias_id")
+        confirm_email = request.form.get("confirm_email", "").strip()
+
+        if not alias_id:
+            flash("Missing alias_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        try:
+            alias_id = int(alias_id)
+        except ValueError:
+            flash("Invalid alias_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        alias = Alias.get(alias_id)
+        if alias is None:
+            flash("Alias not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        if confirm_email != alias.email:
+            flash("Email confirmation does not match. Alias was not deleted.", "error")
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=alias.email, search_type="alias"
+                )
+            )
+
+        alias_email = alias.email
+        user = alias.user
+        if user is None:
+            flash("Alias has no associated user and cannot be deleted.", "error")
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=alias_email, search_type="alias"
+                )
+            )
+
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="Alias",
+            model_id=alias.id,
+            action=AuditLogActionEnum.delete_object.value,
+            data={"email": alias_email, "deleted_by": current_user.email},
+        )
+        Session.commit()
+
+        perform_alias_delete(
+            alias, user, reason=AliasDeleteReason.Unspecified, commit=True
+        )
+
+        LOG.warning(
+            f"Admin {current_user.email} deleted alias {alias_email} (id={alias_id})"
+        )
+        flash(f"Alias {alias_email} has been deleted", "success")
         return redirect(url_for("admin.email_search.index"))
 
     @expose("/send_mailbox_disable_warning", methods=["POST"])
