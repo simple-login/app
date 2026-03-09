@@ -1142,6 +1142,7 @@ class EmailSearchAdmin(BaseView):
 
         alias_email = alias.email
         user = alias.user
+        user_email = user.email if user else None
         if user is None:
             flash("Alias has no associated user and cannot be deleted.", "error")
             return redirect(
@@ -1167,6 +1168,12 @@ class EmailSearchAdmin(BaseView):
             f"Admin {current_user.email} deleted alias {alias_email} (id={alias_id})"
         )
         flash(f"Alias {alias_email} has been deleted", "success")
+        if user_email:
+            return redirect(
+                url_for(
+                    "admin.email_search.index", query=user_email, search_type="email"
+                )
+            )
         return redirect(url_for("admin.email_search.index"))
 
     @expose("/send_mailbox_disable_warning", methods=["POST"])
