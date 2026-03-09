@@ -680,6 +680,241 @@
     </div>
   </div>
 {%- endmacro %}
+{% macro alias_actions_card(alias) %}
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header header-primary">
+      <h5 class="mb-0">
+        <i class="fa fa-cog mr-2"></i>Alias Actions
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap">
+        {# Toggle Status Button #}
+        {% if alias.enabled %}
+          <button type="button"
+                  class="btn btn-warning mr-2 mb-2"
+                  data-toggle="modal"
+                  data-target="#disableAliasModal{{ alias.id }}">
+            <i class="fa fa-ban mr-1"></i>Disable Alias
+          </button>
+        {% else %}
+          <button type="button"
+                  class="btn btn-success mr-2 mb-2"
+                  data-toggle="modal"
+                  data-target="#enableAliasModal{{ alias.id }}">
+            <i class="fa fa-check mr-1"></i>Enable Alias
+          </button>
+        {% endif %}
+        {# Delete Button #}
+        <button type="button"
+                class="btn btn-danger mb-2"
+                data-toggle="modal"
+                data-target="#deleteAliasModal{{ alias.id }}">
+          <i class="fa fa-trash-alt mr-1"></i>Delete Alias
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {# Disable Alias Modal #}
+  {% if alias.enabled %}
+    <div class="modal fade"
+         id="disableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="disableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-warning">
+            <h5 class="modal-title" id="disableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-ban mr-2"></i>Disable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="disableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
+              <div class="form-group">
+                <label for="confirmDisableEmail{{ alias.id }}" class="font-weight-bold">
+                  Type <code>{{ alias.email }}</code> to confirm:
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="confirmDisableEmail{{ alias.id }}"
+                       name="confirm_email"
+                       required
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-warning"
+                      id="disableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-ban mr-1"></i>Disable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var confirmInput = document.getElementById('confirmDisableEmail{{ alias.id }}');
+        var actionBtn = document.getElementById('disableAliasBtn{{ alias.id }}');
+        var expectedEmail = '{{ alias.email }}';
+        if (confirmInput && actionBtn) {
+          confirmInput.addEventListener('input', function() {
+            actionBtn.disabled = (confirmInput.value !== expectedEmail);
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Enable Alias Modal #}
+  {% if not alias.enabled %}
+    <div class="modal fade"
+         id="enableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="enableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-success">
+            <h5 class="modal-title" id="enableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-check mr-2"></i>Enable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="enableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
+              <div class="form-group">
+                <label for="confirmEnableEmail{{ alias.id }}" class="font-weight-bold">
+                  Type <code>{{ alias.email }}</code> to confirm:
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="confirmEnableEmail{{ alias.id }}"
+                       name="confirm_email"
+                       required
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-success"
+                      id="enableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-check mr-1"></i>Enable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var confirmInput = document.getElementById('confirmEnableEmail{{ alias.id }}');
+        var actionBtn = document.getElementById('enableAliasBtn{{ alias.id }}');
+        var expectedEmail = '{{ alias.email }}';
+        if (confirmInput && actionBtn) {
+          confirmInput.addEventListener('input', function() {
+            actionBtn.disabled = (confirmInput.value !== expectedEmail);
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Delete Alias Modal #}
+  <div class="modal fade"
+       id="deleteAliasModal{{ alias.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="deleteAliasModalLabel{{ alias.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header modal-danger">
+          <h5 class="modal-title" id="deleteAliasModalLabel{{ alias.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete Alias Permanently
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.delete_alias') }}"
+              method="POST"
+              id="deleteAliasForm{{ alias.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="alias_id" value="{{ alias.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone.
+            </div>
+            <div class="form-group">
+              <label for="confirmDeleteAliasEmail{{ alias.id }}" class="font-weight-bold">
+                Type <code>{{ alias.email }}</code> to confirm:
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="confirmDeleteAliasEmail{{ alias.id }}"
+                     name="confirm_email"
+                     required
+                     autocomplete="off">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-danger"
+                    id="deleteAliasBtn{{ alias.id }}"
+                    disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete Alias Permanently
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmDeleteAliasEmail{{ alias.id }}');
+      var deleteBtn = document.getElementById('deleteAliasBtn{{ alias.id }}');
+      var expectedEmail = '{{ alias.email }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+{% endmacro %}
 {% macro user_quotas_card(user) -%}
   <div class="card mb-4 border-0 shadow-sm">
     <div class="card-header header-primary">
@@ -2616,6 +2851,7 @@
 
               {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
               {{ contacts_table(helper.contact_list(data.aliases[0], page=contact_page) , helper.alias_contact_count(data.aliases[0]), contact_page, helper.contact_total_pages(data.aliases[0]), page_size) }}
+              {{ alias_actions_card(data.aliases[0]) }}
               {{ user_info_card(data.aliases[0].user) }}
               {{ user_actions_card(data.aliases[0].user) }}
             {% endif %}
