@@ -8,6 +8,7 @@ from flask_login import current_user
 from markupsafe import Markup
 from time import time
 
+from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum
 
@@ -15,16 +16,16 @@ _ADMIN_GAP = 900
 
 
 def _has_valid_admin_time() -> bool:
-    from app.config import ADMIN_FIDO_REQUIRED
-
-    if ADMIN_FIDO_REQUIRED == "none":
+    if config.ADMIN_FIDO_REQUIRED == "none":
         return True
     admin_time = session.get("admin_time")
     if not admin_time:
         return False
     if (time() - int(admin_time)) > _ADMIN_GAP:
         return False
-    if ADMIN_FIDO_REQUIRED == "hardware" and not session.get("admin_hardware_auth"):
+    if config.ADMIN_FIDO_REQUIRED == "hardware" and not session.get(
+        "admin_hardware_auth"
+    ):
         return False
     return True
 
