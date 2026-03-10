@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Optional, List, Dict
 
 from flask import redirect, url_for, request, flash
+from app.admin.base import _has_valid_admin_time
 from flask_admin import BaseView, expose
 from flask_login import current_user
 
@@ -102,11 +103,17 @@ class AbuserLookupResult:
 
 class AbuserLookupAdmin(BaseView):
     def is_accessible(self):
-        return current_user.is_authenticated and current_user.is_admin
+        return (
+            current_user.is_authenticated
+            and current_user.is_admin
+            and _has_valid_admin_time()
+        )
 
     def inaccessible_callback(self, name, **kwargs):
-        flash("You don't have access to the admin page", "error")
-        return redirect(url_for("dashboard.index", next=request.url))
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash("You don't have access to the admin page", "error")
+            return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.enter_admin", next=request.url))
 
     @expose("/", methods=["GET", "POST"])
     def index(self):

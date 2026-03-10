@@ -714,6 +714,7 @@ USE_RUST_PGP = "USE_RUST_PGP" in os.environ
 SMTP_SIZE_LIMIT = int(os.environ.get("SMTP_SIZE_LIMIT", 41943040))  # 40MiB
 
 PARTNER_SUPPORT_URL = os.environ.get("PARTNER_SUPPORT_URL", None)
+
 ADMIN_FIDO_REQUIRED = os.environ.get("ADMIN_FIDO_REQUIRED", "none")
 if ADMIN_FIDO_REQUIRED not in ("none", "any", "hardware"):
     raise ValueError("ADMIN_FIDO_REQUIRED is not a valid value")
