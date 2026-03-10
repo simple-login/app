@@ -1169,7 +1169,6 @@ class EmailSearchAdmin(BaseView):
             f"Admin {current_user.email} deleted alias {alias_email}"
             + (f": {note}" if note else ""),
         )
-        Session.commit()
 
         perform_alias_delete(
             alias, user, reason=AliasDeleteReason.Unspecified, commit=True
