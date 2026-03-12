@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import sqlalchemy
-from flask import redirect, url_for, request, flash, session
-from flask_admin import expose, AdminIndexView
+from flask import redirect, url_for, request, flash, session, Response
+from flask_admin import expose, AdminIndexView, BaseView
 from flask_admin.contrib import sqla
 from flask_login import current_user
 from markupsafe import Markup
@@ -10,7 +12,7 @@ from time import time
 
 from app import config
 from app import models
-from app.models import AdminAuditLog, AuditLogActionEnum
+from app.models import AdminAuditLog, AuditLogActionEnum, Fido
 
 _ADMIN_GAP = 900
 
@@ -43,16 +45,22 @@ def _user_upgrade_channel_formatter(view, context, model, name):
     return Markup(model.upgrade_channel)
 
 
-class SLModelView(sqla.ModelView):
-    column_default_sort = ("id", True)
-    column_display_pk = True
-    page_size = 100
+def _redirect_if_user_is_not_allowed() -> Optional[Response]:
+    if not current_user.is_authenticated or not current_user.is_admin:
+        flash("You don't have access to the admin page", "error")
+        return redirect(url_for("auth.login", next=request.url))
+    if not _has_valid_admin_time():
+        if config.ADMIN_FIDO_REQUIRED != "none":
+            fido_count = Fido.filter_by(user_id=current_user.id).count()
+            if fido_count == 0:
+                flash(
+                    "You need to register a FIDO key to access the admin panel", "error"
+                )
+                return redirect(url_for("dashboard.account_setting", next=request.url))
+        return redirect(url_for("dashboard.enter_admin", next=request.url))
 
-    can_edit = False
-    can_create = False
-    can_delete = False
-    edit_modal = True
 
+class BaseAdminView(BaseView):
     def is_accessible(self):
         return (
             current_user.is_authenticated
@@ -61,10 +69,19 @@ class SLModelView(sqla.ModelView):
         )
 
     def inaccessible_callback(self, name, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            flash("You don't have access to the admin page", "error")
-            return redirect(url_for("dashboard.index"))
-        return redirect(url_for("dashboard.enter_admin", next=request.url))
+        redirect_destination = _redirect_if_user_is_not_allowed()
+        return redirect_destination or redirect(url_for("dashboard.index"))
+
+
+class SLModelView(sqla.ModelView, BaseAdminView):
+    column_default_sort = ("id", True)
+    column_display_pk = True
+    page_size = 100
+
+    can_edit = False
+    can_create = False
+    can_delete = False
+    edit_modal = True
 
     def on_model_change(self, form, model, is_created):
         changes = {}
@@ -107,8 +124,5 @@ class SLModelView(sqla.ModelView):
 class SLAdminIndexView(AdminIndexView):
     @expose("/")
     def index(self):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            return redirect(url_for("auth.login", next=request.url))
-        if not _has_valid_admin_time():
-            return redirect(url_for("dashboard.enter_admin", next=request.url))
-        return redirect(url_for("admin.email_search.index"))
+        redirect_destination = _redirect_if_user_is_not_allowed()
+        return redirect_destination or redirect(url_for("admin.email_search.index"))
