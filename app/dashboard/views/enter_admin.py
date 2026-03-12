@@ -27,8 +27,8 @@ class FidoTokenForm(FlaskForm):
 @limiter.limit("10/minute")
 @login_required
 def enter_admin():
+    next_url = sanitize_next_url(request.args.get("next"))
     if ADMIN_FIDO_REQUIRED == "none":
-        next_url = sanitize_next_url(request.args.get("next"))
         return redirect(next_url or url_for("dashboard.index"))
 
     if not current_user.fido_enabled():
@@ -39,7 +39,6 @@ def enter_admin():
         return redirect(url_for("dashboard.index"))
 
     fido_token_form = FidoTokenForm()
-    next_url = sanitize_next_url(request.args.get("next"))
 
     if fido_token_form.validate_on_submit():
         try:
@@ -135,13 +134,17 @@ def enter_admin():
     ]
 
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
-        webauthn_users, challenge
+        webauthn_users, challenge, userVerification="required"
     ).assertion_dict
-    try:
-        for credential in webauthn_assertion_options["allowCredentials"]:
-            del credential["transports"]
-    except KeyError:
-        pass
+    if ADMIN_FIDO_REQUIRED == "hardware":
+        webauthn_assertion_options["extensions"] = {"uvm": True}
+        webauthn_assertion_options["hints"] = ["security-key", "client-device"]
+        try:
+            for credential in webauthn_assertion_options["allowCredentials"]:
+                if "transports" in credential:
+                    credential["transports"] = ["usb", "nfc"]
+        except KeyError:
+            pass
 
     return render_template(
         "dashboard/enter_admin.html",
