@@ -249,7 +249,8 @@ def apple_update_notification():
         return jsonify(error="Unauthorized"), 401
 
     if not (
-        data.get("unified_receipt")
+        data
+        and data.get("unified_receipt")
         and data["unified_receipt"].get("latest_receipt_info")
     ):
         LOG.d("Invalid data %s", data)
