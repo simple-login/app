@@ -355,6 +355,8 @@ LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
 APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
 # for Mac App
 MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")
+# When enabled, /apple/update_notification validates the shared secret in the webhook payload
+APPLE_WEBHOOK_SECRET_CHECK_ENABLED = "APPLE_WEBHOOK_SECRET_CHECK_ENABLED" in os.environ
 
 # <<<<< ALERT EMAIL >>>>
 
@@ -714,3 +716,9 @@ USE_RUST_PGP = "USE_RUST_PGP" in os.environ
 SMTP_SIZE_LIMIT = int(os.environ.get("SMTP_SIZE_LIMIT", 41943040))  # 40MiB
 
 PARTNER_SUPPORT_URL = os.environ.get("PARTNER_SUPPORT_URL", None)
+
+ADMIN_FIDO_REQUIRED = os.environ.get("ADMIN_FIDO_REQUIRED", "none")
+if ADMIN_FIDO_REQUIRED not in ("none", "any", "hardware"):
+    raise ValueError("ADMIN_FIDO_REQUIRED is not a valid value")
+
+DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = "DROP_PGP_KEY_ATTACHMENTS_ON_REPLY" in os.environ

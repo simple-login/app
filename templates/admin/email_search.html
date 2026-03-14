@@ -680,6 +680,348 @@
     </div>
   </div>
 {%- endmacro %}
+{% macro alias_actions_card(alias) %}
+  <div class="card h-100 actions-card">
+    <div class="card-header text-white py-2 header-caution">
+      <h6 class="mb-0 d-flex justify-content-between align-items-center">
+        <span><i class="fa fa-cog mr-2"></i>Alias Actions</span>
+        <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
+      </h6>
+    </div>
+    <div class="card-body py-3 d-flex flex-column">
+      {# Toggle Status Button #}
+      {% if alias.enabled %}
+        <button type="button"
+                class="btn btn-sm btn-block mb-2 btn-caution-modern"
+                data-toggle="modal"
+                data-target="#disableAliasModal{{ alias.id }}">
+          <i class="fa fa-ban mr-1"></i>Disable Alias
+        </button>
+      {% else %}
+        <button type="button"
+                class="btn btn-sm btn-block mb-2 btn-success-modern"
+                data-toggle="modal"
+                data-target="#enableAliasModal{{ alias.id }}">
+          <i class="fa fa-check mr-1"></i>Enable Alias
+        </button>
+      {% endif %}
+      {# Spacer + Delete at bottom #}
+      <div class="flex-grow-1"></div>
+      <div class="mt-auto pt-3 border-top">
+        <button type="button"
+                class="btn btn-sm btn-block btn-danger"
+                data-toggle="modal"
+                data-target="#deleteAliasModal{{ alias.id }}">
+          <i class="fa fa-trash-alt mr-1"></i>Delete Alias
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {# Disable Alias Modal #}
+  {% if alias.enabled %}
+    <div class="modal fade"
+         id="disableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="disableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-warning">
+            <h5 class="modal-title" id="disableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-ban mr-2"></i>Disable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="disableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
+              <div class="form-group">
+                <label for="disableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="disableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for disabling this alias..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-warning"
+                      id="disableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-ban mr-1"></i>Disable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var noteInput = document.getElementById('disableAliasNote{{ alias.id }}');
+        var actionBtn = document.getElementById('disableAliasBtn{{ alias.id }}');
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Enable Alias Modal #}
+  {% if not alias.enabled %}
+    <div class="modal fade"
+         id="enableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="enableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-success">
+            <h5 class="modal-title" id="enableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-check mr-2"></i>Enable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="enableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
+              <div class="form-group">
+                <label for="enableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="enableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for enabling this alias..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-success"
+                      id="enableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-check mr-1"></i>Enable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var noteInput = document.getElementById('enableAliasNote{{ alias.id }}');
+        var actionBtn = document.getElementById('enableAliasBtn{{ alias.id }}');
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Delete Alias Modal #}
+  <div class="modal fade"
+       id="deleteAliasModal{{ alias.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="deleteAliasModalLabel{{ alias.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header modal-danger">
+          <h5 class="modal-title" id="deleteAliasModalLabel{{ alias.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete Alias Permanently
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.delete_alias') }}"
+              method="POST"
+              id="deleteAliasForm{{ alias.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="alias_id" value="{{ alias.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone.
+            </div>
+            <div class="form-group">
+              <label for="confirmDeleteAliasEmail{{ alias.id }}" class="font-weight-bold">
+                Type <code>{{ alias.email }}</code> to confirm:
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="confirmDeleteAliasEmail{{ alias.id }}"
+                     name="confirm_email"
+                     required
+                     autocomplete="off">
+            </div>
+            <div class="form-group mb-0">
+              <label for="deleteAliasNote{{ alias.id }}" class="font-weight-bold">Note (optional):</label>
+              <textarea class="form-control"
+                        id="deleteAliasNote{{ alias.id }}"
+                        name="note"
+                        rows="3"
+                        placeholder="Enter the reason for deleting this alias..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-danger"
+                    id="deleteAliasBtn{{ alias.id }}"
+                    disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete Alias Permanently
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmDeleteAliasEmail{{ alias.id }}');
+      var deleteBtn = document.getElementById('deleteAliasBtn{{ alias.id }}');
+      var expectedEmail = '{{ alias.email }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+{% endmacro %}
+{% macro alias_info_card(alias) %}
+  {% set alias_flag_names = helper.alias_flags(alias) %}
+  <div class="card h-100">
+    <div class="card-header header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-at mr-2"></i>Alias Information
+      </h6>
+    </div>
+    <div class="card-body py-3">
+      <div class="row info-section">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <h6 class="section-title">Identity</h6>
+          <table class="table table-sm table-borderless mb-0">
+            <tr>
+              <td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td>
+              <td class="py-1"><code>{{ alias.id }}</code></td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Email:</td>
+              <td class="py-1">{{ alias.email }}{{ copy_btn(alias.email) }}</td>
+            </tr>
+            {% if alias.name %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Name:</td>
+                <td class="py-1">{{ alias.name }}</td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td class="text-muted text-nowrap py-1">Status:</td>
+              <td class="py-1">{{ badge_status(alias.enabled, 'Enabled', 'Disabled', 'success', 'danger') }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">User:</td>
+              <td class="py-1">
+                <a href="?query={{ alias.user.email }}&search_type=email">{{ alias.user.email }}</a>{{ copy_btn(alias.user.email) }}
+              </td>
+            </tr>
+            {% if alias.custom_domain %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Domain:</td>
+                <td class="py-1">{{ alias.custom_domain.domain }}</td>
+              </tr>
+            {% endif %}
+            {% if alias.directory %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Directory:</td>
+                <td class="py-1">{{ alias.directory.name }}</td>
+              </tr>
+            {% endif %}
+            {% if alias.note %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Note:</td>
+                <td class="py-1"><small>{{ alias.note }}</small></td>
+              </tr>
+            {% endif %}
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6 class="section-title">Statistics & Dates</h6>
+          <table class="table table-sm table-borderless mb-0">
+            <tr>
+              <td class="text-muted text-nowrap py-1" style="width: 80px;">Received:</td>
+              <td class="py-1">{{ helper.alias_email_received_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Sent:</td>
+              <td class="py-1">{{ helper.alias_email_sent_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Contacts:</td>
+              <td class="py-1">{{ helper.alias_contact_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">PGP:</td>
+              <td class="py-1">{{ badge_status(alias.pgp_enabled(), 'Yes', 'No', 'success', 'secondary') }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Flags:</td>
+              <td class="py-1">
+                <code>{{ alias.flags or 0 }}</code>
+                {% if alias_flag_names %}<small class="text-muted d-block">{{ alias_flag_names|join(", ") }}</small>{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Created:</td>
+              <td class="py-1 text-nowrap">{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Updated:</td>
+              <td class="py-1 text-nowrap">{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
+            </tr>
+            {% if alias.delete_on %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Deletion:</td>
+                <td class="py-1"><span class="badge badge-danger">{{ alias.delete_on.format("YYYY-MM-DD") }}</span></td>
+              </tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
 {% macro user_quotas_card(user) -%}
   <div class="card mb-4 border-0 shadow-sm">
     <div class="card-header header-primary">
@@ -1137,6 +1479,7 @@
               <th>Flags</th>
               <th>Created</th>
               <th>Updated</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -1183,6 +1526,11 @@
                 </td>
                 <td>{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
                 <td>{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
+                <td>
+                  <a href="?query={{ alias.email }}&search_type=alias" title="Alias actions">
+                    <i class="fa fa-sign-in-alt mr-1"></i>Actions
+                  </a>
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -1643,6 +1991,10 @@
                   <span class="badge badge-dark">{{ entry.action }}</span>
                 </td>
                 <td class="text-truncate" style="max-width: 300px;">{{ entry.message or '-' }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">No audit log entries</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -2607,17 +2959,27 @@
             </h5>
           </div>
           <div class="card-body">
-            {{ aliases_table(data.aliases|length, data.aliases, data.aliases_found_by_regex) }}
-            {% if data.alias_audit_log %}
-
-              {{ alias_audit_log_table(data.alias_audit_log) }}
-            {% endif %}
             {% if not data.aliases_found_by_regex and data.aliases|length == 1 %}
 
+              <div class="row mb-4 user-info-row">
+                <div class="col-lg-9 mb-3 mb-lg-0">
+                  {{ alias_info_card(data.aliases[0]) }}
+                </div>
+                <div class="col-lg-3">
+                  {{ alias_actions_card(data.aliases[0]) }}
+                </div>
+              </div>
+              {{ alias_audit_log_table(data.alias_audit_log) }}
               {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
               {{ contacts_table(helper.contact_list(data.aliases[0], page=contact_page) , helper.alias_contact_count(data.aliases[0]), contact_page, helper.contact_total_pages(data.aliases[0]), page_size) }}
               {{ user_info_card(data.aliases[0].user) }}
               {{ user_actions_card(data.aliases[0].user) }}
+            {% else %}
+              {{ aliases_table(data.aliases|length, data.aliases, data.aliases_found_by_regex) }}
+              {% if data.alias_audit_log %}
+
+                {{ alias_audit_log_table(data.alias_audit_log) }}
+              {% endif %}
             {% endif %}
           </div>
         </div>

@@ -4,12 +4,13 @@ import json
 from datetime import datetime
 from typing import Optional, List, Dict
 
-from flask import redirect, url_for, request, flash
-from flask_admin import BaseView, expose
+from flask import request
+from flask_admin import expose
 from flask_login import current_user
 
 from app.abuser_audit_log_utils import AbuserAuditLog
 from app.abuser_utils import get_abuser_bundles_for_address
+from app.admin.base import BaseAdminView
 from app.models import User
 from app.utils import sanitize_email
 
@@ -100,14 +101,7 @@ class AbuserLookupResult:
             item[key] = datetime.fromisoformat(raw_date)
 
 
-class AbuserLookupAdmin(BaseView):
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.is_admin
-
-    def inaccessible_callback(self, name, **kwargs):
-        flash("You don't have access to the admin page", "error")
-        return redirect(url_for("dashboard.index", next=request.url))
-
+class AbuserLookupAdmin(BaseAdminView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         query: Optional[str] = request.args.get("search")

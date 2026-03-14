@@ -33,6 +33,12 @@ def enter_sudo():
         if current_user.check_password(password):
             session["sudo_time"] = int(time())
 
+            # Restore flash messages that were preserved when sudo_required intercepted
+            if "_preserved_flashes" in session:
+                existing = session.get("_flashes", [])
+                existing.extend(session.pop("_preserved_flashes"))
+                session["_flashes"] = existing
+
             # User comes to sudo page from another page
             next_url = sanitize_next_url(request.args.get("next"))
             if next_url:
@@ -74,7 +80,16 @@ def sudo_required(f):
             "sudo_time" not in session
             or (time() - int(session["sudo_time"])) > _SUDO_GAP
         ):
+            # Preserve pending flash messages so they aren't consumed by enter_sudo
+            # and are shown on the destination page after sudo completes.
+            if session.get("_flashes"):
+                session["_preserved_flashes"] = session.pop("_flashes")
             return redirect(url_for("dashboard.enter_sudo", next=request.path))
+        # Restore any flash messages that were preserved through the redirect chain
+        if "_preserved_flashes" in session:
+            existing = session.get("_flashes", [])
+            existing.extend(session.pop("_preserved_flashes"))
+            session["_flashes"] = existing
         return f(*args, **kwargs)
 
     return wrap

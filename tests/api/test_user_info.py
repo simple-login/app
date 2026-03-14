@@ -21,6 +21,7 @@ def test_user_in_trial(flask_client):
         "name": "Test User",
         "email": user.email,
         "in_trial": True,
+        "trial_end_timestamp": user.trial_end.timestamp,
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
         "connected_proton_address": None,
@@ -51,6 +52,7 @@ def test_user_linked_to_proton(flask_client):
         "name": "Test User",
         "email": user.email,
         "in_trial": True,
+        "trial_end_timestamp": user.trial_end.timestamp,
         "profile_picture_url": None,
         "max_alias_free_plan": config.MAX_NB_EMAIL_FREE_PLAN,
         "connected_proton_address": partner_email,
@@ -155,3 +157,25 @@ def test_stats(flask_client):
 
     assert r.status_code == 200
     assert r.json == {"nb_alias": 1, "nb_block": 0, "nb_forward": 0, "nb_reply": 0}
+
+
+def test_trial_end_timestamp(flask_client):
+    user, api_key = get_new_user_and_api_key()
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert r.json["trial_end_timestamp"] == user.trial_end.timestamp
+
+    # user with no trial
+    user.trial_end = None
+    Session.flush()
+
+    r = flask_client.get(
+        url_for("api.user_info"), headers={"Authentication": api_key.code}
+    )
+
+    assert r.status_code == 200
+    assert r.json["trial_end_timestamp"] is None

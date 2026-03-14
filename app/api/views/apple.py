@@ -8,7 +8,7 @@ from flask import request
 from requests import RequestException
 
 from app.api.base import api_bp, require_api_auth
-from app.config import APPLE_API_SECRET, MACAPP_APPLE_API_SECRET
+from app import config
 from app.subscription_webhook import execute_subscription_webhook
 from app.db import Session
 from app.log import LOG
@@ -50,9 +50,9 @@ def apple_process_payment():
 
     if is_macapp:
         LOG.d("Use Macapp secret")
-        password = MACAPP_APPLE_API_SECRET
+        password = config.MACAPP_APPLE_API_SECRET
     else:
-        password = APPLE_API_SECRET
+        password = config.APPLE_API_SECRET
 
     apple_sub = verify_receipt(receipt_data, user, password)
     if apple_sub:
@@ -62,7 +62,7 @@ def apple_process_payment():
     return jsonify(error="Processing failed"), 400
 
 
-@api_bp.route("/apple/update_notification", methods=["GET", "POST"])
+@api_bp.route("/apple/update_notification", methods=["POST"])
 def apple_update_notification():
     """
     The "Subscription Status URL" to receive update notifications from Apple
@@ -239,6 +239,15 @@ def apple_update_notification():
     # }
     LOG.d("request for /api/apple/update_notification")
     data = request.get_json()
+    if config.APPLE_WEBHOOK_SECRET_CHECK_ENABLED and (
+        not data
+        or not data.get("password")
+        or data.get("password")
+        not in (config.APPLE_API_SECRET, config.MACAPP_APPLE_API_SECRET)
+    ):
+        LOG.w("apple_update_notification: invalid or missing password")
+        return jsonify(error="Unauthorized"), 401
+
     if not (
         data
         and data.get("unified_receipt")
