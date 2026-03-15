@@ -503,7 +503,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     default_mailbox = orm.relationship("Mailbox", foreign_keys=[default_mailbox_id])
 
-    _blocked_domains = orm.relationship("BlockedDomain", lazy="joined")
+    _blocked_domains = orm.relationship("BlockedDomain")
 
     # user can set a more strict max_spam score to block spams more aggressively
     max_spam_score = sa.Column(sa.Integer, nullable=True)

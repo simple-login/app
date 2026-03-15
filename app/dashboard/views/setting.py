@@ -294,6 +294,11 @@ def setting():
             flash("Your preference has been updated", "success")
         elif request.form.get("form-name") == "blocked-domains-add":
             domain = request.form.get("domain-name")
+
+            if not domain:
+                flash("Domain name is required", "error")
+                return redirect(url_for("dashboard.setting"))
+
             new_domain = sanitize_domain(domain)
             domain_forbidden_cause = can_blocked_domain_be_used(
                 current_user, new_domain
@@ -305,6 +310,10 @@ def setting():
 
             BlockedDomain.create(user_id=current_user.id, domain=new_domain)
 
+            LOG.i(
+                f"A new blocked domain [{new_domain}] was added for user [{current_user.id}]"
+            )
+
             Session.commit()
             flash(f"Added blocked domain [{domain}]", "success")
             return redirect(url_for("dashboard.setting"))
@@ -312,9 +321,30 @@ def setting():
             domain_id = request.form.get("domain_id")
             domain_name = request.form.get("domain_name")
 
+            if not domain_id:
+                flash("Domain Id is missing", "error")
+                return redirect(url_for("dashboard.setting"))
+
+            if not domain_name:
+                flash("Domain Name is missing", "error")
+                return redirect(url_for("dashboard.setting"))
+
             domain = BlockedDomain.get(domain_id)
+            if not domain or domain.user_id != current_user.id:
+                LOG.e(
+                    f"Blocked domain with id [{domain_id}] not found or not owned by user [{current_user.id}] therefore couldn't be deleted"
+                )
+                flash(
+                    "Blocked domain not found or the user doesn't have access to it",
+                    "error",
+                )
+                return redirect(url_for("dashboard.setting"))
 
             BlockedDomain.delete(domain.id)
+
+            LOG.i(
+                f"A blocked domain [{domain}] was deleted by user [{current_user.id}]"
+            )
 
             Session.commit()
             flash(f"Deleted blocked domain [{domain_name}]", "success")

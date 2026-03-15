@@ -135,7 +135,7 @@ def can_blocked_domain_be_used(
     if reason is not None:
         return reason
 
-    if BlockedDomain.get_by(domain=domain):
+    if BlockedDomain.get_by(user_id=user.id, domain=domain):
         return CannotUseDomainReason.DomainAlreadyUsed
     else:
         return None

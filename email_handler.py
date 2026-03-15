@@ -616,9 +616,15 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     mail_from_domain = get_email_domain_part(mail_from)
     if is_domain_blocked(user.id, mail_from_domain):
+        LOG.i(
+            f"Email [{mail_from}] was ignored for the user [{user.id}] because of a blocked domain [{mail_from_domain}]"
+        )
         # by default return 2** instead of 5** to allow user to receive emails again when domain is unblocked
         res_status = status.E200
         if user.block_behaviour == BlockBehaviourEnum.return_5xx:
+            LOG.i(
+                f"Email [{mail_from}] was rejected for the user [{user.id}] because of a blocked domain [{mail_from_domain}]"
+            )
             res_status = status.E502
 
         return [(True, res_status)]

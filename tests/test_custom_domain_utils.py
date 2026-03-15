@@ -161,6 +161,22 @@ def test_can_blocked_domain_be_used_existing_domain():
     assert res is CannotUseDomainReason.DomainAlreadyUsed
 
 
+def test_can_blocked_domain_be_used_different_users():
+    domain = random_domain()
+    other_user = create_new_user()
+
+    # User 1 blocks the domain
+    BlockedDomain.create(user_id=user.id, domain=domain, commit=True)
+
+    # User 1 should not be able to block it again
+    res1 = can_blocked_domain_be_used(user, domain)
+    assert res1 is CannotUseDomainReason.DomainAlreadyUsed
+
+    # User 2 should be able to block it
+    res2 = can_blocked_domain_be_used(other_user, domain)
+    assert res2 is None
+
+
 # sanitize_domain
 def test_can_sanitize_domain_empty():
     assert sanitize_domain("") == ""
