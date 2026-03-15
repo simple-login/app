@@ -154,6 +154,7 @@ from app.handler.spamd_result import (
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
+from app.sender_blacklist import is_sender_globally_blocked
 from app.mail_sender import sl_sendmail
 from app.mailbox_utils import (
     get_mailbox_for_reply_phase,
@@ -659,7 +660,9 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         )
         return [(True, status.E502)]
 
-    if not alias.enabled or alias.is_trashed() or contact.block_forward:
+    sender_blocked = is_sender_globally_blocked(envelope.mail_from, contact.website_email)
+
+    if not alias.enabled or alias.is_trashed() or contact.block_forward or sender_blocked:
         if not alias.enabled:
             LOG.d("%s is disabled, do not forward", alias)
 
@@ -668,6 +671,14 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
         if contact.block_forward:
             LOG.d("Contact %s of alias %s is blocked, do not forward", contact, alias)
+
+        if sender_blocked:
+            LOG.i(
+                "Sender is blocked by global sender blacklist: mail_from=%s header_from=%s alias=%s",
+                envelope.mail_from,
+                contact.website_email,
+                alias,
+            )
 
         EmailLog.create(
             contact_id=contact.id,

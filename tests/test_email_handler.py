@@ -24,6 +24,7 @@ from app.models import (
     VerpType,
     Contact,
     SentAlert,
+    GlobalSenderBlacklist,
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
@@ -41,6 +42,27 @@ def test_should_ignore(flask_client):
     assert not should_ignore("mail_from", ["rcpt_to"])
     IgnoredEmail.create(mail_from="mail_from", rcpt_to="rcpt_to", commit=True)
     assert should_ignore("mail_from", ["rcpt_to"])
+
+
+def test_global_sender_blacklist_blocks(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+
+    # Block all senders from spam.test
+    GlobalSenderBlacklist.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+
+    msg = EmailMessage()
+    msg[headers.FROM] = "Bad Guy <bad@spam.test>"
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = "hello"
+    msg.set_content("test")
+
+    envelope = Envelope()
+    envelope.mail_from = "bad@spam.test"
+    envelope.rcpt_tos = [alias.email]
+
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
 
 
 def test_is_automatic_out_of_office():

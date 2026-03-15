@@ -3672,6 +3672,24 @@ class ForbiddenMxIp(Base, ModelMixin):
     comment = sa.Column(sa.Text, unique=False, nullable=True)
 
 
+class GlobalSenderBlacklist(Base, ModelMixin):
+    """Global blacklist for inbound senders (envelope MAIL FROM).
+
+    Pattern is a (re2-compatible) regex that is applied via search() against the
+    full envelope sender address.
+
+    Examples:
+      - "@spamdomain\\.com$"
+      - "^no-?reply@.*"
+    """
+
+    __tablename__ = "global_sender_blacklist"
+
+    pattern = sa.Column(sa.String(512), unique=True, nullable=False)
+    enabled = sa.Column(sa.Boolean, nullable=False, default=True, server_default="1")
+    comment = sa.Column(sa.Text, nullable=True)
+
+
 # region Phone
 class PhoneCountry(Base, ModelMixin):
     __tablename__ = "phone_country"
