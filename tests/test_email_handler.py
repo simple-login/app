@@ -61,6 +61,55 @@ def test_global_sender_blacklist_blocks(flask_client):
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
 
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    assert email_logs[0].blocked
+
+
+def test_global_sender_blacklist_not_applied_when_contact_exists(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+
+    # Create a manual/previous contact: this should act as a whitelist entry.
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="bad@spam.test",
+        name="Bad Guy",
+        reply_email=f"{random_string(8)}@{EMAIL_DOMAIN}",
+        block_forward=False,
+        commit=True,
+    )
+    assert contact is not None
+
+    # Now enable a global blacklist that would match this sender.
+    GlobalSenderBlacklist.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+
+    msg = EmailMessage()
+    msg[headers.FROM] = "Bad Guy <bad@spam.test>"
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = "hello"
+    msg.set_content("test")
+
+    envelope = Envelope()
+    envelope.mail_from = "bad@spam.test"
+    envelope.rcpt_tos = [alias.email]
+
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E200
+
+    email_logs = (
+        EmailLog.filter_by(user_id=user.id, alias_id=alias.id)
+        .order_by(EmailLog.id.desc())
+        .all()
+    )
+    assert len(email_logs) == 1
+    assert email_logs[0].blocked is False
+
 
 def test_is_automatic_out_of_office():
     msg = EmailMessage()
