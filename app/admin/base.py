@@ -14,7 +14,7 @@ from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum, Fido
 
-_ADMIN_GAP = 900
+_ADMIN_GAP = 86400
 
 
 def _has_valid_admin_time() -> bool:
