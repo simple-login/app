@@ -14,8 +14,6 @@ from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum, Fido
 
-_ADMIN_GAP = 43200  # 12 hours
-
 
 def _has_valid_admin_time() -> bool:
     if config.ADMIN_FIDO_REQUIRED == "none":
@@ -23,7 +21,7 @@ def _has_valid_admin_time() -> bool:
     admin_time = session.get("admin_time")
     if not admin_time:
         return False
-    if (time() - int(admin_time)) > _ADMIN_GAP:
+    if (time() - int(admin_time)) > config.ADMIN_GRACE_PERIOD:
         return False
     if config.ADMIN_FIDO_REQUIRED == "hardware" and not session.get(
         "admin_hardware_auth"
