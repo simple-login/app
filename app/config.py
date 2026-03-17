@@ -720,5 +720,6 @@ PARTNER_SUPPORT_URL = os.environ.get("PARTNER_SUPPORT_URL", None)
 ADMIN_FIDO_REQUIRED = os.environ.get("ADMIN_FIDO_REQUIRED", "none")
 if ADMIN_FIDO_REQUIRED not in ("none", "any", "hardware"):
     raise ValueError("ADMIN_FIDO_REQUIRED is not a valid value")
+ADMIN_GRACE_PERIOD = int(os.environ.get("ADMIN_GRACE_PERIOD", 43200))
 
 DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = "DROP_PGP_KEY_ATTACHMENTS_ON_REPLY" in os.environ
