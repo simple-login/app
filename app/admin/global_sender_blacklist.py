@@ -13,3 +13,10 @@ class GlobalSenderBlacklistAdmin(SLModelView):
     column_searchable_list = ("pattern", "comment")
     column_filters = ("enabled",)
     column_editable_list = ("enabled", "comment")
+
+    # Help text for admins when adding patterns
+    form_args = {
+        "pattern": {
+            "description": r"Regex, i.e. `@domain\.com`",
+        }
+    }

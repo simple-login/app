@@ -218,44 +218,22 @@ def get_or_create_contact(
     # Decide whether we already have a matching contact BEFORE applying the global sender blacklist.
     # This allows users to whitelist a specific sender by manually creating/enabling a Contact.
     sanitized_contact_email = sanitize_email(contact_email, not_lower=True)
-    existing_contact = Contact.get_by(alias_id=alias.id, website_email=sanitized_contact_email)
-    if existing_contact is not None:
-        # Still update name/mail_from if needed (create_contact handles that).
-        contact_result = contact_utils.create_contact(
-            email=contact_email,
-            alias=alias,
-            name=contact_name,
-            mail_from=mail_from,
-            allow_empty_email=True,
-            automatic_created=True,
-            from_partner=False,
-        )
-        if contact_result.error:
-            LOG.w(f"Error creating contact: {contact_result.error.value}")
-        return contact_result.contact
+    existing_contact = Contact.get_by(
+        alias_id=alias.id, website_email=sanitized_contact_email
+    )
 
-    # No existing contact: only now consult the global blacklist.
+    # Only consult the global blacklist if NO matching contact exists yet.
     # If matched, create a disabled Contact; the existing block_forward logic will refuse the email.
-    if is_sender_globally_blocked(mail_from, sanitized_contact_email):
-        LOG.i(
-            "Sender matched global sender blacklist; creating disabled contact: mail_from=%s header_from=%s alias=%s",
-            mail_from,
-            sanitized_contact_email,
-            alias,
-        )
-        contact_result = contact_utils.create_contact(
-            email=contact_email,
-            alias=alias,
-            name=contact_name,
-            mail_from=mail_from,
-            allow_empty_email=True,
-            automatic_created=True,
-            block_forward=True,
-            from_partner=False,
-        )
-        if contact_result.error:
-            LOG.w(f"Error creating contact: {contact_result.error.value}")
-        return contact_result.contact
+    block_forward = False
+    if existing_contact is None:
+        block_forward = is_sender_globally_blocked(mail_from, sanitized_contact_email)
+        if block_forward:
+            LOG.i(
+                "Sender matched global sender blacklist; creating disabled contact: mail_from=%s header_from=%s alias=%s",
+                mail_from,
+                sanitized_contact_email,
+                alias,
+            )
 
     contact_result = contact_utils.create_contact(
         email=contact_email,
@@ -264,7 +242,7 @@ def get_or_create_contact(
         mail_from=mail_from,
         allow_empty_email=True,
         automatic_created=True,
-        block_forward=False,
+        block_forward=block_forward,
         from_partner=False,
     )
     if contact_result.error:
