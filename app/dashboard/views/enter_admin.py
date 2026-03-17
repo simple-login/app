@@ -16,8 +16,6 @@ from app.log import LOG
 from app.models import Fido
 from app.utils import sanitize_next_url
 
-_ADMIN_GAP = 900
-
 
 class FidoTokenForm(FlaskForm):
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
@@ -62,7 +60,7 @@ def enter_admin():
             and authenticator_attachment != "cross-platform"
         ):
             LOG.w(
-                "Admin FIDO hardware check failed: authenticatorAttachment=%s",
+                f"Admin {current_user} FIDO hardware check failed: authenticatorAttachment=%s",
                 authenticator_attachment,
             )
             flash(
@@ -95,7 +93,7 @@ def enter_admin():
             )
             new_sign_count = webauthn_assertion_response.verify()
         except Exception as e:
-            LOG.w("Admin FIDO verification failed: %s", e)
+            LOG.w(f"Admin {current_user} FIDO verification failed: %s", e)
             flash("Key verification failed.", "warning")
             return redirect(
                 url_for("dashboard.enter_admin", next=request.args.get("next"))
@@ -107,7 +105,7 @@ def enter_admin():
         session["admin_time"] = int(time())
         session["admin_hardware_auth"] = authenticator_attachment == "cross-platform"
 
-        LOG.d("Admin FIDO auth success for user %s", current_user.id)
+        LOG.d(f"Admin {current_user} FIDO auth success for user %s", current_user.id)
 
         if next_url:
             return redirect(next_url)
