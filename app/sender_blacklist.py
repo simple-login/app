@@ -71,7 +71,6 @@ def is_sender_blocked_for_user(user_id: int | None, *candidates: str) -> bool:
                     return True
             except Exception:
                 # Never crash the SMTP handler because of a bad regex.
-                # Never crash the SMTP handler because of a bad regex.
                 # (Global or user entry — both are user-provided.)
                 LOG.exception(
                     "Sender blacklist regex failed: user_id=%s pattern=%s candidate=%s",

@@ -337,6 +337,13 @@ def setting():
         .all()
     )
 
+    global_sender_blacklist_entries = (
+        Session.query(GlobalSenderBlacklist)
+        .filter(GlobalSenderBlacklist.user_id.is_(None))
+        .order_by(GlobalSenderBlacklist.id.asc())
+        .all()
+    )
+
     return render_template(
         "dashboard/setting.html",
         csrf_form=csrf_form,
@@ -360,4 +367,5 @@ def setting():
         connect_with_proton=CONNECT_WITH_PROTON,
         can_unlink_proton_account=can_unlink_proton_account(current_user),
         user_sender_blacklist_entries=user_sender_blacklist_entries,
+        global_sender_blacklist_entries=global_sender_blacklist_entries,
     )
