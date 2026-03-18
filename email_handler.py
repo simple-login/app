@@ -153,7 +153,7 @@ from app.handler.spamd_result import (
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
-from app.sender_blacklist import is_sender_globally_blocked
+from app.sender_blacklist import is_sender_blocked_for_user
 from app.mail_sender import sl_sendmail
 from app.mailbox_utils import (
     get_mailbox_for_reply_phase,
@@ -226,10 +226,12 @@ def get_or_create_contact(
     # If matched, create a disabled Contact; the existing block_forward logic will refuse the email.
     block_forward = False
     if existing_contact is None:
-        block_forward = is_sender_globally_blocked(mail_from, sanitized_contact_email)
+        block_forward = is_sender_blocked_for_user(
+            alias.user_id, mail_from, sanitized_contact_email
+        )
         if block_forward:
             LOG.i(
-                "Sender matched global sender blacklist; creating disabled contact: mail_from=%s header_from=%s alias=%s",
+                "Sender matched sender blacklist (global or user); creating disabled contact: mail_from=%s header_from=%s alias=%s",
                 mail_from,
                 sanitized_contact_email,
                 alias,

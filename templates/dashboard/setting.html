@@ -259,6 +259,48 @@
           </div>
         </div>
         <!-- END Sender Format -->
+
+        <!-- Sender blacklist (per user) -->
+        <div class="card" id="sender-blacklist">
+          <div class="card-body">
+            <div class="card-title">Sender blacklist</div>
+            <div class="mb-3">
+              Automatically block new Contacts (and therefore forwarding) when the sender matches a blacklist pattern.
+              <br />
+              Patterns are regular expressions (regex) and are checked with a <code>search()</code>-style match against the full sender address.
+              <br />
+              Examples: <code>@spamdomain\.com$</code>, <code>^no-?reply@.*</code>
+              <br />
+              Note: if you already have a Contact for that sender, it will not be blocked (existing "exception" logic remains).
+            </div>
+
+            <form method="post" action="#sender-blacklist" class="form-inline mb-3">
+              {{ csrf_form.csrf_token }}
+              <input type="hidden" name="form-name" value="user-sender-blacklist-add">
+              <input type="text" name="pattern" class="form-control mr-sm-2" placeholder="Regex pattern" style="min-width: 320px;">
+              <button type="submit" class="btn btn-outline-primary">Add</button>
+            </form>
+
+            {% if user_sender_blacklist_entries and user_sender_blacklist_entries|length > 0 %}
+              <ul class="mb-0">
+                {% for entry in user_sender_blacklist_entries %}
+                  <li>
+                    <code>{{ entry.pattern }}</code>
+                    <form method="post" action="#sender-blacklist" style="display:inline">
+                      {{ csrf_form.csrf_token }}
+                      <input type="hidden" name="form-name" value="user-sender-blacklist-delete">
+                      <input type="hidden" name="entry-id" value="{{ entry.id }}">
+                      <button type="submit" class="btn btn-sm btn-link text-danger">Delete</button>
+                    </form>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-muted">No entries yet.</div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- END Sender blacklist -->
         <!-- Reverse-alias replacement -->
         <div class="card" id="reverse-alias-replacement-section">
           <div class="card-body">

@@ -39,6 +39,7 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
     UserAliasDeleteAction,
+    GlobalSenderBlacklist,
 )
 from app.proton.proton_unlink import can_unlink_proton_account
 from app.utils import (
@@ -285,6 +286,39 @@ def setting():
             Session.commit()
             flash("Your preference has been updated", "success")
 
+        elif request.form.get("form-name") == "user-sender-blacklist-add":
+            pattern = (request.form.get("pattern") or "").strip()
+            if not pattern:
+                flash("Pattern cannot be empty", "warning")
+                return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
+            GlobalSenderBlacklist.create(
+                user_id=current_user.id,
+                pattern=pattern,
+                enabled=True,
+                comment=None,
+                commit=True,
+            )
+            flash("Sender blacklist entry added", "success")
+            return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
+        elif request.form.get("form-name") == "user-sender-blacklist-delete":
+            try:
+                entry_id = int(request.form.get("entry-id"))
+            except Exception:
+                flash("Invalid request", "warning")
+                return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
+            entry = GlobalSenderBlacklist.get_by(id=entry_id)
+            if entry is None or entry.user_id != current_user.id:
+                flash("Not found", "warning")
+                return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
+            Session.delete(entry)
+            Session.commit()
+            flash("Sender blacklist entry deleted", "success")
+            return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
     manual_sub = ManualSubscription.get_by(user_id=current_user.id)
     apple_sub = AppleSubscription.get_by(user_id=current_user.id)
     coinbase_sub = CoinbaseSubscription.get_by(user_id=current_user.id)
@@ -295,6 +329,13 @@ def setting():
     partner_sub_name = get_partner_subscription_and_name(current_user.id)
     if partner_sub_name:
         partner_sub, partner_name = partner_sub_name
+
+    user_sender_blacklist_entries = (
+        Session.query(GlobalSenderBlacklist)
+        .filter(GlobalSenderBlacklist.user_id == current_user.id)
+        .order_by(GlobalSenderBlacklist.id.asc())
+        .all()
+    )
 
     return render_template(
         "dashboard/setting.html",
@@ -318,4 +359,5 @@ def setting():
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
         connect_with_proton=CONNECT_WITH_PROTON,
         can_unlink_proton_account=can_unlink_proton_account(current_user),
+        user_sender_blacklist_entries=user_sender_blacklist_entries,
     )

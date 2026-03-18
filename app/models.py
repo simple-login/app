@@ -3685,9 +3685,17 @@ class GlobalSenderBlacklist(Base, ModelMixin):
 
     __tablename__ = "global_sender_blacklist"
 
-    pattern = sa.Column(sa.String(512), unique=True, nullable=False)
+    # NULL user_id => global blacklist entry (admin-managed)
+    # non-NULL user_id => per-user blacklist entry (user-managed)
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+
+    pattern = sa.Column(sa.String(512), nullable=False)
     enabled = sa.Column(sa.Boolean, nullable=False, default=True, server_default="1")
     comment = sa.Column(sa.Text, nullable=True)
+
+    user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_global_sender_blacklist_user_id", "user_id"),)
 
 
 # region Phone
