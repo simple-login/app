@@ -10,7 +10,7 @@ from app.regex_utils import regex_search
 
 # Cache enabled patterns briefly to avoid a DB query per inbound email.
 # Admin changes should take effect quickly but don't need to be instant.
-@cached(cache=TTLCache(maxsize=1, ttl=30))
+@cached(cache=TTLCache(maxsize=128, ttl=30))
 def _get_enabled_global_patterns() -> list[str]:
     return [
         r.pattern
@@ -25,7 +25,7 @@ def _get_enabled_global_patterns() -> list[str]:
 
 
 # Per-user cache: keep it small-ish but avoid a DB query per email per user.
-@cached(cache=TTLCache(maxsize=1024, ttl=30))
+@cached(cache=TTLCache(maxsize=128, ttl=30))
 def _get_enabled_user_patterns(user_id: int) -> list[str]:
     return [
         r.pattern
@@ -80,9 +80,3 @@ def is_sender_blocked_for_user(user_id: int | None, *candidates: str) -> bool:
                 )
 
     return False
-
-
-def is_sender_globally_blocked(*candidates: str) -> bool:
-    """Backwards-compatible helper (global-only)."""
-
-    return is_sender_blocked_for_user(None, *candidates)

@@ -339,7 +339,10 @@ def setting():
 
     global_sender_blacklist_entries = (
         Session.query(GlobalSenderBlacklist)
-        .filter(GlobalSenderBlacklist.user_id.is_(None))
+        .filter(
+            GlobalSenderBlacklist.enabled.is_(True),
+            GlobalSenderBlacklist.user_id.is_(None),
+        )
         .order_by(GlobalSenderBlacklist.id.asc())
         .all()
     )

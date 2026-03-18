@@ -269,9 +269,9 @@
               <br />
               Patterns are regular expressions (regex) and are checked with a <code>search()</code>-style match against the full sender address.
               <br />
-              Examples: <code>@spamdomain\.com$</code>, <code>^no-?reply@.*</code>
+              Examples: <code>@(spam|junk)-?domain\.com$</code>, <code>^no-?reply@.*</code>
               <br />
-              Note: if a Contact already exists for that specific sender, it keeps its current status. This can be used to create exceptions (allow/deny) per sender.
+              Note: if a Contact already exists for that specific sender, it keeps its current status. This can be used to create allow-exceptions.
             </div>
 
             <form method="post" action="#sender-blacklist" class="form-inline mb-3">
@@ -299,25 +299,16 @@
               <div class="text-muted">No entries yet.</div>
             {% endif %}
 
-            <hr />
-            <div class="mb-2"><b>Global blacklist (read-only)</b></div>
             {% if global_sender_blacklist_entries and global_sender_blacklist_entries|length > 0 %}
-              <ul class="mb-0">
-                {% for entry in global_sender_blacklist_entries %}
-                  <li>
-                    <code>{{ entry.pattern }}</code>
-                    {% if entry.enabled %}
-                      <span class="badge badge-success">enabled</span>
-                    {% else %}
-                      <span class="badge badge-secondary">disabled</span>
-                    {% endif %}
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <div class="text-muted">No global blacklist entries.</div>
+              <hr />
+              <div class="mb-2"><b>Global blacklist (admin-managed)</b></div>
+                <ul class="mb-0">
+                  {% for entry in global_sender_blacklist_entries %}
+                    <li><code>{{ entry.pattern }}</code></li>
+                  {% endfor %}
+                </ul>
+              </div>
             {% endif %}
-          </div>
         </div>
         <!-- END Sender blacklist -->
         <!-- Reverse-alias replacement -->

@@ -20,21 +20,17 @@ class GlobalSenderBlacklistAdmin(SLModelView):
 
     def get_query(self):
         return (
-            super()
-            .get_query()
-            .filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
+            super().get_query().filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
         )
 
     def get_count_query(self):
         return (
-            super()
-            .get_count_query()
-            .filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
+            super().get_count_query().filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
         )
 
     # Help text for admins when adding patterns
     form_args = {
         "pattern": {
-            "description": r"Regex, i.e. `@domain\.com`",
+            "description": r"Regex, i.e. `@domain\.com$`",
         }
     }
