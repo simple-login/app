@@ -361,6 +361,13 @@ class Fido(Base, ModelMixin):
     sign_count = sa.Column(sa.BigInteger(), nullable=False)
     name = sa.Column(sa.String(128), nullable=False, unique=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
+    # Credential metadata for debugging and proper authentication routing
+    credential_type = sa.Column(sa.String(32), nullable=True)
+    authenticator_attachment = sa.Column(sa.String(32), nullable=True)
+    transports = sa.Column(sa.JSON(), nullable=True)  # JSON array, e.g. ["usb","nfc"]
+    aaguid = sa.Column(
+        sa.String(36), nullable=True
+    )  # UUID format, identifies device model
 
     __table_args__ = (sa.Index("ix_fido_user_id", "user_id"),)
 

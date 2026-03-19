@@ -27,6 +27,23 @@ from app.models import User, Fido, MfaBrowser
 from app.utils import sanitize_next_url
 
 
+def _backfill_fido_metadata(fido_key: Fido, sk_assertion: dict) -> None:
+    """Backfill credential metadata that was not stored at registration time."""
+    changed = False
+    if fido_key.credential_type is None:
+        credential_type = sk_assertion.get("type")
+        if credential_type:
+            fido_key.credential_type = credential_type
+            changed = True
+    if fido_key.authenticator_attachment is None:
+        authenticator_attachment = sk_assertion.get("authenticatorAttachment")
+        if authenticator_attachment:
+            fido_key.authenticator_attachment = authenticator_attachment
+            changed = True
+    if changed:
+        LOG.d(f"Backfilled metadata for fido credential_id={fido_key.credential_id}")
+
+
 class FidoTokenForm(FlaskForm):
     sk_assertion = HiddenField("sk_assertion", validators=[validators.DataRequired()])
     remember = BooleanField(
@@ -105,6 +122,7 @@ def fido():
             auto_activate = False
         else:
             user.fido_sign_count = new_sign_count
+            _backfill_fido_metadata(fido_key, sk_assertion)
             Session.commit()
             del session[MFA_USER_ID]
 
@@ -155,13 +173,18 @@ def fido():
         webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
-    try:
-        # HACK: We need to upgrade to webauthn > 1 so it can support specifying the transports
-        for credential in webauthn_assertion_options["allowCredentials"]:
-            del credential["transports"]
-    except KeyError:
-        # Should never happen but...
-        pass
+    # Inject stored transports per credential, falling back to removing the field
+    # if none are stored (keys registered before metadata collection).
+    fido_by_credential_id = {fido.credential_id: fido for fido in fidos}
+    for credential in webauthn_assertion_options.get("allowCredentials", []):
+        fido = fido_by_credential_id.get(credential.get("id"))
+        if fido and fido.transports:
+            try:
+                credential["transports"] = json.loads(fido.transports)
+            except Exception:
+                del credential["transports"]
+        else:
+            credential.pop("transports", None)
 
     return render_template(
         "auth/fido.html",
