@@ -1,7 +1,9 @@
 import json
 import secrets
+import struct
 import uuid
 
+import cbor2
 import webauthn
 from flask import render_template, flash, redirect, url_for, session
 from flask_login import login_required, current_user
@@ -15,6 +17,31 @@ from app.db import Session
 from app.log import LOG
 from app.models import Fido, RecoveryCode
 from app.user_settings import regenerate_user_alternative_id
+
+
+def _extract_aaguid(att_obj_b64: str) -> str | None:
+    """Extract the AAGUID from the attestation object's authData (bytes 37-53)."""
+    try:
+        # webauthn.py uses _webauthn_b64_decode which handles urlsafe base64
+        padding = 4 - len(att_obj_b64) % 4
+        if padding != 4:
+            att_obj_b64 += "=" * padding
+        import base64
+
+        raw = base64.urlsafe_b64decode(att_obj_b64)
+        att_obj = cbor2.loads(raw)
+        auth_data = att_obj.get("authData", b"")
+        if len(auth_data) < 53:
+            return None
+        flags = struct.unpack("!B", auth_data[32:33])[0]
+        # AT flag (bit 6) indicates attested credential data is present
+        if not (flags & 0x40):
+            return None
+        aaguid_bytes = auth_data[37:53]
+        return str(uuid.UUID(bytes=aaguid_bytes))
+    except Exception as e:
+        LOG.w(f"Failed to extract AAGUID: {e}")
+        return None
 
 
 class FidoTokenForm(FlaskForm):
@@ -64,6 +91,7 @@ def fido_setup():
             current_user.fido_uuid = fido_uuid
             Session.flush()
 
+        transports = sk_assertion.get("transports")
         Fido.create(
             credential_id=str(fido_credential.credential_id, "utf-8"),
             uuid=fido_uuid,
@@ -71,6 +99,10 @@ def fido_setup():
             sign_count=fido_credential.sign_count,
             name=fido_token_form.key_name.data,
             user_id=current_user.id,
+            credential_type=sk_assertion.get("type"),
+            authenticator_attachment=sk_assertion.get("authenticatorAttachment"),
+            transports=transports if isinstance(transports, list) else None,
+            aaguid=_extract_aaguid(sk_assertion.get("attObj", "")),
         )
         regenerate_user_alternative_id(current_user)
         Session.commit()

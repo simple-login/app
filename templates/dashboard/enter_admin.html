@@ -31,6 +31,7 @@
         {{ fido_token_form.sk_assertion(class="form-control", placeholder="") }}
         <div class="text-center mt-3">
           <button id="btnVerifyKey"
+                  type="button"
                   class="btn btn-lg btn-danger"
                   onclick="verifyAdminKey();">Use your security key</button>
         </div>
@@ -58,7 +59,6 @@
           }
 
           const skAssertion = transformAssertionForServer(assertion);
-          skAssertion.authenticatorAttachment = assertion.authenticatorAttachment || null;
           $('#sk_assertion').val(JSON.stringify(skAssertion));
           $('#formVerifyKey').submit();
         }
