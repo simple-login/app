@@ -1,6 +1,5 @@
 import json
 import secrets
-from time import time
 
 import webauthn
 from flask import (
@@ -15,6 +14,7 @@ from flask import (
 )
 from flask_login import login_user
 from flask_wtf import FlaskForm
+from time import time
 from wtforms import HiddenField, validators, BooleanField
 
 from app.auth.base import auth_bp
@@ -25,23 +25,6 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import User, Fido, MfaBrowser
 from app.utils import sanitize_next_url
-
-
-def _backfill_fido_metadata(fido_key: Fido, sk_assertion: dict) -> None:
-    """Backfill credential metadata that was not stored at registration time."""
-    changed = False
-    if fido_key.credential_type is None:
-        credential_type = sk_assertion.get("type")
-        if credential_type:
-            fido_key.credential_type = credential_type
-            changed = True
-    if fido_key.authenticator_attachment is None:
-        authenticator_attachment = sk_assertion.get("authenticatorAttachment")
-        if authenticator_attachment:
-            fido_key.authenticator_attachment = authenticator_attachment
-            changed = True
-    if changed:
-        LOG.d(f"Backfilled metadata for fido credential_id={fido_key.credential_id}")
 
 
 class FidoTokenForm(FlaskForm):
@@ -122,7 +105,6 @@ def fido():
             auto_activate = False
         else:
             user.fido_sign_count = new_sign_count
-            _backfill_fido_metadata(fido_key, sk_assertion)
             Session.commit()
             del session[MFA_USER_ID]
 
