@@ -76,7 +76,6 @@ from app.monitor_utils import send_version_event
 from app.newsletter_utils import send_newsletter_to_user
 from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
-from app.payments.coinbase import setup_coinbase_commerce
 from app.payments.paddle import setup_paddle_callback
 from app.phone.base import phone_bp
 from app.redis_services import initialize_redis_services
@@ -154,7 +153,6 @@ def create_app() -> Flask:
 
     init_admin(app)
     setup_paddle_callback(app)
-    setup_coinbase_commerce(app)
     setup_do_not_track(app)
     register_custom_commands(app)
 
