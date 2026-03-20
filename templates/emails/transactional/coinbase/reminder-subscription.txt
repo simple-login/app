@@ -1,7 +1,9 @@
 Your subscription ends on {{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}
 
-You can extend your subscription on
-{{ extend_subscription_url }}
+Due to Coinbase removing Coinbase Commerce, which SimpleLogin had been using until now,
+you can no longer extend your subscription using cryptocurrency.
+
+Please contact us on https://app.simplelogin.io/dashboard/support to renew your subscription.
 
 Best,
 SimpleLogin team.
