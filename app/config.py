@@ -451,13 +451,6 @@ NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
 # list of no reply addresses
 NOREPLIES = sl_getenv("NOREPLIES", list) or [NOREPLY]
 
-COINBASE_WEBHOOK_SECRET = os.environ.get("COINBASE_WEBHOOK_SECRET")
-COINBASE_CHECKOUT_ID = os.environ.get("COINBASE_CHECKOUT_ID")
-COINBASE_API_KEY = os.environ.get("COINBASE_API_KEY")
-try:
-    COINBASE_YEARLY_PRICE = float(os.environ["COINBASE_YEARLY_PRICE"])
-except Exception:
-    COINBASE_YEARLY_PRICE = 30.00
 
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 
