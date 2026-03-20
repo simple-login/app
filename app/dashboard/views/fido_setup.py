@@ -19,7 +19,7 @@ from app.models import Fido, RecoveryCode
 from app.user_settings import regenerate_user_alternative_id
 
 
-def _extract_aaguid(att_obj_b64: str) -> str | None:
+def extract_aaguid(att_obj_b64: str) -> str | None:
     """Extract the AAGUID from the attestation object's authData (bytes 37-53)."""
     try:
         # webauthn.py uses _webauthn_b64_decode which handles urlsafe base64
@@ -102,7 +102,7 @@ def fido_setup():
             credential_type=sk_assertion.get("type"),
             authenticator_attachment=sk_assertion.get("authenticatorAttachment"),
             transports=transports if isinstance(transports, list) else None,
-            aaguid=_extract_aaguid(sk_assertion.get("attObj", "")),
+            aaguid=extract_aaguid(sk_assertion.get("attObj", "")),
         )
         regenerate_user_alternative_id(current_user)
         Session.commit()
