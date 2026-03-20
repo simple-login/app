@@ -51,7 +51,10 @@ def coupon_route():
     coinbase_subscription: CoinbaseSubscription = CoinbaseSubscription.get_by(
         user_id=current_user.id
     )
-    if coinbase_subscription and coinbase_subscription.is_active():
+    # allow coinbase user to apply coupon 30d before their sub expires
+    if coinbase_subscription and coinbase_subscription.end_at > arrow.now().shift(
+        days=30
+    ):
         can_use_coupon = False
 
     if coupon_form.validate_on_submit():

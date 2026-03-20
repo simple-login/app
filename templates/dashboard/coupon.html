@@ -27,7 +27,7 @@
 <div class="mb-4">Please enter the coupon here to upgrade your account or extend your current subscription.</div>
 <form method="post">
 {{ coupon_form.csrf_token }}
-{{ coupon_form.code(class="form-control", placeholder="Licence Code") }}
+{{ coupon_form.code(class="form-control", placeholder="Coupon Code") }}
 {{ render_field_errors(coupon_form.code) }}
 <button class="btn btn-success mt-2">Apply</button>
 </form>
