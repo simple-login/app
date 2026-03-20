@@ -11,7 +11,16 @@
     <b>{{ coinbase_subscription.end_at.format("YYYY-MM-DD") }}</b>
   {% endcall %}
 
-  {{ render_button("Extend your subscription", extend_subscription_url) }}
+  {% call text() %}
+    Due to Coinbase removing Coinbase Commerce, which SimpleLogin had been using until now,
+    you can no longer extend your subscription using cryptocurrency.
+  {% endcall %}
+
+  {% call text() %}
+    Please <a href="https://app.simplelogin.io/dashboard/support">contact us</a>
+    to renew your subscription.
+  {% endcall %}
+
   {{ render_text('Best,
     <br />
     SimpleLogin Team.') }}
