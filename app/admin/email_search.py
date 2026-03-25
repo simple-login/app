@@ -72,13 +72,19 @@ class EmailSearchResult:
 
     @staticmethod
     def search_aliases(query: str) -> EmailSearchResult:
-        """Search for aliases by exact match or POSIX regex."""
+        """Search for aliases by exact email match or alias ID."""
         output = EmailSearchResult()
         output.query = query
         output.search_type = EmailSearchResult.SEARCH_TYPE_ALIAS
 
-        # Exact match only for alias search (no regex support)
-        alias = Alias.get_by(email=query)
+        # Search by alias ID if query is numeric, otherwise by exact email match
+        alias = None
+        try:
+            alias_id = int(query)
+            alias = Alias.get(alias_id)
+        except ValueError:
+            alias = Alias.get_by(email=query)
+
         if alias:
             output.aliases = [alias]
             output.aliases_found_by_regex = False
@@ -88,30 +94,30 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
+        else:
+            # Search deleted aliases (exact match only)
+            deleted_alias = DeletedAlias.get_by(email=query)
+            if deleted_alias:
+                output.deleted_aliases = [deleted_alias]
+                output.deleted_aliases_found_by_regex = False
+                output.deleted_alias_audit_log = (
+                    AliasAuditLog.filter_by(alias_email=deleted_alias.email)
+                    .order_by(AliasAuditLog.created_at.desc())
+                    .all()
+                )
+                output.no_match = False
 
-        # Search deleted aliases (exact match only)
-        deleted_alias = DeletedAlias.get_by(email=query)
-        if deleted_alias:
-            output.deleted_aliases = [deleted_alias]
-            output.deleted_aliases_found_by_regex = False
-            output.deleted_alias_audit_log = (
-                AliasAuditLog.filter_by(alias_email=deleted_alias.email)
-                .order_by(AliasAuditLog.created_at.desc())
-                .all()
-            )
-            output.no_match = False
-
-        # Search domain deleted aliases (exact match only)
-        domain_deleted_alias = DomainDeletedAlias.get_by(email=query)
-        if domain_deleted_alias:
-            output.domain_deleted_aliases = [domain_deleted_alias]
-            output.domain_deleted_aliases_found_by_regex = False
-            output.domain_deleted_alias_audit_log = (
-                AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
-                .order_by(AliasAuditLog.created_at.desc())
-                .all()
-            )
-            output.no_match = False
+            # Search domain deleted aliases (exact match only)
+            domain_deleted_alias = DomainDeletedAlias.get_by(email=query)
+            if domain_deleted_alias:
+                output.domain_deleted_aliases = [domain_deleted_alias]
+                output.domain_deleted_aliases_found_by_regex = False
+                output.domain_deleted_alias_audit_log = (
+                    AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
+                    .order_by(AliasAuditLog.created_at.desc())
+                    .all()
+                )
+                output.no_match = False
 
         return output
 

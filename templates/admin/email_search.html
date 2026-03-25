@@ -948,7 +948,12 @@
             {% endif %}
             <tr>
               <td class="text-muted text-nowrap py-1">Status:</td>
-              <td class="py-1">{{ badge_status(alias.enabled, 'Enabled', 'Disabled', 'success', 'danger') }}</td>
+              <td class="py-1">
+                {{ badge_status(alias.enabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+                {% if alias.is_trashed() %}
+                  <span class="badge badge-warning ml-1"><i class="fa fa-trash mr-1"></i>Trashed</span>
+                {% endif %}
+              </td>
             </tr>
             <tr>
               <td class="text-muted text-nowrap py-1">User:</td>
@@ -2889,7 +2894,7 @@
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                   <label class="btn btn-outline-primary {{ 'active' if search_type == 'email' else '' }}">
                     <input type="radio" name="search_type" value="email" {{ 'checked' if search_type == 'email' else '' }}>
-                    <i class="fa fa-envelope mr-1"></i>Email
+                    <i class="fa fa-user mr-1"></i>User
                   </label>
                   <label class="btn btn-outline-primary {{ 'active' if search_type == 'alias' else '' }}">
                     <input type="radio" name="search_type" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
@@ -2910,7 +2915,7 @@
                      name="query"
                      id="query"
                      value="{{ query or '' }}"
-                     placeholder="{{ 'alias@example.com (exact match only)' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else ('POSIX regex pattern' if search_type == 'regex' else 'email@example.com or user ID (exact match only)')) }}">
+                     placeholder="{{ 'alias@example.com or alias ID' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else ('POSIX regex pattern' if search_type == 'regex' else 'email@example.com or user ID (exact match only)')) }}">
               <div class="input-group-append">
                 <button type="submit" class="btn btn-primary-modern" id="searchBtn">
                   <span class="search-icon"><i class="fa fa-search mr-1"></i>Search</span>
@@ -2921,7 +2926,7 @@
             <small class="form-text text-muted" id="search-help">
               {% if search_type == 'alias' %}
 
-                <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.
+                <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address or alias ID. Only exact matches are returned.
               {% elif search_type == 'partner' %}
                 <i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.
               {% elif search_type == 'regex' %}
@@ -3220,8 +3225,8 @@
 
       function updateSearchHelp(searchType) {
         if (searchType === 'alias') {
-          queryInput.placeholder = 'alias@example.com (exact match only)';
-          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Enter the full alias email address. Only exact matches are supported.';
+          queryInput.placeholder = 'alias@example.com or alias ID';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Enter the full alias email address or alias ID. Only exact matches are returned.';
         } else if (searchType === 'partner') {
           queryInput.placeholder = 'partner email or external user ID';
           searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.';
