@@ -104,6 +104,10 @@ const transformNewAssertionForServer = (newAssertion) => {
 
   const registrationClientExtensions = newAssertion.getClientExtensionResults();
 
+  const transports = (typeof newAssertion.response.getTransports === 'function')
+    ? newAssertion.response.getTransports()
+    : [];
+
   return {
     id: newAssertion.id,
     rawId: b64enc(rawId),
@@ -111,6 +115,8 @@ const transformNewAssertionForServer = (newAssertion) => {
     attObj: b64enc(attObj),
     clientData: b64enc(clientDataJSON),
     registrationClientExtensions: JSON.stringify(registrationClientExtensions),
+    authenticatorAttachment: newAssertion.authenticatorAttachment || null,
+    transports: transports,
   };
 };
 
@@ -134,5 +140,6 @@ const transformAssertionForServer = (newAssertion) => {
     clientData: b64RawEnc(clientDataJSON),
     signature: hexEncode(sig),
     assertionClientExtensions: JSON.stringify(assertionClientExtensions),
+    authenticatorAttachment: newAssertion.authenticatorAttachment || null,
   };
 };

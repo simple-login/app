@@ -1,6 +1,5 @@
 import json
 import secrets
-from time import time
 
 import webauthn
 from flask import (
@@ -15,6 +14,7 @@ from flask import (
 )
 from flask_login import login_user
 from flask_wtf import FlaskForm
+from time import time
 from wtforms import HiddenField, validators, BooleanField
 
 from app.auth.base import auth_bp
@@ -155,13 +155,18 @@ def fido():
         webauthn_users, challenge
     )
     webauthn_assertion_options = webauthn_assertion_options.assertion_dict
-    try:
-        # HACK: We need to upgrade to webauthn > 1 so it can support specifying the transports
-        for credential in webauthn_assertion_options["allowCredentials"]:
-            del credential["transports"]
-    except KeyError:
-        # Should never happen but...
-        pass
+    # Inject stored transports per credential, falling back to removing the field
+    # if none are stored (keys registered before metadata collection).
+    fido_by_credential_id = {fido.credential_id: fido for fido in fidos}
+    for credential in webauthn_assertion_options.get("allowCredentials", []):
+        fido = fido_by_credential_id.get(credential.get("id"))
+        if fido and fido.transports:
+            try:
+                credential["transports"] = json.loads(fido.transports)
+            except Exception:
+                del credential["transports"]
+        else:
+            credential.pop("transports", None)
 
     return render_template(
         "auth/fido.html",

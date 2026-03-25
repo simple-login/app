@@ -90,6 +90,7 @@ def change_plan(user: User, subscription_id: str, plan_id) -> (bool, str):
     )
     res = r.json()
     if not res["success"]:
+        LOG.d(f"Could not change plan for user {user} in paddle. Response is {res}")
         try:
             # "unable to complete the resubscription because we could not charge the customer for the resubscription"
             if res["error"]["code"] == 147:

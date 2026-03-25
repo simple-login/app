@@ -118,6 +118,13 @@ class AccountAlreadyLinkedToAnotherUserException(LinkException):
         super().__init__("This account is linked to another user")
 
 
+class EmailNotAllowed(LinkException):
+    def __init__(self):
+        super().__init__(
+            "The email used by this account is not allowed to be used for aliases"
+        )
+
+
 class AccountIsUsingAliasAsEmail(LinkException):
     def __init__(self):
         super().__init__("Your account has an alias as it's email address")

@@ -9,6 +9,7 @@ from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
 from app.models import RecoveryCode
+from app.user_settings import regenerate_user_alternative_id
 
 
 class OtpTokenForm(FlaskForm):
@@ -38,6 +39,7 @@ def mfa_setup():
         if totp.verify(token) and current_user.last_otp != token:
             current_user.enable_otp = True
             current_user.last_otp = token
+            regenerate_user_alternative_id(current_user)
             Session.commit()
             flash("MFA has been activated", "success")
             recovery_codes = RecoveryCode.generate(current_user)

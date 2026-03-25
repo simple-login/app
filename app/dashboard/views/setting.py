@@ -22,7 +22,6 @@ from app.config import (
 )
 from app.dashboard.base import dashboard_bp
 from app.db import Session
-from app.errors import ProtonPartnerNotSetUp
 from app.extensions import limiter
 from app.image_validation import detect_image_format, ImageFormat
 from app.log import LOG
@@ -37,12 +36,10 @@ from app.models import (
     SenderFormatEnum,
     CoinbaseSubscription,
     AppleSubscription,
-    PartnerUser,
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
     UserAliasDeleteAction,
 )
-from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import can_unlink_proton_account
 from app.utils import (
     random_string,
@@ -57,22 +54,6 @@ class SettingForm(FlaskForm):
 
 class PromoCodeForm(FlaskForm):
     code = StringField("Name", validators=[validators.DataRequired()])
-
-
-def get_proton_linked_account() -> Optional[str]:
-    # Check if the current user has a partner_id
-    try:
-        proton_partner_id = get_proton_partner().id
-    except ProtonPartnerNotSetUp:
-        return None
-
-    # It has. Retrieve the information for the PartnerUser
-    proton_linked_account = PartnerUser.get_by(
-        user_id=current_user.id, partner_id=proton_partner_id
-    )
-    if proton_linked_account is None:
-        return None
-    return proton_linked_account.partner_email
 
 
 def get_partner_subscription_and_name(
@@ -315,8 +296,6 @@ def setting():
     if partner_sub_name:
         partner_sub, partner_name = partner_sub_name
 
-    proton_linked_account = get_proton_linked_account()
-
     return render_template(
         "dashboard/setting.html",
         csrf_form=csrf_form,
@@ -338,6 +317,5 @@ def setting():
         FIRST_ALIAS_DOMAIN=FIRST_ALIAS_DOMAIN,
         ALIAS_RAND_SUFFIX_LENGTH=ALIAS_RANDOM_SUFFIX_LENGTH,
         connect_with_proton=CONNECT_WITH_PROTON,
-        proton_linked_account=proton_linked_account,
         can_unlink_proton_account=can_unlink_proton_account(current_user),
     )

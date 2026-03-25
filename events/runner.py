@@ -46,5 +46,5 @@ class Runner:
                 event.retry_count = event.retry_count + 1
                 Session.commit()
         except Exception as e:
-            LOG.warn(f"Exception processing event [id={event.id}]: {e}")
+            LOG.warning(f"Exception processing event [id={event.id}]: {e}")
             newrelic.agent.record_custom_metric("Custom/sync_event_failed", 1)

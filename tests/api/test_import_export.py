@@ -7,8 +7,8 @@ from app.models import (
     BatchImport,
     File,
 )
-from tests.utils_test_alias import alias_export
 from tests.utils import login, random_domain, random_token
+from tests.utils_test_alias import alias_export
 
 
 def test_export(flask_client):
@@ -139,3 +139,29 @@ def test_import(flask_client):
     # Others are sorted
     assert aliases[2].mailboxes[0] == mailbox2
     assert aliases[2].mailboxes[1] == mailbox1
+
+
+def test_import_invalid_mailbox_column(flask_client):
+    # Create user
+    user = login(flask_client)
+
+    # Check start state
+    assert len(Alias.filter_by(user_id=user.id).all()) == 1  # Onboarding alias
+
+    domain = random_domain()
+    # Create domain
+    CustomDomain.create(user_id=user.id, domain=domain, ownership_verified=True)
+    Session.commit()
+
+    alias_data = [
+        "alias,note,mailboxes",
+        f"ebay@{domain},Used on eBay",
+        f'facebook@{domain},"Used on Facebook, Instagram."',
+    ]
+
+    file = File.create(path=f"/{random_token()}", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id)
+
+    import_from_csv(batch_import, user, alias_data)
+
+    assert len(Alias.filter_by(user_id=user.id).all()) == 3  # +2

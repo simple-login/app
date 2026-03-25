@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% call text() %}
+    <h1>Your mailbox {{ mailbox.email }} needs attention</h1>
+  {% endcall %}
+
+  {% call text() %}
+    Hi,
+  {% endcall %}
+
+  {% call text() %}
+    We noticed something unusual with the setup of your mailbox <strong>{{ mailbox.email }}</strong> that could be associated with abuse.
+  {% endcall %}
+
+  {% if reason %}
+    {% call text() %}
+      <strong>Here's what we found:</strong> {{ reason }}
+    {% endcall %}
+  {% endif %}
+
+  {% call text() %}
+    To keep your account in good standing, please review your mailbox configuration.
+    If we don't hear from you or see changes, we may need to disable this mailbox,
+    which means you won't receive any emails forwarded to it.
+  {% endcall %}
+
+  {% call text() %}
+    If you believe this is a mistake or have any questions, please reach out to our support team - we're happy to help clarify things.
+  {% endcall %}
+
+  {% call text() %}
+    Best,
+    <br />
+    {{ SERVICE_PROVIDER }} Team.
+  {% endcall %}
+
+{% endblock %}

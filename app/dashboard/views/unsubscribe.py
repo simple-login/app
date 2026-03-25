@@ -1,15 +1,13 @@
 """
 Allow user to disable an alias or block a contact via the one click unsubscribe
 """
-
-from app.db import Session
-
-
 from flask import redirect, url_for, flash, request, render_template
 from flask_login import login_required, current_user
 
 from app import alias_utils
+from app.contact_utils import contact_toggle_block
 from app.dashboard.base import dashboard_bp
+from app.db import Session
 from app.handler.unsubscribe_encoder import UnsubscribeAction
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.models import Alias, Contact
@@ -60,9 +58,11 @@ def block_contact(contact_id):
 
     # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
     if request.method == "POST":
-        contact.block_forward = True
-        flash(f"Emails sent from {contact.website_email} are now blocked", "success")
-        Session.commit()
+        if contact.block_forward is False:
+            contact_toggle_block(contact)
+            flash(
+                f"Emails sent from {contact.website_email} are now blocked", "success"
+            )
 
         return redirect(
             url_for(

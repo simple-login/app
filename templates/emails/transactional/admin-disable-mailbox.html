@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% call text() %}
+    <h1>{{ mailbox.email }} has been disabled.</h1>
+  {% endcall %}
+
+  {% call text() %}
+    Your mailbox has been disabled by {{ SERVICE_PROVIDER }} administrators.
+    <br />
+    You will not receive emails forwarded to this mailbox while it is disabled.
+  {% endcall %}
+
+  {% call text() %}
+    If you believe this is an error or have any questions, please contact support.
+  {% endcall %}
+
+  {% call text() %}
+    Best,
+    <br />
+    {{ SERVICE_PROVIDER }} Team.
+  {% endcall %}
+
+{% endblock %}

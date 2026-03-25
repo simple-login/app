@@ -403,8 +403,20 @@
       in the last 14 days
       <a href="{{ url_for('dashboard.alias_log', alias_id=alias.id) }}"
          class="btn btn-sm btn-link">See All &nbsp;→</a>
-      {% if mailboxes|length > 1 %}
+      {% set has_admin_disabled_mailbox = namespace(value=false) %}
+      {% for mb in alias_info.mailboxes %}
+        {% if mb.is_admin_disabled() %}
+          {% set has_admin_disabled_mailbox.value = true %}
+        {% endif %}
+      {% endfor %}
+      {% if mailboxes|length > 1 or has_admin_disabled_mailbox.value %}
+        {% if has_admin_disabled_mailbox.value %}
 
+          <div class="alert alert-warning small-text mb-2">
+            <i class="fe fe-alert-triangle"></i>
+            The alias uses a mailbox disabled by an admin. Please change it to an active mailbox.
+          </div>
+        {% endif %}
         <div class="small-text">Current mailbox</div>
         <div class="d-flex">
           <div class="flex-grow-1 mr-2">
@@ -543,10 +555,9 @@
           let buttonText = "Delete it, I don't need it anymore";
 
           if (userAliasDeleteAction === "{{ UserAliasDeleteAction.MoveToTrash.name }}") {
-              let aliasTrashUrl = "{{ url_for('dashboard.alias_trash') }}";
-              title = `Trash ${alias};`
-              message = `Maybe you want to disable the alias instead? Once deleted, you will only be able to restore it for a limited time in your trash.<br><a href="${aliasTrashUrl}">See your trashed aliases now</a>`;
-              buttonText = "Trash it";
+              title = `Delete ${alias}`
+              message = `Maybe you want to disable the alias instead so you can easily enable it when needed.`;
+              buttonText = "Move to Trash";
           }
 
           if (aliasDomainTrashUrl !== undefined) {

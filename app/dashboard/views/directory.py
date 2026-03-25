@@ -27,7 +27,12 @@ from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 class NewDirForm(FlaskForm):
     name = StringField(
-        "name", validators=[validators.DataRequired(), validators.Length(min=3)]
+        "name",
+        validators=[
+            validators.DataRequired(),
+            validators.Length(min=3),
+            validators.Regexp(r"^[a-zA-Z0-9][a-zA-Z0-9-_]+$"),
+        ],
     )
 
 
@@ -57,7 +62,7 @@ def directory():
         .all()
     )
 
-    mailboxes = current_user.mailboxes()
+    mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
     new_dir_form = NewDirForm()
     toggle_dir_form = ToggleDirForm()
@@ -181,7 +186,7 @@ def directory():
                 return redirect(url_for("dashboard.directory"))
 
             if new_dir_form.validate():
-                new_dir_name = new_dir_form.name.data.lower()
+                new_dir_name = new_dir_form.name.data.lower().strip()
 
                 if Directory.get_by(name=new_dir_name):
                     flash(f"{new_dir_name} already used", "warning")
@@ -227,6 +232,12 @@ def directory():
                                 ):
                                     flash(
                                         "Something went wrong, please retry", "warning"
+                                    )
+                                    return redirect(url_for("dashboard.directory"))
+                                if mailbox.is_admin_disabled():
+                                    flash(
+                                        "Cannot assign admin-disabled mailbox. Please contact support.",
+                                        "error",
                                     )
                                     return redirect(url_for("dashboard.directory"))
                                 mailboxes.append(mailbox)

@@ -1,303 +1,3282 @@
 {% extends 'admin/master.html' %}
 
-{% macro show_user(user) -%}
-  <h4>User {{ user.email }} with ID {{ user.id }}.</h4>
+{% macro highlight_email(email, query, is_regex) -%}
+  {% if is_regex %}
+
+    <mark>{{ email }}</mark>
+  {% else %}
+    {{ email }}
+  {% endif %}
+{%- endmacro %}
+{% macro badge_status(condition, true_text, false_text, true_class='success', false_class='danger') -%}
+  {% if condition %}
+
+    <span class="badge badge-{{ true_class }}">{{ true_text }}</span>
+  {% else %}
+    <span class="badge badge-{{ false_class }}">{{ false_text }}</span>
+  {% endif %}
+{%- endmacro %}
+{% macro copy_btn(text) -%}
+  <button type="button"
+          class="btn btn-sm btn-link p-0 ml-1 copy-btn"
+          data-copy="{{ text }}"
+          title="Copy to clipboard">
+    <i class="fa fa-copy text-muted"></i>
+  </button>
+{%- endmacro %}
+{% macro user_info_card(user) -%}
   {% set pu = helper.partner_user(user) %}
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">User ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Verified</th>
-        <th scope="col">Status</th>
-        <th scope="col">Paid</th>
-        <th scope="col">Premium</th>
-        <th>Subscription</th>
-        <th>Created At</th>
-        <th>Updated At</th>
-        <th>Connected with Proton account</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>
-          <a href="?query={{ user.email }}">{{ user.email }}</a>
-        </td>
-        {% if user.activated %}
+  {% set active_sub = user.get_active_subscription() %}
+  {% set sub_end = user.get_active_subscription_end() %}
+  <div class="row mb-4 user-info-row">
+    {# Account Information - 3/4 width #}
+    <div class="col-lg-9 mb-3 mb-lg-0">
+      <div class="card h-100">
+        <div class="card-header header-primary">
+          <h6 class="mb-0">
+            <i class="fa fa-id-card mr-2"></i>Account Information
+          </h6>
+        </div>
+        <div class="card-body py-3">
+          {# Row 1: Identity & Subscription #}
+          <div class="row mb-3 info-section">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <h6 class="section-title">Identity</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr>
+                  <td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td>
+                  <td class="py-1">
+                    <code>{{ user.id }}</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Email:</td>
+                  <td class="py-1">
+                    <a href="?query={{ user.email }}&search_type=email">{{ user.email }}</a>{{ copy_btn(user.email) }}
+                  </td>
+                </tr>
+                {% if user.name %}
 
-          <td class="text-success">Activated</td>
-        {% else %}
-          <td class="text-warning">Pending</td>
-        {% endif %}
-        {% if user.disabled %}
+                  <tr>
+                    <td class="text-muted text-nowrap py-1">Name:</td>
+                    <td class="py-1">{{ user.name }}</td>
+                  </tr>
+                {% endif %}
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Proton:</td>
+                  <td class="py-1">
+                    {% if pu %}
 
-          <td class="text-danger">Disabled</td>
-        {% else %}
-          <td class="text-success">Enabled</td>
-        {% endif %}
-        <td>{{ "yes" if user.is_paid() else "No" }}</td>
-        <td>{{ "yes" if user.is_premium() else "No" }}</td>
-        <td>{{ user.get_active_subscription() }}</td>
-        <td>{{ user.created_at }}</td>
-        <td>{{ user.updated_at }}</td>
-        {% if pu %}
+                      <a href="?query={{ pu.partner_email }}&search_type=partner">{{ pu.partner_email }}</a>{{ copy_btn(pu.partner_email) }}
+                      <br>
+                      <small class="text-muted"><a href="?query={{ pu.external_user_id }}&search_type=partner">{{ pu.external_user_id }}</a>{{ copy_btn(pu.external_user_id) }}</small>
+                    {% else %}
+                      <span class="text-muted">Not linked</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% if user.referral %}
 
-          <td class="flex">
-            <a href="?query={{ pu.partner_email }}">{{ pu.partner_email }}</a>
-            <form class="d-inline"
-                  action="{{ url_for("admin.email_search.delete_partner_link") }}"
-                  method="POST">
+                  <tr>
+                    <td class="text-muted text-nowrap py-1">Referral:</td>
+                    <td class="py-1">
+                      <code>{{ user.referral.code }}</code>
+                    </td>
+                  </tr>
+                {% endif %}
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6 class="section-title">Subscription</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr>
+                  <td class="text-muted text-nowrap py-1" style="width: 80px;">Type:</td>
+                  <td class="py-1">
+                    {% if user.lifetime %}
+
+                      <span class="badge badge-success">Lifetime
+                        {% if user.paid_lifetime %}(Paid){% endif %}
+                      </span>
+                    {% elif active_sub %}
+                      {% if active_sub.__class__.__name__ == 'Subscription' %}
+
+                        <span class="badge badge-info">Paddle</span>
+                      {% elif active_sub.__class__.__name__ == 'AppleSubscription' %}
+                        <span class="badge badge-dark">Apple</span>
+                      {% elif active_sub.__class__.__name__ == 'ManualSubscription' %}
+                        <span class="badge badge-purple">Manual
+                          {% if active_sub.is_giveaway %}(Giveaway){% endif %}
+                        </span>
+                      {% elif active_sub.__class__.__name__ == 'CoinbaseSubscription' %}
+                        <span class="badge badge-caution">Coinbase</span>
+                      {% elif active_sub.__class__.__name__ == 'PartnerSubscription' %}
+                        <span class="badge badge-purple">Partner</span>
+                      {% else %}
+                        <span class="badge badge-secondary">{{ active_sub.__class__.__name__ }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge badge-secondary">Free</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">End:</td>
+                  <td class="py-1">
+                    {% if user.lifetime %}
+
+                      <span class="text-success">Never</span>
+                    {% elif sub_end %}
+                      <span class="{% if sub_end < now %}
+                       text-danger{% else %}text-success{% endif %}">{{ sub_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ sub_end.humanize() }}</small>
+                    {% else %}
+                      {% set sub_end_date = helper.subscription_end_date(active_sub) %}
+                      {% if sub_end_date %}
+
+                        <span class="{% if sub_end_date < now %}
+                         text-danger{% else %}text-success{% endif %}">{{ sub_end_date.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ sub_end_date.humanize() }}</small>
+                      {% else %}
+                        <span class="text-muted">N/A</span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                </tr>
+                {% if user.trial_end and not user.lifetime and not active_sub %}
+
+                  <tr>
+                    <td class="text-muted text-nowrap py-1">Trial:</td>
+                    <td class="py-1">
+                      <span class="{% if user.trial_end < now %}
+                       text-danger{% else %}text-info{% endif %}">{{ user.trial_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ user.trial_end.humanize() }}</small>
+                    </td>
+                  </tr>
+                {% endif %}
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Paid:</td>
+                  <td class="py-1">{{ badge_status(user.is_paid() , 'Yes', 'No', 'info', 'secondary') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Premium:</td>
+                  <td class="py-1">{{ badge_status(user.is_premium() , 'Yes', 'No', 'info', 'secondary') }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          {# Row 2: Status & Dates/Quotas #}
+          <div class="row info-section">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <h6 class="section-title">Status</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr>
+                  <td class="text-muted text-nowrap py-1" style="width: 80px;">Verified:</td>
+                  <td class="py-1">{{ badge_status(user.activated, 'Yes', 'No', 'success', 'warning') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Enabled:</td>
+                  <td class="py-1">{{ badge_status(not user.disabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Admin:</td>
+                  <td class="py-1">{{ badge_status(user.is_admin, 'Yes', 'No', 'warning', 'secondary') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">TOTP:</td>
+                  <td class="py-1">{{ badge_status(user.enable_otp, 'Yes', 'No', 'info', 'secondary') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">FIDO:</td>
+                  <td class="py-1">{{ badge_status(user.fido_uuid, 'Yes', 'No', 'info', 'secondary') }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Flags:</td>
+                  <td class="py-1">
+                    <code>{{ user.flags or 0 }}</code>{% set flag_names = helper.user_flags(user) %}
+                    {% if flag_names %}<small class="text-muted">{{ flag_names|join(", ") }}</small>{% endif %}
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6 class="section-title">Dates & Quotas</h6>
+              <table class="table table-sm table-borderless mb-0">
+                <tr>
+                  <td class="text-muted text-nowrap py-1" style="width: 80px;">Created:</td>
+                  <td class="py-1 text-nowrap">{{ user.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Updated:</td>
+                  <td class="py-1 text-nowrap">{{ user.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Deletion:</td>
+                  <td class="py-1">
+                    {% if user.delete_on %}
+
+                      <span class="badge badge-danger">{{ user.delete_on.format("YYYY-MM-DD") }}</span>
+                    {% else %}
+                      <span class="text-muted">Not scheduled</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Subdomain:</td>
+                  <td class="py-1">{{ user.subdomain_quota }} left</td>
+                </tr>
+                <tr>
+                  <td class="text-muted text-nowrap py-1">Directory:</td>
+                  <td class="py-1">{{ user.directory_quota }} left</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# Admin Actions - 1/4 width #}
+    <div class="col-lg-3">
+      <div class="card h-100 actions-card">
+        <div class="card-header text-white py-2 header-caution">
+          <h6 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="fa fa-tools mr-2"></i>Actions</span>
+            <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
+          </h6>
+        </div>
+        <div class="card-body py-3 d-flex flex-column">
+          {# Action Buttons #}
+          <div class="mb-3">
+            <small class="action-section-title d-block">User Actions</small>
+            {% if user.disabled %}
+
+              <button type="button"
+                      class="btn btn-sm btn-block mb-2 btn-success-modern"
+                      data-toggle="modal"
+                      data-target="#unmarkAbuserModal{{ user.id }}">
+                <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
+              </button>
+            {% else %}
+              <button type="button"
+                      class="btn btn-sm btn-block mb-2 btn-danger-modern"
+                      data-toggle="modal"
+                      data-target="#markAbuserModal{{ user.id }}">
+                <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
+              </button>
+            {% endif %}
+            {% if pu %}
+
+              <button type="button"
+                      class="btn btn-sm btn-block mb-2 btn-neutral-modern"
+                      data-toggle="modal"
+                      data-target="#unlinkProtonModal{{ user.id }}">
+                <i class="fa fa-unlink mr-1"></i>Unlink Proton
+              </button>
+            {% endif %}
+            {% if user.enable_otp or user.fido_uuid %}
+
+              <form action="{{ url_for('admin.email_search.disable_2fa') }}"
+                    method="POST"
+                    class="mb-2">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit"
+                        class="btn btn-sm btn-block btn-caution-modern"
+                        onclick="return confirm('Disable 2FA for this user?');">
+                  <i class="fa fa-shield-alt mr-1"></i>Disable 2FA
+                  {% if user.enable_otp and user.fido_uuid %}
+
+                    (TOTP+FIDO)
+                  {% elif user.enable_otp %}
+                    (TOTP)
+                  {% else %}
+                    (FIDO)
+                  {% endif %}
+                </button>
+              </form>
+            {% endif %}
+            {% if user.delete_on %}
+
+              <form action="{{ url_for('admin.email_search.stop_user_deletion') }}"
+                    method="POST"
+                    class="mb-2">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit"
+                        class="btn btn-sm btn-block btn-danger-modern"
+                        onclick="return confirm('Cancel scheduled deletion?');">
+                  <i class="fa fa-ban mr-1"></i>Stop Deletion
+                </button>
+              </form>
+            {% endif %}
+          </div>
+          {# Quotas #}
+          <div class="mb-3">
+            <small class="action-section-title d-block">Update Quotas</small>
+            <div class="input-group input-group-sm mb-2 quota-input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Subdomain</span>
+              </div>
+              <input type="number"
+                     id="subdomainQuotaInput{{ user.id }}"
+                     value="{{ user._subdomain_quota }}"
+                     class="form-control"
+                     min="0"
+                     max="1000">
+              <div class="input-group-append">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-toggle="modal"
+                        data-target="#subdomainQuotaModal{{ user.id }}"
+                        onclick="document.getElementById('subdomainQuotaHidden{{ user.id }}').value = document.getElementById('subdomainQuotaInput{{ user.id }}').value; document.getElementById('subdomainQuotaDisplay{{ user.id }}').textContent = document.getElementById('subdomainQuotaInput{{ user.id }}').value;">
+                  <i class="fa fa-save"></i>
+                </button>
+              </div>
+            </div>
+            <div class="input-group input-group-sm quota-input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text" style="font-size: 0.75rem; width: 85px;">Directory</span>
+              </div>
+              <input type="number"
+                     id="directoryQuotaInput{{ user.id }}"
+                     value="{{ user._directory_quota }}"
+                     class="form-control"
+                     min="0"
+                     max="1000">
+              <div class="input-group-append">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-toggle="modal"
+                        data-target="#directoryQuotaModal{{ user.id }}"
+                        onclick="document.getElementById('directoryQuotaHidden{{ user.id }}').value = document.getElementById('directoryQuotaInput{{ user.id }}').value; document.getElementById('directoryQuotaDisplay{{ user.id }}').textContent = document.getElementById('directoryQuotaInput{{ user.id }}').value;">
+                  <i class="fa fa-save"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          {# Spacer to push delete to bottom #}
+          <div class="flex-grow-1"></div>
+          {# Delete User - fixed at bottom like a footer #}
+          <div class="mt-auto pt-3 border-top">
+            <button type="button"
+                    class="btn btn-sm btn-block btn-danger"
+                    data-toggle="modal"
+                    data-target="#deleteUserModal{{ user.id }}">
+              <i class="fa fa-exclamation-triangle mr-1"></i>Delete User
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
+{% macro user_actions_card(user) -%}
+  {% set pu = helper.partner_user(user) %}
+  {# This macro now only contains modals - action buttons are in user_info_card #}
+  {# Mark Abuser Modal #}
+  <div class="modal fade"
+       id="markAbuserModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="markAbuserModalLabel{{ user.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header modal-danger">
+          <h5 class="modal-title" id="markAbuserModalLabel{{ user.id }}">
+            <i class="fa fa-user-slash mr-2"></i>Mark User as Abuser
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.mark_abuser') }}"
+              method="POST">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="alert alert-warning">
+              <i class="fa fa-exclamation-triangle mr-1"></i>
+              This will disable the user account for <strong>{{ user.email }}</strong>.
+            </div>
+            <div class="form-group">
+              <label for="markAbuserNote{{ user.id }}" class="font-weight-bold">Note (required)</label>
+              <textarea class="form-control"
+                        id="markAbuserNote{{ user.id }}"
+                        name="note"
+                        rows="3"
+                        required
+                        placeholder="Enter the reason for marking this user as an abuser..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger-modern">
+              <i class="fa fa-user-slash mr-1"></i>Mark as Abuser
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {# Unmark Abuser Modal #}
+  <div class="modal fade"
+       id="unmarkAbuserModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="unmarkAbuserModalLabel{{ user.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header modal-success">
+          <h5 class="modal-title" id="unmarkAbuserModalLabel{{ user.id }}">
+            <i class="fa fa-user-check mr-2"></i>Unmark User as Abuser
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.unmark_abuser') }}"
+              method="POST">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <p class="text-muted">
+              This will re-enable the user account for <strong>{{ user.email }}</strong> and remove the abuser flag.
+            </p>
+            <div class="form-group">
+              <label for="unmarkAbuserNote{{ user.id }}" class="font-weight-bold">Note (required)</label>
+              <textarea class="form-control"
+                        id="unmarkAbuserNote{{ user.id }}"
+                        name="note"
+                        rows="3"
+                        required
+                        placeholder="Enter the reason for unmarking this user as an abuser..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success-modern">
+              <i class="fa fa-user-check mr-1"></i>Unmark as Abuser
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {# Unlink Proton Modal #}
+  {% if pu %}
+
+    <div class="modal fade"
+         id="unlinkProtonModal{{ user.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="unlinkProtonModalLabel{{ user.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-neutral">
+            <h5 class="modal-title" id="unlinkProtonModalLabel{{ user.id }}">
+              <i class="fa fa-unlink mr-2"></i>Unlink from Proton Account
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.delete_partner_link') }}"
+                method="POST"
+                id="unlinkProtonForm{{ user.id }}">
+            <div class="modal-body">
               <input type="hidden" name="user_id" value="{{ user.id }}">
+              <div class="alert alert-warning">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <strong>Warning:</strong> This will unlink the SimpleLogin account from the Proton account.
+              </div>
+              <p>
+                You are about to unlink user <strong>{{ user.email }}</strong> from Proton account.
+              </p>
+              <div class="form-group">
+                <label for="confirmUnlinkEmail{{ user.id }}" class="font-weight-bold">
+                  Type <code>{{ pu.partner_email }}</code> to confirm:
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="confirmUnlinkEmail{{ user.id }}"
+                       name="confirm_email"
+                       required
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
               <button type="submit"
-                      onclick="return confirm('Are you sure you would like to unlink the user?');"
-                      class="btn btn-danger d-inline">Unlink</button>
-            </form>
-          </td>
-        {% else %}
-          <td>No</td>
+                      class="btn btn-neutral-modern"
+                      id="unlinkProtonBtn{{ user.id }}"
+                      disabled>
+                <i class="fa fa-unlink mr-1"></i>Unlink from Proton
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmUnlinkEmail{{ user.id }}');
+      var unlinkBtn = document.getElementById('unlinkProtonBtn{{ user.id }}');
+      var expectedEmail = '{{ pu.partner_email }}';
+      if (confirmInput && unlinkBtn) {
+        confirmInput.addEventListener('input', function() {
+          unlinkBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+    </script>
+  {% endif %}
+  {# Delete User Modal #}
+  <div class="modal fade"
+       id="deleteUserModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="deleteUserModalLabel{{ user.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header text-white bg-danger">
+          <h5 class="modal-title" id="deleteUserModalLabel{{ user.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete User Permanently
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.delete_user') }}"
+              method="POST"
+              id="deleteUserForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone. The user account and all associated data will be permanently deleted.
+            </div>
+            <p>This will permanently delete:</p>
+            <ul class="mb-3">
+              <li>All aliases associated with this account</li>
+              <li>All mailboxes</li>
+              <li>All custom domains</li>
+              <li>All account data</li>
+            </ul>
+            <div class="form-group">
+              <label for="confirmEmail{{ user.id }}" class="font-weight-bold">
+                Type <code>{{ user.email }}</code> to confirm:
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="confirmEmail{{ user.id }}"
+                     name="confirm_email"
+                     required
+                     autocomplete="off">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-danger"
+                    id="deleteUserBtn{{ user.id }}"
+                    disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete User Permanently
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmEmail{{ user.id }}');
+      var deleteBtn = document.getElementById('deleteUserBtn{{ user.id }}');
+      var expectedEmail = '{{ user.email }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+  {# Subdomain Quota Modal #}
+  <div class="modal fade"
+       id="subdomainQuotaModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header py-2 header-primary">
+          <h6 class="modal-title">
+            <i class="fa fa-edit mr-2"></i>Confirm Update
+          </h6>
+          <button type="button" class="close text-white" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
+              method="POST"
+              id="subdomainQuotaForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <input type="hidden"
+                   name="subdomain_quota"
+                   id="subdomainQuotaHidden{{ user.id }}"
+                   value="{{ user._subdomain_quota }}">
+            <p class="mb-0">
+              Update subdomain quota for <strong>{{ user.email }}</strong> to <strong id="subdomainQuotaDisplay{{ user.id }}">{{ user._subdomain_quota }}</strong>?
+            </p>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {# Directory Quota Modal #}
+  <div class="modal fade"
+       id="directoryQuotaModal{{ user.id }}"
+       tabindex="-1"
+       role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-header py-2 header-primary">
+          <h6 class="modal-title">
+            <i class="fa fa-edit mr-2"></i>Confirm Update
+          </h6>
+          <button type="button" class="close text-white" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
+              method="POST"
+              id="directoryQuotaForm{{ user.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <input type="hidden"
+                   name="directory_quota"
+                   id="directoryQuotaHidden{{ user.id }}"
+                   value="{{ user._directory_quota }}">
+            <p class="mb-0">
+              Update directory quota for <strong>{{ user.email }}</strong> to <strong id="directoryQuotaDisplay{{ user.id }}">{{ user._directory_quota }}</strong>?
+            </p>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
+{% macro alias_actions_card(alias) %}
+  <div class="card h-100 actions-card">
+    <div class="card-header text-white py-2 header-caution">
+      <h6 class="mb-0 d-flex justify-content-between align-items-center">
+        <span><i class="fa fa-cog mr-2"></i>Alias Actions</span>
+        <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
+      </h6>
+    </div>
+    <div class="card-body py-3 d-flex flex-column">
+      {# Toggle Status Button #}
+      {% if alias.enabled %}
+        <button type="button"
+                class="btn btn-sm btn-block mb-2 btn-caution-modern"
+                data-toggle="modal"
+                data-target="#disableAliasModal{{ alias.id }}">
+          <i class="fa fa-ban mr-1"></i>Disable Alias
+        </button>
+      {% else %}
+        <button type="button"
+                class="btn btn-sm btn-block mb-2 btn-success-modern"
+                data-toggle="modal"
+                data-target="#enableAliasModal{{ alias.id }}">
+          <i class="fa fa-check mr-1"></i>Enable Alias
+        </button>
+      {% endif %}
+      {# Spacer + Delete at bottom #}
+      <div class="flex-grow-1"></div>
+      <div class="mt-auto pt-3 border-top">
+        <button type="button"
+                class="btn btn-sm btn-block btn-danger"
+                data-toggle="modal"
+                data-target="#deleteAliasModal{{ alias.id }}">
+          <i class="fa fa-trash-alt mr-1"></i>Delete Alias
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {# Disable Alias Modal #}
+  {% if alias.enabled %}
+    <div class="modal fade"
+         id="disableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="disableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-warning">
+            <h5 class="modal-title" id="disableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-ban mr-2"></i>Disable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="disableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
+              <div class="form-group">
+                <label for="disableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="disableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for disabling this alias..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-warning"
+                      id="disableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-ban mr-1"></i>Disable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var noteInput = document.getElementById('disableAliasNote{{ alias.id }}');
+        var actionBtn = document.getElementById('disableAliasBtn{{ alias.id }}');
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Enable Alias Modal #}
+  {% if not alias.enabled %}
+    <div class="modal fade"
+         id="enableAliasModal{{ alias.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="enableAliasModalLabel{{ alias.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header modal-success">
+            <h5 class="modal-title" id="enableAliasModalLabel{{ alias.id }}">
+              <i class="fa fa-check mr-2"></i>Enable Alias
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+                method="POST"
+                id="enableAliasForm{{ alias.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="alias_id" value="{{ alias.id }}">
+              <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
+              <div class="form-group">
+                <label for="enableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
+                <textarea class="form-control"
+                          id="enableAliasNote{{ alias.id }}"
+                          name="note"
+                          rows="3"
+                          required
+                          placeholder="Enter the reason for enabling this alias..."></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-success"
+                      id="enableAliasBtn{{ alias.id }}"
+                      disabled>
+                <i class="fa fa-check mr-1"></i>Enable Alias
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var noteInput = document.getElementById('enableAliasNote{{ alias.id }}');
+        var actionBtn = document.getElementById('enableAliasBtn{{ alias.id }}');
+        if (noteInput && actionBtn) {
+          noteInput.addEventListener('input', function() {
+            actionBtn.disabled = (noteInput.value.trim() === '');
+          });
+        }
+      })();
+    </script>
+  {% endif %}
+
+  {# Delete Alias Modal #}
+  <div class="modal fade"
+       id="deleteAliasModal{{ alias.id }}"
+       tabindex="-1"
+       role="dialog"
+       aria-labelledby="deleteAliasModalLabel{{ alias.id }}"
+       aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header modal-danger">
+          <h5 class="modal-title" id="deleteAliasModalLabel{{ alias.id }}">
+            <i class="fa fa-trash-alt mr-2"></i>Delete Alias Permanently
+          </h5>
+          <button type="button"
+                  class="close text-white"
+                  data-dismiss="modal"
+                  aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form action="{{ url_for('admin.email_search.delete_alias') }}"
+              method="POST"
+              id="deleteAliasForm{{ alias.id }}">
+          <div class="modal-body">
+            <input type="hidden" name="alias_id" value="{{ alias.id }}">
+            <div class="alert alert-danger">
+              <i class="fa fa-exclamation-triangle mr-2"></i>
+              <strong>Warning:</strong> This action cannot be undone.
+            </div>
+            <div class="form-group">
+              <label for="confirmDeleteAliasEmail{{ alias.id }}" class="font-weight-bold">
+                Type <code>{{ alias.email }}</code> to confirm:
+              </label>
+              <input type="text"
+                     class="form-control"
+                     id="confirmDeleteAliasEmail{{ alias.id }}"
+                     name="confirm_email"
+                     required
+                     autocomplete="off">
+            </div>
+            <div class="form-group mb-0">
+              <label for="deleteAliasNote{{ alias.id }}" class="font-weight-bold">Note (optional):</label>
+              <textarea class="form-control"
+                        id="deleteAliasNote{{ alias.id }}"
+                        name="note"
+                        rows="3"
+                        placeholder="Enter the reason for deleting this alias..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-danger"
+                    id="deleteAliasBtn{{ alias.id }}"
+                    disabled>
+              <i class="fa fa-trash-alt mr-1"></i>Delete Alias Permanently
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmDeleteAliasEmail{{ alias.id }}');
+      var deleteBtn = document.getElementById('deleteAliasBtn{{ alias.id }}');
+      var expectedEmail = '{{ alias.email }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedEmail);
+        });
+      }
+    })();
+  </script>
+{% endmacro %}
+{% macro alias_info_card(alias) %}
+  {% set alias_flag_names = helper.alias_flags(alias) %}
+  <div class="card h-100">
+    <div class="card-header header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-at mr-2"></i>Alias Information
+      </h6>
+    </div>
+    <div class="card-body py-3">
+      <div class="row info-section">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <h6 class="section-title">Identity</h6>
+          <table class="table table-sm table-borderless mb-0">
+            <tr>
+              <td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td>
+              <td class="py-1"><code>{{ alias.id }}</code></td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Email:</td>
+              <td class="py-1">{{ alias.email }}{{ copy_btn(alias.email) }}</td>
+            </tr>
+            {% if alias.name %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Name:</td>
+                <td class="py-1">{{ alias.name }}</td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td class="text-muted text-nowrap py-1">Status:</td>
+              <td class="py-1">
+                {{ badge_status(alias.enabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+                {% if alias.is_trashed() %}
+                  <span class="badge badge-warning ml-1"><i class="fa fa-trash mr-1"></i>Trashed</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">User:</td>
+              <td class="py-1">
+                <a href="?query={{ alias.user.email }}&search_type=email">{{ alias.user.email }}</a>{{ copy_btn(alias.user.email) }}
+              </td>
+            </tr>
+            {% if alias.custom_domain %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Domain:</td>
+                <td class="py-1">{{ alias.custom_domain.domain }}</td>
+              </tr>
+            {% endif %}
+            {% if alias.directory %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Directory:</td>
+                <td class="py-1">{{ alias.directory.name }}</td>
+              </tr>
+            {% endif %}
+            {% if alias.note %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Note:</td>
+                <td class="py-1"><small>{{ alias.note }}</small></td>
+              </tr>
+            {% endif %}
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6 class="section-title">Statistics & Dates</h6>
+          <table class="table table-sm table-borderless mb-0">
+            <tr>
+              <td class="text-muted text-nowrap py-1" style="width: 80px;">Received:</td>
+              <td class="py-1">{{ helper.alias_email_received_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Sent:</td>
+              <td class="py-1">{{ helper.alias_email_sent_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Contacts:</td>
+              <td class="py-1">{{ helper.alias_contact_count(alias) }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">PGP:</td>
+              <td class="py-1">{{ badge_status(alias.pgp_enabled(), 'Yes', 'No', 'success', 'secondary') }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Flags:</td>
+              <td class="py-1">
+                <code>{{ alias.flags or 0 }}</code>
+                {% if alias_flag_names %}<small class="text-muted d-block">{{ alias_flag_names|join(", ") }}</small>{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Created:</td>
+              <td class="py-1 text-nowrap">{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted text-nowrap py-1">Updated:</td>
+              <td class="py-1 text-nowrap">{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
+            </tr>
+            {% if alias.delete_on %}
+              <tr>
+                <td class="text-muted text-nowrap py-1">Deletion:</td>
+                <td class="py-1"><span class="badge badge-danger">{{ alias.delete_on.format("YYYY-MM-DD") }}</span></td>
+              </tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro user_quotas_card(user) -%}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-sliders-h mr-2"></i>Quotas
+      </h6>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
+                method="POST">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <label class="font-weight-bold">Subdomain Quota</label>
+            <div class="input-group">
+              <input type="number"
+                     name="subdomain_quota"
+                     value="{{ user._subdomain_quota }}"
+                     class="form-control"
+                     min="0"
+                     max="1000">
+              <div class="input-group-append">
+                <button type="submit"
+                        class="btn btn-outline-info"
+                        onclick="return confirm('Update subdomain quota?');">
+                  <i class="fa fa-save"></i>
+                </button>
+              </div>
+            </div>
+            <small class="text-muted">Current: {{ user._subdomain_quota }}</small>
+          </form>
+        </div>
+        <div class="col-md-6 mb-3">
+          <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
+                method="POST">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <label class="font-weight-bold">Directory Quota</label>
+            <div class="input-group">
+              <input type="number"
+                     name="directory_quota"
+                     value="{{ user._directory_quota }}"
+                     class="form-control"
+                     min="0"
+                     max="1000">
+              <div class="input-group-append">
+                <button type="submit"
+                        class="btn btn-outline-info"
+                        onclick="return confirm('Update directory quota?');">
+                  <i class="fa fa-save"></i>
+                </button>
+              </div>
+            </div>
+            <small class="text-muted">Current: {{ user._directory_quota }}</small>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
+{% macro mailboxes_table(message, mbox_count, mboxes, is_regex, highlight_mailbox_email=none, current_page=1, total_pages=1, page_size=50) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
+      <h6 class="mb-0">
+        <i class="fa fa-inbox mr-2"></i>{{ message }}
+        <span class="badge badge-secondary ml-2">{{ mbox_count }} total</span>
+        {% if mbox_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
         {% endif %}
-      </tr>
-    </tbody>
-  </table>
-{%- endmacro %}
-{% macro list_mailboxes(message, mbox_count, mboxes) %}
-  <h4>
-    {{ mbox_count }} {{ message }}.
-    {% if mbox_count>10 %}Showing only the last 10.{% endif %}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Mailbox ID</th>
-        <th>Email</th>
-        <th>Verified</th>
-        <th>Created At</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for mailbox in mboxes %}
-        <tr>
-          <td>{{ mailbox.id }}</td>
-          <td>
-            <a href="?query={{ mailbox.email }}">{{ mailbox.email }}</a>
-          </td>
-          <td>{{ "Yes" if mailbox.verified else "No" }}</td>
-          <td>{{ mailbox.created_at }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endmacro %}
-{% macro list_alias(alias_count, aliases) %}
-  <h4>
-    {{ alias_count }} Aliases found.
-    {% if alias_count>10 %}Showing only the last 10.{% endif %}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Alias ID</th>
-        <th>Email</th>
-        <th>Enabled</th>
-        <th>Created At</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for alias in aliases %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Verified</th>
+              <th>Default</th>
+              <th>Admin Disabled</th>
+              <th>PGP</th>
+              <th>Flags</th>
+              <th># Aliases</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mailbox in mboxes %}
 
-        <tr>
-          <td>{{ alias.id }}</td>
-          <td>
-            <a href="?query={{ alias.email }}">{{ alias.email }}</a>
-          </td>
-          <td>{{ "Yes" if alias.enabled else "No" }}</td>
-          <td>{{ alias.created_at }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endmacro %}
-{% macro show_deleted_alias(deleted_alias) -%}
-  <h4>Deleted Alias {{ deleted_alias.email }} with ID {{ deleted_alias.id }}.</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Deleted Alias ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Deleted At</th>
-        <th scope="col">Reason</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ deleted_alias.id }}</td>
-        <td>{{ deleted_alias.email }}</td>
-        <td>{{ deleted_alias.created_at }}</td>
-        <td>{{ deleted_alias.reason }}</td>
-      </tr>
-    </tbody>
-  </table>
-{%- endmacro %}
-{% macro show_domain_deleted_alias(dom_deleted_alias) -%}
-  <h4>
-    Domain Deleted Alias {{ dom_deleted_alias.email }} with ID {{ dom_deleted_alias.id }} for
-    domain {{ dom_deleted_alias.domain.domain }}
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Deleted Alias ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Domain</th>
-        <th scope="col">Domain ID</th>
-        <th scope="col">Domain owner user ID</th>
-        <th scope="col">Domain owner user email</th>
-        <th scope="col">Deleted At</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ dom_deleted_alias.id }}</td>
-        <td>{{ dom_deleted_alias.email }}</td>
-        <td>{{ dom_deleted_alias.domain.domain }}</td>
-        <td>{{ dom_deleted_alias.domain.id }}</td>
-        <td>{{ dom_deleted_alias.domain.user_id }}</td>
-        <td>{{ dom_deleted_alias.created_at }}</td>
-      </tr>
-    </tbody>
-  </table>
-  {{ show_user(data.domain_deleted_alias.domain.user) }}
-{%- endmacro %}
-{% macro list_alias_audit_log(alias_audit_log) %}
-  <h4>Alias Audit Log</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>User ID</th>
-        <th>Alias ID</th>
-        <th>Alias Email</th>
-        <th>Action</th>
-        <th>Message</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in alias_audit_log %}
+              <tr class="{% if highlight_mailbox_email and mailbox.email == highlight_mailbox_email %}
+                 table-warning{% endif %}">
+                <td>
+                  <code>{{ mailbox.id }}</code>
+                </td>
+                <td>
+                  <a href="?query={{ mailbox.email }}&search_type=email">
+                    {% if highlight_mailbox_email and mailbox.email == highlight_mailbox_email %}
 
-        <tr>
-          <td>{{ entry.user_id }}</td>
-          <td>{{ entry.alias_id }}</td>
-          <td>
-            <a href="?query={{ entry.alias_email }}">{{ entry.alias_email }}</a>
-          </td>
-          <td>{{ entry.action }}</td>
-          <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endmacro %}
-{% macro list_user_audit_log(user_audit_log) %}
-  <h4>User Audit Log</h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>User email</th>
-        <th>Action</th>
-        <th>Message</th>
-        <th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for entry in user_audit_log %}
+                      <mark><strong>{{ mailbox.email }}</strong></mark>
+                    {% else %}
+                      {{ highlight_email(mailbox.email, query, is_regex) }}
+                    {% endif %}
+                  </a>{{ copy_btn(mailbox.email) }}
+                </td>
+                <td>{{ badge_status(mailbox.verified, 'Yes', 'No', 'success', 'warning') }}</td>
+                <td>{{ badge_status(mailbox.user.default_mailbox_id == mailbox.id, 'Yes', 'No', 'info', 'secondary') }}</td>
+                <td>{{ badge_status(mailbox.is_admin_disabled() , 'Yes', 'No', 'danger', 'success') }}</td>
+                <td>
+                  {% if mailbox.pgp_finger_print %}
 
-        <tr>
-          <td>
-            <a href="?query={{ entry.user_email }}">{{ entry.user_email }}</a>
-          </td>
-          <td>{{ entry.action }}</td>
-          <td>{{ entry.message }}</td>
-          <td>{{ entry.created_at }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+                    {{ badge_status(mailbox.pgp_enabled() , 'Enabled', 'Disabled', 'success', 'warning') }}
+                    <br>
+                    <small class="text-muted">{{ mailbox.pgp_finger_print }}{{ copy_btn(mailbox.pgp_finger_print) }}</small>
+                  {% else %}
+                    <span class="badge badge-secondary">No PGP</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <code>{{ mailbox.flags or 0 }}</code>
+                  {% set mbox_flag_names = helper.mailbox_flags(mailbox) %}
+                  {% if mbox_flag_names %}<small class="text-muted d-block">{{ mbox_flag_names|join(", ") }}</small>{% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ mailbox.nb_alias() }}</span>
+                </td>
+                <td class="text-nowrap">{{ mailbox.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td class="text-nowrap">{{ mailbox.updated_at.strftime("%Y-%m-%d %H:%M") if mailbox.updated_at else "Never" }}</td>
+                <td>
+                  <div class="d-flex flex-column">
+                    {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
+
+                      <button type="button"
+                              class="btn btn-sm btn-info btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#setDefaultMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-star mr-1"></i>Set Default
+                      </button>
+                    {% endif %}
+                    {% if mailbox.is_admin_disabled() %}
+
+                      <button type="button"
+                              class="btn btn-sm btn-success-modern btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#reenableMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-check mr-1"></i>Re-enable
+                      </button>
+                    {% else %}
+                      <button type="button"
+                              class="btn btn-sm btn-caution-modern btn-block mb-1"
+                              data-toggle="modal"
+                              data-target="#warnMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-exclamation-triangle mr-1"></i>Warn
+                      </button>
+                      <button type="button"
+                              class="btn btn-sm btn-danger-modern btn-block"
+                              data-toggle="modal"
+                              data-target="#disableMailboxModal{{ mailbox.id }}">
+                        <i class="fa fa-ban mr-1"></i>Disable
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {# Set Default Mailbox Modal #}
+              {% if mailbox.user.default_mailbox_id != mailbox.id and mailbox.verified and not mailbox.is_admin_disabled() %}
+
+                <div class="modal fade"
+                     id="setDefaultMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="setDefaultMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-primary">
+                        <h5 class="modal-title" id="setDefaultMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-star mr-2"></i>Set Default Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.set_default_mailbox') }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <p>
+                            Set <strong>{{ mailbox.email }}</strong> as the default mailbox for this user?
+                          </p>
+                          <p class="text-muted small mb-0">
+                            The current default mailbox is: <code>{{ mailbox.user.default_mailbox.email }}</code>
+                          </p>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-info">
+                            <i class="fa fa-star mr-1"></i>Set Default
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              {# Re-enable Mailbox Modal #}
+              {% if mailbox.is_admin_disabled() %}
+
+                <div class="modal fade"
+                     id="reenableMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="reenableMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-success">
+                        <h5 class="modal-title" id="reenableMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-check mr-2"></i>Re-enable Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.admin_reenable_mailbox') }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <p>
+                            Re-enable the mailbox <strong>{{ mailbox.email }}</strong>?
+                          </p>
+                          <p class="text-muted small">
+                            This mailbox was previously disabled by an admin. Re-enabling will allow it to receive emails again.
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="reenableMailboxNote{{ mailbox.id }}" class="font-weight-bold">Note (required)</label>
+                            <textarea class="form-control"
+                                      id="reenableMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for re-enabling this mailbox..."></textarea>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-success-modern">
+                            <i class="fa fa-check mr-1"></i>Re-enable
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% else %}
+                {# Warn Mailbox Modal #}
+                <div class="modal fade"
+                     id="warnMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="warnMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-caution">
+                        <h5 class="modal-title" id="warnMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-exclamation-triangle mr-2"></i>Send Warning Email
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.send_mailbox_disable_warning') }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle mr-1"></i>
+                            This will send a warning email to the user about mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small">The user will be notified that their mailbox may be disabled if they don't take action.</p>
+                          <div class="form-group mb-0">
+                            <label for="warnMailboxNote{{ mailbox.id }}" class="font-weight-bold">Reason (required)</label>
+                            <textarea class="form-control"
+                                      id="warnMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for the warning..."></textarea>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-caution-modern">
+                            <i class="fa fa-exclamation-triangle mr-1"></i>Send Warning
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {# Disable Mailbox Modal #}
+                <div class="modal fade"
+                     id="disableMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="disableMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-danger">
+                        <h5 class="modal-title" id="disableMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-ban mr-2"></i>Disable Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.admin_disable_mailbox') }}"
+                            method="POST">
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-danger">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            This will admin-disable the mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small">
+                            The user will be notified and the mailbox will no longer receive emails until re-enabled by an admin.
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="disableMailboxNote{{ mailbox.id }}" class="font-weight-bold">Note (required)</label>
+                            <textarea class="form-control"
+                                      id="disableMailboxNote{{ mailbox.id }}"
+                                      name="note"
+                                      rows="3"
+                                      required
+                                      placeholder="Enter the reason for disabling this mailbox..."></textarea>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-danger-modern">
+                            <i class="fa fa-ban mr-1"></i>Disable Mailbox
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if total_pages > 1 %}
+
+        <div class="card-footer bg-light">
+          <nav aria-label="Mailbox pagination">
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+              {% if current_page > 1 %}
+
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ current_page - 1 }}&alias_page={{ alias_page }}">
+                    <i class="fa fa-chevron-left"></i> Prev
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                </li>
+              {% endif %}
+              {% for p in range(1, total_pages + 1) %}
+
+                {% if p == current_page %}
+
+                  <li class="page-item active">
+                    <span class="page-link">{{ p }}</span>
+                  </li>
+                {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ p }}&alias_page={{ alias_page }}">{{ p }}</a>
+                  </li>
+                {% elif p == 4 and current_page > 5 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              {% if current_page < total_pages %}
+
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ current_page + 1 }}&alias_page={{ alias_page }}">
+                    Next <i class="fa fa-chevron-right"></i>
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+{% macro aliases_table(alias_count, aliases, is_regex, current_page=1, total_pages=1, page_size=50) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
+      <h6 class="mb-0">
+        <i class="fa fa-at mr-2"></i>Aliases
+        <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
+        {% if alias_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
+        {% endif %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Enabled</th>
+              <th>PGP</th>
+              <th>Emails</th>
+              <th>Contacts</th>
+              <th style="min-width: 200px;">Mailboxes</th>
+              <th>Flags</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for alias in aliases %}
+
+              {% set alias_mailboxes = helper.alias_mailboxes(alias) %}
+              <tr>
+                <td>
+                  <code>{{ alias.id }}</code>
+                </td>
+                <td>
+                  <a href="?query={{ alias.email }}&search_type=alias">{{ highlight_email(alias.email, query, is_regex) }}</a>{{ copy_btn(alias.email) }}
+                </td>
+                <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                <td>{{ badge_status(alias.pgp_enabled() , 'Yes', 'No', 'success', 'secondary') }}</td>
+                <td>
+                  <span class="badge badge-info" title="Received (forwarded)">
+                    <i class="fa fa-arrow-down mr-1"></i>{{ helper.alias_email_received_count(alias) }}
+                  </span>
+                  <span class="badge badge-secondary" title="Sent (replies)">
+                    <i class="fa fa-arrow-up mr-1"></i>{{ helper.alias_email_sent_count(alias) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ helper.alias_contact_count(alias) }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ helper.alias_mailbox_count(alias) }}</span>
+                  {% if alias_mailboxes %}
+
+                    <small class="d-block">
+                      {% for mb in alias_mailboxes %}
+
+                        <a href="?query={{ mb.email }}&search_type=email">{{ mb.email }}</a>
+                        {% if not loop.last %},{% endif %}
+                      {% endfor %}
+                    </small>
+                  {% endif %}
+                </td>
+                <td>
+                  <code>{{ alias.flags or 0 }}</code>
+                  {% set alias_flag_names = helper.alias_flags(alias) %}
+                  {% if alias_flag_names %}<small class="text-muted d-block">{{ alias_flag_names|join(", ") }}</small>{% endif %}
+                </td>
+                <td>{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
+                <td>
+                  <a href="?query={{ alias.email }}&search_type=alias" title="Alias actions">
+                    <i class="fa fa-sign-in-alt mr-1"></i>Actions
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if total_pages > 1 %}
+
+        <div class="card-footer bg-light">
+          <nav aria-label="Alias pagination">
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+              {% if current_page > 1 %}
+
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ current_page - 1 }}">
+                    <i class="fa fa-chevron-left"></i> Prev
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                </li>
+              {% endif %}
+              {% for p in range(1, total_pages + 1) %}
+
+                {% if p == current_page %}
+
+                  <li class="page-item active">
+                    <span class="page-link">{{ p }}</span>
+                  </li>
+                {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ p }}">{{ p }}</a>
+                  </li>
+                {% elif p == 4 and current_page > 5 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              {% if current_page < total_pages %}
+
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ current_page + 1 }}">
+                    Next <i class="fa fa-chevron-right"></i>
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+{% macro contacts_table(contacts, contact_count, current_page=1, total_pages=1, page_size=25) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
+      <h6 class="mb-0">
+        <i class="fa fa-address-book mr-2"></i>Contacts
+        <span class="badge badge-secondary ml-2">{{ contact_count }} total</span>
+        {% if contact_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
+        {% endif %}
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      {% if contacts %}
+
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>ID</th>
+                <th>Website Email</th>
+                <th>Reply Email</th>
+                <th>PGP</th>
+                <th>Status</th>
+                <th>Emails</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for contact in contacts %}
+
+                <tr>
+                  <td>
+                    <code>{{ contact.id }}</code>
+                  </td>
+                  <td>
+                    <span title="{{ contact.website_email }}">{{ contact.website_email }}</span>{{ copy_btn(contact.website_email) }}
+                    {% if contact.name %}
+
+                      <br>
+                      <small class="text-muted">{{ contact.name }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small><code>{{ contact.reply_email }}</code></small>{{ copy_btn(contact.reply_email) }}
+                  </td>
+                  <td>
+                    {% if contact.pgp_finger_print %}
+
+                      <span class="badge badge-success">Has PGP</span>
+                      <br>
+                      <small class="text-muted">{{ contact.pgp_finger_print }}{{ copy_btn(contact.pgp_finger_print) }}</small>
+                    {% else %}
+                      <span class="badge badge-secondary">No PGP</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if contact.block_forward %}
+
+                      <span class="badge badge-danger">Blocked</span>
+                    {% elif contact.invalid_email %}
+                      <span class="badge badge-warning">Invalid</span>
+                    {% else %}
+                      <span class="badge badge-success">Active</span>
+                    {% endif %}
+                    {% if contact.is_cc %}<span class="badge badge-info">CC</span>{% endif %}
+                  </td>
+                  <td>
+                    <span class="badge badge-info" title="Received (forwarded)">
+                      <i class="fa fa-arrow-down mr-1"></i>{{ helper.contact_email_received_count(contact) }}
+                    </span>
+                    <span class="badge badge-secondary" title="Sent (replies)">
+                      <i class="fa fa-arrow-up mr-1"></i>{{ helper.contact_email_sent_count(contact) }}
+                    </span>
+                    {% set blocked_count = helper.contact_email_blocked_count(contact) %}
+                    {% if blocked_count > 0 %}
+
+                      <span class="badge badge-danger" title="Blocked">
+                        <i class="fa fa-ban mr-1"></i>{{ blocked_count }}
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="text-nowrap">{{ contact.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if total_pages > 1 %}
+
+          <div class="card-footer bg-light">
+            <nav aria-label="Contact pagination">
+              <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if current_page > 1 %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ current_page - 1 }}">
+                      <i class="fa fa-chevron-left"></i> Prev
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                  </li>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+
+                  {% if p == current_page %}
+
+                    <li class="page-item active">
+                      <span class="page-link">{{ p }}</span>
+                    </li>
+                  {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                    <li class="page-item">
+                      <a class="page-link"
+                         href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ p }}">{{ p }}</a>
+                    </li>
+                  {% elif p == 4 and current_page > 5 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+                {% if current_page < total_pages %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&contact_page={{ current_page + 1 }}">
+                      Next <i class="fa fa-chevron-right"></i>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="p-3 text-muted text-center">
+          <i class="fa fa-info-circle mr-1"></i>No contacts
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+{% macro custom_domains_table(domains, domain_count, current_page=1, total_pages=1, page_size=25) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
+      <h6 class="mb-0">
+        <i class="fa fa-globe mr-2"></i>Custom Domains
+        <span class="badge badge-secondary ml-2">{{ domain_count }} total</span>
+        {% if domain_count > page_size %}
+
+          <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>
+        {% endif %}
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      {% if domains %}
+
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>ID</th>
+                <th>Domain</th>
+                <th>Verified</th>
+                <th>Aliases</th>
+                <th>Deleted</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for domain in domains %}
+
+                <tr>
+                  <td>
+                    <code>{{ domain.id }}</code>
+                  </td>
+                  <td>
+                    <a href="{{ url_for('admin.custom_domain_search.index', query=domain.domain) }}">{{ domain.domain }}</a>{{ copy_btn(domain.domain) }}
+                  </td>
+                  <td>
+                    {% if domain.verified and domain.ownership_verified %}
+
+                      <span class="badge badge-success">Verified</span>
+                    {% else %}
+                      <span class="badge badge-warning">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge badge-info">{{ helper.domain_alias_count(domain) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">{{ helper.domain_deleted_alias_count(domain) }}</span>
+                  </td>
+                  <td>{{ domain.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if total_pages > 1 %}
+
+          <div class="card-footer bg-light">
+            <nav aria-label="Custom domain pagination">
+              <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if current_page > 1 %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ current_page - 1 }}">
+                      <i class="fa fa-chevron-left"></i> Prev
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link"><i class="fa fa-chevron-left"></i> Prev</span>
+                  </li>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+
+                  {% if p == current_page %}
+
+                    <li class="page-item active">
+                      <span class="page-link">{{ p }}</span>
+                    </li>
+                  {% elif p <= 3 or p > total_pages - 2 or (p >= current_page - 1 and p <= current_page + 1) %}
+                    <li class="page-item">
+                      <a class="page-link"
+                         href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ p }}">{{ p }}</a>
+                    </li>
+                  {% elif p == 4 and current_page > 5 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% elif p == total_pages - 2 and current_page < total_pages - 4 %}
+                    <li class="page-item disabled">
+                      <span class="page-link">...</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+                {% if current_page < total_pages %}
+
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?query={{ query }}&search_type={{ search_type }}&mailbox_page={{ mailbox_page }}&alias_page={{ alias_page }}&domain_page={{ current_page + 1 }}">
+                      Next <i class="fa fa-chevron-right"></i>
+                    </a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="p-3 text-muted text-center">
+          <i class="fa fa-info-circle mr-1"></i>No custom domains
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}
+{% macro deleted_aliases_table(deleted_aliases, is_regex) %}
+  <div class="card mb-4">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+      <h6 class="mb-0">
+        <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
+        {% if deleted_aliases|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Deleted At</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for deleted_alias in deleted_aliases %}
+
+              <tr>
+                <td>
+                  <code>{{ deleted_alias.id }}</code>
+                </td>
+                <td>{{ highlight_email(deleted_alias.email, query, is_regex) }}</td>
+                <td>{{ deleted_alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>
+                  <span class="badge badge-secondary">{{ deleted_alias.reason or 'Unknown' }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro domain_deleted_aliases_table(domain_deleted_aliases, is_regex) %}
+  <div class="card mb-4">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+      <h6 class="mb-0">
+        <i class="fa fa-globe mr-2"></i>Domain Deleted Aliases
+        {% if domain_deleted_aliases|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Domain</th>
+              <th>Owner</th>
+              <th>Deleted At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dda in domain_deleted_aliases %}
+
+              <tr>
+                <td>
+                  <code>{{ dda.id }}</code>
+                </td>
+                <td>{{ highlight_email(dda.email, query, is_regex) }}</td>
+                <td>
+                  <code>{{ dda.domain.domain }}</code>
+                </td>
+                <td>
+                  <a href="?query={{ dda.domain.user_id }}&search_type=email">User #{{ dda.domain.user_id }}</a>
+                </td>
+                <td>{{ dda.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro alias_audit_log_table(alias_audit_log) %}
+  <div class="card mb-4">
+    <div class="card-header header-warning">
+      <h6 class="mb-0">
+        <i class="fa fa-history mr-2"></i>Alias Audit Log
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th class="text-nowrap">Time (UTC)</th>
+              <th>User ID</th>
+              <th>Alias</th>
+              <th>Action</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in alias_audit_log %}
+
+              <tr>
+                <td class="text-nowrap">
+                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+                </td>
+                <td>
+                  <a href="?query={{ entry.user_id }}&search_type=email">{{ entry.user_id }}</a>
+                </td>
+                <td>
+                  <a href="?query={{ entry.alias_email }}&search_type=alias"><code>{{ entry.alias_email }}</code></a>
+                </td>
+                <td>
+                  <span class="badge badge-dark">{{ entry.action }}</span>
+                </td>
+                <td class="text-truncate" style="max-width: 300px;">{{ entry.message or '-' }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">No audit log entries</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro user_audit_log_table(user_audit_log) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-clipboard-list mr-2"></i>User Audit Log <span class="badge badge-light">{{ user_audit_log|length }}</span>
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th class="text-nowrap">Time (UTC)</th>
+              <th>Action</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in user_audit_log %}
+
+              <tr>
+                <td class="text-nowrap">
+                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ entry.action }}</span>
+                </td>
+                <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.message or '-' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro abuser_audit_log_table(abuser_audit_log) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header header-danger">
+      <h6 class="mb-0">
+        <i class="fa fa-exclamation-triangle mr-2"></i>Abuse Audit Log <span class="badge badge-light">{{ abuser_audit_log|length }}</span>
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th class="text-nowrap">Time (UTC)</th>
+              <th>Admin</th>
+              <th>Action</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in abuser_audit_log %}
+
+              <tr>
+                <td class="text-nowrap">
+                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+                </td>
+                <td>
+                  {% if entry.admin_id %}
+
+                    {% set admin_email = helper.get_admin_email(entry.admin_id) %}
+                    {% if admin_email %}
+
+                      <a href="?query={{ admin_email }}&search_type=email">{{ admin_email }}</a>
+                    {% else %}
+                      <span class="text-muted">ID: {{ entry.admin_id }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">System</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-danger">{{ entry.action }}</span>
+                </td>
+                <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.message or '-' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro admin_audit_log_table(admin_audit_log) %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-user-shield mr-2"></i>Admin Actions <span class="badge badge-light">{{ admin_audit_log|length }}</span>
+      </h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th class="text-nowrap">Time (UTC)</th>
+              <th>Admin</th>
+              <th>Action</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in admin_audit_log %}
+
+              <tr>
+                <td class="text-nowrap">
+                  <small>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+                </td>
+                <td>
+                  {% if entry.admin %}
+
+                    <a href="?query={{ entry.admin.email }}&search_type=email">{{ entry.admin.email }}</a>
+                  {% else %}
+                    <span class="text-muted">Unknown</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ helper.action_name(entry.action) }}</span>
+                </td>
+                <td style="white-space: pre-wrap; word-break: break-word;">{{ entry.data }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro users_table(users, is_regex) %}
+  <div class="card mb-4">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+      <h6 class="mb-0">
+        <i class="fa fa-users mr-2"></i>Users Found
+        {% if users|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Verified</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+
+              <tr>
+                <td>
+                  <code>{{ user.id }}</code>
+                </td>
+                <td>
+                  <a href="?query={{ user.email }}&search_type=email">{{ highlight_email(user.email, query, is_regex) }}</a>
+                </td>
+                <td>{{ badge_status(user.activated, 'Yes', 'No', 'success', 'warning') }}</td>
+                <td>{{ badge_status(not user.disabled, 'Enabled', 'Disabled', 'success', 'danger') }}</td>
+                <td>{{ user.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+{% macro partner_users_table(partner_users, is_regex) %}
+  <div class="card mb-4">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+      <h6 class="mb-0">
+        <i class="fa fa-handshake mr-2"></i>Partner Users
+        {% if partner_users|length > 10 %}<small class="text-muted">(Showing 10)</small>{% endif %}
+      </h6>
+      {% if is_regex %}<span class="badge badge-info">Regex Match</span>{% endif %}
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Partner Email</th>
+              <th>User ID</th>
+              <th>User Email</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pu in partner_users %}
+
+              <tr>
+                <td>
+                  <code>{{ pu.id }}</code>
+                </td>
+                <td>{{ highlight_email(pu.partner_email, query, is_regex) }}</td>
+                <td>
+                  <code>{{ pu.user.id }}</code>
+                </td>
+                <td>
+                  <a href="?query={{ pu.user.email }}&search_type=email">{{ pu.user.email }}</a>
+                </td>
+                <td>{{ pu.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 {% endmacro %}
 {% block body %}
+  <style>
+    /* ========================================
+       Modern Admin Panel Color System
+       ======================================== */
+    :root {
+      /* Primary palette - Slate tones for professional look */
+      --color-primary: #1e293b;
+      --color-primary-light: #334155;
+      --color-primary-dark: #0f172a;
 
-  <div class="border border-dark border-2 mt-1 mb-2 p-3">
-    <form method="get">
-      <div class="form-group">
-        <label for="email">UserID or Email to search:</label>
-        <input type="text"
-               class="form-control"
-               name="query"
-               value="{{ email or '' }}" />
+      /* Semantic colors */
+      --color-success: #059669;
+      --color-success-light: #d1fae5;
+      --color-success-dark: #047857;
+
+      --color-warning: #d97706;
+      --color-warning-light: #fef3c7;
+      --color-warning-dark: #b45309;
+
+      --color-danger: #dc2626;
+      --color-danger-light: #fee2e2;
+      --color-danger-dark: #b91c1c;
+
+      --color-info: #0284c7;
+      --color-info-light: #e0f2fe;
+      --color-info-dark: #0369a1;
+
+      /* Neutral palette */
+      --color-neutral-50: #f8fafc;
+      --color-neutral-100: #f1f5f9;
+      --color-neutral-200: #e2e8f0;
+      --color-neutral-300: #cbd5e1;
+      --color-neutral-400: #94a3b8;
+      --color-neutral-500: #64748b;
+      --color-neutral-600: #475569;
+      --color-neutral-700: #334155;
+      --color-neutral-800: #1e293b;
+
+      /* Special purpose */
+      --color-caution: #ea580c;
+      --color-caution-light: #fff7ed;
+      --color-purple: #7c3aed;
+      --color-purple-light: #ede9fe;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+      /* Border radius */
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+    }
+
+    /* ========================================
+       Base Styles
+       ======================================== */
+    .container-fluid {
+      background-color: var(--color-neutral-50);
+      min-height: 100vh;
+        padding: 0;
+    }
+
+    /* ========================================
+       Card Styles
+       ======================================== */
+    .card {
+      border: none;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-header {
+      border-bottom: none;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+    }
+
+    .card-header h5, .card-header h6 {
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    /* Header variants */
+    .header-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+      color: white;
+    }
+
+    .header-success {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      color: white;
+    }
+
+    .header-danger {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      color: white;
+    }
+
+    .header-warning {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+      color: white;
+    }
+
+    .header-info {
+      background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+      color: white;
+    }
+
+    .header-neutral {
+      background: var(--color-neutral-100);
+      color: var(--color-neutral-700);
+    }
+
+    .header-caution {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+      color: white;
+    }
+
+    .header-purple {
+      background: linear-gradient(135deg, #6d28d9 0%, var(--color-purple) 100%);
+      color: white;
+    }
+
+    /* ========================================
+       Badge Styles
+       ======================================== */
+    .badge {
+      font-weight: 500;
+      padding: 0.35em 0.65em;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      letter-spacing: 0.025em;
+    }
+
+    .badge-success {
+      background-color: var(--color-success) !important;
+      color: white !important;
+    }
+
+    .badge-danger {
+      background-color: var(--color-danger) !important;
+      color: white !important;
+    }
+
+    .badge-warning {
+      background-color: var(--color-warning) !important;
+      color: white !important;
+    }
+
+    .badge-info {
+      background-color: var(--color-info) !important;
+      color: white !important;
+    }
+
+    .badge-secondary {
+      background-color: var(--color-neutral-500) !important;
+      color: white !important;
+    }
+
+    .badge-dark {
+      background-color: var(--color-primary) !important;
+      color: white !important;
+    }
+
+    .badge-light {
+      background-color: var(--color-neutral-100) !important;
+      color: var(--color-neutral-700) !important;
+    }
+
+    .badge-purple {
+      background-color: var(--color-purple) !important;
+      color: white !important;
+    }
+
+    .badge-caution {
+      background-color: var(--color-caution) !important;
+      color: white !important;
+    }
+
+    /* Status badges with subtle backgrounds */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-success {
+      background-color: var(--color-success-light);
+      color: var(--color-success-dark);
+    }
+
+    .status-danger {
+      background-color: var(--color-danger-light);
+      color: var(--color-danger-dark);
+    }
+
+    .status-warning {
+      background-color: var(--color-warning-light);
+      color: var(--color-warning-dark);
+    }
+
+    .status-info {
+      background-color: var(--color-info-light);
+      color: var(--color-info-dark);
+    }
+
+    .status-neutral {
+      background-color: var(--color-neutral-200);
+      color: var(--color-neutral-600);
+    }
+
+    /* ========================================
+       Button Styles
+       ======================================== */
+    .btn {
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary-modern {
+      background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-primary-modern:hover {
+      background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-danger-modern {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-danger-modern:hover {
+      background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .btn-success-modern {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-success-modern:hover {
+      background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+      color: white;
+    }
+
+    .btn-caution-modern {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+      border: none;
+      color: white;
+    }
+
+    .btn-caution-modern:hover {
+      background: linear-gradient(135deg, var(--color-caution) 0%, #c2410c 100%);
+      color: white;
+    }
+
+    .btn-neutral-modern {
+      background: var(--color-neutral-500);
+      border: none;
+      color: white;
+    }
+
+    .btn-neutral-modern:hover {
+      background: var(--color-neutral-600);
+      color: white;
+    }
+
+    /* ========================================
+       Table Styles
+       ======================================== */
+    .table {
+      margin-bottom: 0;
+    }
+
+    .table thead th {
+      background-color: var(--color-neutral-100);
+      border-bottom: 2px solid var(--color-neutral-200);
+      color: var(--color-neutral-600);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+    }
+
+    .table tbody td {
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--color-neutral-100);
+      color: var(--color-neutral-700);
+    }
+
+    .table tbody tr:hover {
+      background-color: var(--color-neutral-50);
+    }
+
+    .table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table code {
+      background-color: var(--color-neutral-100);
+      padding: 0.125rem 0.375rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8125rem;
+      color: var(--color-neutral-700);
+    }
+
+    /* Prevent ID columns from wrapping */
+    .table th:first-child,
+    .table td:first-child {
+      white-space: nowrap;
+    }
+
+    .table td code {
+      white-space: nowrap;
+    }
+
+    /* ========================================
+       Form Styles
+       ======================================== */
+    .form-control {
+      border: 1px solid var(--color-neutral-300);
+      border-radius: var(--radius-md);
+      padding: 0.625rem 0.875rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--color-info);
+      box-shadow: 0 0 0 3px var(--color-info-light);
+    }
+
+    .form-control-lg {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+    }
+
+    .input-group-text {
+      background-color: var(--color-neutral-100);
+      border: 1px solid var(--color-neutral-300);
+      color: var(--color-neutral-600);
+    }
+
+    /* ========================================
+       Search Type Toggle
+       ======================================== */
+    .input-group-prepend .btn-group-toggle {
+      display: flex;
+      margin-right: 0.5rem;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn {
+      border-radius: 0;
+      margin: 0;
+      border: 1px solid var(--color-neutral-300);
+      background: white;
+      color: var(--color-neutral-600);
+      padding: 0.5rem 1rem;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn + .btn {
+      margin-left: -1px;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:first-child {
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:last-child {
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+
+    .input-group-prepend .btn-group-toggle .btn:hover {
+      border-color: var(--color-info);
+      color: var(--color-info);
+      z-index: 1;
+    }
+
+    .input-group-prepend .btn-group-toggle .btn.active {
+      background: var(--color-info);
+      border-color: var(--color-info);
+      color: white;
+      z-index: 2;
+    }
+
+    /* Responsive: stack on small screens */
+    @media (max-width: 767.98px) {
+      .input-group-lg {
+        flex-wrap: wrap;
+      }
+      .input-group-lg .input-group-prepend {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle {
+        width: 100%;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn {
+        flex: 1;
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn:first-child {
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+      }
+      .input-group-lg .input-group-prepend .btn-group-toggle .btn:last-child {
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      }
+      .input-group-lg .form-control {
+        border-radius: var(--radius-md) 0 0 var(--radius-md) !important;
+      }
+      .input-group-lg .input-group-append {
+        flex: 0 0 auto;
+      }
+      .input-group-lg .input-group-append .btn {
+        border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+      }
+    }
+
+    /* ========================================
+       Section Headers
+       ======================================== */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-neutral-500);
+      border-bottom: 2px solid var(--color-neutral-200);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ========================================
+       Info Card Styles
+       ======================================== */
+    .info-table {
+      width: 100%;
+    }
+
+    .info-table td {
+      padding: 0.375rem 0;
+    }
+
+    .info-table .label {
+      color: var(--color-neutral-500);
+      font-size: 0.8125rem;
+      width: 100px;
+    }
+
+    .info-table .value {
+      color: var(--color-neutral-700);
+    }
+
+    .info-table a {
+      color: var(--color-info);
+      text-decoration: none;
+    }
+
+    .info-table a:hover {
+      color: var(--color-info-dark);
+      text-decoration: underline;
+    }
+
+    /* ========================================
+       Actions Card
+       ======================================== */
+    .actions-card {
+      border: 2px solid var(--color-caution) !important;
+      border-radius: var(--radius-lg);
+    }
+
+    .actions-card .card-header {
+      background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+    }
+
+    .actions-card .card-body {
+      background-color: var(--color-caution-light);
+    }
+
+    .action-section-title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-neutral-500);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ========================================
+       Alert Styles
+       ======================================== */
+    .alert {
+      border: none;
+      border-radius: var(--radius-md);
+    }
+
+    .alert-warning {
+      background-color: var(--color-warning-light);
+      color: var(--color-warning-dark);
+    }
+
+    .alert-info {
+      background-color: var(--color-info-light);
+      color: var(--color-info-dark);
+    }
+
+    .alert-danger {
+      background-color: var(--color-danger-light);
+      color: var(--color-danger-dark);
+    }
+
+    /* ========================================
+       Audit Log Styles
+       ======================================== */
+    .audit-card {
+      max-height: 400px;
+      overflow: hidden;
+    }
+
+    .audit-card .card-body {
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .audit-card.audit-user .card-header {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+    }
+
+    .audit-card.audit-abuser .card-header {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    }
+
+    .audit-card.audit-admin .card-header {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
+    }
+
+    .audit-card.audit-alias .card-header {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+    }
+
+    /* ========================================
+       Modal Styles
+       ======================================== */
+    .modal-content {
+      border: none;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      border-bottom: none;
+    }
+
+    .modal-header.modal-danger {
+      background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-success {
+      background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-warning {
+      background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-caution {
+      background: linear-gradient(135deg, var(--color-caution-dark) 0%, var(--color-caution) 100%);
+      color: white;
+    }
+
+    .modal-header.modal-neutral {
+      background: var(--color-neutral-500);
+      color: white;
+    }
+
+    .modal-header.modal-primary {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+      color: white;
+    }
+
+    .modal-footer {
+      border-top: 1px solid var(--color-neutral-200);
+      background-color: var(--color-neutral-50);
+    }
+
+    /* ========================================
+       Responsive Fixes
+       ======================================== */
+    @media (max-width: 991.98px) {
+      .user-info-row .col-lg-9,
+      .user-info-row .col-lg-3 {
+        margin-bottom: 1rem;
+      }
+      .audit-log-row .col-lg-4 {
+        margin-bottom: 1rem;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .info-section .col-md-6 {
+        margin-bottom: 1rem;
+      }
+      .card-body {
+        padding: 0.75rem;
+      }
+      .quota-input-group .input-group-prepend .input-group-text {
+        width: auto !important;
+        min-width: 70px;
+        font-size: 0.7rem !important;
+      }
+    }
+
+    @media (max-width: 575.98px) {
+      .card-body {
+        padding: 0.5rem;
+      }
+      .action-btn {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+  <div class="container-fluid px-4" style="padding: 0">
+    <!-- Search Form -->
+    <div class="card mb-4">
+      <div class="card-header header-primary">
+        <h5 class="mb-0">
+          <i class="fa fa-search mr-2"></i>Email Search
+        </h5>
       </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
+      <div class="card-body">
+        <form method="get">
+          <div class="mb-3">
+            <label for="query" class="font-weight-bold">Search Query</label>
+            <div class="input-group input-group-lg">
+              <div class="input-group-prepend">
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'email' else '' }}">
+                    <input type="radio" name="search_type" value="email" {{ 'checked' if search_type == 'email' else '' }}>
+                    <i class="fa fa-user mr-1"></i>User
+                  </label>
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'alias' else '' }}">
+                    <input type="radio" name="search_type" value="alias" {{ 'checked' if search_type == 'alias' else '' }}>
+                    <i class="fa fa-at mr-1"></i>Alias
+                  </label>
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'partner' else '' }}">
+                    <input type="radio" name="search_type" value="partner" {{ 'checked' if search_type == 'partner' else '' }}>
+                    <i class="fa fa-handshake mr-1"></i>Partner
+                  </label>
+                  <label class="btn btn-outline-primary {{ 'active' if search_type == 'regex' else '' }}">
+                    <input type="radio" name="search_type" value="regex" {{ 'checked' if search_type == 'regex' else '' }}>
+                    <i class="fa fa-code mr-1"></i>Regex
+                  </label>
+                </div>
+              </div>
+              <input type="text"
+                     class="form-control"
+                     name="query"
+                     id="query"
+                     value="{{ query or '' }}"
+                     placeholder="{{ 'alias@example.com or alias ID' if search_type == 'alias' else ('partner email or external user ID' if search_type == 'partner' else ('POSIX regex pattern' if search_type == 'regex' else 'email@example.com or user ID (exact match only)')) }}">
+              <div class="input-group-append">
+                <button type="submit" class="btn btn-primary-modern" id="searchBtn">
+                  <span class="search-icon"><i class="fa fa-search mr-1"></i>Search</span>
+                  <span class="search-spinner d-none"><i class="fa fa-spinner fa-spin mr-1"></i>Searching...</span>
+                </button>
+              </div>
+            </div>
+            <small class="form-text text-muted" id="search-help">
+              {% if search_type == 'alias' %}
+
+                <i class="fa fa-info-circle mr-1"></i>Enter the full alias email address or alias ID. Only exact matches are returned.
+              {% elif search_type == 'partner' %}
+                <i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.
+              {% elif search_type == 'regex' %}
+                <i class="fa fa-info-circle mr-1"></i>Search using POSIX regex pattern in user email, mailbox email, and partner email. Limited to 10 results per table.
+              {% else %}
+                <i class="fa fa-info-circle mr-1"></i>Search by user email, mailbox email, partner email, or user ID. Only exact matches are returned.
+              {% endif %}
+            </small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- No Results Alert -->
+    {% if data.no_match and query %}
+
+      <div class="alert alert-warning shadow-sm" role="alert">
+        <i class="fa fa-exclamation-triangle mr-2"></i>
+        No results found for "<strong>{{ query }}</strong>" in {{ 'aliases' if search_type == 'alias' else ('partner users' if search_type == 'partner' else ('user/mailbox/partner emails (regex search)' if search_type == 'regex' else 'emails')) }}
+      </div>
+    {% endif %}
+    <!-- Alias Search Results -->
+    {% if search_type == 'alias' %}
+      {% if data.aliases %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-success">
+            <h5 class="mb-0">
+              <i class="fa fa-at mr-2"></i>
+              {% if data.aliases_found_by_regex %}
+
+                {{ data.aliases|length }} Aliases matching "{{ query }}"
+              {% else %}
+                Alias: {{ data.aliases[0].email }}
+              {% endif %}
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if not data.aliases_found_by_regex and data.aliases|length == 1 %}
+
+              <div class="row mb-4 user-info-row">
+                <div class="col-lg-9 mb-3 mb-lg-0">
+                  {{ alias_info_card(data.aliases[0]) }}
+                </div>
+                <div class="col-lg-3">
+                  {{ alias_actions_card(data.aliases[0]) }}
+                </div>
+              </div>
+              {{ alias_audit_log_table(data.alias_audit_log) }}
+              {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
+              {{ contacts_table(helper.contact_list(data.aliases[0], page=contact_page) , helper.alias_contact_count(data.aliases[0]), contact_page, helper.contact_total_pages(data.aliases[0]), page_size) }}
+              {{ user_info_card(data.aliases[0].user) }}
+              {{ user_actions_card(data.aliases[0].user) }}
+            {% else %}
+              {{ aliases_table(data.aliases|length, data.aliases, data.aliases_found_by_regex) }}
+              {% if data.alias_audit_log %}
+
+                {{ alias_audit_log_table(data.alias_audit_log) }}
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% if data.deleted_aliases %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-neutral">
+            <h5 class="mb-0">
+              <i class="fa fa-trash-alt mr-2"></i>
+              {% if data.deleted_aliases_found_by_regex %}
+
+                {{ data.deleted_aliases|length }} Deleted Aliases matching "{{ query }}"
+              {% else %}
+                Deleted Alias: {{ data.deleted_aliases[0].email }}
+              {% endif %}
+            </h5>
+          </div>
+          <div class="card-body">
+            {{ deleted_aliases_table(data.deleted_aliases, data.deleted_aliases_found_by_regex) }}
+            {% if data.deleted_alias_audit_log %}{{ alias_audit_log_table(data.deleted_alias_audit_log) }}{% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% if data.domain_deleted_aliases %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-primary">
+            <h5 class="mb-0">
+              <i class="fa fa-globe mr-2"></i>
+              {% if data.domain_deleted_aliases_found_by_regex %}
+
+                {{ data.domain_deleted_aliases|length }} Domain Deleted Aliases matching "{{ query }}"
+              {% else %}
+                Domain Deleted Alias: {{ data.domain_deleted_aliases[0].email }}
+              {% endif %}
+            </h5>
+          </div>
+          <div class="card-body">
+            {{ domain_deleted_aliases_table(data.domain_deleted_aliases, data.domain_deleted_aliases_found_by_regex) }}
+            {% if data.domain_deleted_alias_audit_log %}
+
+              {{ alias_audit_log_table(data.domain_deleted_alias_audit_log) }}
+            {% endif %}
+            {% if not data.domain_deleted_aliases_found_by_regex and data.domain_deleted_aliases|length == 1 %}
+
+              {{ user_info_card(data.domain_deleted_aliases[0].domain.user) }}
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <!-- Email Search Results -->
+      {% set ns = namespace(seen_user_ids=[]) %}
+      {% if data.users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-success">
+            <h5 class="mb-0">
+              <i class="fa fa-user mr-2"></i>
+              {% if data.users_found_by_regex %}
+
+                {{ data.users|length }} Users matching "{{ query }}"
+              {% else %}
+                User: {{ data.users[0].email }}
+              {% endif %}
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if data.users_found_by_regex %}
+
+              {{ users_table(data.users, data.users_found_by_regex) }}
+            {% else %}
+              {% set ns.seen_user_ids = ns.seen_user_ids + [data.users[0].id] %}
+              {{ user_info_card(data.users[0]) }}
+              {{ user_actions_card(data.users[0]) }}
+              {{ mailboxes_table("User Mailboxes", helper.mailbox_count(data.users[0]) , helper.mailbox_list(data.users[0], page=mailbox_page), false, none, mailbox_page, helper.mailbox_total_pages(data.users[0]), page_size) }}
+              {{ aliases_table(helper.alias_count(data.users[0]) , helper.alias_list(data.users[0], page=alias_page), false, alias_page, helper.alias_total_pages(data.users[0]), page_size) }}
+              {{ custom_domains_table(helper.custom_domain_list(data.users[0], page=domain_page) , helper.custom_domain_count(data.users[0]), domain_page, helper.custom_domain_total_pages(data.users[0]), page_size) }}
+              {# Audit Logs Section #}
+              <div class="row audit-log-row">
+                <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                  {% if data.user_audit_log %}{{ user_audit_log_table(data.user_audit_log) }}{% endif %}
+                </div>
+                <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                  {% if data.abuser_audit_log %}{{ abuser_audit_log_table(data.abuser_audit_log) }}{% endif %}
+                </div>
+                <div class="col-xl-4 col-lg-12">
+                  {% if data.admin_audit_log %}{{ admin_audit_log_table(data.admin_audit_log) }}{% endif %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% if data.user_audit_log and not data.users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-warning">
+            <h5 class="mb-0">
+              <i class="fa fa-history mr-2"></i>Audit log entries for: {{ data.query }}
+            </h5>
+          </div>
+          <div class="card-body">{{ user_audit_log_table(data.user_audit_log) }}</div>
+        </div>
+      {% endif %}
+      {% if data.mailboxes %}
+        {% if data.mailboxes_found_by_regex %}
+
+          {# Regex search: show mailboxes table only #}
+          <div class="card mb-4 shadow-sm">
+            <div class="card-header header-info">
+              <h5 class="mb-0">
+                <i class="fa fa-inbox mr-2"></i>
+                {{ data.mailbox_count }} Mailboxes matching "{{ query }}"
+              </h5>
+            </div>
+            <div class="card-body">
+              {{ mailboxes_table("Mailboxes found", data.mailbox_count, data.mailboxes, data.mailboxes_found_by_regex) }}
+            </div>
+          </div>
+        {% else %}
+          {# Exact match: show user directly #}
+          {% for mailbox in data.mailboxes %}
+
+            {% if mailbox.user_id not in ns.seen_user_ids %}
+
+              {% set ns.seen_user_ids = ns.seen_user_ids + [mailbox.user_id] %}
+              <div class="card mb-4 shadow-sm">
+                <div class="card-header header-success">
+                  <h5 class="mb-0">
+                    <i class="fa fa-user mr-2"></i>
+                    User: {{ mailbox.user.email }}
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="alert alert-info mb-3">
+                    <i class="fa fa-info-circle mr-1"></i>
+                    Found via mailbox: <strong>{{ mailbox.email }}</strong>
+                  </div>
+                  {{ user_info_card(mailbox.user) }}
+                  {{ user_actions_card(mailbox.user) }}
+                  {{ mailboxes_table("User Mailboxes", helper.mailbox_count(mailbox.user) , helper.mailbox_list(mailbox.user, mailbox.id, page=mailbox_page), false, mailbox.email, mailbox_page, helper.mailbox_total_pages(mailbox.user), page_size) }}
+                  {{ aliases_table(helper.alias_count(mailbox.user) , helper.alias_list(mailbox.user, page=alias_page), false, alias_page, helper.alias_total_pages(mailbox.user), page_size) }}
+                  {{ custom_domains_table(helper.custom_domain_list(mailbox.user, page=domain_page) , helper.custom_domain_count(mailbox.user), domain_page, helper.custom_domain_total_pages(mailbox.user), page_size) }}
+                  {# Audit Logs Section #}
+                  {% set user_audit = helper.user_audit_log(mailbox.user) %}
+                  {% set abuser_audit = helper.abuser_audit_log(mailbox.user) %}
+                  {% set admin_audit = helper.admin_audit_log(mailbox.user) %}
+                  {% if user_audit or abuser_audit or admin_audit %}
+
+                    <div class="row audit-log-row">
+                      <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                        {% if user_audit %}{{ user_audit_log_table(user_audit) }}{% endif %}
+                      </div>
+                      <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                        {% if abuser_audit %}{{ abuser_audit_log_table(abuser_audit) }}{% endif %}
+                      </div>
+                      <div class="col-xl-4 col-lg-12">
+                        {% if admin_audit %}{{ admin_audit_log_table(admin_audit) }}{% endif %}
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+      {% if data.partner_users %}
+        {% if data.partner_users_found_by_regex %}
+
+          {# Regex search: show partner users table only #}
+          <div class="card mb-4 shadow-sm">
+            <div class="card-header header-purple">
+              <h5 class="mb-0">
+                <i class="fa fa-handshake mr-2"></i>
+                {{ data.partner_users|length }} Partner Users matching "{{ query }}"
+              </h5>
+            </div>
+            <div class="card-body">{{ partner_users_table(data.partner_users, data.partner_users_found_by_regex) }}</div>
+          </div>
+        {% else %}
+          {# Exact match: show user directly if not already shown #}
+          {% set pu = data.partner_users[0] %}
+          {% if pu.user_id not in ns.seen_user_ids %}
+
+            {% set ns.seen_user_ids = ns.seen_user_ids + [pu.user_id] %}
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header header-success">
+                <h5 class="mb-0">
+                  <i class="fa fa-user mr-2"></i>
+                  User: {{ pu.user.email }}
+                </h5>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-info mb-3">
+                  <i class="fa fa-handshake mr-1"></i>
+                  Found via Proton account: <strong>{{ pu.partner_email }}</strong>
+                </div>
+                {{ user_info_card(pu.user) }}
+                {{ user_actions_card(pu.user) }}
+                {{ mailboxes_table("User Mailboxes", helper.mailbox_count(pu.user) , helper.mailbox_list(pu.user, page=mailbox_page), false, none, mailbox_page, helper.mailbox_total_pages(pu.user), page_size) }}
+                {{ aliases_table(helper.alias_count(pu.user) , helper.alias_list(pu.user, page=alias_page), false, alias_page, helper.alias_total_pages(pu.user), page_size) }}
+                {{ custom_domains_table(helper.custom_domain_list(pu.user, page=domain_page) , helper.custom_domain_count(pu.user), domain_page, helper.custom_domain_total_pages(pu.user), page_size) }}
+                {# Audit Logs Section #}
+                {% set user_audit = helper.user_audit_log(pu.user) %}
+                {% set abuser_audit = helper.abuser_audit_log(pu.user) %}
+                {% set admin_audit = helper.admin_audit_log(pu.user) %}
+                {% if user_audit or abuser_audit or admin_audit %}
+
+                  <div class="row audit-log-row">
+                    <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                      {% if user_audit %}{{ user_audit_log_table(user_audit) }}{% endif %}
+                    </div>
+                    <div class="col-xl-4 col-lg-6 mb-3 mb-xl-0">
+                      {% if abuser_audit %}{{ abuser_audit_log_table(abuser_audit) }}{% endif %}
+                    </div>
+                    <div class="col-xl-4 col-lg-12">
+                      {% if admin_audit %}{{ admin_audit_log_table(admin_audit) }}{% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endif %}
   </div>
-  {% if data.no_match and email %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var queryInput = document.getElementById('query');
+      var searchHelp = document.getElementById('search-help');
+      var btnGroupLabels = document.querySelectorAll('.btn-group-toggle label');
+      var searchBtn = document.getElementById('searchBtn');
+      var searchForm = searchBtn ? searchBtn.closest('form') : null;
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">No user, alias or mailbox found for {{ email }}</div>
-  {% endif %}
-  {% if data.alias %}
+      function updateSearchHelp(searchType) {
+        if (searchType === 'alias') {
+          queryInput.placeholder = 'alias@example.com or alias ID';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Enter the full alias email address or alias ID. Only exact matches are returned.';
+        } else if (searchType === 'partner') {
+          queryInput.placeholder = 'partner email or external user ID';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by partner email (contains @) or external user ID.';
+        } else if (searchType === 'regex') {
+          queryInput.placeholder = 'POSIX regex pattern';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search using POSIX regex pattern in user email, mailbox email, and partner email. Limited to 10 results per table.';
+        } else {
+          queryInput.placeholder = 'email@example.com or user ID (exact match only)';
+          searchHelp.innerHTML = '<i class="fa fa-info-circle mr-1"></i>Search by user email, mailbox email, partner email, or user ID. Only exact matches are returned.';
+        }
+      }
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Alias {{ data.alias.email }}</h3>
-      {{ list_alias(1,[data.alias]) }}
-      {{ list_alias_audit_log(data.alias_audit_log) }}
-      {{ list_mailboxes("Mailboxes for alias", helper.alias_mailbox_count(data.alias) , helper.alias_mailboxes(data.alias)) }}
-      {{ show_user(data.alias.user) }}
-    </div>
-  {% endif %}
-  {% if data.user %}
+      btnGroupLabels.forEach(function(label) {
+        label.addEventListener('click', function() {
+          var radio = this.querySelector('input[type="radio"]');
+          if (radio) {
+            updateSearchHelp(radio.value);
+          }
+        });
+      });
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-      {{ show_user(data.user) }}
-      {{ list_mailboxes("Mailboxes for user", helper.mailbox_count(data.user) , helper.mailbox_list(data.user) ) }}
-      {{ list_alias(helper.alias_count(data.user) ,helper.alias_list(data.user)) }}
-    </div>
-  {% endif %}
-  {% if data.user_audit_log %}
+      // Show spinner on form submit
+      if (searchForm && searchBtn) {
+        searchForm.addEventListener('submit', function() {
+          var searchIcon = searchBtn.querySelector('.search-icon');
+          var searchSpinner = searchBtn.querySelector('.search-spinner');
+          if (searchIcon && searchSpinner) {
+            searchIcon.classList.add('d-none');
+            searchSpinner.classList.remove('d-none');
+            searchBtn.disabled = true;
+          }
+        });
+      }
 
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Audit log entries for user {{ data.query }}</h3>
-      {{ list_user_audit_log(data.user_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.mailbox_count > 10 %}
-
-    <h3>Found more than 10 mailboxes for {{ email }}. Showing the last 10</h3>
-  {% elif data.mailbox_count > 0 %}
-    <h3>Found {{ data.mailbox_count }} mailbox(es) for {{ email }}</h3>
-  {% endif %}
-  {% for mailbox in data.mailbox %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found Mailbox {{ mailbox.email }}</h3>
-      {{ list_mailboxes("Mailbox found", 1, [mailbox]) }}
-      {{ show_user(mailbox.user) }}
-    </div>
-  {% endfor %}
-  {% if data.deleted_alias %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DeletedAlias {{ data.deleted_alias.email }}</h3>
-      {{ show_deleted_alias(data.deleted_alias) }}
-      {{ list_alias_audit_log(data.deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
-  {% if data.domain_deleted_alias %}
-
-    <div class="border border-dark mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found DomainDeletedAlias {{ data.domain_deleted_alias.email }}</h3>
-      {{ show_domain_deleted_alias(data.domain_deleted_alias) }}
-      {{ list_alias_audit_log(data.domain_deleted_alias_audit_log) }}
-    </div>
-  {% endif %}
+      // Copy to clipboard functionality
+      document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var text = this.getAttribute('data-copy');
+          navigator.clipboard.writeText(text).then(function() {
+            var icon = btn.querySelector('i');
+            icon.classList.remove('fa-copy', 'text-muted');
+            icon.classList.add('fa-check', 'text-success');
+            setTimeout(function() {
+              icon.classList.remove('fa-check', 'text-success');
+              icon.classList.add('fa-copy', 'text-muted');
+            }, 1500);
+          });
+        });
+      });
+    });
+  </script>
 {% endblock %}

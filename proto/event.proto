@@ -30,6 +30,12 @@ message AliasDeleted {
   string email = 2;
 }
 
+message AliasNoteChanged {
+    uint32 id = 1;
+    string email = 2;
+    string note = 3;
+}
+
 message AliasCreatedList {
   repeated AliasCreated events = 1;
 }
@@ -46,6 +52,7 @@ message EventContent {
     AliasDeleted alias_deleted = 5;
     AliasCreatedList alias_create_list = 6;
     UserUnlinked user_unlinked = 7;
+    AliasNoteChanged alias_note_changed = 8;
   }
 }
 

@@ -1,5 +1,3 @@
-import uuid
-
 from flask import request, flash, render_template, url_for, g
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
@@ -10,6 +8,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.models import ResetPasswordCode
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_settings import regenerate_user_alternative_id
 
 
 class ResetPasswordForm(FlaskForm):
@@ -70,7 +69,7 @@ def reset_password():
         ResetPasswordCode.filter_by(user_id=user.id).delete()
 
         # change the alternative_id to log user out on other browsers
-        user.alternative_id = str(uuid.uuid4())
+        regenerate_user_alternative_id(user)
 
         Session.commit()
 

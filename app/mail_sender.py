@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 import base64
 import email
 import json
 import os
-import time
+import random
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from email.message import Message
@@ -12,6 +13,8 @@ from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
 import newrelic.agent
+import sentry_sdk
+import time
 from attr import dataclass
 
 from app import config
@@ -97,6 +100,7 @@ class MailSender:
     def __init__(self):
         self._pool: Optional[ThreadPoolExecutor] = None
         self._store_emails = False
+        self._randomize_smtp_hosts = True
         self._emails_sent: List[SendRequest] = []
 
     def store_emails_instead_of_sending(self, store_emails: bool = True):
@@ -142,62 +146,89 @@ class MailSender:
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
-        try:
+        servers_to_try = config.POSTFIX_SERVERS.copy()
+        if self._randomize_smtp_hosts:
+            random.shuffle(servers_to_try)
+        if config.POSTFIX_BACKUP_SERVERS:
+            servers_to_try.extend(config.POSTFIX_BACKUP_SERVERS)
+        servers_tried = 0
+        for server_hostname in servers_to_try:
+            servers_tried += 1
             start = time.time()
-            with SMTP(
-                config.POSTFIX_SERVER,
-                config.POSTFIX_PORT,
-                timeout=config.POSTFIX_TIMEOUT,
-            ) as smtp:
-                if config.POSTFIX_SUBMISSION_TLS:
-                    smtp.starttls()
-
-                elapsed = time.time() - start
-                LOG.d("getting a smtp connection takes seconds %s", elapsed)
+            try:
+                return self.__send_to_server(server_hostname, send_request)
+            except (
+                SMTPException,
+                ConnectionRefusedError,
+                TimeoutError,
+            ) as e:
+                LOG.w(f"Got error {e} while sending email to {server_hostname}")
+                newrelic.agent.record_custom_event("SmtpError", {"error": e.__class__})
+            finally:
                 newrelic.agent.record_custom_metric(
-                    "Custom/smtp_connection_time", elapsed
+                    "Custom/smtp_servers_tried", servers_tried
                 )
-
-                # smtp.send_message has UnicodeEncodeError
-                # encode message raw directly instead
-                LOG.d(
-                    "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
-                    send_request.envelope_from,
-                    send_request.envelope_to,
-                    send_request.msg[headers.FROM],
-                    send_request.msg[headers.TO],
-                    send_request.msg[headers.CC],
-                )
-                smtp.sendmail(
-                    send_request.envelope_from,
-                    send_request.envelope_to,
-                    message_to_bytes(send_request.msg),
-                    send_request.mail_options,
-                    send_request.rcpt_options,
-                )
-
                 newrelic.agent.record_custom_metric(
                     "Custom/smtp_sending_time", time.time() - start
                 )
-                return True
-        except (
-            SMTPException,
-            ConnectionRefusedError,
-            TimeoutError,
-        ) as e:
-            if retries > 0:
-                time.sleep(0.3 * retries)
-                return self._send_to_smtp(send_request, retries - 1)
-            else:
-                if send_request.ignore_smtp_errors:
-                    LOG.e(f"Ignore smtp error {e}")
-                    return False
-                LOG.e(
-                    f"Could not send message to smtp server {config.POSTFIX_SERVER}:{config.POSTFIX_PORT}"
-                )
-                if config.SAVE_UNSENT_DIR:
-                    send_request.save_request_to_unsent_dir()
+        if retries > 0:
+            LOG.warning(
+                f"Retrying sending email due to error. {retries} retries left. Will wait {0.3*retries} seconds."
+            )
+            time.sleep(0.3 * retries)
+            return self._send_to_smtp(send_request, retries - 1)
+        else:
+            if send_request.ignore_smtp_errors:
+                LOG.w("Ignore smtp error and skip saving to fs email")
                 return False
+            if config.SAVE_UNSENT_DIR:
+                send_request.save_request_to_unsent_dir()
+            return False
+
+    def __send_to_server(self, server_host: str, send_request: SendRequest):
+        start = time.time()
+        server_split = server_host.split(":")
+        if len(server_split) == 1:
+            server_host = server_split[0]
+            server_port = config.POSTFIX_PORT
+        else:
+            server_host = server_split[0]
+            server_port = server_split[1]
+        with SMTP(
+            host=server_host, port=server_port, timeout=config.POSTFIX_CONNECT_TIMEOUT
+        ) as smtp:
+            smtp.sock.settimeout(config.POSTFIX_TIMEOUT)
+
+            if config.POSTFIX_SUBMISSION_TLS:
+                smtp.starttls()
+
+            elapsed = time.time() - start
+            LOG.d(
+                f"Getting a smtp connection to {server_host}:{server_port} takes seconds {elapsed:.3} seconds"
+            )
+            newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
+
+            # smtp.send_message has UnicodeEncodeError
+            # encode message raw directly instead
+            LOG.d(
+                "Sendmail mail_from:%s, rcpt_to:%s, header_from:%s, header_to:%s, header_cc:%s",
+                send_request.envelope_from,
+                send_request.envelope_to,
+                send_request.msg[headers.FROM],
+                send_request.msg[headers.TO],
+                send_request.msg[headers.CC],
+            )
+            smtp.sendmail(
+                send_request.envelope_from,
+                send_request.envelope_to,
+                message_to_bytes(send_request.msg),
+                send_request.mail_options,
+                send_request.rcpt_options,
+            )
+        LOG.d(
+            f"Email sent using {server_host}:{server_port} from {send_request.envelope_from} to {send_request.envelope_to}"
+        )
+        return True
 
 
 mail_sender = MailSender()
@@ -267,6 +298,7 @@ def load_unsent_mails_from_fs_and_resend():
             )
 
 
+@sentry_sdk.trace
 def sl_sendmail(
     envelope_from: str,
     envelope_to: str,

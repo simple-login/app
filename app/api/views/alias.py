@@ -19,6 +19,7 @@ from app.api.serializer import (
     get_alias_info_v2,
     get_alias_infos_with_pagination_v3,
 )
+from app.contact_utils import contact_toggle_block
 from app.dashboard.views.alias_contact_manager import create_contact
 from app.dashboard.views.alias_log import get_alias_log
 from app.db import Session
@@ -165,7 +166,8 @@ def delete_alias(alias_id):
     if not alias or alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
 
-    alias_delete.delete_alias(alias, user, AliasDeleteReason.ManualAction)
+    LOG.i(f"User {user} is deleting alias {alias}")
+    alias_delete.delete_alias(alias, user, AliasDeleteReason.ManualAction, commit=True)
 
     return jsonify(deleted=True), 200
 
@@ -286,7 +288,7 @@ def update_alias(alias_id):
     changed = False
     if "note" in data:
         new_note = data.get("note")
-        alias.note = new_note
+        alias_utils.change_alias_note(alias, new_note)
         changed_fields.append("note")
         changed = True
 
@@ -303,7 +305,7 @@ def update_alias(alias_id):
     if "mailbox_ids" in data:
         try:
             mailbox_ids = [int(m_id) for m_id in data.get("mailbox_ids")]
-        except ValueError:
+        except (ValueError, TypeError):
             return jsonify(error="Invalid mailbox_id"), 400
         err = set_mailboxes_for_alias(
             user_id=user.id, alias=alias, mailbox_ids=mailbox_ids
@@ -484,13 +486,6 @@ def toggle_contact(contact_id):
 
     if not contact or contact.alias.user_id != user.id:
         return jsonify(error="Forbidden"), 403
-
-    contact.block_forward = not contact.block_forward
-    emit_alias_audit_log(
-        alias=contact.alias,
-        action=AliasAuditLogAction.UpdateContact,
-        message=f"Set contact state {contact.id} {contact.email} -> {contact.website_email} to blocked {contact.block_forward}",
-    )
-    Session.commit()
+    contact_toggle_block(contact)
 
     return jsonify(block_forward=contact.block_forward), 200

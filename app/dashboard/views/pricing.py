@@ -1,5 +1,4 @@
 import arrow
-from coinbase_commerce import Client
 from flask import render_template, flash, redirect, url_for
 from flask_login import login_required, current_user
 
@@ -8,12 +7,8 @@ from app.config import (
     PADDLE_MONTHLY_PRODUCT_ID,
     PADDLE_YEARLY_PRODUCT_ID,
     URL,
-    COINBASE_YEARLY_PRICE,
-    COINBASE_API_KEY,
 )
 from app.dashboard.base import dashboard_bp
-from app.extensions import limiter
-from app.log import LOG
 from app.models import (
     AppleSubscription,
     Subscription,
@@ -83,20 +78,3 @@ def subscription_success():
     return render_template(
         "dashboard/thank-you.html",
     )
-
-
-@dashboard_bp.route("/coinbase_checkout")
-@login_required
-@limiter.limit("5/minute")
-def coinbase_checkout_route():
-    client = Client(api_key=COINBASE_API_KEY)
-    charge = client.charge.create(
-        name="1 Year SimpleLogin Premium Subscription",
-        local_price={"amount": str(COINBASE_YEARLY_PRICE), "currency": "USD"},
-        pricing_type="fixed_price",
-        metadata={"user_id": current_user.id},
-    )
-
-    LOG.d("Create coinbase charge %s", charge)
-
-    return redirect(charge["hosted_url"])

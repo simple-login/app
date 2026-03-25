@@ -130,6 +130,9 @@ class ExportUserDataJob:
         return memfile
 
     def run(self):
+        if not self._user.can_send_or_receive():
+            return
+
         zipped_contents = self._build_zip()
 
         to_email = self._user.email

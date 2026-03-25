@@ -1,0 +1,10 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+{{ mailbox.email }} has been disabled.
+
+Your mailbox has been disabled by {{ SERVICE_PROVIDER }} administrators.
+You will not receive emails forwarded to this mailbox while it is disabled.
+
+If you believe this is an error or have any questions, please contact support.
+{% endblock %}

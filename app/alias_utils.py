@@ -34,6 +34,7 @@ from app.events.generated.event_pb2 import (
     AliasStatusChanged,
     EventContent,
     AliasCreated,
+    AliasNoteChanged,
 )
 from app.log import LOG
 from app.models import (
@@ -135,7 +136,7 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
         else:  # no rule passes
             LOG.d(f"No rule matches auto-create {address} for domain {custom_domain}")
             return None
-    LOG.d("Create alias via catchall")
+    LOG.d(f"User {custom_domain.user} will create alias {address} via catchall")
 
     return custom_domain, None
 
@@ -253,6 +254,8 @@ def try_auto_create_directory(address: str) -> Optional[Alias]:
             )
 
         Session.commit()
+
+        LOG.i(f"User {directory.user} created alias {alias} via directory {directory}")
         return alias
     except AliasInTrashError:
         LOG.w(
@@ -276,9 +279,12 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
         return None
     custom_domain, rule = can_create
 
+    alias_name = None
     if rule:
         alias_note = f"Created by rule {rule.order} with regex {rule.regex}"
         mailboxes = rule.mailboxes
+        if rule.display_name:
+            alias_name = rule.display_name
     else:
         alias_note = "Created by catchall option"
         mailboxes = custom_domain.mailboxes
@@ -302,6 +308,11 @@ def try_auto_create_via_domain(address: str) -> Optional[Alias]:
             automatic_creation=True,
             mailbox_id=mailboxes[0].id,
         )
+        LOG.d(
+            f"User {custom_domain.user} created alias {alias} via domain {custom_domain}"
+        )
+        if alias_name:
+            alias.name = alias_name
         if not custom_domain.user.disable_automatic_alias_note:
             alias.note = alias_note
         Session.flush()
@@ -436,20 +447,21 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
 
     # inform previous owner
     old_user = alias.user
-    send_email(
-        old_user.email,
-        f"Alias {alias.email} has been received",
-        render(
-            "transactional/alias-transferred.txt",
-            user=old_user,
-            alias=alias,
-        ),
-        render(
-            "transactional/alias-transferred.html",
-            user=old_user,
-            alias=alias,
-        ),
-    )
+    if alias.user.can_send_or_receive():
+        send_email(
+            old_user.email,
+            f"Alias {alias.email} has been received",
+            render(
+                "transactional/alias-transferred.txt",
+                user=old_user,
+                alias=alias,
+            ),
+            render(
+                "transactional/alias-transferred.html",
+                user=old_user,
+                alias=alias,
+            ),
+        )
 
     # now the alias belongs to the new user
     alias.user_id = new_user.id
@@ -515,6 +527,22 @@ def change_alias_status(
     emit_alias_audit_log(
         alias, AliasAuditLogAction.ChangeAliasStatus, audit_log_message
     )
+
+    if commit:
+        Session.commit()
+
+
+def change_alias_note(alias: Alias, note: str, commit: bool = False):
+    LOG.i(f"Changing alias {alias} note.")
+
+    alias.note = note
+    event = AliasNoteChanged(
+        id=alias.id,
+        email=alias.email,
+        note=note,
+    )
+
+    EventDispatcher.send_event(alias.user, EventContent(alias_note_changed=event))
 
     if commit:
         Session.commit()

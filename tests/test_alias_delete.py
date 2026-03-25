@@ -43,13 +43,17 @@ def teardown_module():
 
 def ensure_alias_is_trashed(
     alias: Alias, expected_audit_log_size: int, reason: AliasDeleteReason
-):
-    assert alias.enabled is False
-    assert alias.delete_on is not None
-    assert alias.delete_reason == reason
+) -> Alias:
+    db_alias = Alias.get(alias.id)
+    assert db_alias is not None
+    assert db_alias.enabled is False
+    assert db_alias.delete_on is not None
+    assert db_alias.delete_reason == reason
 
     # Ensure audit log
-    audit_logs: List[AliasAuditLog] = AliasAuditLog.filter_by(alias_id=alias.id).all()
+    audit_logs: List[AliasAuditLog] = AliasAuditLog.filter_by(
+        alias_id=db_alias.id
+    ).all()
     assert len(audit_logs) == expected_audit_log_size
     assert (
         audit_logs[expected_audit_log_size - 2].action
@@ -61,8 +65,10 @@ def ensure_alias_is_trashed(
     )
 
     # Ensure DeletedAlias instance is not created
-    deleted_alias: Optional[DeletedAlias] = DeletedAlias.get_by(email=alias.email)
+    deleted_alias: Optional[DeletedAlias] = DeletedAlias.get_by(email=db_alias.email)
     assert deleted_alias is None
+
+    return db_alias
 
 
 def ensure_alias_is_deleted(
@@ -87,6 +93,7 @@ def ensure_alias_is_deleted(
     deleted_alias: Optional[DeletedAlias] = DeletedAlias.get_by(email=alias_email)
     assert deleted_alias is not None
     assert deleted_alias.reason == reason
+    assert deleted_alias.alias_id == alias_id
 
 
 # Delete alias
@@ -152,6 +159,7 @@ def test_alias_custom_domain_perform_deletion_moves_to_domain_deleted_alias():
 
     deleted_custom_alias = DomainDeletedAlias.get_by(email=alias_email)
     assert deleted_custom_alias is not None
+    assert deleted_custom_alias.alias_id == alias_id
 
 
 # move_alias_to_trash
@@ -205,9 +213,16 @@ def test_delete_mailbox_deletes_alias_with_user_setting(
 
     Mailbox.delete(mb.id)
 
-    ensure_alias_is_deleted(
-        alias_id, alias_email, 2, reason=AliasDeleteReason.MailboxDeleted
-    )
+    if user_setting == UserAliasDeleteAction.MoveToTrash:
+        db_alias = ensure_alias_is_trashed(
+            alias, 2, reason=AliasDeleteReason.MailboxDeleted
+        )
+        # Ensure mailbox_id has been changed to the user's default mailbox id
+        assert db_alias.mailbox_id == user.default_mailbox_id
+    elif user_setting == UserAliasDeleteAction.DeleteImmediately:
+        ensure_alias_is_deleted(
+            alias_id, alias_email, 2, reason=AliasDeleteReason.MailboxDeleted
+        )
 
 
 # Restore alias

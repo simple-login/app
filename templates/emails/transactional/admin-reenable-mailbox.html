@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% call text() %}
+    <h1>{{ mailbox.email }} has been re-enabled.</h1>
+  {% endcall %}
+
+  {% call text() %}
+    Good news! Your mailbox has been re-enabled by {{ SERVICE_PROVIDER }} administrators.
+    <br />
+    You can now receive emails forwarded to this mailbox again.
+  {% endcall %}
+
+  {% call text() %}
+    If you have any questions, please contact support.
+  {% endcall %}
+
+  {% call text() %}
+    Best,
+    <br />
+    SimpleLogin Team.
+  {% endcall %}
+
+{% endblock %}

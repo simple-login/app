@@ -7,10 +7,11 @@ from flask import render_template, request, flash, url_for, redirect, g
 from flask_login import login_required, current_user
 from werkzeug.datastructures import FileStorage
 
-from app.config import ZENDESK_HOST, ZENDESK_API_TOKEN
+from app import config
 from app.dashboard.base import dashboard_bp
 from app.extensions import limiter
 from app.log import LOG
+from app.models import PartnerUser
 
 VALID_MIME_TYPES = ["text/plain", "message/rfc822"]
 
@@ -37,9 +38,9 @@ def upload_file_to_zendesk_and_get_upload_token(
         return
 
     escaped_filename = urllib.parse.urlencode({"filename": file.filename})
-    url = "https://{}/api/v2/uploads?{}".format(ZENDESK_HOST, escaped_filename)
+    url = "https://{}/api/v2/uploads?{}".format(config.ZENDESK_HOST, escaped_filename)
     headers = {"content-type": file.mimetype}
-    auth = ("{}/token".format(email), ZENDESK_API_TOKEN)
+    auth = ("{}/token".format(email), config.ZENDESK_API_TOKEN)
     response = requests.post(url, headers=headers, data=file.stream, auth=auth)
     if not check_zendesk_response_status(response.status_code):
         return
@@ -68,9 +69,9 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
             },
         }
     }
-    url = "https://{}/api/v2/requests.json".format(ZENDESK_HOST)
+    url = "https://{}/api/v2/requests.json".format(config.ZENDESK_HOST)
     headers = {"content-type": "application/json"}
-    auth = (f"{email}/token", ZENDESK_API_TOKEN)
+    auth = (f"{email}/token", config.ZENDESK_API_TOKEN)
     response = requests.post(url, data=json.dumps(data), headers=headers, auth=auth)
     if not check_zendesk_response_status(response.status_code):
         return False
@@ -86,9 +87,14 @@ def create_zendesk_request(email: str, content: str, files: [FileStorage]) -> bo
     deduct_when=lambda r: hasattr(g, "deduct_limit") and g.deduct_limit,
 )
 def support_route():
-    if not ZENDESK_HOST:
+    if not config.ZENDESK_HOST:
         flash("Support isn't enabled", "error")
         return redirect(url_for("dashboard.index"))
+
+    if config.PARTNER_SUPPORT_URL is not None:
+        pu = PartnerUser.filter_by(user_id=current_user.id).first()
+        if pu is not None:
+            return redirect(config.PARTNER_SUPPORT_URL)
 
     if request.method == "POST":
         content = request.form.get("ticket_content")

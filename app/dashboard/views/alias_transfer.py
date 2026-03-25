@@ -132,7 +132,7 @@ def alias_transfer_receive_route():
         )
         return redirect(url_for("dashboard.index"))
 
-    mailboxes = current_user.mailboxes()
+    mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
     if request.method == "POST":
         mailbox_ids = request.form.getlist("mailbox_ids")
@@ -146,6 +146,12 @@ def alias_transfer_receive_route():
                 or not mailbox.verified
             ):
                 flash("Something went wrong, please retry", "warning")
+                return redirect(request.url)
+            if mailbox.is_admin_disabled():
+                flash(
+                    "Cannot assign admin-disabled mailbox. Please contact support.",
+                    "error",
+                )
                 return redirect(request.url)
             mailboxes.append(mailbox)
 

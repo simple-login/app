@@ -18,6 +18,7 @@ class UserAuditLogAction(Enum):
     VerifyMailbox = "verify_mailbox"
     UpdateMailbox = "update_mailbox"
     DeleteMailbox = "delete_mailbox"
+    MailboxDisablePgp = "mailbox_disable_pgp"
 
     CreateCustomDomain = "create_custom_domain"
     VerifyCustomDomain = "verify_custom_domain"
@@ -27,6 +28,10 @@ class UserAuditLogAction(Enum):
     CreateDirectory = "create_directory"
     UpdateDirectory = "update_directory"
     DeleteDirectory = "delete_directory"
+
+    CreateAlias = "create_alias"
+    UpdateAlias = "update_alias"
+    DeleteAlias = "delete_alias"
 
     UserMarkedForDeletion = "user_marked_for_deletion"
     DeleteUser = "delete_user"

@@ -8,6 +8,7 @@ from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
 from app.models import RecoveryCode, Fido
+from app.user_settings import regenerate_user_alternative_id
 
 
 class FidoManageForm(FlaskForm):
@@ -34,6 +35,7 @@ def fido_manage():
             return redirect(url_for("dashboard.fido_manage"))
 
         Fido.delete(fido_key.id)
+        regenerate_user_alternative_id(current_user)
         Session.commit()
 
         LOG.d(f"FIDO Key ID={fido_key.id} Removed")

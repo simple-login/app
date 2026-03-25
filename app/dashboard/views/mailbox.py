@@ -52,6 +52,12 @@ def mailbox_route():
             if not delete_mailbox_form.validate():
                 flash("Invalid request", "warning")
                 return redirect(request.url)
+            mailbox = Mailbox.get(delete_mailbox_form.mailbox_id.data)
+            if mailbox and mailbox.is_admin_disabled():
+                flash(
+                    "You cannot modify that mailbox. Please contact support.", "error"
+                )
+                return redirect(url_for("dashboard.mailbox_route"))
             try:
                 mailbox = mailbox_utils.delete_mailbox(
                     current_user,
@@ -72,8 +78,14 @@ def mailbox_route():
             if not csrf_form.validate():
                 flash("Invalid request", "warning")
                 return redirect(request.url)
+            mailbox_id = request.form.get("mailbox_id")
+            mailbox = Mailbox.get(mailbox_id)
+            if mailbox and mailbox.is_admin_disabled():
+                flash(
+                    "You cannot modify that mailbox. Please contact support.", "error"
+                )
+                return redirect(url_for("dashboard.mailbox_route"))
             try:
-                mailbox_id = request.form.get("mailbox_id")
                 mailbox = user_settings.set_default_mailbox(current_user, mailbox_id)
             except user_settings.CannotSetMailbox as e:
                 flash(e.msg, "warning")

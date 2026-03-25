@@ -35,6 +35,13 @@
                 data-original-title="PGP Enabled">🗝</span>
         {% endif %}
       </h1>
+      {% if mailbox.is_admin_disabled() %}
+
+        <div class="alert alert-danger">
+          This mailbox has been disabled by administrators.
+          You cannot make changes. Please contact support for assistance.
+        </div>
+      {% endif %}
       {% if not mailbox.verified %}
 
         <div class="alert alert-info">

@@ -4,178 +4,1021 @@
 
   {{ super() }}
   <style>
-        .card-shadow {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
-        }
-        .domain-title {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            border-radius: 8px 8px 0 0;
-        }
-        .status-icon {
-            font-size: 1.2em;
-        }
+  .dns-record {
+    font-family: monospace;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+  .dns-record-expected {
+    background-color: #e8f4fd;
+    border-left: 3px solid #3498db;
+  }
+  .dns-record-current {
+    background-color: #fdf2e8;
+    border-left: 3px solid #e67e22;
+  }
+  .verification-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  .verification-ok {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  .verification-pending {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  /* Responsive fixes for narrow screens */
+  @media (max-width: 991.98px) {
+    /* Stack domain info and actions on medium screens */
+    .domain-info-row .col-lg-9,
+    .domain-info-row .col-lg-3 {
+      margin-bottom: 1rem;
+    }
+  }
+  @media (max-width: 767.98px) {
+    /* Stack info sections vertically on small screens */
+    .info-section .col-md-6 {
+      margin-bottom: 1rem;
+    }
+    /* Verification badges wrap better */
+    .verification-status {
+      margin-bottom: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    /* User summary card stacks vertically */
+    .user-summary-row > div {
+      margin-bottom: 0.5rem;
+    }
+    /* Reduce padding on cards */
+    .card-body {
+      padding: 0.75rem;
+    }
+  }
+  @media (max-width: 575.98px) {
+    /* Further reduce padding on very small screens */
+    .card-body {
+      padding: 0.5rem;
+    }
+    /* Smaller verification badges on mobile */
+    .verification-status {
+      font-size: 0.8em;
+      padding: 3px 8px;
+    }
+  }
+
+  /* ========================================
+     Modern Admin Panel Color System
+     ======================================== */
+  :root {
+    /* Primary palette - Slate tones for professional look */
+    --color-primary: #1e293b;
+    --color-primary-light: #334155;
+    --color-primary-dark: #0f172a;
+
+    /* Semantic colors */
+    --color-success: #059669;
+    --color-success-light: #d1fae5;
+    --color-success-dark: #047857;
+
+    --color-warning: #d97706;
+    --color-warning-light: #fef3c7;
+    --color-warning-dark: #b45309;
+
+    --color-danger: #dc2626;
+    --color-danger-light: #fee2e2;
+    --color-danger-dark: #b91c1c;
+
+    --color-info: #0284c7;
+    --color-info-light: #e0f2fe;
+    --color-info-dark: #0369a1;
+
+    /* Neutral palette */
+    --color-neutral-50: #f8fafc;
+    --color-neutral-100: #f1f5f9;
+    --color-neutral-200: #e2e8f0;
+    --color-neutral-300: #cbd5e1;
+    --color-neutral-400: #94a3b8;
+    --color-neutral-500: #64748b;
+    --color-neutral-600: #475569;
+    --color-neutral-700: #334155;
+    --color-neutral-800: #1e293b;
+
+    /* Special purpose */
+    --color-caution: #ea580c;
+    --color-caution-light: #fff7ed;
+    --color-purple: #7c3aed;
+    --color-purple-light: #ede9fe;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Border radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+  }
+
+  /* ========================================
+     Base Styles
+     ======================================== */
+  .container-fluid {
+    background-color: var(--color-neutral-50);
+    min-height: 100vh;
+      padding: 0px;
+  }
+
+  /* ========================================
+     Card Styles
+     ======================================== */
+  .card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header {
+    border-bottom: none;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+  }
+
+  .card-header h5, .card-header h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  /* Header variants */
+  .header-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+  }
+
+  .header-success {
+    background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+    color: white;
+  }
+
+  .header-danger {
+    background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    color: white;
+  }
+
+  .header-warning {
+    background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-warning) 100%);
+    color: white;
+  }
+
+  .header-info {
+    background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+    color: white;
+  }
+
+  .header-neutral {
+    background: var(--color-neutral-100);
+    color: var(--color-neutral-700);
+  }
+
+  .header-caution {
+    background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     Badge Styles
+     ======================================== */
+  .badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    letter-spacing: 0.025em;
+  }
+
+  .badge-success {
+    background-color: var(--color-success) !important;
+    color: white !important;
+  }
+
+  .badge-danger {
+    background-color: var(--color-danger) !important;
+    color: white !important;
+  }
+
+  .badge-warning {
+    background-color: var(--color-warning) !important;
+    color: white !important;
+  }
+
+  .badge-info {
+    background-color: var(--color-info) !important;
+    color: white !important;
+  }
+
+  .badge-secondary {
+    background-color: var(--color-neutral-500) !important;
+    color: white !important;
+  }
+
+  .badge-light {
+    background-color: var(--color-neutral-100) !important;
+    color: var(--color-neutral-700) !important;
+  }
+
+  /* ========================================
+     Button Styles
+     ======================================== */
+  .btn {
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary-modern {
+    background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-primary-modern:hover {
+    background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-success-modern {
+    background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-success-modern:hover {
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     Table Styles
+     ======================================== */
+  .table {
+    margin-bottom: 0;
+  }
+
+  .table thead th {
+    background-color: var(--color-neutral-100);
+    border-bottom: 2px solid var(--color-neutral-200);
+    color: var(--color-neutral-600);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+  }
+
+  .table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-neutral-100);
+    color: var(--color-neutral-700);
+  }
+
+  .table tbody tr:hover {
+    background-color: var(--color-neutral-50);
+  }
+
+  .table code {
+    background-color: var(--color-neutral-100);
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    color: var(--color-neutral-700);
+  }
+
+  /* ========================================
+     Form Styles
+     ======================================== */
+  .form-control {
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .form-control:focus {
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 3px var(--color-info-light);
+  }
+
+  .form-control-lg {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* ========================================
+     Section Headers
+     ======================================== */
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-500);
+    border-bottom: 2px solid var(--color-neutral-200);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ========================================
+     Actions Card
+     ======================================== */
+  .actions-card {
+    border: 2px solid var(--color-caution) !important;
+    border-radius: var(--radius-lg);
+  }
+
+  .actions-card .card-header {
+    background: linear-gradient(135deg, #c2410c 0%, var(--color-caution) 100%);
+  }
+
+  .actions-card .card-body {
+    background-color: var(--color-caution-light);
+  }
+
+  /* ========================================
+     Alert Styles
+     ======================================== */
+  .alert {
+    border: none;
+    border-radius: var(--radius-md);
+  }
+
+  .alert-warning {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+  }
+
+  .alert-info {
+    background-color: var(--color-info-light);
+    color: var(--color-info-dark);
+  }
+
+  .alert-danger {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+  }
+
+  /* ========================================
+     Modal Styles
+     ======================================== */
+  .modal-content {
+    border: none;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    border-bottom: none;
+  }
+
+  .modal-header.modal-danger {
+    background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    color: white;
+  }
+
+  /* ========================================
+     DNS Section
+     ======================================== */
+  .dns-section {
+    background-color: var(--color-neutral-50);
+    border-radius: var(--radius-lg);
+  }
+
+  .dns-section .card-header {
+    background-color: var(--color-neutral-100);
+  }
   </style>
 {% endblock %}
-{% macro show_user(user) -%}
-  <h4>
-    User <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a> with ID {{ user.id }}.
-  </h4>
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">User ID</th>
-        <th scope="col">Email</th>
-        <th scope="col">Verified</th>
-        <th scope="col">Status</th>
-        <th scope="col">Paid</th>
-        <th scope="col">Premium</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>
-          <a href="/admin/email_search?email={{ user.email }}">{{ user.email }}</a>
-        </td>
-        {% if user.activated %}
+{# Badge helper macro #}
+{% macro badge_status(condition, true_text, false_text, true_class='success', false_class='danger') -%}
+  {% if condition %}
 
-          <td class="text-success">Activated</td>
-        {% else %}
-          <td class="text-warning">Pending</td>
-        {% endif %}
-        {% if user.disabled %}
-
-          <td class="text-danger">Disabled</td>
-        {% else %}
-          <td class="text-success">Enabled</td>
-        {% endif %}
-        <td>{{ "yes" if user.is_paid() else "No" }}</td>
-        <td>{{ "yes" if user.is_premium() else "No" }}</td>
-      </tr>
-    </tbody>
-  </table>
-{%- endmacro %}
-{% macro show_verification(title, expected, errors) -%}
-  {% if not expected %}
-
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <h5>{{ title }}</h5>
-      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
-    </li>
+    <span class="badge badge-{{ true_class }}">{{ true_text }}</span>
   {% else %}
-    <li class="list-group-item">
-      <h5>{{ title }}</h5>
-      <p>
-        <strong>Expected:</strong> {{ expected.recommended }}
-      </p>
-      <p>
-        <strong>Allowed:</strong>
-        <ul>
-          {% for expected_record in expected.allowed %}<li>{{ expected_record }}</li>{% endfor %}
-        </ul>
-      </p>
-      <p>
-        <strong>Current response:</strong>
-      </p>
-      {% for error in errors %}
-
-        <ul class="list-group">
-          <li class="list-group-item">{{ error }}</li>
-        </ul>
-      {% endfor %}
-    </li>
+    <span class="badge badge-{{ false_class }}">{{ false_text }}</span>
   {% endif %}
 {%- endmacro %}
-{% macro show_mx_verification(title, expected, errors) -%}
-  {% if not expected %}
-
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <h5>{{ title }}</h5>
-      <span class="text-success status-icon"><i class="fa fa-check-circle"></i></span>
-    </li>
-  {% else %}
-    <li class="list-group-item">
-      <h5>{{ title }}</h5>
-      <ul>
-        <li class="list-group-item">
-          {% for prio in expected %}
-
-            <p>
-              <strong>Priority {{ prio }}:</strong> {{ expected[prio].recommended }}
-            </p>
-            <p>
-              <strong>Allowed:</strong>
-              <ul>
-                {% for expected_record in expected[prio].allowed %}<li>{{ expected_record }}</li>{% endfor %}
-              </ul>
-            </p>
-            <p>
-              <strong>Current response:</strong>
-            </p>
-            {% for error in errors %}
-
-              <ul class="list-group">
-                <li class="list-group-item">{{ error }}</li>
-              </ul>
-            {% endfor %}
-          </li>
-        {% endfor %}
-      </ul>
-    </li>
-  {% endif %}
+{% macro copy_btn(text) -%}
+  <button type="button"
+          class="btn btn-sm btn-link p-0 ml-1 copy-btn"
+          data-copy="{{ text }}"
+          title="Copy to clipboard">
+    <i class="fa fa-copy text-muted"></i>
+  </button>
 {%- endmacro %}
-{% macro show_domain(domain_with_data) -%}
-  <div class="col-md-3 mb-4">
-    <div class="card card-shadow">
-      <div class="domain-title text-center">
-        <h4>Domain {{ domain_with_data.domain.domain }}</h4>
-      </div>
-      <div class="card-body">
-        {% set domain = domain_with_data.domain %}
-        <ul class="list-group">
-          {{ show_verification("Ownership", domain_with_data.ownership_expected, domain_with_data.ownership_validation.errors) }}
-          {{ show_mx_verification("MX", domain_with_data.mx_expected, domain_with_data.mx_validation.errors) }}
-          {{ show_verification("SPF", domain_with_data.spf_expected, domain_with_data.spf_validation.errors) }}
-          {% for dkim_domain in domain_with_data.dkim_expected %}
-
-            {{ show_verification("DKIM {}.{}".format(dkim_domain, domain.domain) , domain_with_data.dkim_expected[dkim_domain], [domain_with_data.dkim_validation.get(dkim_domain+"."+domain.domain,'')]) }}
-          {% endfor %}
-        </ul>
+{# User summary card with link to email search #}
+{% macro user_summary_card(user) -%}
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-header text-white" class="header-primary">
+      <h6 class="mb-0">
+        <i class="fa fa-user mr-2"></i>Domain Owner
+      </h6>
+    </div>
+    <div class="card-body py-2">
+      <div class="row align-items-center user-summary-row">
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-2 mb-lg-0">
+          <small class="text-muted">User</small>
+          <div>
+            <a href="{{ url_for('admin.email_search.index', query=user.email, search_type='email') }}">
+              <strong>{{ user.email }}</strong>
+            </a>
+          </div>
+          <small class="text-muted">ID: {{ user.id }}</small>
+        </div>
+        <div class="col-lg-2 col-md-6 col-sm-6 mb-2 mb-lg-0">
+          <small class="text-muted">Status</small>
+          <div>
+            {{ badge_status(user.activated, 'Verified', 'Pending', 'success', 'warning') }}
+            {{ badge_status(not user.disabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+          </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-2 mb-lg-0">
+          <small class="text-muted">Subscription</small>
+          <div>{{ badge_status(user.is_premium() , 'Premium', 'Free', 'info', 'secondary') }}</div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-2 mb-lg-0">
+          <small class="text-muted">Created</small>
+          <div>{{ user.created_at.strftime("%Y-%m-%d") }}</div>
+        </div>
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <small class="text-muted">Custom Domains</small>
+          <div>
+            <strong>{{ user.custom_domains|length }}</strong> domain(s)
+          </div>
+        </div>
       </div>
     </div>
   </div>
+{%- endmacro %}
+{# Verification status badge #}
+{% macro verification_badge(is_verified, label) -%}
+  {% if is_verified %}
+
+    <span class="verification-status verification-ok">
+      <i class="fa fa-check-circle mr-1"></i>{{ label }} Verified
+    </span>
+  {% else %}
+    <span class="verification-status verification-pending">
+      <i class="fa fa-clock mr-1"></i>{{ label }} Pending
+    </span>
+  {% endif %}
+{%- endmacro %}
+{# DNS record display #}
+{% macro dns_record_display(label, expected, validation_errors) -%}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>{{ label }}</strong>
+      {% if not expected %}
+
+        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+      {% else %}
+        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+      {% endif %}
+    </div>
+    {% if expected %}
+
+      <div class="mb-2">
+        <small class="text-muted d-block mb-1">Expected Record:</small>
+        <div class="dns-record dns-record-expected">{{ expected.recommended }}</div>
+      </div>
+      {% if expected.allowed and expected.allowed|length > 1 %}
+
+        <details class="mb-2">
+          <summary class="text-muted" style="cursor: pointer; font-size: 0.85em;">
+            <i class="fa fa-info-circle mr-1"></i>Alternative accepted values ({{ expected.allowed|length }})
+          </summary>
+          <ul class="list-unstyled mt-1 ml-3" style="font-size: 0.85em;">
+            {% for alt in expected.allowed %}<li class="text-muted">{{ alt }}</li>{% endfor %}
+          </ul>
+        </details>
+      {% endif %}
+      {% if validation_errors %}
+
+        <div>
+          <small class="text-muted d-block mb-1">Current DNS Response:</small>
+          {% for error in validation_errors %}
+
+            <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+{%- endmacro %}
+{# MX record display (special handling for priorities) #}
+{% macro mx_record_display(expected, validation_errors) -%}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>MX Records</strong>
+      {% if not expected %}
+
+        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+      {% else %}
+        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+      {% endif %}
+    </div>
+    {% if expected %}
+
+      <div class="mb-2">
+        <small class="text-muted d-block mb-1">Expected Records:</small>
+        {% for priority in expected|sort %}
+
+          <div class="dns-record dns-record-expected mb-1">
+            <span class="badge badge-secondary mr-2">Priority {{ priority }}</span>
+            {{ expected[priority].recommended }}
+          </div>
+        {% endfor %}
+      </div>
+      {% if validation_errors %}
+
+        <div>
+          <small class="text-muted d-block mb-1">Current DNS Response:</small>
+          {% for error in validation_errors %}
+
+            <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+{%- endmacro %}
+{# DKIM records display #}
+{% macro dkim_records_display(domain, dkim_expected, dkim_validation) -%}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>DKIM Records</strong>
+      {% if not dkim_expected %}
+
+        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+      {% else %}
+        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+      {% endif %}
+    </div>
+    {% if dkim_expected %}
+
+      {% for dkim_selector in dkim_expected %}
+
+        {% set full_domain = dkim_selector + "." + domain.domain %}
+        <div class="mb-2 p-2 dns-record">
+          <small class="text-muted d-block">Selector: <code>{{ full_domain }}</code></small>
+          <div class="dns-record dns-record-expected mt-1">{{ dkim_expected[dkim_selector].recommended }}</div>
+          {% if dkim_validation.get(full_domain) %}
+
+            <small class="text-muted d-block mt-1">Current:</small>
+            <div class="dns-record dns-record-current">{{ dkim_validation.get(full_domain) or 'No record found' }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+{%- endmacro %}
+{# Verification status summary inline #}
+{% macro verification_summary(domain) -%}
+  {% set verified_count = (domain.ownership_verified|int) + (domain.verified|int) + (domain.spf_verified|int) + (domain.dkim_verified|int) + (domain.dmarc_verified|int) %}
+  {% set total_count = 5 %}
+  {% if verified_count == total_count %}
+
+    <span class="badge badge-success"><i class="fa fa-check-circle mr-1"></i>All Verified ({{ verified_count }}/{{ total_count }})</span>
+  {% elif verified_count == 0 %}
+    <span class="badge badge-danger"><i class="fa fa-times-circle mr-1"></i>Not Verified (0/{{ total_count }})</span>
+  {% else %}
+    <span class="badge badge-warning"><i class="fa fa-exclamation-circle mr-1"></i>Partial ({{ verified_count }}/{{ total_count }})</span>
+  {% endif %}
+{%- endmacro %}
+{# Domain card #}
+{% macro domain_card(domain_data) -%}
+  {% set domain = domain_data.domain %}
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}
+       header-danger{% else %}header-success{% endif %}">
+      <h5 class="mb-0">
+        <i class="fa fa-globe mr-2"></i>{{ domain.domain }}{{ copy_btn(domain.domain) }}
+        {% if domain.pending_deletion %}<span class="badge badge-light ml-2">Pending Deletion</span>{% endif %}
+      </h5>
+      <span class="badge badge-light">ID: {{ domain.id }}</span>
+    </div>
+    <div class="card-body">
+      {# Domain Owner Summary #}
+      {{ user_summary_card(domain.user) }}
+      {# Domain Information + Actions Row #}
+      <div class="row mb-3 domain-info-row">
+        {# Domain Information - 3/4 width #}
+        <div class="col-lg-9 mb-3 mb-lg-0">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header header-primary">
+              <h6 class="mb-0">
+                <i class="fa fa-info-circle mr-2"></i>Domain Information
+              </h6>
+            </div>
+            <div class="card-body py-3">
+              {# Row 1: Details & Settings #}
+              <div class="row mb-3 info-section">
+                <div class="col-md-6 mb-3 mb-md-0">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">Details</h6>
+                  <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                      <td class="text-muted text-nowrap py-1" style="width: 100px;">ID:</td>
+                      <td class="py-1">
+                        <code>{{ domain.id }}</code>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">Domain:</td>
+                      <td class="py-1">
+                        <code>{{ domain.domain }}</code>{{ copy_btn(domain.domain) }}
+                      </td>
+                    </tr>
+                    {% if domain.name %}
+
+                      <tr>
+                        <td class="text-muted text-nowrap py-1">Name:</td>
+                        <td class="py-1">{{ domain.name }}</td>
+                      </tr>
+                    {% endif %}
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">Created:</td>
+                      <td class="py-1 text-nowrap">{{ domain.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">Aliases:</td>
+                      <td class="py-1">
+                        <strong>{{ helper.alias_count(domain) }}</strong>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">Settings</h6>
+                  <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                      <td class="text-muted text-nowrap py-1" style="width: 120px;">Catch-All:</td>
+                      <td class="py-1">{{ badge_status(domain.catch_all, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">Random Prefix:</td>
+                      <td class="py-1">{{ badge_status(domain.random_prefix_generation, 'Enabled', 'Disabled', 'info', 'secondary') }}</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">SL Subdomain:</td>
+                      <td class="py-1">{{ badge_status(domain.is_sl_subdomain, 'Yes', 'No', 'info', 'secondary') }}</td>
+                    </tr>
+                    <tr>
+                      <td class="text-muted text-nowrap py-1">Failed Checks:</td>
+                      <td class="py-1">
+                        {% if domain.nb_failed_checks > 0 %}
+
+                          <span class="badge badge-warning">{{ domain.nb_failed_checks }}</span>
+                        {% else %}
+                          <span class="text-muted">0</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              {# Row 2: Verification Status #}
+              <div class="row">
+                <div class="col-12">
+                  <h6 class="text-muted border-bottom pb-1 mb-2" class="section-title">
+                    Verification Status {{ verification_summary(domain) }}
+                  </h6>
+                  <div class="d-flex flex-wrap">
+                    {{ verification_badge(domain.ownership_verified, 'Ownership') }}
+                    {{ verification_badge(domain.verified, 'MX') }}
+                    {{ verification_badge(domain.spf_verified, 'SPF') }}
+                    {{ verification_badge(domain.dkim_verified, 'DKIM') }}
+                    {{ verification_badge(domain.dmarc_verified, 'DMARC') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {# Admin Actions - 1/4 width #}
+        <div class="col-lg-3">
+          <div class="card h-100 actions-card">
+            <div class="card-header text-white py-2 header-caution">
+              <h6 class="mb-0 d-flex justify-content-between align-items-center">
+                <span><i class="fa fa-tools mr-2"></i>Actions</span>
+                <small class="badge badge-light"><i class="fa fa-exclamation-triangle mr-1"></i>Caution</small>
+              </h6>
+            </div>
+            <div class="card-body py-3 d-flex flex-column">
+              {% if not domain.pending_deletion %}
+
+                {# Spacer to push delete to bottom #}
+                <div class="flex-grow-1"></div>
+                {# Delete Domain - fixed at bottom like a footer #}
+                <div class="mt-auto pt-3 border-top">
+                  <button type="button"
+                          class="btn btn-sm btn-block btn-danger"
+                          data-toggle="modal"
+                          data-target="#deleteDomainModal{{ domain.id }}">
+                    <i class="fa fa-exclamation-triangle mr-1"></i>Delete Domain
+                  </button>
+                </div>
+              {% else %}
+                <div class="text-center text-muted py-3">
+                  <i class="fa fa-clock fa-2x mb-2"></i>
+                  <p class="mb-0 small">Pending deletion</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {# DNS Records Section #}
+      <div class="card mb-3 border-0 dns-section">
+        <div class="card-header header-neutral">
+          <h6 class="mb-0">
+            <i class="fa fa-server mr-2"></i>DNS Records
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row info-section">
+            <div class="col-md-6 mb-3 mb-md-0">
+              {{ dns_record_display('Ownership (TXT)', domain_data.ownership_expected, domain_data.ownership_validation.errors if domain_data.ownership_validation else []) }}
+              {{ dns_record_display('SPF (TXT)', domain_data.spf_expected, domain_data.spf_validation.errors if domain_data.spf_validation else []) }}
+            </div>
+            <div class="col-md-6">
+              {{ mx_record_display(domain_data.mx_expected, domain_data.mx_validation.errors if domain_data.mx_validation else []) }}
+              {{ dkim_records_display(domain, domain_data.dkim_expected, domain_data.dkim_validation) }}
+            </div>
+          </div>
+        </div>
+      </div>
+      {# Aliases Section #}
+      {% set alias_count = helper.alias_count(domain) %}
+      {% set aliases = helper.alias_list(domain) %}
+      {% set deleted_alias_count = helper.deleted_alias_count(domain) %}
+      {% set deleted_aliases = helper.deleted_alias_list(domain) %}
+      <div class="row">
+        <div class="col-lg-6 mb-3 mb-lg-0">
+          <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
+                 class="header-neutral">
+              <h6 class="mb-0">
+                <i class="fa fa-at mr-2"></i>Aliases
+                <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
+                {% if alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              {% if aliases %}
+
+                <div class="table-responsive">
+                  <table class="table table-hover table-sm mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Enabled</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for alias in aliases %}
+
+                        <tr>
+                          <td>
+                            <code>{{ alias.id }}</code>
+                          </td>
+                          <td>
+                            <a href="{{ url_for('admin.email_search.index', query=alias.email, search_type='alias') }}">{{ alias.email }}</a>
+                          </td>
+                          <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
+                          <td class="text-nowrap">{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="p-3 text-muted text-center">
+                  <i class="fa fa-info-circle mr-1"></i>No aliases
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center"
+                 class="header-neutral">
+              <h6 class="mb-0">
+                <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
+                <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
+                {% if deleted_alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              {% if deleted_aliases %}
+
+                <div class="table-responsive">
+                  <table class="table table-hover table-sm mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Deleted At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for deleted in deleted_aliases %}
+
+                        <tr>
+                          <td>
+                            <code>{{ deleted.id }}</code>
+                          </td>
+                          <td>
+                            <code>{{ deleted.email }}</code>
+                          </td>
+                          <td class="text-nowrap">{{ deleted.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="p-3 text-muted text-center">
+                  <i class="fa fa-info-circle mr-1"></i>No deleted aliases
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {# Delete Domain Modal #}
+  {% if not domain.pending_deletion %}
+
+    <div class="modal fade"
+         id="deleteDomainModal{{ domain.id }}"
+         tabindex="-1"
+         role="dialog"
+         aria-labelledby="deleteDomainModalLabel{{ domain.id }}"
+         aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header text-white bg-danger">
+            <h5 class="modal-title" id="deleteDomainModalLabel{{ domain.id }}">
+              <i class="fa fa-trash-alt mr-2"></i>Delete Custom Domain
+            </h5>
+            <button type="button"
+                    class="close text-white"
+                    data-dismiss="modal"
+                    aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="{{ url_for('admin.custom_domain_search.delete_custom_domain') }}"
+                method="POST"
+                id="deleteDomainForm{{ domain.id }}">
+            <div class="modal-body">
+              <input type="hidden" name="domain_id" value="{{ domain.id }}">
+              <div class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                <strong>Warning:</strong> This action cannot be undone. The domain and all associated aliases will be scheduled for deletion.
+              </div>
+              <p>This will:</p>
+              <ul class="mb-3">
+                <li>Schedule the domain for permanent deletion</li>
+                <li>Delete all aliases associated with this domain</li>
+                <li>Remove all DNS verification records</li>
+              </ul>
+              <div class="form-group">
+                <label for="confirmDomain{{ domain.id }}" class="font-weight-bold">
+                  Type <code>{{ domain.domain }}</code> to confirm:
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="confirmDomain{{ domain.id }}"
+                       name="confirm_domain"
+                       required
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit"
+                      class="btn btn-danger"
+                      id="deleteDomainBtn{{ domain.id }}"
+                      disabled>
+                <i class="fa fa-trash-alt mr-1"></i>Delete Domain
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <script>
+    (function() {
+      var confirmInput = document.getElementById('confirmDomain{{ domain.id }}');
+      var deleteBtn = document.getElementById('deleteDomainBtn{{ domain.id }}');
+      var expectedDomain = '{{ domain.domain }}';
+      if (confirmInput && deleteBtn) {
+        confirmInput.addEventListener('input', function() {
+          deleteBtn.disabled = (confirmInput.value !== expectedDomain);
+        });
+      }
+    })();
+    </script>
+  {% endif %}
 {%- endmacro %}
 {% block body %}
 
-  <div class="border border-dark border-2 mt-1 mb-2 p-3">
-    <form method="get">
-      <div class="form-group">
-        <label for="email">User or domain to search:</label>
-        <input type="text"
-               class="form-control"
-               name="user"
-               value="{{ query or '' }}" />
+  <div class="container-fluid px-4" style="padding: 0">
+    {# Search Form #}
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header header-primary">
+        <h5 class="mb-0">
+          <i class="fa fa-search mr-2"></i>Custom Domain Search
+        </h5>
       </div>
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
-  </div>
-  {% if data.no_match and query %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3 alert alert-warning"
-         role="alert">No user, alias or mailbox found for {{ query }}</div>
-  {% endif %}
-  {% if data.user %}
-
-    <div class="border border-dark border-2 mt-1 mb-2 p-3">
-      <h3 class="mb-3">Found User {{ data.user.email }}</h3>
-      {{ show_user(data.user) }}
+      <div class="card-body">
+        <form method="get">
+          <div class="mb-3">
+            <label for="query" class="font-weight-bold">Search Query</label>
+            <input type="text"
+                   class="form-control form-control-lg"
+                   name="query"
+                   id="query"
+                   value="{{ query or '' }}"
+                   placeholder="domain.com, user@email.com, user ID, or POSIX regex">
+            <small class="form-text text-muted">
+              <i class="fa fa-info-circle mr-1"></i>Search by domain name, user email, user ID, or use POSIX regex patterns (limited to 10 results).
+            </small>
+          </div>
+          <button type="submit" class="btn btn-lg btn-success-modern">
+            <i class="fa fa-search mr-2"></i>Search
+          </button>
+        </form>
+      </div>
     </div>
-  {% endif %}
-  <div class="row mt-4">
-    {% for domain_with_data in data.domains %}{{ show_domain(domain_with_data) }}{% endfor %}
+    {# No Results Alert #}
+    {% if data.no_match and query %}
+
+      <div class="alert alert-warning" role="alert">
+        <i class="fa fa-exclamation-triangle mr-2"></i>
+        No custom domains found for <strong>{{ query }}</strong>
+      </div>
+    {% endif %}
+    {# Regex Match Notice #}
+    {% if data.found_by_regex and data.domains %}
+
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle mr-2"></i>
+        Found <strong>{{ data.domains|length }}</strong> domain(s) matching regex pattern (showing up to 10)
+      </div>
+    {% endif %}
+    {# Domain Results #}
+    {% for domain_data in data.domains %}{{ domain_card(domain_data) }}{% endfor %}
   </div>
-</div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Copy to clipboard functionality
+      document.querySelectorAll('.copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var text = this.getAttribute('data-copy');
+          navigator.clipboard.writeText(text).then(function() {
+            var icon = btn.querySelector('i');
+            icon.classList.remove('fa-copy', 'text-muted');
+            icon.classList.add('fa-check', 'text-success');
+            setTimeout(function() {
+              icon.classList.remove('fa-check', 'text-success');
+              icon.classList.add('fa-copy', 'text-muted');
+            }, 1500);
+          });
+        });
+      });
+    });
+  </script>
 {% endblock %}

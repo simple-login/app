@@ -19,6 +19,7 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment
+from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -42,6 +43,7 @@ from app.errors import (
 from app.handler.unsubscribe_encoder import UnsubscribeAction, UnsubscribeEncoder
 from app.log import LOG
 from app.oauth_models import Scope
+from app.partner_utils import PartnerData
 from app.pw_models import PasswordOracle
 from app.utils import (
     convert_to_id,
@@ -240,6 +242,13 @@ class AuditLogActionEnum(EnumE):
     enable_user = 10
     stop_trial = 11
     unlink_user = 12
+    delete_custom_domain = 13
+    clear_delete_on = 14
+    update_subdomain_quota = 15
+    update_directory_quota = 16
+    disable_mailbox = 17
+    enable_mailbox = 18
+    change_default_mailbox = 19
 
 
 class Phase(EnumE):
@@ -308,7 +317,7 @@ class IntEnumType(sa.types.TypeDecorator):
 @dataclasses.dataclass
 class AliasOptions:
     show_sl_domains: bool = True
-    show_partner_domains: Optional[Partner] = None
+    show_partner_domains: Optional[PartnerData] = None
     show_partner_premium: Optional[bool] = None
 
 
@@ -352,8 +361,46 @@ class Fido(Base, ModelMixin):
     sign_count = sa.Column(sa.BigInteger(), nullable=False)
     name = sa.Column(sa.String(128), nullable=False, unique=False)
     user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=True)
+    # Credential metadata for debugging and proper authentication routing
+    credential_type = sa.Column(sa.String(32), nullable=True)
+    authenticator_attachment = sa.Column(sa.String(32), nullable=True)
+    transports = sa.Column(sa.JSON(), nullable=True)  # JSON array, e.g. ["usb","nfc"]
+    aaguid = sa.Column(
+        sa.String(36), nullable=True
+    )  # UUID format, identifies device model
 
     __table_args__ = (sa.Index("ix_fido_user_id", "user_id"),)
+
+
+class AbuserData(Base, ModelMixin):
+    __tablename__ = "abuser_data"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    encrypted_bundle = sa.Column(sa.LargeBinary(), nullable=False)
+
+    __table_args__ = (sa.Index("ix_abuser_data_id", "id"),)
+
+
+class AbuserLookup(Base, ModelMixin):
+    __tablename__ = "abuser_lookup"
+
+    hashed_address = sa.Column(sa.String(64), nullable=False, index=True)
+    abuser_data_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey("abuser_data.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+    bundle_k = sa.Column(sa.LargeBinary(), nullable=False)
+
+
+class AbuserAuditLog(Base, ModelMixin):
+    __tablename__ = "abuser_audit_log"
+
+    user_id = sa.Column(sa.Integer, nullable=False, index=True)
+    admin_id = sa.Column(sa.Integer, nullable=True)
+    action = sa.Column(sa.String(255), nullable=False)
+    message = sa.Column(sa.Text, default=None, nullable=True)
 
 
 class User(Base, ModelMixin, UserMixin, PasswordOracle):
@@ -1030,7 +1077,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return CustomDomain.filter_by(user_id=self.id, verified=True).count() > 0
 
     def custom_domains(self) -> List["CustomDomain"]:
-        return CustomDomain.filter_by(user_id=self.id, verified=True).all()
+        return (
+            CustomDomain.filter_by(user_id=self.id, verified=True)
+            .order_by(CustomDomain.id.asc())
+            .all()
+        )
 
     def available_domains_for_random_alias(
         self, alias_options: Optional[AliasOptions] = None
@@ -1678,6 +1729,9 @@ class Alias(Base, ModelMixin):
 
         return ret
 
+    def is_created_from_partner(self) -> bool:
+        return self.flags & self.FLAG_PARTNER_CREATED > 0
+
     def authorized_addresses(self) -> [str]:
         """return addresses that can send on behalf of this alias, i.e. can send emails to this alias's reverse-aliases
         Including its mailboxes and their authorized addresses
@@ -1724,7 +1778,7 @@ class Alias(Base, ModelMixin):
 
         new_alias = cls(**kw)
         user = User.get(new_alias.user_id)
-        if user.is_premium():
+        if user.is_premium() and not user.in_trial():
             limits = config.ALIAS_CREATE_RATE_LIMIT_PAID
         else:
             limits = config.ALIAS_CREATE_RATE_LIMIT_FREE
@@ -1759,7 +1813,7 @@ class Alias(Base, ModelMixin):
         DailyMetric.get_or_create_today_metric().nb_alias += 1
 
         if (
-            new_alias.flags & cls.FLAG_PARTNER_CREATED > 0
+            new_alias.is_created_from_partner()
             and new_alias.user.flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER == 0
         ):
             user.flags = user.flags | User.FLAG_CREATED_ALIAS_FROM_PARTNER
@@ -1785,6 +1839,18 @@ class Alias(Base, ModelMixin):
         EventDispatcher.send_event(user, EventContent(alias_created=event))
         emit_alias_audit_log(
             new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
+        )
+        agent.record_custom_event(
+            "AliasCreated",
+            {
+                "custom_domain": "custom domain"
+                if new_alias.custom_domain_id
+                else "base domain",
+                "from_partner": "from partner"
+                if new_alias.is_created_from_partner()
+                else "from sl",
+                "automatic": "automatic" if new_alias.automatic_creation else "manual",
+            },
         )
 
         return new_alias
@@ -2060,6 +2126,14 @@ class Contact(Base, ModelMixin):
         if flush:
             Session.flush()
 
+        agent.record_custom_event(
+            "ContactCreated",
+            {
+                "is_cc": "cc" if new_contact.is_cc else "to",
+                "automatic": "automatic" if new_contact.automatic_created else "manual",
+            },
+        )
+
         return new_contact
 
     def website_send_to(self):
@@ -2257,6 +2331,8 @@ class EmailLog(Base, ModelMixin):
     @classmethod
     def create(cls, *args, **kwargs):
         commit = kwargs.pop("commit", False)
+        if "message_id" in kwargs and kwargs["message_id"]:
+            kwargs["message_id"] = kwargs["message_id"][:250]
         email_log = super().create(*args, **kwargs)
         Session.flush()
         if "alias_id" in kwargs:
@@ -2399,6 +2475,9 @@ class DeletedAlias(Base, ModelMixin):
         nullable=False,
         default=AliasDeleteReason.Unspecified,
         server_default=str(AliasDeleteReason.Unspecified.value),
+    )
+    alias_id = sa.Column(
+        sa.Integer, nullable=True, server_default=None, default=None, index=True
     )
 
     @classmethod
@@ -2641,6 +2720,13 @@ class AutoCreateRule(Base, ModelMixin):
     # the order in which rules are evaluated in case there are multiple rules
     order = sa.Column(sa.Integer, default=0, nullable=False)
 
+    # optional display name applied to aliases created by this rule
+    display_name = sa.Column(
+        sa.String(128),
+        nullable=True,
+        server_default=None,
+    )
+
     custom_domain = orm.relationship(CustomDomain, backref="_auto_create_rules")
 
     mailboxes = orm.relationship(
@@ -2674,6 +2760,7 @@ class DomainDeletedAlias(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
         sa.Index("ix_domain_deleted_alias_user_id", "user_id"),
+        sa.Index("ix_domain_deleted_alias_alias_id", "alias_id"),
     )
 
     email = sa.Column(sa.String(256), nullable=False)
@@ -2689,6 +2776,13 @@ class DomainDeletedAlias(Base, ModelMixin):
         nullable=False,
         default=AliasDeleteReason.Unspecified,
         server_default=str(AliasDeleteReason.Unspecified.value),
+    )
+
+    alias_id = sa.Column(
+        sa.Integer,
+        nullable=True,
+        server_default=None,
+        default=None,
     )
 
     @classmethod
@@ -2823,7 +2917,14 @@ class Job(Base, ModelMixin):
     )
 
     __table_args__ = (
-        Index("ix_state_run_at_taken_at_priority", state, run_at, taken_at, priority),
+        Index(
+            "ix_state_run_at_taken_at_priority_attempts",
+            state,
+            run_at,
+            taken_at,
+            priority,
+            attempts,
+        ),
     )
 
     def __repr__(self):
@@ -2856,6 +2957,10 @@ class Mailbox(Base, ModelMixin):
     # a mailbox can be disabled if it can't be reached
     disabled = sa.Column(sa.Boolean, default=False, nullable=False, server_default="0")
 
+    # Bitmask flags for admin-controlled states
+    FLAG_ADMIN_DISABLED = 1 << 0
+    flags = sa.Column(sa.BigInteger(), default=0, server_default="0", nullable=False)
+
     generic_subject = sa.Column(sa.String(78), nullable=True)
 
     __table_args__ = (
@@ -2878,6 +2983,17 @@ class Mailbox(Base, ModelMixin):
 
         return False
 
+    def is_admin_disabled(self) -> bool:
+        """Check if mailbox has been disabled by admin."""
+        return self.flags & Mailbox.FLAG_ADMIN_DISABLED == Mailbox.FLAG_ADMIN_DISABLED
+
+    def can_send_or_receive(self):
+        if self.is_admin_disabled():
+            return False
+        if self.disabled:
+            return False
+        return self.user.can_send_or_receive()
+
     def nb_alias(self):
         from app.mailbox_utils import count_mailbox_aliases
 
@@ -2888,9 +3004,9 @@ class Mailbox(Base, ModelMixin):
             if self.email.endswith(f"@{proton_email_domain}"):
                 return True
 
-        from app.email_utils import get_email_local_part
+        from app.email_utils import get_email_domain_part
 
-        mx_domains = get_mx_domains(get_email_local_part(self.email))
+        mx_domains = get_mx_domains(get_email_domain_part(self.email))
 
         proton_mx_domains = config.PROTON_MX_SERVERS
         # Proton is the first domain
@@ -2915,10 +3031,17 @@ class Mailbox(Base, ModelMixin):
                 alias.mailbox_id = first_mb.id
                 alias._mailboxes.remove(first_mb)
             else:
-                from app.alias_delete import perform_alias_deletion
+                from app.alias_delete import perform_alias_deletion, move_alias_to_trash
+                # If the user setting is DeleteImmediately, perform alias deletion
+                # Otherwise, if the user setting is MoveToTrash, assign the default mailbox and move them to trash
 
-                # only put aliases that have mailbox as a single mailbox into trash
-                perform_alias_deletion(alias, user, AliasDeleteReason.MailboxDeleted)
+                if user.alias_delete_action == UserAliasDeleteAction.DeleteImmediately:
+                    perform_alias_deletion(
+                        alias, user, AliasDeleteReason.MailboxDeleted
+                    )
+                else:
+                    alias.mailbox_id = user.default_mailbox_id
+                    move_alias_to_trash(alias, user, AliasDeleteReason.MailboxDeleted)
             Session.commit()
 
         cls.filter(cls.id == obj_id).delete()
@@ -3245,6 +3368,9 @@ class Partner(Base, ModelMixin):
             return partner
         return None
 
+    def to_partner_data(self) -> PartnerData:
+        return PartnerData(id=self.id, name=self.name, contact_email=self.contact_email)
+
 
 class SLDomain(Base, ModelMixin):
     """SimpleLogin domains"""
@@ -3544,6 +3670,15 @@ class InvalidMailboxDomain(Base, ModelMixin):
     domain = sa.Column(sa.String(256), unique=True, nullable=False)
 
 
+class ForbiddenMxIp(Base, ModelMixin):
+    """MX IPs that we don't allow to create mailboxes for"""
+
+    __tablename__ = "forbidden_mx_ip"
+
+    ip = sa.Column(sa.String(16), unique=True, nullable=False)
+    comment = sa.Column(sa.Text, unique=False, nullable=True)
+
+
 # region Phone
 class PhoneCountry(Base, ModelMixin):
     __tablename__ = "phone_country"
@@ -3735,6 +3870,40 @@ class AdminAuditLog(Base):
             data={},
         )
 
+    @classmethod
+    def clear_delete_on(cls, admin_user_id: int, user_id: int):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.clear_delete_on.value,
+            model="User",
+            model_id=user_id,
+            data={},
+        )
+
+    @classmethod
+    def update_subdomain_quota(
+        cls, admin_user_id: int, user_id: int, old_quota: int, new_quota: int
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.update_subdomain_quota.value,
+            model="User",
+            model_id=user_id,
+            data={"old_quota": old_quota, "new_quota": new_quota},
+        )
+
+    @classmethod
+    def update_directory_quota(
+        cls, admin_user_id: int, user_id: int, old_quota: int, new_quota: int
+    ):
+        cls.create(
+            admin_user_id=admin_user_id,
+            action=AuditLogActionEnum.update_directory_quota.value,
+            model="User",
+            model_id=user_id,
+            data={"old_quota": old_quota, "new_quota": new_quota},
+        )
+
 
 class ProviderComplaintState(EnumE):
     new = 0
@@ -3744,7 +3913,7 @@ class ProviderComplaintState(EnumE):
 class ProviderComplaint(Base, ModelMixin):
     __tablename__ = "provider_complaint"
 
-    user_id = sa.Column(sa.ForeignKey("users.id"), nullable=False)
+    user_id = sa.Column(sa.ForeignKey("users.id", ondelete="cascade"), nullable=False)
     state = sa.Column(
         sa.Integer, nullable=False, server_default=str(ProviderComplaintState.new.value)
     )

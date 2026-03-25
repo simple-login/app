@@ -5,16 +5,19 @@ from app.config import (
 from app.db import Session
 from app.log import LOG
 from app.models import Mailbox, Contact, SLDomain, Partner
-from app.pgp_utils import load_public_key
+from app.pgp_utils import load_public_key, create_pgp_context
 from app.proton.proton_partner import PROTON_PARTNER_NAME
 from server import create_light_app
 
 
 def load_pgp_public_keys():
     """Load PGP public key to keyring"""
+    # Create a single PgpContext for all operations
+    ctx = create_pgp_context()
+
     for mailbox in Mailbox.filter(Mailbox.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for mailbox %s", mailbox)
-        fingerprint = load_public_key(mailbox.pgp_public_key)
+        fingerprint = load_public_key(mailbox.pgp_public_key, ctx)
 
         # sanity check
         if fingerprint != mailbox.pgp_finger_print:
@@ -24,7 +27,7 @@ def load_pgp_public_keys():
 
     for contact in Contact.filter(Contact.pgp_public_key.isnot(None)).all():
         LOG.d("Load PGP key for %s", contact)
-        fingerprint = load_public_key(contact.pgp_public_key)
+        fingerprint = load_public_key(contact.pgp_public_key, ctx)
 
         # sanity check
         if fingerprint != contact.pgp_finger_print:

@@ -54,6 +54,7 @@
             credential = await navigator.credentials.create({
               publicKey: pkCredentialCreateOptions
             });
+            if (credential === null) throw new TypeError('Credential is null (no credential found)');
           } catch (err) {
             toastr.error("An error occurred when we trying to register your key.");
             $("#btnRegisterKey").prop('disabled', false);

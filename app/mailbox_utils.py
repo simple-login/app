@@ -1,24 +1,44 @@
 import dataclasses
 import secrets
+import uuid
+from email.message import Message
 from enum import Enum
+from io import BytesIO
 from typing import Optional
 
 import arrow
+from aiosmtpd.smtp import Envelope
 from sqlalchemy.exc import IntegrityError
 
-from app import config
+from app import config, s3
+from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.constants import JobType
 from app.db import Session
+from app.email import headers
 from app.email_utils import (
     mailbox_already_used,
-    email_can_be_used_as_mailbox,
+    email_can_be_used_as_mailbox_with_reason,
     send_email,
     render,
     get_email_domain_part,
+    add_or_replace_header,
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
-from app.models import User, Mailbox, Job, MailboxActivation, Alias, AliasMailbox
+from app.message_utils import message_to_bytes
+from app.models import (
+    User,
+    Mailbox,
+    Job,
+    MailboxActivation,
+    Alias,
+    AliasMailbox,
+    AdminAuditLog,
+    AuditLogActionEnum,
+    RefusedEmail,
+    EmailLog,
+    Contact,
+)
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import canonicalize_email, sanitize_email
 
@@ -105,11 +125,13 @@ def check_email_for_mailbox(email, user):
             f"User {user} has tried to create mailbox with {email} but email is already used"
         )
         raise MailboxError("Email already used")
-    elif not email_can_be_used_as_mailbox(email):
-        LOG.i(
-            f"User {user} has tried to create mailbox with {email} but email is invalid"
-        )
-        raise MailboxError("Invalid email")
+    else:
+        reason = email_can_be_used_as_mailbox_with_reason(email)
+        if reason:
+            LOG.i(
+                f"User {user} has tried to create mailbox with {email} but it is invalid because {reason.value}"
+            )
+            raise MailboxError(f"Invalid email: {reason.value}")
 
 
 def delete_mailbox(
@@ -522,3 +544,164 @@ def count_mailbox_aliases(mailbox: Mailbox) -> int:
     ):
         alias_ids.add(alias.id)
     return len(alias_ids)
+
+
+def admin_disable_mailbox(
+    mailbox: Mailbox, admin_user: Optional[User] = None, note: Optional[str] = None
+) -> int:
+    """Admin-disable a mailbox. User cannot re-enable."""
+    disabled = 0
+    for mb in Mailbox.filter_by(email=mailbox.email).all():
+        mb.flags = mb.flags | Mailbox.FLAG_ADMIN_DISABLED
+        message = f"Mailbox {mb.id} ({mb.email}) admin_disabled"
+        if note:
+            message += f". Note: {note}"
+        emit_abuser_audit_log(
+            user_id=mb.user_id,
+            action=AbuserAuditLogAction.Note,
+            message=message,
+            admin_id=admin_user.id if admin_user else None,
+        )
+        if admin_user:
+            AdminAuditLog.create(
+                admin_user_id=admin_user.id,
+                action=AuditLogActionEnum.disable_mailbox.value,
+                model="Mailbox",
+                model_id=mb.id,
+                data={},
+            )
+        disabled += 1
+
+    Session.commit()
+
+    # Send notification email
+    send_admin_disable_mailbox_email(mailbox)
+
+    return disabled
+
+
+def admin_reenable_mailbox(
+    mailbox: Mailbox, admin_user: Optional[User] = None, note: Optional[str] = None
+) -> int:
+    """Re-enable an admin-disabled mailbox."""
+    enabled = 0
+    for mb in Mailbox.filter_by(email=mailbox.email).all():
+        mb.flags = mb.flags & ~Mailbox.FLAG_ADMIN_DISABLED
+        message = f"Mailbox {mb.id} ({mb.email}) admin_reenabled"
+        if note:
+            message += f". Note: {note}"
+        emit_abuser_audit_log(
+            user_id=mb.user_id,
+            action=AbuserAuditLogAction.Note,
+            message=message,
+            admin_id=admin_user.id if admin_user else None,
+        )
+        if admin_user:
+            AdminAuditLog.create(
+                admin_user_id=admin_user.id,
+                action=AuditLogActionEnum.enable_mailbox.value,
+                model="Mailbox",
+                model_id=mb.id,
+                data={},
+            )
+        enabled += 1
+
+    Session.commit()
+
+    # Send notification email
+    send_admin_reenable_mailbox_email(mailbox)
+
+    return enabled
+
+
+def send_admin_disable_mailbox_warning_email(
+    mailbox: Mailbox, reason: Optional[str] = None
+):
+    """Send warning that mailbox will be admin-disabled."""
+    if not mailbox.can_send_or_receive():
+        return
+    send_email(
+        mailbox.email,
+        f"Action Required: Your mailbox {mailbox.email} will be disabled",
+        render(
+            "transactional/admin-disable-mailbox-warning.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+            reason=reason,
+        ),
+        render(
+            "transactional/admin-disable-mailbox-warning.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+            reason=reason,
+        ),
+    )
+
+
+def send_admin_disable_mailbox_email(mailbox: Mailbox):
+    if not mailbox.user.can_send_or_receive():
+        return
+    """Send notification that mailbox has been admin-disabled."""
+    send_email(
+        mailbox.user.email,
+        f"Your mailbox {mailbox.email} has been disabled",
+        render(
+            "transactional/admin-disable-mailbox.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+        render(
+            "transactional/admin-disable-mailbox.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+    )
+
+
+def send_admin_reenable_mailbox_email(mailbox: Mailbox):
+    if not mailbox.user.can_send_or_receive():
+        return
+    """Send notification that mailbox has been re-enabled."""
+    send_email(
+        mailbox.email,
+        f"Your mailbox {mailbox.email} has been re-enabled",
+        render(
+            "transactional/admin-reenable-mailbox.txt.jinja2",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+        render(
+            "transactional/admin-reenable-mailbox.html",
+            user=mailbox.user,
+            mailbox=mailbox,
+        ),
+    )
+
+
+def quarantine_disabled_mailbox_email(
+    alias: Alias, contact: Contact, mailbox: Mailbox, envelope: Envelope, msg: Message
+) -> EmailLog:
+    add_or_replace_header(msg, headers.SL_DIRECTION, "Forward")
+    msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+    random_name = str(uuid.uuid4())
+    s3_report_path = f"refused-emails/mailbox-disabled-{random_name}.eml"
+    s3.upload_email_from_bytesio(
+        s3_report_path,
+        BytesIO(message_to_bytes(msg)),
+        f"mailbox-disabled-{random_name}",
+    )
+    refused_email = RefusedEmail.create(
+        full_report_path=s3_report_path, user_id=alias.user_id, flush=True
+    )
+    email_log = EmailLog.create(
+        user_id=alias.user_id,
+        mailbox_id=mailbox.id,
+        contact_id=contact.id,
+        alias_id=alias.id,
+        message_id=str(msg[headers.MESSAGE_ID]),
+        refused_email_id=refused_email.id,
+        is_spam=False,
+        blocked=True,
+        commit=True,
+    )
+    return email_log

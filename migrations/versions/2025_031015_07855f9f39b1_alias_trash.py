@@ -21,7 +21,7 @@ def upgrade():
     with op.get_context().autocommit_block():
         op.add_column('alias', sa.Column('delete_on', sqlalchemy_utils.types.arrow.ArrowType(), default=None, server_default=None, nullable=True))
         op.add_column('alias', sa.Column('delete_reason', sa.Integer(), default=None, server_default=None, nullable=True))
-        op.create_index('ix_alias_delete_on', 'alias', ['delete_on'], unique=False)
+        op.create_index('ix_alias_delete_on', 'alias', ['delete_on'], unique=False, postgresql_concurrently=True)
         op.add_column('users', sa.Column('alias_delete_action', sa.Integer(), server_default='0', nullable=False))
 
 

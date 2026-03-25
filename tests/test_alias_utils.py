@@ -14,6 +14,7 @@ from app.models import (
     DeletedAlias,
     CustomDomain,
     AutoCreateRule,
+    AutoCreateRuleMailbox,
     Directory,
     DirectoryMailbox,
     User,
@@ -133,6 +134,37 @@ def test_auto_create_alias(flask_client):
             assert result, f"Case {test_id} - Failed address {address}"
         else:
             assert result is None, f"Case {test_id} - Failed address {address}"
+
+
+def test_auto_create_alias_applies_rule_display_name(flask_client):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        catch_all=False,
+        domain=random_domain(),
+        verified=True,
+        flush=True,
+    )
+    rule = AutoCreateRule.create(
+        custom_domain_id=custom_domain.id,
+        order=0,
+        regex="list-.*",
+        display_name="Weekly Digest",
+        flush=True,
+    )
+    AutoCreateRuleMailbox.create(
+        auto_create_rule_id=rule.id,
+        mailbox_id=user.default_mailbox_id,
+        flush=True,
+    )
+    Session.commit()
+
+    address = f"list-welcome@{custom_domain.domain}"
+    alias = try_auto_create(address)
+    assert alias is not None
+    alias = Alias.get_by(email=address)
+    assert alias is not None
+    assert alias.name == "Weekly Digest"
 
 
 # get_alias_recipient_name

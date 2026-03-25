@@ -1,20 +1,30 @@
+from typing import Optional
+
 from arrow import Arrow
 
+from app import config
 from app.account_linking import (
     SLPlan,
     SLPlanType,
 )
 from app.constants import JobType
-from app.proton.proton_client import ProtonClient, UserInformation
+from app.models import User, PartnerUser, Job, JobState
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     generate_account_not_allowed_to_log_in,
 )
-from app.models import User, PartnerUser, Job, JobState
+from app.proton.proton_client import ProtonClient, UserInformation
 from app.proton.proton_partner import get_proton_partner
 from app.utils import random_string
-from typing import Optional
 from tests.utils import random_email
+
+
+def setup_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = True
+
+
+def teardown_module():
+    config.SKIP_MX_LOOKUP_ON_CHECK = False
 
 
 class MockProtonClient(ProtonClient):

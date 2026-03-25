@@ -1,11 +1,11 @@
 import re
 import secrets
 import string
-import time
 import urllib.parse
 from functools import wraps
 from typing import List, Optional
 
+import time
 from flask_wtf import FlaskForm
 from unidecode import unidecode
 
@@ -47,15 +47,6 @@ def random_string(length=10, include_digits=False):
     return "".join(secrets.choice(letters) for _ in range(length))
 
 
-def convert_to_id(s: str):
-    """convert a string to id-like: remove space, remove special accent"""
-    s = s.lower()
-    s = unidecode(s)
-    s = s.replace(" ", "")
-
-    return s[:256]
-
-
 _ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-."
 
 
@@ -71,6 +62,15 @@ def convert_to_alphanumeric(s: str) -> str:
     return "".join(ret)
 
 
+def convert_to_id(s: str):
+    """convert a string to id-like: remove space, remove special accent"""
+    s = s.lower()
+    s = unidecode(s)
+    s = s.replace(" ", "")
+
+    return convert_to_alphanumeric(s)[:64]
+
+
 def encode_url(url):
     return urllib.parse.quote(url, safe="")
 
@@ -81,7 +81,13 @@ def canonicalize_email(email_address: str) -> str:
     if len(parts) != 2:
         return ""
     domain = parts[1]
-    if domain not in ("gmail.com", "protonmail.com", "proton.me", "pm.me"):
+    if domain not in (
+        "googlemail.com",
+        "gmail.com",
+        "protonmail.com",
+        "proton.me",
+        "pm.me",
+    ):
         return email_address
     first = parts[0]
     try:
