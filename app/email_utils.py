@@ -675,7 +675,7 @@ def check_domain_for_mailbox(domain: str) -> MailboxDomainCheckResult:
                 detail=f"MX domain '{mx_domain}' (used by '{domain}') is listed as an invalid mailbox domain.",
             )
         a_record = get_a_record(mx_domain)
-        LOG.i("found MX domain %s for %s with A record %s", mx_domain, domain, a_record)
+        LOG.i("Found MX domain %s for %s with A record %s", mx_domain, domain, a_record)
         if a_record is not None:
             mx_ips.add(a_record)
 
