@@ -3672,8 +3672,8 @@ class ForbiddenMxIp(Base, ModelMixin):
     comment = sa.Column(sa.Text, unique=False, nullable=True)
 
 
-class GlobalSenderBlacklist(Base, ModelMixin):
-    """Global blacklist for inbound senders (envelope MAIL FROM).
+class ForbiddenEnvelopeSender(Base, ModelMixin):
+    """Forbidden inbound senders (SMTP envelope MAIL FROM).
 
     Pattern is a (re2-compatible) regex that is applied via search() against the
     full envelope sender address.
@@ -3689,7 +3689,8 @@ class GlobalSenderBlacklist(Base, ModelMixin):
     # non-NULL user_id => per-user blacklist entry (user-managed)
     user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
 
-    pattern = sa.Column(sa.String(512), nullable=False)
+    # RFC5321 states that an email address cannot be longer than 254 characters.
+    pattern = sa.Column(sa.String(255), nullable=False)
     enabled = sa.Column(sa.Boolean, nullable=False, default=True, server_default="1")
     comment = sa.Column(sa.Text, nullable=True)
 

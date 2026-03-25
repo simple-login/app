@@ -4,7 +4,7 @@ from cachetools import TTLCache, cached
 
 from app.db import Session
 from app.log import LOG
-from app.models import GlobalSenderBlacklist
+from app.models import ForbiddenEnvelopeSender
 from app.regex_utils import regex_search
 
 
@@ -14,12 +14,12 @@ from app.regex_utils import regex_search
 def _get_enabled_global_patterns() -> list[str]:
     return [
         r.pattern
-        for r in Session.query(GlobalSenderBlacklist)
+        for r in Session.query(ForbiddenEnvelopeSender)
         .filter(
-            GlobalSenderBlacklist.enabled.is_(True),
-            GlobalSenderBlacklist.user_id.is_(None),
+            ForbiddenEnvelopeSender.enabled.is_(True),
+            ForbiddenEnvelopeSender.user_id.is_(None),
         )
-        .order_by(GlobalSenderBlacklist.id.asc())
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     ]
 
@@ -29,12 +29,12 @@ def _get_enabled_global_patterns() -> list[str]:
 def _get_enabled_user_patterns(user_id: int) -> list[str]:
     return [
         r.pattern
-        for r in Session.query(GlobalSenderBlacklist)
+        for r in Session.query(ForbiddenEnvelopeSender)
         .filter(
-            GlobalSenderBlacklist.enabled.is_(True),
-            GlobalSenderBlacklist.user_id == user_id,
+            ForbiddenEnvelopeSender.enabled.is_(True),
+            ForbiddenEnvelopeSender.user_id == user_id,
         )
-        .order_by(GlobalSenderBlacklist.id.asc())
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     ]
 

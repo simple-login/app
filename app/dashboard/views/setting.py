@@ -39,7 +39,7 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
     UserAliasDeleteAction,
-    GlobalSenderBlacklist,
+    ForbiddenEnvelopeSender,
 )
 from app.proton.proton_unlink import can_unlink_proton_account
 from app.utils import (
@@ -292,7 +292,7 @@ def setting():
                 flash("Pattern cannot be empty", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
-            GlobalSenderBlacklist.create(
+            ForbiddenEnvelopeSender.create(
                 user_id=current_user.id,
                 pattern=pattern,
                 enabled=True,
@@ -309,7 +309,7 @@ def setting():
                 flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
-            entry = GlobalSenderBlacklist.get_by(id=entry_id)
+            entry = ForbiddenEnvelopeSender.get_by(id=entry_id)
             if entry is None or entry.user_id != current_user.id:
                 flash("Not found", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
@@ -331,19 +331,19 @@ def setting():
         partner_sub, partner_name = partner_sub_name
 
     user_sender_blacklist_entries = (
-        Session.query(GlobalSenderBlacklist)
-        .filter(GlobalSenderBlacklist.user_id == current_user.id)
-        .order_by(GlobalSenderBlacklist.id.asc())
+        Session.query(ForbiddenEnvelopeSender)
+        .filter(ForbiddenEnvelopeSender.user_id == current_user.id)
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     )
 
     global_sender_blacklist_entries = (
-        Session.query(GlobalSenderBlacklist)
+        Session.query(ForbiddenEnvelopeSender)
         .filter(
-            GlobalSenderBlacklist.enabled.is_(True),
-            GlobalSenderBlacklist.user_id.is_(None),
+            ForbiddenEnvelopeSender.enabled.is_(True),
+            ForbiddenEnvelopeSender.user_id.is_(None),
         )
-        .order_by(GlobalSenderBlacklist.id.asc())
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     )
 
