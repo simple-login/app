@@ -21,7 +21,7 @@ from app.models import (
     VerpType,
     Contact,
     SentAlert,
-    GlobalSenderBlacklist,
+    ForbiddenEnvelopeSender,
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
@@ -46,7 +46,7 @@ def test_global_sender_blacklist_blocks(flask_client):
     alias = Alias.create_new_random(user)
 
     # Block all senders from spam.test
-    GlobalSenderBlacklist.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+    ForbiddenEnvelopeSender.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
 
     msg = EmailMessage()
     msg[headers.FROM] = "Bad Guy <bad@spam.test>"
@@ -87,7 +87,7 @@ def test_global_sender_blacklist_not_applied_when_contact_exists(flask_client):
     assert contact is not None
 
     # Now enable a global blacklist that would match this sender.
-    GlobalSenderBlacklist.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+    ForbiddenEnvelopeSender.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
 
     msg = EmailMessage()
     msg[headers.FROM] = "Bad Guy <bad@spam.test>"
