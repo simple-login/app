@@ -5,7 +5,11 @@ import re2
 from app.log import LOG
 
 
-_SENDER_BLACKLIST_ALLOWED_RE = re.compile(r"^[A-Za-z0-9@._\-\+\*\^\$\(\)\|\?\[\]\\]+$")
+# Keep this permissive enough for practical regexes, but still a strict whitelist.
+# Note: We intentionally do NOT allow whitespace.
+_SENDER_BLACKLIST_ALLOWED_RE = re.compile(
+    r"^[A-Za-z0-9\[\]\{\}\(\)\|\?\^\$@,._\-\+\*\\\.]+$"
+)
 
 
 def validate_sender_blacklist_pattern(pattern: str) -> str | None:
@@ -23,7 +27,7 @@ def validate_sender_blacklist_pattern(pattern: str) -> str | None:
     # Keep the allowed character set intentionally small.
     if not _SENDER_BLACKLIST_ALLOWED_RE.fullmatch(pattern):
         return (
-            "Invalid characters in pattern. Allowed: letters, digits, and @ . _ - + * ^ $ ( ) | ? [ ] \\"
+            "Invalid characters in pattern. Allowed: letters, digits, and []{}(),._-+*\\.^$@|?"
         )
 
     try:

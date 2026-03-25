@@ -12,7 +12,7 @@ from app.regex_utils import regex_match
 #
 # TTL: keep changes reasonably fresh while avoiding hammering the DB.
 # Memory: cachetools.TTLCache is an in-process dict with an upper bound (maxsize).
-_GLOBAL_PATTERNS_CACHE = TTLCache(maxsize=1, ttl=300)
+_GLOBAL_PATTERNS_CACHE = TTLCache(maxsize=128, ttl=300)
 _USER_PATTERNS_CACHE = TTLCache(maxsize=128, ttl=300)
 
 
