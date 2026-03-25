@@ -11,22 +11,8 @@ class GlobalSenderBlacklistAdmin(SLModelView):
     can_delete = True
 
     column_searchable_list = ("pattern", "comment")
-    column_filters = ("enabled",)
+    column_filters = ("enabled", "user_id")
     column_editable_list = ("enabled", "comment")
-
-    # Keep the admin UI strictly on GLOBAL entries (user_id is NULL)
-    column_exclude_list = ("user_id", "user")
-    form_excluded_columns = ("user_id", "user")
-
-    def get_query(self):
-        return (
-            super().get_query().filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
-        )
-
-    def get_count_query(self):
-        return (
-            super().get_count_query().filter(self.model.user_id.is_(None))  # type: ignore[attr-defined]
-        )
 
     # Help text for admins when adding patterns
     form_args = {
