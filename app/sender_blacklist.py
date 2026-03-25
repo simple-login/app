@@ -5,12 +5,18 @@ from cachetools import TTLCache, cached
 from app.db import Session
 from app.log import LOG
 from app.models import ForbiddenEnvelopeSender
-from app.regex_utils import regex_search
+from app.regex_utils import regex_match
 
 
-# Cache enabled patterns briefly to avoid a DB query per inbound email.
-# Admin changes should take effect quickly but don't need to be instant.
-@cached(cache=TTLCache(maxsize=128, ttl=30))
+# Cache enabled patterns to avoid a DB query per inbound email.
+#
+# TTL: keep changes reasonably fresh while avoiding hammering the DB.
+# Memory: cachetools.TTLCache is an in-process dict with an upper bound (maxsize).
+_GLOBAL_PATTERNS_CACHE = TTLCache(maxsize=1, ttl=300)
+_USER_PATTERNS_CACHE = TTLCache(maxsize=128, ttl=300)
+
+
+@cached(cache=_GLOBAL_PATTERNS_CACHE)
 def _get_enabled_global_patterns() -> list[str]:
     return [
         r.pattern
@@ -24,8 +30,8 @@ def _get_enabled_global_patterns() -> list[str]:
     ]
 
 
-# Per-user cache: keep it small-ish but avoid a DB query per email per user.
-@cached(cache=TTLCache(maxsize=128, ttl=30))
+# Per-user cache: avoid a DB query per email per user, but cap memory via maxsize.
+@cached(cache=_USER_PATTERNS_CACHE)
 def _get_enabled_user_patterns(user_id: int) -> list[str]:
     return [
         r.pattern
@@ -39,7 +45,7 @@ def _get_enabled_user_patterns(user_id: int) -> list[str]:
     ]
 
 
-def is_sender_blocked_for_user(user_id: int | None, *candidates: str) -> bool:
+def is_sender_blocked_for_user(user_id: int | None, candidates: list[str]) -> bool:
     """Return True if any candidate sender string matches:
 
     - the global sender blacklist (user_id is NULL), OR
@@ -67,7 +73,8 @@ def is_sender_blocked_for_user(user_id: int | None, *candidates: str) -> bool:
 
         for pattern in patterns:
             try:
-                if regex_search(pattern, candidate):
+                # Full-string match to avoid false positives (partial hits).
+                if regex_match(pattern, candidate):
                     return True
             except Exception:
                 # Never crash the SMTP handler because of a bad regex.
