@@ -1,0 +1,225 @@
+{% extends 'admin/master.html' %}
+
+{% block head_css %}
+  {{ super() }}
+  <style>
+  :root {
+    --color-primary: #1e293b;
+    --color-primary-light: #334155;
+    --color-success: #059669;
+    --color-success-dark: #047857;
+    --color-danger: #dc2626;
+    --color-danger-dark: #b91c1c;
+    --color-neutral-50: #f8fafc;
+    --color-neutral-100: #f1f5f9;
+    --color-neutral-200: #e2e8f0;
+    --color-neutral-500: #64748b;
+    --color-neutral-700: #334155;
+    --color-info: #0284c7;
+    --color-info-dark: #0369a1;
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+  }
+
+  .container-fluid {
+    background-color: var(--color-neutral-50);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header {
+    border-bottom: none;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+  }
+
+  .card-header h5 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .header-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+  }
+
+  .header-success {
+    background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
+    color: white;
+  }
+
+  .header-danger {
+    background: linear-gradient(135deg, var(--color-danger-dark) 0%, var(--color-danger) 100%);
+    color: white;
+  }
+
+  .btn {
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary-modern {
+    background: linear-gradient(135deg, var(--color-info-dark) 0%, var(--color-info) 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-primary-modern:hover {
+    background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .form-control {
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .form-control:focus {
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 3px rgb(2 132 199 / 0.15);
+    outline: none;
+  }
+
+  .result-detail {
+    font-family: monospace;
+    font-size: 0.9em;
+    background-color: var(--color-neutral-100);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    word-break: break-all;
+  }
+
+  table.info-table td {
+    padding: 0.4rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  table.info-table td:first-child {
+    color: var(--color-neutral-500);
+    white-space: nowrap;
+    width: 1%;
+  }
+  </style>
+{% endblock %}
+
+{% block body %}
+  <div class="container-fluid px-4" style="padding: 0">
+
+    {# Search Form #}
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header header-primary">
+        <h5 class="mb-0">
+          <i class="fa fa-globe mr-2"></i>Domain Check
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="get">
+          <div class="mb-3">
+            <label for="domain" class="font-weight-bold">Domain</label>
+            <div class="input-group input-group-lg">
+              <input type="text"
+                     class="form-control"
+                     name="domain"
+                     id="domain"
+                     value="{{ domain or '' }}"
+                     placeholder="example.com">
+              <div class="input-group-append">
+                <button type="submit" class="btn btn-primary-modern">
+                  <i class="fa fa-search mr-1"></i>Check
+                </button>
+              </div>
+            </div>
+            <small class="form-text text-muted">
+              <i class="fa fa-info-circle mr-1"></i>Enter a domain name to check whether it can be used as a mailbox domain.
+            </small>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {# Result #}
+    {% if result is not none and domain %}
+      {% if result.can_be_used %}
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-success">
+            <h5 class="mb-0">
+              <i class="fa fa-check-circle mr-2"></i>Domain can be used as mailbox
+            </h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0 info-table">
+              <tr>
+                <td>Domain:</td>
+                <td><code>{{ domain }}</code></td>
+              </tr>
+              <tr>
+                <td>Status:</td>
+                <td><span class="badge badge-success">Allowed</span></td>
+              </tr>
+              {% if result.detail %}
+                <tr>
+                  <td>Detail:</td>
+                  <td><span class="result-detail">{{ result.detail }}</span></td>
+                </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+      {% else %}
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-danger">
+            <h5 class="mb-0">
+              <i class="fa fa-times-circle mr-2"></i>Domain cannot be used as mailbox
+            </h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0 info-table">
+              <tr>
+                <td>Domain:</td>
+                <td><code>{{ domain }}</code></td>
+              </tr>
+              <tr>
+                <td>Status:</td>
+                <td><span class="badge badge-danger">Blocked</span></td>
+              </tr>
+              {% if result.reason %}
+                <tr>
+                  <td>Reason:</td>
+                  <td><span class="badge badge-warning">{{ result.reason.name }}</span>{{ result.reason.value }}</td>
+                </tr>
+              {% endif %}
+              {% if result.detail %}
+                <tr>
+                  <td>Detail:</td>
+                  <td><span class="result-detail">{{ result.detail }}</span></td>
+                </tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+{% endblock %}
