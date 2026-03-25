@@ -215,30 +215,25 @@ def get_or_create_contact(
             )
             contact_email = mail_from
 
-    # Decide whether we already have a matching contact BEFORE applying the global sender blacklist.
-    # This allows users to whitelist a specific sender by manually creating/enabling a Contact.
-    sanitized_contact_email = sanitize_email(contact_email, not_lower=True)
-    existing_contact = Contact.get_by(
-        alias_id=alias.id, website_email=sanitized_contact_email
-    )
+    # Normalize sender address to lowercase so blacklist patterns are easy to write.
+    sanitized_contact_email = sanitize_email(contact_email)
 
-    # Only consult the global blacklist if NO matching contact exists yet.
-    # If matched, create a disabled Contact; the existing block_forward logic will refuse the email.
-    block_forward = False
-    if existing_contact is None:
-        block_forward = is_sender_blocked_for_user(
-            alias.user_id, mail_from, sanitized_contact_email
+    # Check the blacklist BEFORE creating/updating contacts.
+    # Otherwise an auto-created contact could allow subsequent emails to bypass the blacklist.
+    block_forward = is_sender_blocked_for_user(
+        alias.user_id,
+        candidates=[mail_from, sanitized_contact_email],
+    )
+    if block_forward:
+        LOG.i(
+            "Sender matched sender blacklist (global or user); creating disabled contact: mail_from=%s header_from=%s alias=%s",
+            mail_from,
+            sanitized_contact_email,
+            alias,
         )
-        if block_forward:
-            LOG.i(
-                "Sender matched sender blacklist (global or user); creating disabled contact: mail_from=%s header_from=%s alias=%s",
-                mail_from,
-                sanitized_contact_email,
-                alias,
-            )
 
     contact_result = contact_utils.create_contact(
-        email=contact_email,
+        email=sanitized_contact_email,
         alias=alias,
         name=contact_name,
         mail_from=mail_from,
