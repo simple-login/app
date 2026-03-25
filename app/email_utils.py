@@ -683,7 +683,7 @@ def check_domain_for_mailbox(domain: str) -> MailboxDomainCheckResult:
         forbidden = ForbiddenMxIp.filter(ForbiddenMxIp.ip.in_(list(mx_ips))).all()
         if forbidden:
             forbidden_str = ", ".join(fi.ip for fi in forbidden)
-            LOG.i("found forbidden MX IPs for domain %s: %s", domain, forbidden_str)
+            LOG.i("Found forbidden MX IPs for domain %s: %s", domain, forbidden_str)
             return MailboxDomainCheckResult(
                 can_be_used=False,
                 reason=EmailCannotBeUsedReason.ForbiddenMxRecordFound,
