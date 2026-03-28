@@ -5,6 +5,39 @@ import re2
 from app.log import LOG
 
 
+# Keep this permissive enough for practical regexes, but still a strict whitelist.
+# Note: We intentionally do NOT allow whitespace.
+_SENDER_BLACKLIST_ALLOWED_RE = re.compile(
+    r"^[A-Za-z0-9\[\]\{\}\(\)\|\?\^\$@,._\-\+\*\\\.]+$"
+)
+
+
+def validate_sender_blacklist_pattern(pattern: str) -> str | None:
+    """Validate a user-provided sender-blacklist regex pattern.
+
+    The goal is to keep patterns simple and prevent expensive/unsafe constructs.
+    We also validate the regex compiles (re2 preferred).
+
+    Returns:
+        None if valid; otherwise an error message string.
+    """
+    if not pattern:
+        return "Pattern cannot be empty"
+
+    # Keep the allowed character set intentionally small.
+    if not _SENDER_BLACKLIST_ALLOWED_RE.fullmatch(pattern):
+        return (
+            "Invalid characters in pattern. Allowed: letters, digits, and []{}(),._-+*\\.^$@|?"
+        )
+
+    try:
+        re2.compile(pattern)
+    except Exception:
+        return "Invalid regex pattern"
+
+    return None
+
+
 def regex_match(rule_regex: str, local) -> bool:
     """Return True if *full string* matches rule_regex."""
     regex = re2.compile(rule_regex)

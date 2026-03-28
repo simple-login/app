@@ -267,17 +267,16 @@
             <div class="mb-3">
               Automatically block new Contacts (and therefore forwarding) when the sender matches a blacklist pattern.
               <br />
-              Patterns are regular expressions (regex) and are checked with a <code>search()</code>-style match against the full sender address.
+              Patterns are regular expressions (regex) and are checked with a <code>fullmatch()</code>-style match against the full sender address.
               <br />
               Examples: <code>@(spam|junk)-?domain\.com$</code>, <code>^no-?reply@.*</code>
-              <br />
-              Note: if a Contact already exists for that specific sender, it keeps its current status. This can be used to create allow-exceptions.
             </div>
 
             <form method="post" action="#sender-blacklist" class="form-inline mb-3">
               {{ csrf_form.csrf_token }}
               <input type="hidden" name="form-name" value="user-sender-blacklist-add">
               <input type="text" name="pattern" class="form-control mr-sm-2" placeholder="Regex pattern" style="min-width: 320px;">
+              <input type="text" name="comment" class="form-control mr-sm-2" placeholder="Comment (optional)" style="min-width: 280px;">
               <button type="submit" class="btn btn-outline-primary">Add</button>
             </form>
 
@@ -286,6 +285,7 @@
                 {% for entry in user_sender_blacklist_entries %}
                   <li>
                     <code>{{ entry.pattern }}</code>
+                    {% if entry.comment %}<span class="text-muted">— {{ entry.comment }}</span>{% endif %}
                     <form method="post" action="#sender-blacklist" style="display:inline">
                       {{ csrf_form.csrf_token }}
                       <input type="hidden" name="form-name" value="user-sender-blacklist-delete">

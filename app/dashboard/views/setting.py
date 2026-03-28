@@ -39,9 +39,11 @@ from app.models import (
     PartnerSubscription,
     UnsubscribeBehaviourEnum,
     UserAliasDeleteAction,
-    GlobalSenderBlacklist,
+    ForbiddenEnvelopeSender,
 )
 from app.proton.proton_unlink import can_unlink_proton_account
+from app.regex_utils import validate_sender_blacklist_pattern
+from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import (
     random_string,
     CSRFValidationForm,
@@ -288,15 +290,29 @@ def setting():
 
         elif request.form.get("form-name") == "user-sender-blacklist-add":
             pattern = (request.form.get("pattern") or "").strip()
-            if not pattern:
-                flash("Pattern cannot be empty", "warning")
+            comment = (request.form.get("comment") or "").strip() or None
+
+            if len(pattern) > 255:
+                flash("Pattern too long (max 255 characters)", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
-            GlobalSenderBlacklist.create(
+            err = validate_sender_blacklist_pattern(pattern)
+            if err:
+                flash(err, "warning")
+                return redirect(url_for("dashboard.setting") + "#sender-blacklist")
+
+            ForbiddenEnvelopeSender.create(
                 user_id=current_user.id,
                 pattern=pattern,
                 enabled=True,
-                comment=None,
+                comment=comment,
+                commit=True,
+            )
+
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.AddSenderBlacklist,
+                message=f"Added sender blacklist pattern: {pattern}",
                 commit=True,
             )
             flash("Sender blacklist entry added", "success")
@@ -309,13 +325,20 @@ def setting():
                 flash("Invalid request", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
-            entry = GlobalSenderBlacklist.get_by(id=entry_id)
+            entry = ForbiddenEnvelopeSender.get_by(id=entry_id)
             if entry is None or entry.user_id != current_user.id:
                 flash("Not found", "warning")
                 return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
             Session.delete(entry)
             Session.commit()
+
+            emit_user_audit_log(
+                user=current_user,
+                action=UserAuditLogAction.DeleteSenderBlacklist,
+                message=f"Deleted sender blacklist pattern: {entry.pattern}",
+                commit=True,
+            )
             flash("Sender blacklist entry deleted", "success")
             return redirect(url_for("dashboard.setting") + "#sender-blacklist")
 
@@ -331,19 +354,19 @@ def setting():
         partner_sub, partner_name = partner_sub_name
 
     user_sender_blacklist_entries = (
-        Session.query(GlobalSenderBlacklist)
-        .filter(GlobalSenderBlacklist.user_id == current_user.id)
-        .order_by(GlobalSenderBlacklist.id.asc())
+        Session.query(ForbiddenEnvelopeSender)
+        .filter(ForbiddenEnvelopeSender.user_id == current_user.id)
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     )
 
     global_sender_blacklist_entries = (
-        Session.query(GlobalSenderBlacklist)
+        Session.query(ForbiddenEnvelopeSender)
         .filter(
-            GlobalSenderBlacklist.enabled.is_(True),
-            GlobalSenderBlacklist.user_id.is_(None),
+            ForbiddenEnvelopeSender.enabled.is_(True),
+            ForbiddenEnvelopeSender.user_id.is_(None),
         )
-        .order_by(GlobalSenderBlacklist.id.asc())
+        .order_by(ForbiddenEnvelopeSender.id.asc())
         .all()
     )
 

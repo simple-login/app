@@ -17,7 +17,7 @@ from app.models import (
     Metric2,
     InvalidMailboxDomain,
     ForbiddenMxIp,
-    GlobalSenderBlacklist,
+    ForbiddenEnvelopeSender,
 )
 from app.admin.base import SLAdminIndexView
 from app.admin.user import UserAdmin
@@ -65,4 +65,4 @@ def init_admin(app: Flask):
     admin.add_view(MetricAdmin(Metric2, Session))
     admin.add_view(InvalidMailboxDomainAdmin(InvalidMailboxDomain, Session))
     admin.add_view(ForbiddenMxIpAdmin(ForbiddenMxIp, Session))
-    admin.add_view(GlobalSenderBlacklistAdmin(GlobalSenderBlacklist, Session))
+    admin.add_view(GlobalSenderBlacklistAdmin(ForbiddenEnvelopeSender, Session))
