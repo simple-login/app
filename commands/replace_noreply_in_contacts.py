@@ -3,15 +3,16 @@ import argparse
 import time
 
 
-from app import config
-from app.email_utils import generate_reply_email
+from app.email_utils import generate_reply_email, get_noreply_email
 from app.email_validation import is_valid_email
 from app.models import Alias
 from app.db import Session
 
+_noreply_email = get_noreply_email()
+
 parser = argparse.ArgumentParser(
-    prog=f"Replace {config.NOREPLY}",
-    description=f"Replace {config.NOREPLY} from contacts reply email",
+    prog=f"Replace {_noreply_email}",
+    description=f"Replace {_noreply_email} from contacts reply email",
 )
 args = parser.parse_args()
 
@@ -21,10 +22,10 @@ updated = 0
 start_time = time.time()
 step = 100
 last_id = 0
-print(f"Replacing contacts with reply_email={config.NOREPLY}")
+print(f"Replacing contacts with reply_email={_noreply_email}")
 while True:
     rows = Session.execute(
-        el_query, {"last_id": last_id, "reply_email": config.NOREPLY, "step": step}
+        el_query, {"last_id": last_id, "reply_email": _noreply_email, "step": step}
     )
     loop_updated = 0
     for row in rows:

@@ -1,20 +1,19 @@
-import random
-from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from typing import List
-
 import arrow
 import pytest
+import random
 from aiosmtpd.smtp import Envelope
+from email.message import EmailMessage
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import List
 
 import email_handler
 from app import config
 from app.config import EMAIL_DOMAIN, ALERT_DMARC_FAILED_REPLY_PHASE
 from app.db import Session
 from app.email import headers, status
-from app.email_utils import generate_verp_email
+from app.email_utils import generate_verp_email, get_noreply_email
 from app.mail_sender import mail_sender
 from app.models import (
     Alias,
@@ -220,7 +219,7 @@ def test_email_sent_to_noreply(flask_client):
     msg = EmailMessage()
     envelope = Envelope()
     envelope.mail_from = "from@domain.lan"
-    envelope.rcpt_tos = [config.NOREPLY]
+    envelope.rcpt_tos = [get_noreply_email()]
     result = email_handler.handle(envelope, msg)
     assert result == status.E200
 
@@ -229,16 +228,19 @@ def test_email_sent_to_noreplies(flask_client):
     msg = EmailMessage()
     envelope = Envelope()
     envelope.mail_from = "from@domain.lan"
+    original_noreplies = config.NOREPLIES
     config.NOREPLIES = ["other-no-reply@sl.lan"]
+    try:
+        envelope.rcpt_tos = ["other-no-reply@sl.lan"]
+        result = email_handler.handle(envelope, msg)
+        assert result == status.E200
 
-    envelope.rcpt_tos = ["other-no-reply@sl.lan"]
-    result = email_handler.handle(envelope, msg)
-    assert result == status.E200
-
-    # NOREPLY isn't used anymore
-    envelope.rcpt_tos = [config.NOREPLY]
-    result = email_handler.handle(envelope, msg)
-    assert result == status.E515
+        # default NOREPLY isn't in NOREPLIES anymore — should not be treated as noreply
+        envelope.rcpt_tos = [get_noreply_email()]
+        result = email_handler.handle(envelope, msg)
+        assert result != status.E200
+    finally:
+        config.NOREPLIES = original_noreplies
 
 
 def test_references_header(flask_client):

@@ -10,8 +10,8 @@ from app.models import Alias, Contact
 from app.db import Session
 
 parser = argparse.ArgumentParser(
-    prog=f"Replace {config.NOREPLY}",
-    description=f"Replace {config.NOREPLY} from contacts reply email",
+    prog=f"Replace {config.NOREPLY_EMAIL}",
+    description=f"Replace {config.NOREPLY_EMAIL} from contacts reply email",
 )
 args = parser.parse_args()
 
