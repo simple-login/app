@@ -11,7 +11,6 @@ from typing import List, Dict, Optional
 import arrow
 import sqlalchemy
 
-from app import config
 from app.constants import JobType
 from app.db import Session
 from app.email import headers
@@ -19,7 +18,8 @@ from app.email_utils import (
     generate_verp_email,
     render,
     add_dkim_signature,
-    get_email_domain_part,
+    get_noreply_address,
+    get_noreply_domain,
 )
 from app.mail_sender import sl_sendmail
 from app.models import (
@@ -139,7 +139,7 @@ class ExportUserDataJob:
 
         msg = MIMEMultipart()
         msg[headers.SUBJECT] = "Your SimpleLogin data"
-        msg[headers.FROM] = f'"SimpleLogin (noreply)" <{config.NOREPLY}>'
+        msg[headers.FROM] = get_noreply_address(self._user)
         msg[headers.TO] = to_email
         msg.attach(
             MIMEText(render("transactional/user-report.html", user=self._user), "html")
@@ -152,7 +152,7 @@ class ExportUserDataJob:
         msg.attach(attachment)
 
         # add DKIM
-        email_domain = config.NOREPLY[config.NOREPLY.find("@") + 1 :]
+        email_domain = get_noreply_domain(self._user)
         add_dkim_signature(msg, email_domain)
 
         transaction = TransactionalEmail.create(email=to_email, commit=True)
@@ -160,7 +160,7 @@ class ExportUserDataJob:
             generate_verp_email(
                 VerpType.transactional,
                 transaction.id,
-                get_email_domain_part(config.NOREPLY),
+                get_noreply_domain(self._user),
             ),
             to_email,
             msg,

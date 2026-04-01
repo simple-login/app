@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import arrow
 import base64
 import dataclasses
 import enum
@@ -8,11 +9,8 @@ import hmac
 import os
 import random
 import secrets
-import uuid
-from typing import List, Tuple, Optional, Union
-
-import arrow
 import sqlalchemy as sa
+import uuid
 from arrow import Arrow
 from email_validator import validate_email
 from flanker.addresslib import address
@@ -28,6 +26,7 @@ from sqlalchemy.orm import deferred
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
+from typing import List, Tuple, Optional, Union
 
 from app import config, rate_limiter
 from app import s3
@@ -2113,7 +2112,7 @@ class Contact(Base, ModelMixin):
         website_email = sanitize_email(website_email)
 
         # make sure contact.website_email isn't a reverse alias
-        if website_email != config.NOREPLY:
+        if website_email not in config.NOREPLIES:
             orig_contact = Contact.get_by(reply_email=website_email)
             if orig_contact:
                 raise CannotCreateContactForReverseAlias(str(orig_contact))
