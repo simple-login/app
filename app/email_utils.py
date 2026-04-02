@@ -74,7 +74,7 @@ VERP_HMAC_ALGO = "sha3-224"
 
 def get_noreply_address(user=None) -> str:
     """Full RFC 5322 formatted noreply address, e.g. '"SimpleLogin (noreply)" <noreply@sl.io>'"""
-    if user and PartnerUser.get_by(user_id=user.id):
+    if user and user.created_by_partner:
         return config.PARTNER_NOREPLY
     return config.NOREPLY
 
