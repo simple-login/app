@@ -209,10 +209,13 @@ Output: if api key is correct, return a json with user name and whether user is 
   "is_premium": false,
   "email": "john@wick.com",
   "in_trial": true,
+  "trial_end_timestamp": 1234567890,
   "profile_picture_url": "https://profile.png",
-  "max_alias_free_plan": 5,
+  "max_alias_free_plan": 5
 }
 ```
+
+`trial_end_timestamp`: Unix timestamp (integer) of when the trial ends, or `null` if no trial.
 
 If api key is incorrect, return 401.
 

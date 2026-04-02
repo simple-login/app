@@ -31,6 +31,10 @@ class UserAuditLogAction(Enum):
 
     AddSenderBlacklist = "add_sender_blacklist"
     DeleteSenderBlacklist = "delete_sender_blacklist"
+    
+    CreateAlias = "create_alias"
+    UpdateAlias = "update_alias"
+    DeleteAlias = "delete_alias"
 
     UserMarkedForDeletion = "user_marked_for_deletion"
     DeleteUser = "delete_user"

@@ -243,7 +243,6 @@ def notify_manual_sub_end():
                     retries=3,
                 )
 
-    extend_subscription_url = config.URL + "/dashboard/coinbase_checkout"
     for coinbase_subscription in CoinbaseSubscription.all():
         need_reminder = False
         if (
@@ -275,13 +274,11 @@ def notify_manual_sub_end():
                         "transactional/coinbase/reminder-subscription.txt",
                         user=user,
                         coinbase_subscription=coinbase_subscription,
-                        extend_subscription_url=extend_subscription_url,
                     ),
                     render(
                         "transactional/coinbase/reminder-subscription.html",
                         user=user,
                         coinbase_subscription=coinbase_subscription,
-                        extend_subscription_url=extend_subscription_url,
                     ),
                     retries=3,
                 )

@@ -31,6 +31,7 @@ def user_to_dict(user: User) -> dict:
         "is_premium": user.is_premium(),
         "email": user.email,
         "in_trial": user.in_trial(),
+        "trial_end_timestamp": user.trial_end.timestamp if user.trial_end else None,
         "max_alias_free_plan": user.max_alias_for_free_account(),
         "connected_proton_address": None,
         "can_create_reverse_alias": user.can_create_contacts(),

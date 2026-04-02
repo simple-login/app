@@ -36,6 +36,7 @@ from app.admin.global_sender_blacklist import GlobalSenderBlacklistAdmin
 from app.admin.email_search import EmailSearchAdmin
 from app.admin.custom_domain_search import CustomDomainSearchAdmin
 from app.admin.abuser_lookup import AbuserLookupAdmin
+from app.admin.domain_check import DomainCheckAdmin
 
 
 def init_admin(app: Flask):
@@ -51,6 +52,7 @@ def init_admin(app: Flask):
     admin.add_view(
         AbuserLookupAdmin(name="Abuser Lookup", endpoint="admin.abuser_lookup")
     )
+    admin.add_view(DomainCheckAdmin(name="Domain Check", endpoint="admin.domain_check"))
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))

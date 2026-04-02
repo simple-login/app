@@ -6,8 +6,8 @@ RUN cd /code/static && npm ci
 
 FROM --platform=linux/amd64 ubuntu:22.04
 
-ARG UV_VERSION="0.7.13"
-ARG UV_HASH="909278eb197c5ed0e9b5f16317d1255270d1f9ea4196e7179ce934d48c4c2545"
+ARG UV_VERSION="0.10.12"
+ARG UV_HASH="ec72570c9d1f33021aa80b176d7baba390de2cfeb1abcbefca346d563bf17484"
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1

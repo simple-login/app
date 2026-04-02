@@ -29,6 +29,7 @@ from app.admin.custom_domain_search import (
     CustomDomainSearchAdmin,
 )
 from app.admin.abuser_lookup import AbuserLookupResult, AbuserLookupAdmin
+from app.admin.domain_check import DomainCheckAdmin
 
 __all__ = [
     # Initialization
@@ -64,4 +65,5 @@ __all__ = [
     "CustomDomainSearchAdmin",
     "AbuserLookupResult",
     "AbuserLookupAdmin",
+    "DomainCheckAdmin",
 ]
