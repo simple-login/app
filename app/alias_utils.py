@@ -105,6 +105,12 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
         )
         return None
 
+    if not custom_domain.ownership_verified:
+        LOG.i(
+            f"Custom domain {custom_domain} is not verified so we cannot auto-create alias for {address}"
+        )
+        return None
+
     user: User = custom_domain.user
     if user.disabled:
         LOG.i("Disabled user %s can't create new alias via custom domain", user)
