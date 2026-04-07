@@ -31,29 +31,29 @@ It should contain the following info:
 
 """
 
+from email import encoders
+
 import argparse
 import email
+import newrelic.agent
+import sentry_sdk
+import time
 import uuid
-from email import encoders
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import Envelope
 from email.encoders import encode_noop
 from email.message import Message
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
-from io import BytesIO
-from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional, Set
-
-import newrelic.agent
-import sentry_sdk
-import time
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
+from io import BytesIO
 from sl_pgp import PgpContext
+from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from sqlalchemy.exc import IntegrityError
+from typing import List, Tuple, Optional, Set
 
 from app import pgp_utils, s3, config, contact_utils
 from app.alias_utils import (
@@ -78,12 +78,9 @@ from app.config import (
     PGP_SENDER_PRIVATE_KEY,
     ALERT_BOUNCE_EMAIL_REPLY_PHASE,
     NOREPLY,
-    BOUNCE_PREFIX,
-    BOUNCE_SUFFIX,
     TRANSACTIONAL_BOUNCE_PREFIX,
     TRANSACTIONAL_BOUNCE_SUFFIX,
     ENABLE_SPAM_ASSASSIN,
-    BOUNCE_PREFIX_FOR_REPLY_PHASE,
     POSTMASTER,
     OLD_UNSUBSCRIBER,
     ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
@@ -2153,11 +2150,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             raise VERPTransactional
 
     # sent to forward VERP, can be either bounce or out-of-office
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(BOUNCE_PREFIX)
-        and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
-    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+    if verp_info and verp_info[0] == VerpType.bounce_forward:
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
@@ -2173,11 +2166,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             raise VERPForward
 
     # sent to reply VERP, can be either bounce or out-of-office
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+")
-        or (verp_info and verp_info[0] == VerpType.bounce_reply)
-    ):
+    if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.bounce_reply:
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
@@ -2196,13 +2185,13 @@ def handle(envelope: Envelope, msg: Message) -> str:
                 f"{email_log.alias} -> {email_log.contact} ({email_log}, {email_log.user}"
             )
 
-    # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
-    verp_info = get_verp_info_from_email(mail_from[0])
+    verp_info = get_verp_info_from_email(mail_from)
     if (
         len(rcpt_tos) == 1
-        and mail_from.startswith(BOUNCE_PREFIX)
-        and mail_from.endswith(BOUNCE_SUFFIX)
-    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+        and verp_info
+        and verp_info[0] == VerpType.bounce_forward
+        and is_bounce(envelope, msg)
+    ):
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(mail_from)
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
