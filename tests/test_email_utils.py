@@ -1,13 +1,14 @@
-import arrow
 import email
 import os
-import pytest
 from email.message import EmailMessage
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from unittest.mock import patch
+
+import arrow
+import pytest
 
 from app import config
 from app.config import MAX_ALERT_24H, ROOT_DIR
@@ -61,6 +62,7 @@ from app.models import (
     SLDomain,
     Mailbox,
     ForbiddenMxIp,
+    User,
 )
 
 # flake8: noqa: E101, W191
@@ -1124,6 +1126,8 @@ def test_get_noreply_domain_no_user(flask_client):
 
 def test_get_noreply_address_partner_user(flask_client):
     user, _ = create_partner_linked_user()
+    user.flags = user.flags | User.FLAG_CREATED_FROM_PARTNER
+    Session.flush()
     with patch.object(
         config, "PARTNER_NOREPLY", '"Partner (noreply)" <partner-noreply@partner.lan>'
     ):
