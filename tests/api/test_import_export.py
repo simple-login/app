@@ -141,6 +141,35 @@ def test_import(flask_client):
     assert aliases[2].mailboxes[1] == mailbox1
 
 
+def test_import_with_invalid_data(flask_client):
+    # Create user
+    user = login(flask_client)
+
+    # Clear up aliases
+    Alias.filter_by(user_id=user.id).delete()
+
+    # Check start state
+    assert len(Alias.filter_by(user_id=user.id).all()) == 0
+
+    custom_domain = random_domain()
+    # Create domains
+    CustomDomain.create(user_id=user.id, domain=custom_domain, ownership_verified=True)
+    Session.commit()
+
+    alias_data = [
+        "alias,note,mailboxes",
+        f"x'-alert`test`-'y@{custom_domain},Used on eBay,{user.default_mailbox.email}",
+    ]
+
+    file = File.create(path=f"/{random_token()}", commit=True)
+    batch_import = BatchImport.create(user_id=user.id, file_id=file.id)
+
+    import_from_csv(batch_import, user, alias_data)
+
+    aliases = Alias.filter_by(user_id=user.id).order_by(Alias.id).all()
+    assert len(aliases) == 0
+
+
 def test_import_invalid_mailbox_column(flask_client):
     # Create user
     user = login(flask_client)
