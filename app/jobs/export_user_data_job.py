@@ -36,6 +36,7 @@ from app.models import (
     TransactionalEmail,
     VerpType,
     Job,
+    JobState,
 )
 
 
@@ -182,6 +183,7 @@ class ExportUserDataJob:
                 Job.payload.op("->")("user_id").cast(sqlalchemy.TEXT)
                 == str(self._user.id),
                 Job.taken.is_(False),
+                Job.state == JobState.ready.value,
             )
             .count()
         )
