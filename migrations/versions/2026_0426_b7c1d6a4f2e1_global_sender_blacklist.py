@@ -1,8 +1,8 @@
 """Add global sender blacklist
 
 Revision ID: b7c1d6a4f2e1
-Revises: 3ee37864eb67
-Create Date: 2026-03-08
+Revises: 4a9f8c2e1b3d
+Create Date: 2026-04-26
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "b7c1d6a4f2e1"
-down_revision = "3ee37864eb67"
+down_revision = "4a9f8c2e1b3d"
 branch_labels = None
 depends_on = None
 
