@@ -1,10 +1,11 @@
 import email
 import os
 from email.message import EmailMessage
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
 from email.utils import formataddr
+from unittest.mock import patch
 
 import arrow
 import pytest
@@ -43,6 +44,9 @@ from app.email_utils import (
     is_invalid_mailbox_domain,
     generate_verp_email,
     get_verp_info_from_email,
+    get_noreply_address,
+    get_noreply_email,
+    get_noreply_domain,
     sl_formataddr,
 )
 from app.email_validation import is_valid_email, normalize_reply_email
@@ -58,6 +62,7 @@ from app.models import (
     SLDomain,
     Mailbox,
     ForbiddenMxIp,
+    User,
 )
 
 # flake8: noqa: E101, W191
@@ -65,6 +70,7 @@ from tests.utils import (
     login,
     load_eml_file,
     create_new_user,
+    create_partner_linked_user,
     random_email,
     random_domain,
     random_token,
@@ -1086,3 +1092,51 @@ def test_remove_sender_pgp_key_attachment_nested_multipart():
     inner_result = result.get_payload()[0]
     assert len(inner_result.get_payload()) == 1
     assert inner_result.get_payload()[0].get_content_type() == "text/plain"
+
+
+def test_get_noreply_email_no_user(flask_client):
+    assert get_noreply_email() == config.NOREPLY_EMAIL
+    assert "@" in get_noreply_email()
+    assert "<" not in get_noreply_email()
+
+
+def test_get_noreply_email_non_partner_user(flask_client):
+    user = create_new_user()
+    assert get_noreply_email(user) == config.NOREPLY_EMAIL
+
+
+def test_get_noreply_email_partner_user_uses_partner_noreply(flask_client):
+    user, _ = create_partner_linked_user()
+    with patch.object(config, "PARTNER_NOREPLY_EMAIL", "partner-noreply@partner.lan"):
+        assert get_noreply_email(user) == "partner-noreply@partner.lan"
+
+
+def test_get_noreply_address_returns_formatted(flask_client):
+    with patch.object(config, "NOREPLY", "Leo <leo@nimoy.com>"):
+        addr = get_noreply_address()
+        assert "Leo <leo@nimoy.com>" == addr
+
+
+def test_get_noreply_domain_no_user(flask_client):
+    expected_domain = "asdf.asdf.asdf.acom"
+    with patch.object(config, "NOREPLY_EMAIL", f"aasd.saedf.asdf@{expected_domain}"):
+        domain = get_noreply_domain()
+        assert expected_domain == domain
+
+
+def test_get_noreply_address_partner_user(flask_client):
+    user, _ = create_partner_linked_user()
+    user.flags = user.flags | User.FLAG_CREATED_FROM_PARTNER
+    Session.flush()
+    with patch.object(
+        config, "PARTNER_NOREPLY", '"Partner (noreply)" <partner-noreply@partner.lan>'
+    ):
+        addr = get_noreply_address(user)
+        assert addr == '"Partner (noreply)" <partner-noreply@partner.lan>'
+
+
+def test_get_noreply_domain_partner_user(flask_client):
+    user, _ = create_partner_linked_user()
+    with patch.object(config, "PARTNER_NOREPLY_EMAIL", "partner-noreply@partner.lan"):
+        domain = get_noreply_domain(user)
+        assert domain == "partner.lan"

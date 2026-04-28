@@ -3,6 +3,7 @@ import random
 import socket
 import string
 from ast import literal_eval
+from email.utils import parseaddr as _parseaddr
 from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
@@ -446,10 +447,15 @@ if PGP_SENDER_PRIVATE_KEY_PATH:
 PGP_SIGNER = os.environ.get("PGP_SIGNER")
 
 # emails that have empty From address is sent from this special reverse-alias
-NOREPLY = os.environ.get("NOREPLY", f"noreply@{EMAIL_DOMAIN}")
+NOREPLY = os.environ.get("NOREPLY", f'"SimpleLogin (noreply)" <noreply@{EMAIL_DOMAIN}>')
+PARTNER_NOREPLY = os.environ.get("PARTNER_NOREPLY", NOREPLY)
 
-# list of no reply addresses
-NOREPLIES = sl_getenv("NOREPLIES", list) or [NOREPLY]
+# bare email addresses extracted from the full formatted addresses, used for routing
+NOREPLY_EMAIL = _parseaddr(NOREPLY)[1]
+PARTNER_NOREPLY_EMAIL = _parseaddr(PARTNER_NOREPLY)[1]
+
+# list of no reply addresses (bare emails for routing comparisons)
+NOREPLIES = sl_getenv("NOREPLIES", list) or list({NOREPLY_EMAIL, PARTNER_NOREPLY_EMAIL})
 
 
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"

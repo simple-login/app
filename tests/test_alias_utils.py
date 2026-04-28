@@ -3,6 +3,7 @@ from typing import List
 from app.alias_delete import delete_alias
 from app.alias_utils import (
     check_alias_prefix,
+    check_if_alias_can_be_auto_created_for_custom_domain,
     get_user_if_alias_would_auto_create,
     get_alias_recipient_name,
     try_auto_create,
@@ -65,6 +66,7 @@ def get_auto_create_alias_tests(user: User) -> List:
         catch_all=True,
         domain=random_domain(),
         verified=True,
+        ownership_verified=True,
         flush=True,
     )
     no_catchall = CustomDomain.create(
@@ -72,6 +74,7 @@ def get_auto_create_alias_tests(user: User) -> List:
         catch_all=False,
         domain=random_domain(),
         verified=True,
+        ownership_verified=True,
         flush=True,
     )
     no_catchall_with_rule = CustomDomain.create(
@@ -79,6 +82,7 @@ def get_auto_create_alias_tests(user: User) -> List:
         catch_all=False,
         domain=random_domain(),
         verified=True,
+        ownership_verified=True,
         flush=True,
     )
     AutoCreateRule.create(
@@ -143,6 +147,7 @@ def test_auto_create_alias_applies_rule_display_name(flask_client):
         catch_all=False,
         domain=random_domain(),
         verified=True,
+        ownership_verified=True,
         flush=True,
     )
     rule = AutoCreateRule.create(
@@ -253,3 +258,22 @@ def test_get_alias_recipient_alias_without_name_and_custom_domain_name():
     res = get_alias_recipient_name(alias)
     assert res.message is not None
     assert res.name == f"{custom_domain.name} <{alias.email}>"
+
+
+def test_check_if_alias_can_be_auto_created_for_unverified_domain(flask_client):
+    user = create_new_user()
+    user.lifetime = True
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        catch_all=True,
+        domain=random_domain(),
+        verified=True,
+        ownership_verified=False,
+        flush=True,
+    )
+    Session.commit()
+
+    result = check_if_alias_can_be_auto_created_for_custom_domain(
+        f"anything@{custom_domain.domain}"
+    )
+    assert result is None

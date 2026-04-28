@@ -1,30 +1,28 @@
+from email import policy, message_from_bytes, message_from_string
+
+import arrow
 import base64
+import binascii
+import dkim
 import enum
 import hmac
 import json
 import os
 import quopri
 import random
-import uuid
-from copy import deepcopy
-from email import policy, message_from_bytes, message_from_string
-from email.header import decode_header, Header
-from email.message import Message, EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate, formataddr
-from smtplib import SMTP, SMTPException
-from typing import Tuple, List, Optional, Union
-
-import arrow
-import binascii
-import dkim
 import re2 as re
 import sentry_sdk
 import spf
 import time
+import uuid
 from aiosmtpd.smtp import Envelope
 from cachetools import cached, TTLCache
+from copy import deepcopy
+from email.header import decode_header, Header
+from email.message import Message, EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import make_msgid, formatdate, formataddr, parseaddr
 from email_validator import (
     validate_email,
     EmailNotValidError,
@@ -34,7 +32,9 @@ from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from flask_login import current_user
 from jinja2 import Environment, FileSystemLoader
+from smtplib import SMTP, SMTPException
 from sqlalchemy import func
+from typing import Tuple, List, Optional, Union
 
 from app import config
 from app.db import Session
@@ -58,6 +58,7 @@ from app.models import (
     VerpType,
     available_sl_email,
     ForbiddenMxIp,
+    PartnerUser,
 )
 from app.utils import (
     random_string,
@@ -69,6 +70,25 @@ from app.utils import (
 # 2022-01-01 00:00:00
 VERP_TIME_START = 1640995200
 VERP_HMAC_ALGO = "sha3-224"
+
+
+def get_noreply_address(user=None) -> str:
+    """Full RFC 5322 formatted noreply address, e.g. '"SimpleLogin (noreply)" <noreply@sl.io>'"""
+    if user and user.created_by_partner:
+        return config.PARTNER_NOREPLY
+    return config.NOREPLY
+
+
+def get_noreply_email(user=None) -> str:
+    """Bare noreply email address, e.g. 'noreply@sl.io'"""
+    if user and PartnerUser.get_by(user_id=user.id):
+        return config.PARTNER_NOREPLY_EMAIL
+    return config.NOREPLY_EMAIL
+
+
+def get_noreply_domain(user=None) -> str:
+    """Domain part of the noreply email, e.g. 'sl.io'"""
+    return get_email_domain_part(get_noreply_email(user))
 
 
 def render(template_name: str, user: Optional[User], **kwargs) -> str:
@@ -111,6 +131,7 @@ def send_welcome_email(user):
         render("com/welcome.html", user=user, alias=alias),
         unsubscribe_link,
         via_email,
+        user=user,
     )
 
 
@@ -121,6 +142,7 @@ def send_trial_end_soon_email(user):
         render("transactional/trial-end.txt.jinja2", user=user),
         render("transactional/trial-end.html", user=user),
         ignore_smtp_error=True,
+        user=user,
     )
 
 
@@ -142,6 +164,7 @@ def send_activation_email(user: User, activation_link):
             activation_link=activation_link,
             email=user.email,
         ),
+        user=user,
     )
 
 
@@ -161,6 +184,7 @@ def send_reset_password_email(user: User, reset_password_link):
             user=user,
             reset_password_link=reset_password_link,
         ),
+        user=user,
     )
 
 
@@ -184,6 +208,7 @@ def send_change_email(user: User, new_email, link):
             new_email=new_email,
             current_email=user.email,
         ),
+        user=user,
     )
 
 
@@ -227,6 +252,7 @@ def send_test_email_alias(user: User, email: str):
             name=user.name,
             alias=email,
         ),
+        user=user,
     )
 
 
@@ -251,6 +277,7 @@ def send_cannot_create_directory_alias(user: User, alias_address, directory_name
             alias=alias_address,
             directory=directory_name,
         ),
+        user=user,
     )
 
 
@@ -303,6 +330,7 @@ def send_cannot_create_domain_alias(user: User, alias, domain):
             alias=alias,
             domain=domain,
         ),
+        user=user,
     )
 
 
@@ -318,13 +346,25 @@ def send_email(
     ignore_smtp_error=False,
     from_name=None,
     from_addr=None,
+    user=None,
 ):
     to_email = sanitize_email(to_email)
 
     LOG.d("send email to %s, subject '%s'", to_email, subject)
 
-    from_name = from_name or config.NOREPLY
-    from_addr = from_addr or config.NOREPLY
+    parsed_addr = parseaddr(get_noreply_address(user))
+    if (
+        not parsed_addr
+        or len(parsed_addr) < 2
+        or not parsed_addr[0]
+        or not parsed_addr[1]
+    ):
+        default_email = get_noreply_email(user)
+        default_name = default_email
+    else:
+        (default_name, default_email) = parsed_addr
+    from_name = from_name or default_name
+    from_addr = from_addr or default_email
     from_domain = get_email_domain_part(from_addr)
 
     if html:
@@ -412,11 +452,11 @@ def send_email_with_rate_control(
 
     if ignore_smtp_error:
         try:
-            send_email(to_email, subject, plaintext, html, retries=retries)
+            send_email(to_email, subject, plaintext, html, retries=retries, user=user)
         except SMTPException:
             LOG.w("Cannot send email to %s, subject %s", to_email, subject)
     else:
-        send_email(to_email, subject, plaintext, html, retries=retries)
+        send_email(to_email, subject, plaintext, html, retries=retries, user=user)
 
     return True
 
@@ -450,7 +490,7 @@ def send_email_at_most_times(
 
     SentAlert.create(user_id=user.id, alert_type=alert_type, to_email=to_email)
     Session.commit()
-    send_email(to_email, subject, plaintext, html)
+    send_email(to_email, subject, plaintext, html, user=user)
     return True
 
 

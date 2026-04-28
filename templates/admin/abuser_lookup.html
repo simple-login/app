@@ -67,13 +67,6 @@
     <h5>List of mailboxes</h5>
     {{ show_emails_table(bundle.get('mailboxes', []) ) }}
   {% endif %}
-  <div>
-    <button type="button"
-            class="btn btn-secondary"
-            onclick="navigator.clipboard.writeText('{{ bundle.get('json', '') }}');alert('The bundle data has been copied to your clipboard.');">
-      Copy bundle
-    </button>
-  </div>
   <hr>
 {%- endmacro %}
 {% macro show_bundles(bundles) -%}

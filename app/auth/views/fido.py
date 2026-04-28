@@ -160,11 +160,8 @@ def fido():
     fido_by_credential_id = {fido.credential_id: fido for fido in fidos}
     for credential in webauthn_assertion_options.get("allowCredentials", []):
         fido = fido_by_credential_id.get(credential.get("id"))
-        if fido and fido.transports:
-            try:
-                credential["transports"] = json.loads(fido.transports)
-            except Exception:
-                del credential["transports"]
+        if fido and isinstance(fido.transports, list) and fido.transports:
+            credential["transports"] = fido.transports
         else:
             credential.pop("transports", None)
 

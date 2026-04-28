@@ -61,35 +61,6 @@ from app.alias_utils import (
     change_alias_status,
     get_alias_recipient_name,
 )
-from app.config import (
-    EMAIL_DOMAIN,
-    URL,
-    UNSUBSCRIBER,
-    LOAD_PGP_EMAIL_HANDLER,
-    ENFORCE_SPF,
-    ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
-    ALERT_BOUNCE_EMAIL,
-    ALERT_SPAM_EMAIL,
-    SPAMASSASSIN_HOST,
-    MAX_SPAM_SCORE,
-    MAX_REPLY_PHASE_SPAM_SCORE,
-    ALERT_SEND_EMAIL_CYCLE,
-    ALERT_MAILBOX_IS_ALIAS,
-    PGP_SENDER_PRIVATE_KEY,
-    ALERT_BOUNCE_EMAIL_REPLY_PHASE,
-    NOREPLY,
-    BOUNCE_PREFIX,
-    BOUNCE_SUFFIX,
-    TRANSACTIONAL_BOUNCE_PREFIX,
-    TRANSACTIONAL_BOUNCE_SUFFIX,
-    ENABLE_SPAM_ASSASSIN,
-    BOUNCE_PREFIX_FOR_REPLY_PHASE,
-    POSTMASTER,
-    OLD_UNSUBSCRIBER,
-    ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
-    ALERT_TO_NOREPLY,
-    MAX_EMAIL_FORWARD_RECIPIENTS,
-)
 from app.db import Session
 from app.email import status, headers
 from app.email.checks import check_recipient_limit
@@ -480,7 +451,7 @@ def prepare_pgp_message(
     first.set_payload("Version: 1")
     msg.attach(first)
 
-    if can_sign and PGP_SENDER_PRIVATE_KEY:
+    if can_sign and config.PGP_SENDER_PRIVATE_KEY:
         LOG.d("Sign msg")
         clone_msg = sign_msg(clone_msg, ctx)
 
@@ -579,7 +550,7 @@ def handle_email_sent_to_ourself(alias, from_addr: str, msg: Message, user):
 
     send_email_at_most_times(
         user,
-        ALERT_SEND_EMAIL_CYCLE,
+        config.ALERT_SEND_EMAIL_CYCLE,
         from_addr,
         f"Email sent to {alias.email} from its own mailbox {from_addr}",
         render(
@@ -746,10 +717,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
                 )
                 mailbox.verified = False
                 Session.commit()
-                mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+                mailbox_url = f"{config.URL}/dashboard/mailbox/{mailbox.id}/"
                 send_email_with_rate_control(
                     user,
-                    ALERT_MAILBOX_IS_ALIAS,
+                    config.ALERT_MAILBOX_IS_ALIAS,
                     user.email,
                     f"Your mailbox {mailbox.email} is an alias",
                     render(
@@ -812,10 +783,10 @@ def forward_email_to_mailbox(
             alias,
             mailbox,
         )
-        mailbox_url = f"{URL}/dashboard/mailbox/{mailbox.id}/"
+        mailbox_url = f"{config.URL}/dashboard/mailbox/{mailbox.id}/"
         send_email_with_rate_control(
             user,
-            ALERT_MAILBOX_IS_ALIAS,
+            config.ALERT_MAILBOX_IS_ALIAS,
             user.email,
             f"Your mailbox {mailbox.email} and alias {alias.email} use the same domain",
             render(
@@ -849,12 +820,12 @@ def forward_email_to_mailbox(
     )
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
-    if ENABLE_SPAM_ASSASSIN:
+    if config.ENABLE_SPAM_ASSASSIN:
         # Spam check
         spam_status = ""
         is_spam = False
 
-        if SPAMASSASSIN_HOST:
+        if config.SPAMASSASSIN_HOST:
             start = time.time()
             spam_score, spam_report = get_spam_score(msg, email_log)
             LOG.d(
@@ -869,7 +840,7 @@ def forward_email_to_mailbox(
             Session.commit()
 
             if (user.max_spam_score and spam_score > user.max_spam_score) or (
-                not user.max_spam_score and spam_score > MAX_SPAM_SCORE
+                not user.max_spam_score and spam_score > config.MAX_SPAM_SCORE
             ):
                 is_spam = True
                 # only set the spam report for spam
@@ -986,7 +957,7 @@ def forward_email_to_mailbox(
         LOG.d("Reply-To header, new:%s, old:%s", new_reply_to_header, original_reply_to)
 
     # Check recipient limit
-    if not check_recipient_limit(msg, MAX_EMAIL_FORWARD_RECIPIENTS):
+    if not check_recipient_limit(msg, config.MAX_EMAIL_FORWARD_RECIPIENTS):
         return False, status.E526
 
     # replace CC & To emails by reverse-alias for all emails that are not alias
@@ -1005,7 +976,7 @@ def forward_email_to_mailbox(
     # add List-Unsubscribe header
     msg = UnsubscribeGenerator().add_header_to_message(alias, contact, msg)
 
-    add_dkim_signature(msg, EMAIL_DOMAIN)
+    add_dkim_signature(msg, config.EMAIL_DOMAIN)
 
     LOG.d(
         "Forward mail from %s to %s, mail_options:%s, rcpt_options:%s ",
@@ -1097,7 +1068,7 @@ def handle_reply(
     reply_domain = get_email_domain_part(reply_email)
 
     # reply_email must end with EMAIL_DOMAIN or a domain that can be used as reverse alias domain
-    if not reply_email.endswith(EMAIL_DOMAIN):
+    if not reply_email.endswith(config.EMAIL_DOMAIN):
         sl_domain: SLDomain = SLDomain.get_by(domain=reply_domain)
         if sl_domain is None:
             LOG.w(f"Reply email {reply_email} has wrong domain")
@@ -1166,7 +1137,11 @@ def handle_reply(
         LOG.i(f"User {user} tried to send a mail from admin disabled mailbox {mailbox}")
         return False, status.E207
 
-    if ENFORCE_SPF and mailbox.force_spf and not alias.disable_email_spoofing_check:
+    if (
+        config.ENFORCE_SPF
+        and mailbox.force_spf
+        and not alias.disable_email_spoofing_check
+    ):
         if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
             # cannot use 4** here as sender will retry.
             # cannot use 5** because that generates bounce report
@@ -1184,12 +1159,12 @@ def handle_reply(
     LOG.d("Create %s for %s, %s, %s", email_log, contact, user, mailbox)
 
     # Spam check
-    if ENABLE_SPAM_ASSASSIN:
+    if config.ENABLE_SPAM_ASSASSIN:
         spam_status = ""
         is_spam = False
 
         # do not use user.max_spam_score here
-        if SPAMASSASSIN_HOST:
+        if config.SPAMASSASSIN_HOST:
             start = time.time()
             spam_score, spam_report = get_spam_score(msg, email_log)
             LOG.d(
@@ -1201,13 +1176,13 @@ def handle_reply(
                 spam_report,
             )
             email_log.spam_score = spam_score
-            if spam_score > MAX_REPLY_PHASE_SPAM_SCORE:
+            if spam_score > config.MAX_REPLY_PHASE_SPAM_SCORE:
                 is_spam = True
                 # only set the spam report for spam
                 email_log.spam_report = spam_report
         else:
             is_spam, spam_status = get_spam_info(
-                msg, max_score=MAX_REPLY_PHASE_SPAM_SCORE
+                msg, max_score=config.MAX_REPLY_PHASE_SPAM_SCORE
             )
 
         if is_spam:
@@ -1524,12 +1499,12 @@ def handle_unknown_mailbox(
     )
 
     authorize_address_link = (
-        f"{URL}/dashboard/mailbox/{alias.mailbox_id}/#authorized-address"
+        f"{config.URL}/dashboard/mailbox/{alias.mailbox_id}/#authorized-address"
     )
     mailbox_emails = [mailbox.email for mailbox in alias.mailboxes]
     send_email_with_rate_control(
         user,
-        ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
+        config.ALERT_REVERSE_ALIAS_UNKNOWN_MAILBOX,
         user.email,
         f"Attempt to use your alias {alias.email} from {envelope.mail_from}",
         render(
@@ -1618,7 +1593,9 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
     email_log.bounced_mailbox_id = mailbox.id
     Session.commit()
 
-    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
+    refused_email_url = (
+        f"{config.URL}/dashboard/refused_email?highlight_id={email_log.id}"
+    )
 
     alias_will_be_disabled, reason = should_disable(alias)
     if alias_will_be_disabled:
@@ -1641,7 +1618,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
 
         send_email_with_rate_control(
             user,
-            ALERT_BOUNCE_EMAIL,
+            config.ALERT_BOUNCE_EMAIL,
             user.email,
             f"Alias {alias.email} has been disabled due to multiple bounces",
             render(
@@ -1668,8 +1645,8 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
             contact,
             alias,
         )
-        disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
-        block_sender_link = f"{URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
+        disable_alias_link = f"{config.URL}/dashboard/unsubscribe/{alias.id}"
+        block_sender_link = f"{config.URL}/dashboard/alias_contact_manager/{alias.id}?highlight_contact_id={contact.id}"
 
         Notification.create(
             user_id=user.id,
@@ -1687,7 +1664,7 @@ def handle_bounce_forward_phase(msg: Message, email_log: EmailLog):
         )
         send_email_with_rate_control(
             user,
-            ALERT_BOUNCE_EMAIL,
+            config.ALERT_BOUNCE_EMAIL,
             user.email,
             f"An email sent to {alias.email} cannot be delivered to your mailbox",
             render(
@@ -1770,7 +1747,9 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
 
     Session.commit()
 
-    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
+    refused_email_url = (
+        f"{config.URL}/dashboard/refused_email?highlight_id={email_log.id}"
+    )
 
     LOG.d(
         "Inform user %s about bounced email sent by %s to %s",
@@ -1791,7 +1770,7 @@ def handle_bounce_reply_phase(envelope, msg: Message, email_log: EmailLog):
     )
     send_email_with_rate_control(
         user,
-        ALERT_BOUNCE_EMAIL_REPLY_PHASE,
+        config.ALERT_BOUNCE_EMAIL_REPLY_PHASE,
         mailbox.email,
         f"Email cannot be sent to {contact.email} from your alias {alias.email}",
         render(
@@ -1848,8 +1827,10 @@ def handle_spam(
 
     LOG.d("Create spam email %s", refused_email)
 
-    refused_email_url = f"{URL}/dashboard/refused_email?highlight_id={email_log.id}"
-    disable_alias_link = f"{URL}/dashboard/unsubscribe/{alias.id}"
+    refused_email_url = (
+        f"{config.URL}/dashboard/refused_email?highlight_id={email_log.id}"
+    )
+    disable_alias_link = f"{config.URL}/dashboard/unsubscribe/{alias.id}"
 
     if is_reply:
         LOG.d(
@@ -1862,7 +1843,7 @@ def handle_spam(
         )
         send_email_with_rate_control(
             user,
-            ALERT_SPAM_EMAIL,
+            config.ALERT_SPAM_EMAIL,
             mailbox.email,
             f"Email from {alias.email} to {contact.website_email} is detected as spam",
             render(
@@ -1893,7 +1874,7 @@ def handle_spam(
         )
         send_email_with_rate_control(
             user,
-            ALERT_SPAM_EMAIL,
+            config.ALERT_SPAM_EMAIL,
             mailbox.email,
             f"Email from {contact.website_email} to {alias.email} is detected as spam",
             render(
@@ -2053,17 +2034,17 @@ def should_ignore(mail_from: str, rcpt_tos: List[str]) -> bool:
     return False
 
 
-def send_no_reply_response(mail_from: str, msg: Message):
+def send_no_reply_response(rcpt_to: str, mail_from: str, msg: Message):
     mailbox = Mailbox.get_by(email=mail_from)
     if not mailbox:
-        LOG.d("Unknown sender. Skipping reply from {}".format(NOREPLY))
+        LOG.d("Unknown sender. Skipping reply from {}".format(rcpt_to))
         return
     if not mailbox.user.is_active():
         LOG.d(f"User {mailbox.user} is soft-deleted. Skipping sending reply response")
         return
     send_email_at_most_times(
         mailbox.user,
-        ALERT_TO_NOREPLY,
+        config.ALERT_TO_NOREPLY,
         mailbox.user.email,
         "Auto: {}".format(msg[headers.SUBJECT] or "No subject"),
         render("transactional/noreply.text.jinja2", user=mailbox.user),
@@ -2144,7 +2125,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
         user = contact.user
         send_email_at_most_times(
             user,
-            ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
+            config.ALERT_FROM_ADDRESS_IS_REVERSE_ALIAS,
             user.email,
             "SimpleLogin shouldn't be used with another email forwarding system",
             render(
@@ -2156,7 +2137,9 @@ def handle(envelope: Envelope, msg: Message) -> str:
     # endregion
 
     # unsubscribe request
-    if UNSUBSCRIBER and (rcpt_tos == [UNSUBSCRIBER] or rcpt_tos == [OLD_UNSUBSCRIBER]):
+    if config.UNSUBSCRIBER and (
+        rcpt_tos == [config.UNSUBSCRIBER] or rcpt_tos == [config.OLD_UNSUBSCRIBER]
+    ):
         LOG.d("Handle unsubscribe request from %s", mail_from)
         return UnsubscribeHandler().handle_unsubscribe_from_message(envelope, msg)
 
@@ -2164,11 +2147,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
     verp_info = get_verp_info_from_email(rcpt_tos[0])
 
     # sent to transactional VERP. Either bounce emails or out-of-office
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(TRANSACTIONAL_BOUNCE_PREFIX)
-        and rcpt_tos[0].endswith(TRANSACTIONAL_BOUNCE_SUFFIX)
-    ) or (verp_info and verp_info[0] == VerpType.transactional):
+    if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.transactional:
         if is_bounce(envelope, msg):
             handle_transactional_bounce(
                 envelope, msg, rcpt_tos[0], verp_info and verp_info[1]
@@ -2183,11 +2162,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             raise VERPTransactional
 
     # sent to forward VERP, can be either bounce or out-of-office
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(BOUNCE_PREFIX)
-        and rcpt_tos[0].endswith(BOUNCE_SUFFIX)
-    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+    if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.bounce_forward:
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
@@ -2203,11 +2178,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
             raise VERPForward
 
     # sent to reply VERP, can be either bounce or out-of-office
-    if (
-        len(rcpt_tos) == 1
-        and rcpt_tos[0].startswith(f"{BOUNCE_PREFIX_FOR_REPLY_PHASE}+")
-        or (verp_info and verp_info[0] == VerpType.bounce_reply)
-    ):
+    if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.bounce_reply:
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(rcpt_tos[0])
         email_log = EmailLog.get(email_log_id)
 
@@ -2226,13 +2197,8 @@ def handle(envelope: Envelope, msg: Message) -> str:
                 f"{email_log.alias} -> {email_log.contact} ({email_log}, {email_log.user}"
             )
 
-    # iCloud returns the bounce with mail_from=bounce+{email_log_id}+@simplelogin.co, rcpt_to=alias
-    verp_info = get_verp_info_from_email(mail_from[0])
-    if (
-        len(rcpt_tos) == 1
-        and mail_from.startswith(BOUNCE_PREFIX)
-        and mail_from.endswith(BOUNCE_SUFFIX)
-    ) or (verp_info and verp_info[0] == VerpType.bounce_forward):
+    verp_info = get_verp_info_from_email(mail_from)
+    if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.bounce_forward:
         email_log_id = (verp_info and verp_info[1]) or parse_id_from_bounce(mail_from)
         email_log = EmailLog.get(email_log_id)
         alias = Alias.get_by(email=rcpt_tos[0])
@@ -2250,7 +2216,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
     if (
         len(rcpt_tos) == 1
         and mail_from == "staff@hotmail.com"
-        and rcpt_tos[0] == POSTMASTER
+        and rcpt_tos[0] == config.POSTMASTER
     ):
         LOG.w("Handle hotmail complaint")
 
@@ -2261,7 +2227,7 @@ def handle(envelope: Envelope, msg: Message) -> str:
     if (
         len(rcpt_tos) == 1
         and mail_from == "feedback@arf.mail.yahoo.com"
-        and rcpt_tos[0] == POSTMASTER
+        and rcpt_tos[0] == config.POSTMASTER
     ):
         LOG.w("Handle yahoo complaint")
 
@@ -2312,8 +2278,8 @@ def handle(envelope: Envelope, msg: Message) -> str:
     nb_rcpt_tos = len(rcpt_tos)
     for rcpt_index, rcpt_to in enumerate(rcpt_tos):
         if rcpt_to in config.NOREPLIES:
-            LOG.i("email sent to {} address from {}".format(NOREPLY, mail_from))
-            send_no_reply_response(mail_from, msg)
+            LOG.i("email sent to {} address from {}".format(rcpt_to, mail_from))
+            send_no_reply_response(rcpt_to, mail_from, msg)
             return status.E200
 
         # create a copy of msg for each recipient except the last one
@@ -2530,7 +2496,7 @@ def main(port: int):
     LOG.d("Start mail controller %s %s", controller.hostname, controller.port)
     send_version_event("email_handler")
 
-    if LOAD_PGP_EMAIL_HANDLER:
+    if config.LOAD_PGP_EMAIL_HANDLER:
         LOG.w("LOAD PGP keys")
         load_pgp_public_keys()
 

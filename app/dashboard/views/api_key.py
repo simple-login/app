@@ -43,7 +43,7 @@ def clean_up_unused_or_old_api_keys(user_id: int):
 @dashboard_bp.route("/api_key", methods=["GET", "POST"])
 @login_required
 @sudo_required
-@limiter.limit("10/hour")
+@limiter.limit("100/hour")
 def api_key():
     api_keys = (
         ApiKey.filter(ApiKey.user_id == current_user.id)
