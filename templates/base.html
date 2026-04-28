@@ -104,6 +104,13 @@
         {% endwith %}
       </div>
       {% block content %}{% endblock %}
+      {% if LOGIN_FOOTER_LINK %}
+      <div class="sl-footer-link text-center text-xs mt-4">
+        <a href="{{ LOGIN_FOOTER_LINK }}" target="_blank" rel="noopener">
+          {{ LOGIN_FOOTER_TEXT }}
+        </a>
+      </div>
+      {% endif %}
     </div>
     <script>
   {% if SENTRY_DSN %}
