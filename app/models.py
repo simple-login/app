@@ -35,6 +35,7 @@ from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.errors import (
     AliasInTrashError,
+    AliasDomainForbidden,
     DirectoryInTrashError,
     SubdomainInTrashError,
     CannotCreateContactForReverseAlias,
@@ -1800,10 +1801,16 @@ class Alias(Base, ModelMixin):
         # detect whether alias should belong to a custom domain
         if "custom_domain_id" not in kw:
             custom_domain = Alias.get_custom_domain(email)
-            if custom_domain:
-                new_alias.custom_domain_id = custom_domain.id
         else:
             custom_domain = CustomDomain.get(kw["custom_domain_id"])
+
+        # Ensure custom domain belongs to the user
+        if custom_domain:
+            if custom_domain.user_id == user.id:
+                new_alias.custom_domain_id = custom_domain.id
+            else:
+                raise AliasDomainForbidden()
+
         # If it comes from a custom domain created from partner. Mark it as created from partner
         if custom_domain is not None and custom_domain.partner_id is not None:
             new_alias.flags = (new_alias.flags or 0) | Alias.FLAG_PARTNER_CREATED

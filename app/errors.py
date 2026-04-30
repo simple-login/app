@@ -137,6 +137,13 @@ class ProtonAccountNotVerified(LinkException):
         )
 
 
+class AliasDomainForbidden(SLException):
+    """raised when trying to create an alias on a domain that belongs to another user"""
+
+    def error_for_user(self) -> str:
+        return "You cannot create aliases on this domain"
+
+
 class CannotCreateAliasQuotaExceeded(SLException):
     """raised when an alias cannot be created because there is no quota left"""
 
