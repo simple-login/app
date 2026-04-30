@@ -12,7 +12,14 @@ from app.oauth.views.authorize import (
     generate_access_token,
     construct_url,
 )
-from tests.utils import login, random_domain, random_string, random_email
+from app.models import CustomDomain, Mailbox
+from tests.utils import (
+    login,
+    random_domain,
+    random_string,
+    random_email,
+    create_new_user,
+)
 
 
 def generate_random_uri() -> str:
@@ -163,7 +170,11 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
             redirect_uri=uri,
             response_type="code",
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -221,7 +232,7 @@ def test_authorize_code_flow_no_openid_scope(flask_client):
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
-        "email": "x@y.z",
+        "email": "x@sl.lan",
         "email_verified": True,
         "id": client_user.id,
         "name": "AB CD",
@@ -261,7 +272,11 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
             response_type="code",
             scope="openid",  # openid is in scope
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -319,7 +334,7 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
-        "email": "x@y.z",
+        "email": "x@sl.lan",
         "email_verified": True,
         "id": client_user.id,
         "name": "AB CD",
@@ -360,7 +375,11 @@ def test_authorize_token_flow(flask_client):
             redirect_uri=uri,
             response_type="token",  # token flow
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -414,7 +433,11 @@ def test_authorize_id_token_flow(flask_client):
             redirect_uri=uri,
             response_type="id_token",  # id_token flow
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -470,7 +493,11 @@ def test_authorize_token_id_token_flow(flask_client):
             redirect_uri=uri,
             response_type="id_token token",  # id_token,token flow
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -567,7 +594,11 @@ def test_authorize_code_id_token_flow(flask_client):
             redirect_uri=uri,
             response_type="id_token code",  # id_token,code flow
         ),
-        data={"button": "allow", "suggested-email": "x@y.z", "suggested-name": "AB CD"},
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
         # user will be redirected to client page, do not allow redirection here
         # to assert the redirect url
         # follow_redirects=True,
@@ -670,7 +701,7 @@ def test_authorize_code_id_token_flow(flask_client):
     assert r.json["user"] == {
         "avatar_url": None,
         "client": "test client",
-        "email": "x@y.z",
+        "email": "x@sl.lan",
         "email_verified": True,
         "id": client_user.id,
         "name": "AB CD",
@@ -747,3 +778,77 @@ def test_authorize_page_unknown_redirect_uri(flask_client):
 
     assert r.status_code == 302
     assert r.location == url_for("dashboard.index")
+
+
+def test_oauth_cannot_create_alias_on_another_users_custom_domain(flask_client):
+    # Setup: Create user_1 user with verified custom domain
+    user_1 = login(flask_client)
+    user_1_domain = random_domain()
+    _user_1_custom_domain = CustomDomain.create(
+        user_id=user_1.id,
+        domain=user_1_domain,
+        verified=True,
+        commit=True,
+    )
+
+    # Create a mailbox for user_1 (required for verified domain)
+    _user_1_mailbox = Mailbox.create(
+        user_id=user_1.id,
+        email=f"mailbox@{user_1_domain}",
+        verified=True,
+        commit=True,
+    )
+
+    # Setup: Create user_2 user
+    user_2 = create_new_user()
+
+    # Login as user_2
+    r = flask_client.post(
+        url_for("auth.login"),
+        data={"email": user_2.email, "password": "password"},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    # User_2 creates OAuth client
+    client = Client.create_new("malicious client", user_2.id)
+    Session.commit()
+
+    uri = generate_random_uri()
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
+
+    # User_2 attempts to create alias on user_1's domain via OAuth
+    # This simulates the tampered suggested-email parameter
+    user_1_alias_email = f"test_alias@{user_1_domain}"
+
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri=uri,
+            response_type="code",
+            scope="email",
+        ),
+        data={
+            "suggested-email": user_1_alias_email,
+            "suggested-name": "PoC",
+            "button": "allow",
+        },
+        follow_redirects=True,
+    )
+
+    # Should fail with error message, not create the alias
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert "You cannot create aliases on this domain" in html
+
+    # Verify the alias was NOT created
+    from app.models import Alias
+
+    created_alias = Alias.get_by(email=user_1_alias_email)
+    assert created_alias is None, "Alias should not be created on another user's domain"

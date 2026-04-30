@@ -4,7 +4,13 @@ from urllib.parse import urlparse
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 
-from app.alias_suffix import get_alias_suffixes, check_suffix_signature
+from email_validator import validate_email, EmailNotValidError
+
+from app.alias_suffix import (
+    get_alias_suffixes,
+    check_suffix_signature,
+    verify_prefix_suffix,
+)
 from app.alias_utils import check_alias_prefix
 from app.config import EMAIL_DOMAIN
 from app.db import Session
@@ -195,8 +201,6 @@ def authorize():
                     cd.domain for cd in current_user.verified_custom_domains()
                 ]
 
-                from app.alias_suffix import verify_prefix_suffix
-
                 if verify_prefix_suffix(current_user, alias_prefix, alias_suffix):
                     full_alias = alias_prefix + alias_suffix
 
@@ -224,8 +228,26 @@ def authorize():
             # User chooses one of the suggestions
             else:
                 chosen_email = request.form.get("suggested-email")
-                # todo: add some checks on chosen_email
                 if chosen_email != current_user.email:
+                    try:
+                        validated = validate_email(
+                            chosen_email, check_deliverability=False
+                        )
+                        chosen_email = validated.normalized.lower()
+                        alias_domain = validated.domain
+                    except EmailNotValidError:
+                        flash("Invalid email format", "error")
+                        return redirect(request.url)
+
+                    if alias_domain not in current_user.available_alias_domains():
+                        LOG.w(
+                            "OAuth alias creation with unauthorized domain: %s (user %s)",
+                            chosen_email,
+                            current_user.id,
+                        )
+                        flash("You cannot create aliases on this domain", "error")
+                        return redirect(request.url)
+
                     alias = Alias.get_by(email=chosen_email)
                     if not alias:
                         alias = Alias.create(
@@ -234,6 +256,9 @@ def authorize():
                             mailbox_id=current_user.default_mailbox_id,
                         )
                         Session.flush()
+                    else:
+                        flash(f"Alias {chosen_email} already exists", "error")
+                        return redirect(request.url)
 
             suggested_name = request.form.get("suggested-name")
             custom_name = request.form.get("custom-name")
