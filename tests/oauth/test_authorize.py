@@ -6,7 +6,8 @@ from flask import url_for
 
 from app.db import Session
 from app.jose_utils import verify_id_token, decode_id_token
-from app.models import Client, User, ClientUser, RedirectUri
+from app.models import Alias, Client, User, ClientUser, RedirectUri
+
 from app.oauth.views.authorize import (
     get_host_name_and_scheme,
     generate_access_token,
@@ -848,7 +849,50 @@ def test_oauth_cannot_create_alias_on_another_users_custom_domain(flask_client):
     assert "You cannot create aliases on this domain" in html
 
     # Verify the alias was NOT created
-    from app.models import Alias
-
     created_alias = Alias.get_by(email=user_1_alias_email)
     assert created_alias is None, "Alias should not be created on another user's domain"
+
+
+def test_oauth_cannot_impersonate_another_users_existing_alias(flask_client):
+    # user_1 creates an alias on an SL domain
+    user_1 = create_new_user()
+    user_1_alias = Alias.create(
+        user_id=user_1.id,
+        email="user_1-owned@sl.lan",
+        mailbox_id=user_1.default_mailbox_id,
+        flush=True,
+    )
+    Session.flush()
+
+    # user_2 logs in and creates an OAuth client
+    user_2 = login(flask_client)
+    client = Client.create_new("user2 client", user_2.id)
+    Session.commit()
+    uri = generate_random_uri()
+    RedirectUri.create(client_id=client.id, uri=uri, commit=True)
+
+    # user_2 submits the user_1's alias as suggested-email
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri=uri,
+            response_type="code",
+            scope="email",
+        ),
+        data={
+            "suggested-email": "user_1-owned@sl.lan",
+            "suggested-name": "PoC",
+            "button": "allow",
+        },
+        follow_redirects=True,
+    )
+
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert "You cannot use this alias" in html
+
+    # no client_user should have been created linking user_2 to user_1's alias
+    client_user = ClientUser.get_by(client_id=client.id, user_id=user_2.id)
+    assert client_user is None or client_user.alias_id != user_1_alias.id
