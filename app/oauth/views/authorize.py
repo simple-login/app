@@ -256,8 +256,11 @@ def authorize():
                             mailbox_id=current_user.default_mailbox_id,
                         )
                         Session.flush()
-                    else:
-                        flash(f"Alias {chosen_email} already exists", "error")
+                    elif alias.user_id != current_user.id:
+                        LOG.w(
+                            f"OAuth suggested-email targets alias owned by another user: [chosen_email={chosen_email}] [current_user={current_user.id}]",
+                        )
+                        flash("You cannot use this alias", "error")
                         return redirect(request.url)
 
             suggested_name = request.form.get("suggested-name")
