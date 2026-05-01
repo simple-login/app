@@ -348,6 +348,10 @@ LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io
 
 STATUS_PAGE_URL = os.environ.get("STATUS_PAGE_URL") or "https://status.simplelogin.io"
 
+# Optional public footer link (e.g. imprint/contact)
+LOGIN_FOOTER_LINK = os.environ.get("LOGIN_FOOTER_LINK")
+LOGIN_FOOTER_TEXT = os.environ.get("LOGIN_FOOTER_TEXT", "Imprint / Contact")
+
 # Loading PGP keys when mail_handler runs. To be used locally when init_app is not called.
 LOAD_PGP_EMAIL_HANDLER = "LOAD_PGP_EMAIL_HANDLER" in os.environ
 
