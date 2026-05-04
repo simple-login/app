@@ -19,7 +19,14 @@ from app.account_linking import (
 )
 from app.db import Session
 from app.errors import AccountAlreadyLinkedToAnotherPartnerException, EmailNotAllowed
-from app.models import Partner, PartnerUser, User, UserAuditLog, InvalidMailboxDomain
+from app.models import (
+    Partner,
+    PartnerSubscription,
+    PartnerUser,
+    User,
+    UserAuditLog,
+    InvalidMailboxDomain,
+)
 from app.proton.proton_partner import get_proton_partner
 from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string, canonicalize_email
@@ -540,3 +547,72 @@ def test_login_creates_account_with_canonical_email(
     )
     res = process_login_case(link_request, get_proton_partner())
     assert res.user.email == canonical_email
+
+
+##
+# Relinking to a different external account
+def test_ensure_partner_user_raises_when_linked_to_different_external_account():
+    # SL user already linked to external_id_free
+    # a second call with external_id_paid must be rejected instead of silently updating the plan
+    user = create_user()
+    partner = get_proton_partner()
+    external_id_free = random_string()
+    external_id_paid = random_string()
+
+    # Link the SL user to the free external account
+    PartnerUser.create(
+        user_id=user.id,
+        partner_id=partner.id,
+        partner_email=random_email(),
+        external_user_id=external_id_free,
+        commit=True,
+    )
+
+    # Trigger: attempt to link again with a different external account
+    paid_request = PartnerLinkRequest(
+        name=random_string(),
+        email=random_email(),
+        external_user_id=external_id_paid,
+        plan=SLPlan(type=SLPlanType.PremiumLifetime, expiration=None),
+        from_partner=False,
+    )
+
+    with pytest.raises(AccountAlreadyLinkedToAnotherPartnerException):
+        ensure_partner_user_exists_for_user(paid_request, user, partner)
+
+
+def test_link_case_relink_different_external_account_raises_and_preserves_plan(
+    flask_client,
+):
+    # SL user already linked to P_free (no sub), P_paid tries to claim the account via process_link_case
+    # The call must raise and leave no subscription
+    user = create_user()
+    partner = get_proton_partner()
+    external_id_free = random_string()
+    external_id_paid = random_string()
+
+    # Link to P_free with no subscription
+    PartnerUser.create(
+        user_id=user.id,
+        partner_id=partner.id,
+        partner_email=random_email(),
+        external_user_id=external_id_free,
+        commit=True,
+    )
+
+    # P_paid has no prior SL link, so process_link_case falls through to link_user
+    paid_request = random_link_request(
+        external_user_id=external_id_paid,
+        plan=SLPlan(SLPlanType.PremiumLifetime, expiration=None),
+    )
+
+    with pytest.raises(AccountAlreadyLinkedToAnotherPartnerException):
+        process_link_case(paid_request, user, partner)
+
+    # The PartnerUser still points to the original free account
+    partner_user = PartnerUser.get_by(user_id=user.id, partner_id=partner.id)
+    assert partner_user is not None
+    assert partner_user.external_user_id == external_id_free
+
+    # No subscription was granted
+    assert PartnerSubscription.get_by(partner_user_id=partner_user.id) is None
