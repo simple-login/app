@@ -139,6 +139,43 @@ def test_preserve_5xx_with_no_header(flask_client):
     assert status.E512 == result
 
 
+def test_reply_rejected_for_unverified_custom_domain(flask_client):
+    user = create_new_user()
+    domain = CustomDomain.create(
+        user_id=user.id,
+        domain=f"{random_string()}.example.com",
+        verified=False,
+        commit=True,
+    )
+    alias = Alias.create(
+        user_id=user.id,
+        email=f"{random_string()}@{domain.domain}",
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=domain.id,
+        commit=True,
+    )
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email="sender@external.com",
+        reply_email=f"{random_string()}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    msg = load_eml_file(
+        "dmarc_reply_check.eml",
+        {
+            "alias_email": alias.email,
+            "contact_email": contact.reply_email,
+            "dmarc_result": "DMARC_POLICY_ALLOW",
+        },
+    )
+    envelope = Envelope()
+    envelope.mail_from = alias.email
+    envelope.rcpt_tos = [contact.reply_email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E520
+
+
 def test_forward_rejected_for_unverified_custom_domain(flask_client):
     user = create_new_user()
     domain = CustomDomain.create(

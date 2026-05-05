@@ -33,6 +33,7 @@ It should contain the following info:
 
 import argparse
 import email
+import time
 import uuid
 from email import encoders
 from email.encoders import encode_noop
@@ -46,7 +47,6 @@ from typing import List, Tuple, Optional, Set
 
 import newrelic.agent
 import sentry_sdk
-import time
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
@@ -1060,6 +1060,10 @@ def handle_reply(
         return False, status.E502
 
     alias = contact.alias
+
+    if alias.custom_domain_id and not alias.custom_domain.verified:
+        LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
+        return False, status.E520
 
     if alias.is_trashed():
         LOG.d("%s is trashed, do not forward", alias)
