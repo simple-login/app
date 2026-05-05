@@ -1,10 +1,10 @@
 {% extends "base.txt.jinja2" %}
 
 {% block content %}
-We have detected that your domain {{ custom_domain.domain }} doesn't have the DNS MX records correctly set up.
+We have detected that your domain {{ custom_domain.domain }} doesn't have the DNS MX records correctly set up
+and has been temporarily deactivated.
 
-Please re-run the MX check on {{ domain_dns_url }} and update them if needed.
+To reactivate it, please update the MX records and re-run the DNS check at {{ domain_dns_url }}.
 
-Without the MX records correctly set up, emails sent to the {{ custom_domain.domain }}'s aliases
-  aren't properly and reliably handled.
+Until the domain is properly configured, aliases under {{ custom_domain.domain }} will not receive emails.
 {% endblock %}

@@ -17,6 +17,7 @@ from app.email_utils import generate_verp_email, get_noreply_email
 from app.mail_sender import mail_sender
 from app.models import (
     Alias,
+    CustomDomain,
     IgnoredEmail,
     EmailLog,
     Notification,
@@ -136,6 +137,29 @@ def test_preserve_5xx_with_no_header(flask_client):
     envelope.rcpt_tos = [generate_verp_email(VerpType.bounce_forward, 99999999999999)]
     result = email_handler.MailHandler()._handle(envelope, msg)
     assert status.E512 == result
+
+
+def test_forward_rejected_for_unverified_custom_domain(flask_client):
+    user = create_new_user()
+    domain = CustomDomain.create(
+        user_id=user.id,
+        domain=f"{random_string()}.example.com",
+        verified=False,
+        commit=True,
+    )
+    alias = Alias.create(
+        user_id=user.id,
+        email=f"{random_string()}@{domain.domain}",
+        mailbox_id=user.default_mailbox_id,
+        custom_domain_id=domain.id,
+        commit=True,
+    )
+    msg = load_eml_file("dmarc_allow.eml", {"alias_email": alias.email})
+    envelope = Envelope()
+    envelope.mail_from = "sender@external.com"
+    envelope.rcpt_tos = [alias.email]
+    result = email_handler.handle(envelope, msg)
+    assert result == status.E520
 
 
 def generate_dmarc_result() -> List:

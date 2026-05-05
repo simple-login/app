@@ -575,6 +575,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         else:
             return [(False, status.E504)]
 
+    if alias.custom_domain_id and not alias.custom_domain.verified:
+        LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
+        return [(False, status.E520)]
+
     # check if email is sent from alias's owning mailbox(es)
     mail_from = envelope.mail_from
     for addr in alias.authorized_addresses():
