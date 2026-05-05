@@ -3685,6 +3685,33 @@ class ForbiddenMxIp(Base, ModelMixin):
     comment = sa.Column(sa.Text, unique=False, nullable=True)
 
 
+class ForbiddenEnvelopeSender(Base, ModelMixin):
+    """Forbidden inbound senders (SMTP envelope MAIL FROM).
+
+    Pattern is a (re2-compatible) regex that is applied via search() against the
+    full envelope sender address.
+
+    Examples:
+      - "@spamdomain\\.com$"
+      - "^no-?reply@.*"
+    """
+
+    __tablename__ = "global_sender_blacklist"
+
+    # NULL user_id => global blacklist entry (admin-managed)
+    # non-NULL user_id => per-user blacklist entry (user-managed)
+    user_id = sa.Column(sa.ForeignKey(User.id, ondelete="cascade"), nullable=True)
+
+    # RFC5321 states that an email address cannot be longer than 254 characters.
+    pattern = sa.Column(sa.String(255), nullable=False)
+    enabled = sa.Column(sa.Boolean, nullable=False, default=True, server_default="1")
+    comment = sa.Column(sa.Text, nullable=True)
+
+    user = orm.relationship(User)
+
+    __table_args__ = (sa.Index("ix_global_sender_blacklist_user_id", "user_id"),)
+
+
 # region Phone
 class PhoneCountry(Base, ModelMixin):
     __tablename__ = "phone_country"
