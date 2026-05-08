@@ -1,28 +1,30 @@
-from email import policy, message_from_bytes, message_from_string
-
-import arrow
 import base64
 import binascii
-import dkim
 import enum
 import hmac
 import json
 import os
 import quopri
 import random
-import re2 as re
-import sentry_sdk
-import spf
 import time
 import uuid
-from aiosmtpd.smtp import Envelope
-from cachetools import cached, TTLCache
 from copy import deepcopy
+from email import policy, message_from_bytes, message_from_string
 from email.header import decode_header, Header
 from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import make_msgid, formatdate, formataddr, parseaddr
+from smtplib import SMTP, SMTPException
+from typing import Tuple, List, Optional, Union
+
+import arrow
+import dkim
+import re2 as re
+import sentry_sdk
+import spf
+from aiosmtpd.smtp import Envelope
+from cachetools import cached, TTLCache
 from email_validator import (
     validate_email,
     EmailNotValidError,
@@ -32,9 +34,7 @@ from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
 from flask_login import current_user
 from jinja2 import Environment, FileSystemLoader
-from smtplib import SMTP, SMTPException
 from sqlalchemy import func
-from typing import Tuple, List, Optional, Union
 
 from app import config
 from app.db import Session
@@ -590,7 +590,7 @@ def sanitize_header(msg: Message, header: str):
             if msg._headers[i][1]:
                 msg._headers[i] = (
                     msg._headers[i][0],
-                    msg._headers[i][1].strip().replace("\n", " "),
+                    msg._headers[i][1].strip().replace("\n", " ").replace("\r", ""),
                 )
 
 
