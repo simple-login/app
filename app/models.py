@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import arrow
 import base64
 import dataclasses
 import enum
@@ -9,14 +8,17 @@ import hmac
 import os
 import random
 import secrets
-import sqlalchemy as sa
 import uuid
+from typing import List, Tuple, Optional, Union
+
+import arrow
+import sqlalchemy as sa
 from arrow import Arrow
 from email_validator import validate_email
 from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
-from jinja2 import FileSystemLoader, Environment
+from jinja2 import FileSystemLoader, Environment, select_autoescape
 from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
@@ -26,7 +28,6 @@ from sqlalchemy.orm import deferred
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
-from typing import List, Tuple, Optional, Union
 
 from app import config, rate_limiter
 from app import s3
@@ -3338,7 +3339,10 @@ class Notification(Base, ModelMixin):
     @staticmethod
     def render(template_name, **kwargs) -> str:
         templates_dir = os.path.join(config.ROOT_DIR, "templates")
-        env = Environment(loader=FileSystemLoader(templates_dir))
+        env = Environment(
+            loader=FileSystemLoader(templates_dir),
+            autoescape=select_autoescape(["html"]),
+        )
 
         template = env.get_template(template_name)
 
