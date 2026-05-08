@@ -134,7 +134,12 @@ def alias_transfer_receive_route():
 
     mailboxes = [mb for mb in current_user.mailboxes() if not mb.is_admin_disabled()]
 
+    csrf_form = CSRFValidationForm()
+
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         mailbox_ids = request.form.getlist("mailbox_ids")
         # check if mailbox is not tempered with
         mailboxes = []
@@ -181,4 +186,5 @@ def alias_transfer_receive_route():
         "dashboard/alias_transfer_receive.html",
         alias=alias,
         mailboxes=mailboxes,
+        csrf_form=csrf_form,
     )

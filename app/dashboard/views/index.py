@@ -249,6 +249,10 @@ def toggle_contact(contact_id):
     """
     Block/Unblock contact
     """
+    csrf_form = CSRFValidationForm()
+    if not csrf_form.validate():
+        return "Invalid request", 400
+
     contact = Contact.get(contact_id)
 
     if not contact or contact.alias.user_id != current_user.id:

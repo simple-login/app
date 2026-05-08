@@ -1,5 +1,5 @@
 <button class="btn btn-sm {% if contact.block_forward %}
-   text-primary {% else %} text-warning {% endif %}" hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-swap="outerHTML">
+   text-primary {% else %} text-warning {% endif %}" hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-vals='{"csrf_token": "{{ csrf_token() }}"}' hx-swap="outerHTML">
   {% if contact.block_forward %}
 
     <i class="fe fe-play-circle"
