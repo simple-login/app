@@ -12,6 +12,7 @@
         <b>{{ contact.alias.email }}</b>
       </p>
       <form method="post">
+        {{ csrf_form.csrf_token }}
         <button class="btn btn-warning">Confirm</button>
       </form>
     </div>

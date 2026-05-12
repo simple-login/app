@@ -75,8 +75,8 @@ def check_single_custom_domain(custom_domain: CustomDomain):
 
         custom_domain.nb_failed_checks += 1
 
-        # send alert if fail for 5 consecutive days
-        if custom_domain.nb_failed_checks > 5:
+        # send alert if fail for 3 consecutive days
+        if custom_domain.nb_failed_checks > 2:
             domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
             LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
             send_email_with_rate_control(
@@ -94,7 +94,16 @@ def check_single_custom_domain(custom_domain: CustomDomain):
                 nb_day=30,
                 retries=3,
             )
-            # reset checks
+            LOG.w(
+                "De-verifying domain %s after %d failed MX checks",
+                custom_domain,
+                custom_domain.nb_failed_checks,
+            )
+            # reset domain
+            custom_domain.verified = False
+            custom_domain.dkim_verified = False
+            custom_domain.dmarc_verified = False
+            custom_domain.spf_verified = False
             custom_domain.nb_failed_checks = 0
     else:
         # reset checks

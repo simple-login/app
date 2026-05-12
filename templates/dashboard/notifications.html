@@ -11,7 +11,7 @@
 
         <div class="card">
           <div class="card-body">
-            <div class="h4">{{ notification.title or "" }}</div>
+            <div class="h4">{{ notification.title | safe or "" }}</div>
             <div style="width: 40em;
                         word-wrap:break-word;
                         white-space: normal;

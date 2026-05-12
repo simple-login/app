@@ -7,6 +7,7 @@ from app.db import Session
 from app.log import LOG
 from app.models import Subscription, PlanEnum
 from app.paddle_utils import cancel_subscription, change_plan
+from app.utils import CSRFValidationForm
 
 
 @dashboard_bp.route("/billing", methods=["GET", "POST"])
@@ -19,7 +20,12 @@ def billing():
         flash("You don't have any active subscription", "warning")
         return redirect(url_for("dashboard.index"))
 
+    csrf_form = CSRFValidationForm()
+
     if request.method == "POST":
+        if not csrf_form.validate():
+            flash("Invalid request", "warning")
+            return redirect(request.url)
         if request.form.get("form-name") == "cancel":
             LOG.w(f"User {current_user} cancels their subscription")
             success = cancel_subscription(sub.subscription_id)
@@ -79,4 +85,6 @@ def billing():
 
             return redirect(url_for("dashboard.billing"))
 
-    return render_template("dashboard/billing.html", sub=sub, PlanEnum=PlanEnum)
+    return render_template(
+        "dashboard/billing.html", sub=sub, PlanEnum=PlanEnum, csrf_form=csrf_form
+    )
