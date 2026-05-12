@@ -1,5 +1,6 @@
-<button class="btn btn-sm {% if contact.block_forward %}
-   text-primary {% else %} text-warning {% endif %}" hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-vals='{"csrf_token": "{{ csrf_token() }}"}' hx-swap="outerHTML">
+<form class="d-inline" hx-post="{{ url_for('dashboard.toggle_contact', contact_id=contact.id) }}" hx-swap="outerHTML">
+  {{ csrf_form.csrf_token }}
+  <button class="btn btn-sm {% if contact.block_forward %} text-primary {% else %} text-warning {% endif %}">
   {% if contact.block_forward %}
 
     <i class="fe fe-play-circle"
@@ -8,5 +9,6 @@
   {% else %}
     <i class="fe fe-pause-circle" data-toggle="tooltip" title="Block sender"></i>
   {% endif %}
-</button>
+  </button>
+</form>
 {% if toast_msg %}<script>toastr.success("{{ toast_msg }}");</script>{% endif %}
