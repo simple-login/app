@@ -122,6 +122,7 @@ class UnsubscribeGenerator:
         """
         force_web = False
         if alias.user_id in config.USERS_WITH_HTTP_UNSUBSCRIBE:
+            LOG.i("User has forced http for list unsubscribe")
             force_web = True
         unsub_behaviour = alias.user.unsub_behaviour
         original_unsub_proxied = self._calculate_header_with_original_behaviour(

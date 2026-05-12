@@ -8,6 +8,7 @@ from app import alias_utils
 from app.contact_utils import contact_toggle_block
 from app.dashboard.base import dashboard_bp
 from app.db import Session
+from app.email import headers
 from app.handler.unsubscribe_encoder import UnsubscribeAction
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.models import Alias, Contact
@@ -33,7 +34,11 @@ def unsubscribe(alias_id):
 
     # automatic unsubscribe, according to https://tools.ietf.org/html/rfc8058
     if request.method == "POST":
-        if not csrf_form.validate():
+        # Either comes from the get page or directly from the email one-click header request
+        if (
+            not csrf_form.validate()
+            and request.headers.get(headers.LIST_UNSUBSCRIBE_POST) != "One-Click"
+        ):
             flash("Invalid request", "warning")
             return redirect(request.url)
         alias_utils.change_alias_status(
