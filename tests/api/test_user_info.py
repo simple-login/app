@@ -84,11 +84,35 @@ def test_wrong_api_key(flask_client):
     assert r.json == {"error": "Wrong api key"}
 
 
-def test_create_api_key(flask_client):
+def test_create_api_key_without_sudo(flask_client):
     login(flask_client)
 
     # create api key
     r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
+
+    assert r.status_code == 440
+
+
+def test_create_api_key_with_sudo(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    password = "passwd"
+    user.set_password(password)
+    Session.commit()
+
+    r = flask_client.patch(
+        url_for("api.enter_sudo"),
+        headers={"Authentication": api_key.code},
+        json={"password": password},
+    )
+
+    assert r.status_code == 200
+
+    # create api key
+    r = flask_client.post(
+        url_for("api.create_api_key"),
+        headers={"Authentication": api_key.code},
+        json={"device": "Test device"},
+    )
 
     assert r.status_code == 201
     assert r.json["api_key"]

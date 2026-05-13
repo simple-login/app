@@ -67,7 +67,7 @@ def require_api_sudo(f):
         error_return = authorize_request()
         if error_return:
             return error_return
-        if not check_sudo_mode_is_active(g.api_key):
+        if not g.api_key or not check_sudo_mode_is_active(g.api_key):
             return jsonify(error="Need sudo"), 440
         return f(*args, **kwargs)
 

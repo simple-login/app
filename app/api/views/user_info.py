@@ -109,7 +109,6 @@ def update_user_info():
 
 
 @api_bp.route("/api_key", methods=["POST"])
-@require_api_auth
 @require_api_sudo
 def create_api_key():
     """Used to create a new api key
