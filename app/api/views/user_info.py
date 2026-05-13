@@ -6,8 +6,9 @@ from typing import Optional
 from flask import jsonify, g, request, make_response
 
 from app import s3, config
-from app.api.base import api_bp, require_api_auth
+from app.api.base import api_bp, require_api_auth, require_api_sudo
 from app.config import SESSION_COOKIE_NAME
+from app.dashboard.views.api_key import clean_up_unused_or_old_api_keys
 from app.dashboard.views.index import get_stats
 from app.db import Session
 from app.image_validation import detect_image_format, ImageFormat
@@ -109,6 +110,7 @@ def update_user_info():
 
 @api_bp.route("/api_key", methods=["POST"])
 @require_api_auth
+@require_api_sudo
 def create_api_key():
     """Used to create a new api key
     Input:
@@ -122,7 +124,7 @@ def create_api_key():
         return jsonify(error="request body cannot be empty"), 400
 
     device = data.get("device")
-
+    clean_up_unused_or_old_api_keys(g.user.id)
     api_key = ApiKey.create(user_id=g.user.id, name=device)
     Session.commit()
 
