@@ -15,6 +15,20 @@ from app.log import LOG
 from app.models import Alias, Contact, UnsubscribeBehaviourEnum
 
 
+def _behaviour_to_header_value(behaviour: UnsubscribeBehaviourEnum) -> str | None:
+    """Convert UnsubscribeBehaviourEnum to header value."""
+    match behaviour:
+        case UnsubscribeBehaviourEnum.DisableAlias:
+            return "alias-disable"
+        case UnsubscribeBehaviourEnum.BlockContact:
+            return "contact-block"
+        case UnsubscribeBehaviourEnum.PreserveOriginal:
+            return "original-behaviour"
+        case _:
+            LOG.error(f"Unknown unsubscribe behaviour: {behaviour}")
+            return None
+
+
 class UnsubscribeGenerator:
     def _calculate_header_with_original_behaviour(
         self, alias: Alias, message: Message, force_web: bool = False
@@ -119,6 +133,7 @@ class UnsubscribeGenerator:
     ) -> Message:
         """
         Add List-Unsubscribe header based on the user preference.
+        Also adds X-SimpleLogin-Unsub-Behaviour header to indicate the unsubscribe behaviour.
         """
         force_web = False
         if alias.user_id in config.USERS_WITH_HTTP_UNSUBSCRIBE:
@@ -130,13 +145,18 @@ class UnsubscribeGenerator:
         )
         message = self.__preserve_original_headers(message, original_unsub_proxied)
         if unsub_behaviour == UnsubscribeBehaviourEnum.PreserveOriginal:
-            return self.__replace_unsub_headers(message, original_unsub_proxied)
+            message = self.__replace_unsub_headers(message, original_unsub_proxied)
         elif unsub_behaviour == UnsubscribeBehaviourEnum.DisableAlias:
             unsub = UnsubscribeData(UnsubscribeAction.DisableAlias, alias.id)
-            return self._add_unsubscribe_header(message, unsub, force_web=force_web)
+            message = self._add_unsubscribe_header(message, unsub, force_web=force_web)
         else:
             unsub = UnsubscribeData(UnsubscribeAction.DisableContact, contact.id)
-            return self._add_unsubscribe_header(message, unsub, force_web=force_web)
+            message = self._add_unsubscribe_header(message, unsub, force_web=force_web)
+
+        header_value = _behaviour_to_header_value(unsub_behaviour)
+        if header_value:
+            add_or_replace_header(message, headers.SL_UNSUB_BEHAVIOUR, header_value)
+        return message
 
     def __preserve_original_headers(
         self, message: Message, original_unsub_proxied: dict[str, str]

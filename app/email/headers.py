@@ -42,6 +42,7 @@ SL_CLIENT_IP = "X-SimpleLogin-Client-IP"
 SL_ORIGINAL_LIST_UNSUBSCRIBE = "X-SimpleLogin-Original-List-Unsubscribe"
 SL_ORIGINAL_LIST_UNSUBSCRIBE_POST = "X-SimpleLogin-Original-List-Unsubscribe-Post"
 SL_ORIGINAL_LIST_ID = "X-SimpleLogin-Original-List-Id"
+SL_UNSUB_BEHAVIOUR = "X-SimpleLogin-Unsub-Behaviour"
 
 # to let Rspamd know that the message should be signed
 SL_WANT_SIGNING = "X-SimpleLogin-Want-Signing"

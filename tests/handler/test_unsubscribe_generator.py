@@ -76,6 +76,7 @@ def test_unsub_disable_contact(
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "contact-block"
 
 
 def generate_unsub_disable_alias_data() -> Iterable:
@@ -136,6 +137,7 @@ def test_unsub_disable_alias(
     else:
         assert "List-Unsubscribe=One-Click" == message[headers.LIST_UNSUBSCRIBE_POST]
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "alias-disable"
 
 
 def generate_unsub_preserve_original_data() -> Iterable:
@@ -214,6 +216,7 @@ def test_unsub_preserve_original(
         == message[f"X-SL-Proxy-{headers.LIST_UNSUBSCRIBE}"]
     )
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "original-behaviour"
 
 
 def test_unsub_preserves_sl_unsubscriber():
@@ -235,6 +238,7 @@ def test_unsub_preserves_sl_unsubscriber():
     message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
     assert original_header == message[headers.LIST_UNSUBSCRIBE]
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] == original_header
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "original-behaviour"
 
 
 def test_unsub_preserves_nothing_if_there_is_no_original_unsub():
@@ -253,6 +257,7 @@ def test_unsub_preserves_nothing_if_there_is_no_original_unsub():
     message = UnsubscribeGenerator().add_header_to_message(alias, contact, message)
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE] is None
     assert message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST] is None
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "original-behaviour"
 
 
 def test_unsub_preserves_original():
@@ -276,3 +281,4 @@ def test_unsub_preserves_original():
     assert (
         message[headers.SL_ORIGINAL_LIST_UNSUBSCRIBE_POST] == original_header + "post"
     )
+    assert message[headers.SL_UNSUB_BEHAVIOUR] == "original-behaviour"
