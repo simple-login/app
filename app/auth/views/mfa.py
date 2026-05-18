@@ -1,4 +1,5 @@
 import pyotp
+import uuid
 from flask import (
     render_template,
     redirect,
@@ -54,6 +55,8 @@ def mfa():
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
             # Redirect user to correct page
@@ -72,6 +75,8 @@ def mfa():
             user.last_otp = token
             Session.commit()
 
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
 

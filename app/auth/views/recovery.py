@@ -1,4 +1,5 @@
 import arrow
+import uuid
 from flask import request, render_template, redirect, url_for, flash, session, g
 from flask_login import login_user
 from flask_wtf import FlaskForm
@@ -52,6 +53,8 @@ def recovery_route():
             else:
                 del session[MFA_USER_ID]
 
+                # Rotate session ID to prevent session fixation
+                session.session_id = str(uuid.uuid4())
                 login_user(user)
                 flash("Welcome back!", "success")
 

@@ -1,5 +1,6 @@
 import json
 import secrets
+import uuid
 
 import webauthn
 from flask import (
@@ -61,6 +62,8 @@ def fido():
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
             # Redirect user to correct page
@@ -109,6 +112,8 @@ def fido():
             del session[MFA_USER_ID]
 
             session["sudo_time"] = int(time())
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
 
