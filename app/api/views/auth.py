@@ -22,7 +22,7 @@ from app.email_utils import (
 from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
-from app.models import User, ApiKey, SocialAuth, AccountActivation
+from app.models import User, ApiKey, SocialAuth, AccountActivation, PasswordOracle
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email, canonicalize_email
 
@@ -63,6 +63,13 @@ def auth_login():
     user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if not user or not user.check_password(password):
+        if not user:
+            # Do the hash to avoid timing attacks nevertheless
+            dummy_pw = PasswordOracle()
+            dummy_pw.password = (
+                "$2b$12$ZWqpL73h4rGNfLkJohAFAu0isqSw/bX9p/tzpbWRz/To5FAftaW8u"
+            )
+            dummy_pw.check_password(password)
         LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
