@@ -15,7 +15,7 @@ def check_all_custom_domains():
     for custom_domain in (
         CustomDomain.filter(
             CustomDomain.verified == False,  # noqa: E712
-            CustomDomain.created_at < arrow.now().shift(months=-1),
+            CustomDomain.updated_at < arrow.now().shift(months=-1),
         )
         .enable_eagerloads(False)
         .yield_per(100)
