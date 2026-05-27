@@ -2,8 +2,8 @@
 
 {% block content %}
 
-  {{ render_text("You recently requested to change your email on SimpleLogin to <b>" ~ (new_email | safe) ~ "</b>.") }}
-  {{ render_text("Your current email is " ~ (current_email | safe) ~ ".") }}
+  {{ render_text("You recently requested to change your email on SimpleLogin to <b>" + (new_email | safe) + "</b>.") }}
+  {{ render_text("Your current email is " + (current_email | safe) + ".") }}
   {{ render_text("Use the button below to confirm within the next 12 hours.") }}
   {{ render_button("Change email", link) }}
   {{ render_text('Thanks,

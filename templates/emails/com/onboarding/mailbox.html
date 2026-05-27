@@ -29,8 +29,8 @@
     Please note that adding additional mailboxes is only available in the Premium plan.
   {% endcall %}
 
-  {{ render_button("Create mailbox", URL ~ "/dashboard/mailbox") }}
-  {{ raw_url(URL ~ "/dashboard/mailbox") }}
+  {{ render_button("Create mailbox", URL + "/dashboard/mailbox") }}
+  {{ raw_url(URL + "/dashboard/mailbox") }}
 {% endblock %}
 {% block footer %}
 
