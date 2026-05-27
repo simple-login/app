@@ -3,7 +3,7 @@
 {% block content %}
 
   {{ render_text("Hi") }}
-  {{ render_text("Your subscription will end on " + next_bill_date + ".") }}
+  {{ render_text("Your subscription will end on " ~ (next_bill_date | safe) ~ ".") }}
   {{ render_text("When the subscription ends:") }}
   {{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
   {{ render_text("- You cannot create new reverse aliases.") }}
