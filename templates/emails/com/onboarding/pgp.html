@@ -29,8 +29,8 @@
        alt="Without PGP"
        style="max-width: 100%;
               margin-bottom: 20px">
-  {{ render_button("Enable PGP on your mailbox", URL ~ "/dashboard/mailbox/" ~ user.default_mailbox_id) }}
-  {{ raw_url(URL ~ "/dashboard/mailbox/" ~ user.default_mailbox_id) }}
+  {{ render_button("Enable PGP on your mailbox", URL + "/dashboard/mailbox/" + user.default_mailbox_id) }}
+  {{ raw_url(URL + "/dashboard/mailbox/" + user.default_mailbox_id) }}
 {% endblock %}
 {% block footer %}
 
