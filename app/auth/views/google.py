@@ -24,8 +24,15 @@ _scope = [
 _redirect_uri = URL + "/auth/google/callback"
 
 
+def _google_disabled():
+    return GOOGLE_CLIENT_ID is None or GOOGLE_CLIENT_SECRET is None
+
+
 @auth_bp.route("/google/login")
 def google_login():
+    if _google_disabled():
+        return redirect(url_for("auth.login"))
+
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
@@ -46,6 +53,9 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    if _google_disabled():
+        return redirect(url_for("auth.login"))
+
     # user clicks on cancel
     if "error" in request.args:
         flash("please use another sign in method then", "warning")
