@@ -244,32 +244,38 @@ def set_index_page(app):
             if ref_code:
                 session["slref"] = ref_code
 
-    @app.after_request
-    def after_request(res):
-        # not logging /static call
-        if (
-            not request.path.startswith("/static")
-            and not request.path.startswith("/admin/static")
-            and not request.path.startswith("/_debug_toolbar")
-            and not request.path.startswith("/git")
-            and not request.path.startswith("/favicon.ico")
-            and not request.path.startswith("/health")
-        ):
-            start_time = g.start_time or time.time()
-            LOG.d(
-                "%s %s %s %s %s, takes %s",
-                request.remote_addr,
-                request.method,
-                request.path,
-                request.args,
-                res.status_code,
-                time.time() - start_time,
-            )
-            newrelic.agent.record_custom_event(
-                "HttpResponseStatus", {"code": res.status_code}
-            )
-            send_version_event("app")
+@app.after_request
+def after_request(res):
+    # Set proper Cache-Control for static assets to allow caching
+    if request.path.startswith("/static") or request.path.startswith(
+        "/admin/static"
+    ):
+        # Allow static files to be cached for 12 hours
+        res.headers["Cache-Control"] = "public, max-age=43200"
         return res
+
+    # not logging /static call
+    if (
+        not request.path.startswith("/_debug_toolbar")
+        and not request.path.startswith("/git")
+        and not request.path.startswith("/favicon.ico")
+        and not request.path.startswith("/health")
+    ):
+        start_time = g.start_time or time.time()
+        LOG.d(
+            "%s %s %s %s %s, takes %s",
+            request.remote_addr,
+            request.method,
+            request.path,
+            request.args,
+            res.status_code,
+            time.time() - start_time,
+        )
+        newrelic.agent.record_custom_event(
+            "HttpResponseStatus", {"code": res.status_code}
+        )
+        send_version_event("app")
+    return res
 
 
 def setup_openid_metadata(app):
