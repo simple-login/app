@@ -1,8 +1,9 @@
 from functools import wraps
+from time import time
 from typing import Tuple, Optional
 
 import arrow
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify, g, session
 from flask_login import current_user
 
 from app import constants
@@ -61,13 +62,22 @@ def require_api_auth(f):
     return decorated
 
 
+def check_session_sudo_mode_is_active() -> bool:
+    sudo_time = session.get("sudo_time")
+    return (
+        sudo_time is not None
+        and (time() - int(sudo_time)) <= SUDO_MODE_MINUTES_VALID * 60
+    )
+
+
 def require_api_sudo(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         error_return = authorize_request()
         if error_return:
             return error_return
-        if not g.api_key or not check_sudo_mode_is_active(g.api_key):
+        api_key_sudo = g.api_key and check_sudo_mode_is_active(g.api_key)
+        if not api_key_sudo and not check_session_sudo_mode_is_active():
             return jsonify(error="Need sudo"), 440
         return f(*args, **kwargs)
 
