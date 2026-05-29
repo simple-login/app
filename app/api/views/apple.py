@@ -63,6 +63,7 @@ def apple_process_payment():
 
 
 @api_bp.route("/apple/update_notification", methods=["POST"])
+@require_api_auth
 def apple_update_notification():
     """
     The "Subscription Status URL" to receive update notifications from Apple
@@ -239,7 +240,7 @@ def apple_update_notification():
     # }
     LOG.d("request for /api/apple/update_notification")
     data = request.get_json()
-    if config.APPLE_WEBHOOK_SECRET_CHECK_ENABLED and (
+    if (
         not data
         or not data.get("password")
         or data.get("password")

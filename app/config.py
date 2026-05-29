@@ -364,7 +364,7 @@ APPLE_API_SECRET = os.environ.get("APPLE_API_SECRET")
 # for Mac App
 MACAPP_APPLE_API_SECRET = os.environ.get("MACAPP_APPLE_API_SECRET")
 # When enabled, /apple/update_notification validates the shared secret in the webhook payload
-APPLE_WEBHOOK_SECRET_CHECK_ENABLED = "APPLE_WEBHOOK_SECRET_CHECK_ENABLED" in os.environ
+APPLE_WEBHOOK_SECRET_CHECK_ENABLED = True  # Always enabled for security
 
 # <<<<< ALERT EMAIL >>>>
 
