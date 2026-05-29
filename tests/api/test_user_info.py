@@ -87,6 +87,10 @@ def test_wrong_api_key(flask_client):
 def test_create_api_key_without_sudo(flask_client):
     login(flask_client)
 
+    # login sets sudo_time in the session; clear it to simulate expired sudo
+    with flask_client.session_transaction() as sess:
+        sess.pop("sudo_time", None)
+
     # create api key
     r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
 
