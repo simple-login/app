@@ -638,6 +638,8 @@ UPCLOUD_DB_ID = os.environ.get("UPCLOUD_DB_ID", None)
 
 STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
 
+MAINTENANCE_MODE = "MAINTENANCE_MODE" in os.environ
+
 EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 
 # We want it disabled by default, so only skip if defined
