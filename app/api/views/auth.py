@@ -10,7 +10,12 @@ from itsdangerous import Signer
 from app import email_utils
 from app.abuser_utils import check_if_abuser_email
 from app.api.base import api_bp
-from app.config import FLASK_SECRET, DISABLE_REGISTRATION, google_enabled
+from app.config import (
+    FLASK_SECRET,
+    DISABLE_REGISTRATION,
+    google_enabled,
+    facebook_enabled,
+)
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
@@ -277,6 +282,9 @@ def auth_facebook():
         }
 
     """
+    if not facebook_enabled():
+        return jsonify(error="invalid login mechanism"), 400
+
     import facebook
 
     data = request.get_json()
