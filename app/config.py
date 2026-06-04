@@ -205,7 +205,8 @@ USERS_WITH_HTTP_UNSUBSCRIBE = [
 # due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
 OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
 
-DKIM_SELECTOR = b"dkim"
+#change to reading DKIM_SELECTOR from .env, passing through encode as is consumed in bytes not string, using the default value of "dkim".
+DKIM_SELECTOR = os.enviroment.get("DKIM_SELECTOR", "dkim").encode
 DKIM_PRIVATE_KEY = None
 
 if "DKIM_PRIVATE_KEY_PATH" in os.environ:
