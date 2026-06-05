@@ -475,26 +475,6 @@ def create_simplelogin_app():
     # enable CORS on /api endpoints
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    @app.before_request
-    def check_maintenance_mode():
-        if not config.MAINTENANCE_MODE:
-            return
-        # Allow health checks, admin access, and static assets during maintenance
-        if (
-            request.path.startswith("/health")
-            or request.path.startswith("/admin")
-            or request.path.startswith("/static")
-        ):
-            return
-        if request.path.startswith("/api/"):
-            return (
-                jsonify(
-                    {"error": "Service is under maintenance, please try again later"}
-                ),
-                503,
-            )
-        return render_template("error/503.html"), 503
-
     # set session to permanent so user stays signed in after quitting the browser
     # the cookie is valid for 7 days
     @app.before_request
