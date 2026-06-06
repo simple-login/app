@@ -209,8 +209,8 @@ OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
 # passing SELECTORS_LIST as str, with defauls matching hardcoded values. in preperation of dehard-coding
 #passing _SELECTOR through encode as is consumed in bytes not string, using the default value of "dkim".
 # 
-if DKIM_SELECTOR in os.environ:
-    DKIM_SELECTOR = os.enviroment.get("DKIM_SELECTOR", "dkim").encode
+if DKIM_SELECTOR in os.environ or DKIM_SELECTORS_LIST in os.environ:
+    DKIM_SELECTOR = os.environ.get("DKIM_SELECTOR", "dkim").encode()
     DKIM_SELECTORS_LIST = os.environ.get("DKIM_SELECTORS_LIST", DKIM_SELECTOR)
 else:
     DKIM_SELECTORS_LIST = os.environ.get("DKIM_SELECTORS_LIST", "dkim, dkim02, dkim03")
