@@ -205,15 +205,23 @@ USERS_WITH_HTTP_UNSUBSCRIBE = [
 # due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
 OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
 
-# read DKIM_SELECTOR and the DKIM_SELECTORS_LIST from .env, 
-# passing SELECTORS_LIST as str, with defauls matching hardcoded values. in preperation of dehard-coding
-#passing _SELECTOR through encode as is consumed in bytes not string, using the default value of "dkim".
-# 
-if "DKIM_SELECTOR" in os.environ or "DKIM_SELECTORS_LIST" in os.environ:
-    DKIM_SELECTOR = os.environ.get("DKIM_SELECTOR", "dkim").encode()
-    DKIM_SELECTORS_LIST = os.environ.get("DKIM_SELECTORS_LIST", DKIM_SELECTOR)
+# Load DKIM_SELECTOR or use "dkim" as default
+DKIM_SELECTOR = os.environ.get("DKIM_SELECTOR", "dkim")
+if "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" in os.environ:
+    # read DKIM_SELECTOR and the DKIM_VALID_SELECTORS_LIST from .env, if os.eniron.get fails, failback to the hardcoded values for to ensure SL production stablity.
+    DKIM_VALID_SELECTORS_LIST = os.environ.get("DKIM_VALID_SELECTORS_LIST", DKIM_SELECTOR)
+    if DKIM_SELECTOR not in [selector.strip() for selector in DKIM_VALID_SELECTORS_LIST.split(",")]:
+        raise RuntimeError(
+            "DKIM_SELECTOR must be included in DKIM_VALID_SELECTORS_LIST if both are defined"
+        )
+elif "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" not in os.environ:
+    # else, for single selector compatibility, if DKIM_VALID_SELECTORS_LIST is not defined,
+    # AND DKIM_SELECTOR is defined, 
+    # in simplelogin.env; USE: the value of DKIM_SELECTOR as the only valid selector
+    DKIM_VALID_SELECTORS_LIST = DKIM_SELECTOR
 else:
-    DKIM_SELECTORS_LIST = os.environ.get("DKIM_SELECTORS_LIST", "dkim, dkim02, dkim03")
+    # for backward compatibility, if neither DKIM_SELECTOR nor DKIM_VALID_SELECTORS_LIST is defined, use the hardcoded values
+    DKIM_VALID_SELECTORS_LIST = "dkim,dkim02,dkim03"
     
 DKIM_PRIVATE_KEY = None
 
@@ -221,6 +229,7 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
     DKIM_PRIVATE_KEY_PATH = get_abs_path(os.environ["DKIM_PRIVATE_KEY_PATH"])
     with open(DKIM_PRIVATE_KEY_PATH) as f:
         DKIM_PRIVATE_KEY = f.read()
+
 
 # Database
 DB_URI = os.environ["DB_URI"]

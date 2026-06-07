@@ -551,7 +551,7 @@ def add_dkim_signature_with_header(
     if config.DKIM_PRIVATE_KEY:
         sig = dkim.sign(
             message_to_bytes(msg),
-            config.DKIM_SELECTOR,
+            config.DKIM_SELECTOR.encode(),
             email_domain.encode(),
             config.DKIM_PRIVATE_KEY.encode(),
             include_headers=dkim_headers,

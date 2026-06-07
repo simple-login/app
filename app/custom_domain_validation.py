@@ -141,7 +141,12 @@ class CustomDomainValidation:
                 dkim_domains.insert(0, partner_domain)
 
         output = {}
-        for key in ("dkim", "dkim02", "dkim03"):
+        dkim_selectors = [
+            s.strip()
+            for s in config.DKIM_VALID_SELECTORS_LIST.split(",")
+            if s.strip()
+        ]
+        for key in dkim_selectors:
             records = [
                 f"{key}._domainkey.{dkim_domain}" for dkim_domain in dkim_domains
             ]
