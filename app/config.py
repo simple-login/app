@@ -219,6 +219,8 @@ elif "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" not in os.env
     # AND DKIM_SELECTOR is defined, 
     # in simplelogin.env; USE: the value of DKIM_SELECTOR as the only valid selector
     DKIM_VALID_SELECTORS_LIST = DKIM_SELECTOR
+elif "DKIM_SELECTOR" not in os.environ and "DKIM_VALID_SELECTORS_LIST" in os.environ:
+    DKIM_VALID_SELECTORS_LIST = os.environ.get("DKIM_VALID_SELECTORS_LIST")
 else:
     # for backward compatibility, if neither DKIM_SELECTOR nor DKIM_VALID_SELECTORS_LIST is defined, use the hardcoded values
     DKIM_VALID_SELECTORS_LIST = "dkim,dkim02,dkim03"
