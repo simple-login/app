@@ -319,6 +319,11 @@ def google_enabled():
 FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
 FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
 
+
+def facebook_enabled():
+    return FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET
+
+
 CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
@@ -655,6 +660,8 @@ UPCLOUD_PASSWORD = os.environ.get("UPCLOUD_PASSWORD", None)
 UPCLOUD_DB_ID = os.environ.get("UPCLOUD_DB_ID", None)
 
 STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
+
+MAINTENANCE_MODE = "MAINTENANCE_MODE" in os.environ
 
 EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 
