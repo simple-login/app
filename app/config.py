@@ -212,7 +212,7 @@ if "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" in os.environ:
     DKIM_VALID_SELECTORS_LIST = os.environ.get("DKIM_VALID_SELECTORS_LIST", DKIM_SELECTOR)
     if DKIM_SELECTOR not in [selector.strip() for selector in DKIM_VALID_SELECTORS_LIST.split(",")]:
         raise RuntimeError(
-            "DKIM_SELECTOR must be included in DKIM_VALID_SELECTORS_LIST if both are defined"
+            f'"{DKIM_SELECTOR}" must be included in DKIM_VALID_SELECTORS_LIST if both are defined'
         )
 elif "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" not in os.environ:
     # else, for single selector compatibility, if DKIM_VALID_SELECTORS_LIST is not defined,
@@ -221,9 +221,17 @@ elif "DKIM_SELECTOR" in os.environ and "DKIM_VALID_SELECTORS_LIST" not in os.env
     DKIM_VALID_SELECTORS_LIST = DKIM_SELECTOR
 elif "DKIM_SELECTOR" not in os.environ and "DKIM_VALID_SELECTORS_LIST" in os.environ:
     DKIM_VALID_SELECTORS_LIST = os.environ.get("DKIM_VALID_SELECTORS_LIST")
+    if str("dkim") not in [selector.strip() for selector in DKIM_VALID_SELECTORS_LIST.split(",")]:
+        raise RuntimeError(
+            '"dkim", must be included in DKIM_VALID_SELECTORS_LIST if DKIM_SELECTOR is left to defaults'
+    )
 else:
     # for backward compatibility, if neither DKIM_SELECTOR nor DKIM_VALID_SELECTORS_LIST is defined, use the hardcoded values
     DKIM_VALID_SELECTORS_LIST = "dkim,dkim02,dkim03"
+    print("WARNING: DKIM_SELECTOR and DKIM_VALID_SELECTORS_LIST are not defined in .env, using default values. "
+          "For better security, please define them in your .env file."
+    )
+    
     
 DKIM_PRIVATE_KEY = None
 
