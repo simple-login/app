@@ -108,27 +108,7 @@ class UnsubscribeEncoder:
     @classmethod
     def decode_subject(cls, data: str) -> Optional[UnsubscribeData]:
         if data.find(UNSUB_PREFIX) == -1:
-            try:
-                # subject has the format {alias.id}=
-                if data.endswith("="):
-                    alias_id = int(data[:-1])
-                    return UnsubscribeData(UnsubscribeAction.DisableAlias, alias_id)
-                # {contact.id}_
-                elif data.endswith("_"):
-                    contact_id = int(data[:-1])
-                    return UnsubscribeData(UnsubscribeAction.DisableContact, contact_id)
-                # {user.id}*
-                elif data.endswith("*"):
-                    user_id = int(data[:-1])
-                    return UnsubscribeData(
-                        UnsubscribeAction.UnsubscribeNewsletter, user_id
-                    )
-                else:
-                    # some email providers might strip off the = suffix
-                    alias_id = int(data)
-                    return UnsubscribeData(UnsubscribeAction.DisableAlias, alias_id)
-            except ValueError:
-                return None
+            return None
 
         signer = cls._get_signer()
         try:
