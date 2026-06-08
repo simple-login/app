@@ -228,7 +228,7 @@ elif "DKIM_SELECTOR" not in os.environ and "DKIM_VALID_SELECTORS_LIST" in os.env
 else:
     # for backward compatibility, if neither DKIM_SELECTOR nor DKIM_VALID_SELECTORS_LIST is defined, use the hardcoded values
     DKIM_VALID_SELECTORS_LIST = "dkim,dkim02,dkim03"
-    print("WARNING: DKIM_SELECTOR and DKIM_VALID_SELECTORS_LIST are not defined in .env, using default values. "
+    raise RuntimeWarning("WARNING: DKIM_SELECTOR and DKIM_VALID_SELECTORS_LIST are not defined in .env, using default values. "
           "For better security, please define them in your .env file."
     )
     
