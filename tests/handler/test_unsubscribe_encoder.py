@@ -9,16 +9,15 @@ from app.handler.unsubscribe_encoder import (
 )
 
 legacy_subject_test_data = [
-    ("3=", UnsubscribeData(UnsubscribeAction.DisableAlias, 3)),
-    ("438_", UnsubscribeData(UnsubscribeAction.DisableContact, 438)),
-    ("4325*", UnsubscribeData(UnsubscribeAction.UnsubscribeNewsletter, 4325)),
+    "3=",
+    "438_",
+    "4325*",
 ]
 
 
-@pytest.mark.parametrize("expected_subject, expected_deco", legacy_subject_test_data)
-def test_legacy_unsub_subject(expected_subject, expected_deco):
-    info = UnsubscribeEncoder.decode_subject(expected_subject)
-    assert info == expected_deco
+@pytest.mark.parametrize("legacy_subject", legacy_subject_test_data)
+def test_legacy_unsub_subject_rejected(legacy_subject):
+    assert UnsubscribeEncoder.decode_subject(legacy_subject) is None
 
 
 legacy_url_test_data = [
