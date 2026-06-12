@@ -108,7 +108,6 @@ exclude = '''
 [tool.ruff]
 exclude = [".venv", "migrations", "app/events/generated"]
 [tool.ruff.lint]
-ignore-init-module-imports = true
 
 [tool.djlint]
 indent = 2
