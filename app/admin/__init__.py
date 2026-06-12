@@ -16,6 +16,7 @@ from app.admin.newsletter import NewsletterAdmin, NewsletterUserAdmin
 from app.admin.metrics import DailyMetricAdmin, MetricAdmin
 from app.admin.invalid_mailbox_domain import InvalidMailboxDomainAdmin
 from app.admin.forbidden_mx_ip import ForbiddenMxIpAdmin
+from app.admin.global_sender_blacklist import GlobalSenderBlacklistAdmin
 from app.admin.email_search import (
     EmailSearchResult,
     EmailSearchHelpers,
@@ -53,6 +54,7 @@ __all__ = [
     "MetricAdmin",
     "InvalidMailboxDomainAdmin",
     "ForbiddenMxIpAdmin",
+    "GlobalSenderBlacklistAdmin",
     # Search views
     "EmailSearchResult",
     "EmailSearchHelpers",
