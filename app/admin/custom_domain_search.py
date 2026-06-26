@@ -48,9 +48,55 @@ class CustomDomainSearchResult:
 
     @staticmethod
     def search(query: str) -> CustomDomainSearchResult:
-        """Search for custom domains by exact match or POSIX regex."""
+        """Search for custom domains by exact match or POSIX regex.
+
+        - Numeric query: search by domain ID
+        - Query with '@': search by user email
+        - Query with 'uid:<int>': search by user ID
+        - Otherwise: exact domain match, then regex on domain names
+        """
         output = CustomDomainSearchResult()
         output.query = query
+
+        # Search by domain ID if query is a plain integer
+        try:
+            domain_id = int(query)
+            domain = CustomDomain.get(domain_id)
+            if domain:
+                output.domains = [CustomDomainSearchHelpers.get_validation_data(domain)]
+                output.found_by_regex = False
+                output.no_match = False
+            return output
+        except ValueError:
+            pass
+
+        # Search by user email if query contains '@'
+        if "@" in query:
+            user = User.get_by(email=query)
+            if user:
+                output.domains = [
+                    CustomDomainSearchHelpers.get_validation_data(d)
+                    for d in user.custom_domains
+                ]
+                output.found_by_regex = False
+                output.no_match = len(output.domains) == 0
+            return output
+
+        # Search by user ID if query has the form 'uid:<int>'
+        if query.startswith("uid:"):
+            try:
+                user_id = int(query[4:])
+                user = User.get(user_id)
+                if user:
+                    output.domains = [
+                        CustomDomainSearchHelpers.get_validation_data(d)
+                        for d in user.custom_domains
+                    ]
+                    output.found_by_regex = False
+                    output.no_match = len(output.domains) == 0
+            except ValueError:
+                pass
+            return output
 
         # Try exact domain match first
         domain = CustomDomain.get_by(domain=query)
@@ -59,32 +105,6 @@ class CustomDomainSearchResult:
             output.found_by_regex = False
             output.no_match = False
             return output
-
-        # Try searching by user email
-        user = User.get_by(email=query)
-        if user:
-            output.domains = [
-                CustomDomainSearchHelpers.get_validation_data(d)
-                for d in user.custom_domains
-            ]
-            output.found_by_regex = False
-            output.no_match = len(output.domains) == 0
-            return output
-
-        # Try searching by user ID
-        try:
-            user_id = int(query)
-            user = User.get(user_id)
-            if user:
-                output.domains = [
-                    CustomDomainSearchHelpers.get_validation_data(d)
-                    for d in user.custom_domains
-                ]
-                output.found_by_regex = False
-                output.no_match = len(output.domains) == 0
-                return output
-        except ValueError:
-            pass
 
         # Try regex search on domain names
         domains = (

@@ -315,6 +315,7 @@ class EmailSearchResult:
 
 class EmailSearchHelpers:
     PAGE_SIZE = 25
+    ALIAS_DISPLAY_LIMIT = 5000
 
     @staticmethod
     def mailbox_list(
@@ -379,7 +380,7 @@ class EmailSearchHelpers:
 
     @staticmethod
     def alias_list(user: User, page: int = 1) -> list[Alias]:
-        """Get aliases for user with pagination (50 per page).
+        """Get aliases for user with pagination.
 
         Args:
             user: The user to get aliases for

@@ -971,9 +971,9 @@
                    name="query"
                    id="query"
                    value="{{ query or '' }}"
-                   placeholder="domain.com, user@email.com, user ID, or POSIX regex">
+                   placeholder="domain.com, domain ID, user@email.com, uid:123, or POSIX regex">
             <small class="form-text text-muted">
-              <i class="fa fa-info-circle mr-1"></i>Search by domain name, user email, user ID, or use POSIX regex patterns (limited to 10 results).
+              <i class="fa fa-info-circle mr-1"></i>Search by domain name or domain ID (integer), user email (must contain @), user ID (<code>uid:&lt;int&gt;</code>), or POSIX regex (limited to 10 results).
             </small>
           </div>
           <button type="submit" class="btn btn-lg btn-success-modern">
