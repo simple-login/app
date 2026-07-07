@@ -67,16 +67,18 @@ def check_single_custom_domain(custom_domain: CustomDomain):
     if not is_mx_equivalent(mx_domains, expected_custom_domains):
         user = custom_domain.user
         LOG.w(
-            "The MX record is not correctly set for %s %s %s",
-            custom_domain,
-            user,
-            mx_domains,
+            f"The MX record is not correctly set for domain {custom_domain} of user {user}. Got {mx_domains}. Retried {custom_domain.nb_failed_checks} days",
         )
 
-        custom_domain.nb_failed_checks += 1
+        if (
+            not custom_domain.updated_at
+            or custom_domain.updated_at <= arrow.now().shift(days=-1)
+        ):
+            # Only update it once a day
+            custom_domain.nb_failed_checks += 1
 
-        # send alert if fail for 3 consecutive days
-        if custom_domain.nb_failed_checks > 2:
+        # send alert if fail for MAX_DOMAIN_CHECKS consecutive days
+        if custom_domain.nb_failed_checks > config.MAX_DOMAIN_CHECKS:
             domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
             LOG.w("Alert domain MX check fails %s about %s", user, custom_domain)
             send_email_with_rate_control(
