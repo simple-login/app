@@ -200,7 +200,7 @@ class CustomDomainSearchHelpers:
         ).count()
 
     @staticmethod
-    def alias_list(domain: CustomDomain, page: int = 1, limit: int = 10) -> List[Alias]:
+    def alias_list(domain: CustomDomain, page: int = 1, limit: int = 25) -> List[Alias]:
         """Get paginated list of aliases for this domain.
 
         Pagination is handled at the database level to avoid loading all aliases into memory.
@@ -223,7 +223,7 @@ class CustomDomainSearchHelpers:
 
     @staticmethod
     def deleted_alias_list(
-        domain: CustomDomain, page: int = 1, limit: int = 10
+        domain: CustomDomain, page: int = 1, limit: int = 25
     ) -> List[DomainDeletedAlias]:
         """Get paginated list of deleted aliases for this domain.
 
