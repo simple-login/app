@@ -775,10 +775,14 @@
       </div>
       {# Aliases Section #}
       {% set alias_count = helper.alias_count(domain) %}
-      {% set alias_page = request.args.get('alias_page_' ~ domain.id, 1, type=int) %}
+      {% set total_pages = ((alias_count - 1) // 10 + 1) if alias_count > 0 else 1 %}
+      {% set alias_page_raw = request.args.get('alias_page_' ~ domain.id, 1) %}
+      {% set alias_page = alias_page_raw | int if alias_page_raw | int > 0 else 1 %}
       {% set aliases = helper.alias_list(domain, page=alias_page) %}
       {% set deleted_alias_count = helper.deleted_alias_count(domain) %}
-      {% set deleted_alias_page = request.args.get('deleted_alias_page_' ~ domain.id, 1, type=int) %}
+      {% set total_deleted_pages = ((deleted_alias_count - 1) // 10 + 1) if deleted_alias_count > 0 else 1 %}
+      {% set deleted_alias_page_raw = request.args.get('deleted_alias_page_' ~ domain.id, 1) %}
+      {% set deleted_alias_page = deleted_alias_page_raw | int if deleted_alias_page_raw | int > 0 else 1 %}
       {% set deleted_aliases = helper.deleted_alias_list(domain, page=deleted_alias_page) %}
       <div class="row">
         <div class="col-lg-6 mb-3 mb-lg-0">
@@ -840,7 +844,9 @@
                       </li>
                       {% endif %}
 
-                      {% for page_num in range(max(1, alias_page - 2), min(alias_page + 3, (alias_count - 1) // 10 + 1)) %}
+                      {% set start_page = (alias_page - 2) if alias_page - 2 > 1 else 1 %}
+                      {% set end_page = (alias_page + 3) if alias_page + 3 < total_pages else total_pages %}
+                      {% for page_num in range(start_page, end_page) %}
                       <li class="page-item {% if page_num == alias_page %}active{% endif %}">
                         <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
                           {{ page_num }}
@@ -848,7 +854,7 @@
                       </li>
                       {% endfor %}
 
-                      {% if alias_page < (alias_count - 1) // 10 + 1 %}
+                      {% if alias_page < total_pages %}
                       <li class="page-item">
                         <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
                           Next <i class="fa fa-chevron-right"></i>
@@ -880,7 +886,8 @@
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
               </h6>
               {% if deleted_alias_count > 10 %}
-              <small class="text-muted">Page {{ deleted_alias_page }} of {{ ((deleted_alias_count - 1) // 10) + 1 }}</small>
+              {% set total_deleted_pages = ((deleted_alias_count - 1) // 10 + 1) if deleted_alias_count > 0 else 1 %}
+              <small class="text-muted">Page {{ deleted_alias_page }} of {{ total_deleted_pages }}</small>
               {% endif %}
             </div>
             <div class="card-body p-0">
@@ -928,7 +935,9 @@
                       </li>
                       {% endif %}
 
-                      {% for page_num in range(max(1, deleted_alias_page - 2), min(deleted_alias_page + 3, (deleted_alias_count - 1) // 10 + 1)) %}
+                      {% set start_deleted_page = (deleted_alias_page - 2) if deleted_alias_page - 2 > 1 else 1 %}
+                      {% set end_deleted_page = (deleted_alias_page + 3) if deleted_alias_page + 3 < total_deleted_pages else total_deleted_pages %}
+                      {% for page_num in range(start_deleted_page, end_deleted_page) %}
                       <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
                         <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
                           {{ page_num }}
@@ -936,7 +945,7 @@
                       </li>
                       {% endfor %}
 
-                      {% if deleted_alias_page < (deleted_alias_count - 1) // 10 + 1 %}
+                      {% if deleted_alias_page < total_deleted_pages %}
                       <li class="page-item">
                         <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
                           Next <i class="fa fa-chevron-right"></i>
