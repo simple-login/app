@@ -36,6 +36,7 @@ from app.alias_delete import delete_alias as perform_alias_delete
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
+from app.regex_utils import is_safe_regex_pattern
 
 
 class EmailSearchResult:
@@ -251,6 +252,11 @@ class EmailSearchResult:
         output = EmailSearchResult()
         output.query = query
         output.search_type = EmailSearchResult.SEARCH_TYPE_REGEX
+
+        # Validate regex pattern to prevent ReDoS attacks
+        if not is_safe_regex_pattern(query, " in email search"):
+            output.no_match = True
+            return output
 
         # Search mailboxes by regex
         mailboxes = (

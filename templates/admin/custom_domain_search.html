@@ -775,9 +775,11 @@
       </div>
       {# Aliases Section #}
       {% set alias_count = helper.alias_count(domain) %}
-      {% set aliases = helper.alias_list(domain) %}
+      {% set alias_page = request.args.get('alias_page_' ~ domain.id, 1, type=int) %}
+      {% set aliases = helper.alias_list(domain, page=alias_page) %}
       {% set deleted_alias_count = helper.deleted_alias_count(domain) %}
-      {% set deleted_aliases = helper.deleted_alias_list(domain) %}
+      {% set deleted_alias_page = request.args.get('deleted_alias_page_' ~ domain.id, 1, type=int) %}
+      {% set deleted_aliases = helper.deleted_alias_list(domain, page=deleted_alias_page) %}
       <div class="row">
         <div class="col-lg-6 mb-3 mb-lg-0">
           <div class="card mb-3 border-0 shadow-sm">
@@ -786,8 +788,10 @@
               <h6 class="mb-0">
                 <i class="fa fa-at mr-2"></i>Aliases
                 <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
-                {% if alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
               </h6>
+              {% if alias_count > 10 %}
+              <small class="text-muted">Page {{ alias_page }} of {{ ((alias_count - 1) // 10) + 1 }}</small>
+              {% endif %}
             </div>
             <div class="card-body p-0">
               {% if aliases %}
@@ -819,6 +823,46 @@
                     </tbody>
                   </table>
                 </div>
+                {# Pagination Controls #}
+                {% if alias_count > 10 %}
+                <div class="pagination-container p-2 border-top">
+                  <nav aria-label="Alias pagination">
+                    <ul class="pagination mb-0 justify-content-end small">
+                      {% if alias_page > 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
+                          <i class="fa fa-chevron-left"></i> Previous
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                      </li>
+                      {% endif %}
+
+                      {% for page_num in range(max(1, alias_page - 2), min(alias_page + 3, (alias_count - 1) // 10 + 1)) %}
+                      <li class="page-item {% if page_num == alias_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
+                          {{ page_num }}
+                        </a>
+                      </li>
+                      {% endfor %}
+
+                      {% if alias_page < (alias_count - 1) // 10 + 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
+                          Next <i class="fa fa-chevron-right"></i>
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                </div>
+                {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
                   <i class="fa fa-info-circle mr-1"></i>No aliases
@@ -834,8 +878,10 @@
               <h6 class="mb-0">
                 <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
-                {% if deleted_alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
               </h6>
+              {% if deleted_alias_count > 10 %}
+              <small class="text-muted">Page {{ deleted_alias_page }} of {{ ((deleted_alias_count - 1) // 10) + 1 }}</small>
+              {% endif %}
             </div>
             <div class="card-body p-0">
               {% if deleted_aliases %}
@@ -865,6 +911,46 @@
                     </tbody>
                   </table>
                 </div>
+                {# Pagination Controls #}
+                {% if deleted_alias_count > 10 %}
+                <div class="pagination-container p-2 border-top">
+                  <nav aria-label="Deleted alias pagination">
+                    <ul class="pagination mb-0 justify-content-end small">
+                      {% if deleted_alias_page > 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
+                          <i class="fa fa-chevron-left"></i> Previous
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                      </li>
+                      {% endif %}
+
+                      {% for page_num in range(max(1, deleted_alias_page - 2), min(deleted_alias_page + 3, (deleted_alias_count - 1) // 10 + 1)) %}
+                      <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
+                          {{ page_num }}
+                        </a>
+                      </li>
+                      {% endfor %}
+
+                      {% if deleted_alias_page < (deleted_alias_count - 1) // 10 + 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
+                          Next <i class="fa fa-chevron-right"></i>
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                </div>
+                {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
                   <i class="fa fa-info-circle mr-1"></i>No deleted aliases
