@@ -793,8 +793,8 @@
                 <i class="fa fa-at mr-2"></i>Aliases
                 <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
               </h6>
-              {% if alias_count > 10 %}
-              <small class="text-muted">Page {{ alias_page }} of {{ ((alias_count - 1) // 10) + 1 }}</small>
+              {% if alias_count > 25 %}
+              <small class="text-muted">Page {{ alias_page }} of {{ total_pages }}</small>
               {% endif %}
             </div>
             <div class="card-body p-0">
@@ -828,7 +828,7 @@
                   </table>
                 </div>
                 {# Pagination Controls #}
-                {% if alias_count > 10 %}
+                {% if alias_count > 25 %}
                 <div class="pagination-container p-2 border-top">
                   <nav aria-label="Alias pagination">
                     <ul class="pagination mb-0 justify-content-end small">
@@ -885,8 +885,7 @@
                 <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
               </h6>
-              {% if deleted_alias_count > 10 %}
-              {% set total_deleted_pages = ((deleted_alias_count - 1) // 10 + 1) if deleted_alias_count > 0 else 1 %}
+              {% if deleted_alias_count > 25 %}
               <small class="text-muted">Page {{ deleted_alias_page }} of {{ total_deleted_pages }}</small>
               {% endif %}
             </div>
@@ -919,7 +918,7 @@
                   </table>
                 </div>
                 {# Pagination Controls #}
-                {% if deleted_alias_count > 10 %}
+                {% if deleted_alias_count > 25 %}
                 <div class="pagination-container p-2 border-top">
                   <nav aria-label="Deleted alias pagination">
                     <ul class="pagination mb-0 justify-content-end small">
