@@ -183,7 +183,7 @@ def generate_unsub_preserve_original_data() -> Iterable:
         contact.id,
         False,
         "<mailto:test@test.com?subject=hello>",
-        f"<{config.URL}/dashboard/unsubscribe/encoded?data={unsub_data}>",
+        f"<{config.URL}/dashboard/unsubscribe/encoded/{unsub_data}>",
     )
     yield (alias.id, contact.id, True, None, None)
     yield (alias.id, contact.id, False, None, None)

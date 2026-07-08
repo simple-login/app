@@ -65,7 +65,7 @@ legacy_mail_or_link_test_data = [
         UnsubscribeData(UnsubscribeAction.UnsubscribeNewsletter, 83),
     ),
     (
-        f"{config.URL}/dashboard/unsubscribe/encoded?data=un.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
+        f"{config.URL}/dashboard/unsubscribe/encoded/un.WzQsIFswLCAxLCAiYUBiLmMiLCAic3ViamVjdCJdXQ.aU3T5XNzJIG4LDm6-pqJk4vxxJxpgVYzc9MEFQ",
         False,
         UnsubscribeData(
             UnsubscribeAction.OriginalUnsubscribeMailto,

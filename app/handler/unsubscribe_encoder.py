@@ -97,7 +97,7 @@ class UnsubscribeEncoder:
             UnsubscribeAction.OriginalUnsubscribeMailto,
         ):
             encoded = UnsubscribeEncoder.encode_subject(action, data)
-            return f"{config.URL}/dashboard/unsubscribe/encoded?data={encoded}"
+            return f"{config.URL}/dashboard/unsubscribe/encoded/{encoded}"
 
     @staticmethod
     def _get_signer() -> itsdangerous.Signer:
