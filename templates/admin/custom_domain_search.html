@@ -775,9 +775,15 @@
       </div>
       {# Aliases Section #}
       {% set alias_count = helper.alias_count(domain) %}
-      {% set aliases = helper.alias_list(domain) %}
+      {% set total_pages = ((alias_count - 1) // 10 + 1) if alias_count > 0 else 1 %}
+      {% set alias_page_raw = request.args.get('alias_page_' ~ domain.id, 1) %}
+      {% set alias_page = alias_page_raw | int if alias_page_raw | int > 0 else 1 %}
+      {% set aliases = helper.alias_list(domain, page=alias_page) %}
       {% set deleted_alias_count = helper.deleted_alias_count(domain) %}
-      {% set deleted_aliases = helper.deleted_alias_list(domain) %}
+      {% set total_deleted_pages = ((deleted_alias_count - 1) // 10 + 1) if deleted_alias_count > 0 else 1 %}
+      {% set deleted_alias_page_raw = request.args.get('deleted_alias_page_' ~ domain.id, 1) %}
+      {% set deleted_alias_page = deleted_alias_page_raw | int if deleted_alias_page_raw | int > 0 else 1 %}
+      {% set deleted_aliases = helper.deleted_alias_list(domain, page=deleted_alias_page) %}
       <div class="row">
         <div class="col-lg-6 mb-3 mb-lg-0">
           <div class="card mb-3 border-0 shadow-sm">
@@ -786,8 +792,10 @@
               <h6 class="mb-0">
                 <i class="fa fa-at mr-2"></i>Aliases
                 <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
-                {% if alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
               </h6>
+              {% if alias_count > 25 %}
+              <small class="text-muted">Page {{ alias_page }} of {{ total_pages }}</small>
+              {% endif %}
             </div>
             <div class="card-body p-0">
               {% if aliases %}
@@ -819,6 +827,48 @@
                     </tbody>
                   </table>
                 </div>
+                {# Pagination Controls #}
+                {% if alias_count > 25 %}
+                <div class="pagination-container p-2 border-top">
+                  <nav aria-label="Alias pagination">
+                    <ul class="pagination mb-0 justify-content-end small">
+                      {% if alias_page > 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
+                          <i class="fa fa-chevron-left"></i> Previous
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                      </li>
+                      {% endif %}
+
+                      {% set start_page = (alias_page - 2) if alias_page - 2 > 1 else 1 %}
+                      {% set end_page = (alias_page + 3) if alias_page + 3 < total_pages else total_pages %}
+                      {% for page_num in range(start_page, end_page) %}
+                      <li class="page-item {% if page_num == alias_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
+                          {{ page_num }}
+                        </a>
+                      </li>
+                      {% endfor %}
+
+                      {% if alias_page < total_pages %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
+                          Next <i class="fa fa-chevron-right"></i>
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                </div>
+                {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
                   <i class="fa fa-info-circle mr-1"></i>No aliases
@@ -834,8 +884,10 @@
               <h6 class="mb-0">
                 <i class="fa fa-trash-alt mr-2"></i>Deleted Aliases
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
-                {% if deleted_alias_count > 10 %}<small class="text-muted ml-1">(showing 10)</small>{% endif %}
               </h6>
+              {% if deleted_alias_count > 25 %}
+              <small class="text-muted">Page {{ deleted_alias_page }} of {{ total_deleted_pages }}</small>
+              {% endif %}
             </div>
             <div class="card-body p-0">
               {% if deleted_aliases %}
@@ -865,6 +917,48 @@
                     </tbody>
                   </table>
                 </div>
+                {# Pagination Controls #}
+                {% if deleted_alias_count > 25 %}
+                <div class="pagination-container p-2 border-top">
+                  <nav aria-label="Deleted alias pagination">
+                    <ul class="pagination mb-0 justify-content-end small">
+                      {% if deleted_alias_page > 1 %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
+                          <i class="fa fa-chevron-left"></i> Previous
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                      </li>
+                      {% endif %}
+
+                      {% set start_deleted_page = (deleted_alias_page - 2) if deleted_alias_page - 2 > 1 else 1 %}
+                      {% set end_deleted_page = (deleted_alias_page + 3) if deleted_alias_page + 3 < total_deleted_pages else total_deleted_pages %}
+                      {% for page_num in range(start_deleted_page, end_deleted_page) %}
+                      <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
+                          {{ page_num }}
+                        </a>
+                      </li>
+                      {% endfor %}
+
+                      {% if deleted_alias_page < total_deleted_pages %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
+                          Next <i class="fa fa-chevron-right"></i>
+                        </a>
+                      </li>
+                      {% else %}
+                      <li class="page-item disabled">
+                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                </div>
+                {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
                   <i class="fa fa-info-circle mr-1"></i>No deleted aliases
@@ -971,9 +1065,9 @@
                    name="query"
                    id="query"
                    value="{{ query or '' }}"
-                   placeholder="domain.com, user@email.com, user ID, or POSIX regex">
+                   placeholder="domain.com, domain ID, user@email.com, uid:123, or POSIX regex">
             <small class="form-text text-muted">
-              <i class="fa fa-info-circle mr-1"></i>Search by domain name, user email, user ID, or use POSIX regex patterns (limited to 10 results).
+              <i class="fa fa-info-circle mr-1"></i>Search by domain name or domain ID (integer), user email (must contain @), user ID (<code>uid:&lt;int&gt;</code>), or POSIX regex (limited to 10 results).
             </small>
           </div>
           <button type="submit" class="btn btn-lg btn-success-modern">

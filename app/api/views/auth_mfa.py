@@ -57,9 +57,12 @@ def auth_mfa():
         )
 
     totp = pyotp.TOTP(user.otp_secret)
-    if not totp.verify(mfa_token, valid_window=2):
+    if not totp.verify(mfa_token, valid_window=2) or user.last_otp == mfa_token:
         send_invalid_totp_login_email(user, "TOTP")
         return jsonify(error="Wrong TOTP Token"), 400
+
+    user.last_otp = mfa_token
+    Session.commit()
 
     ret = {"name": user.name or "", "email": user.email}
 

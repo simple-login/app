@@ -655,6 +655,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     if alias.user.delete_on is not None:
         LOG.d(f"user {user} is pending to be deleted. Do not forward")
+        Alias.lock_for_update(contact.alias_id)
         EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
@@ -674,6 +675,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         if contact.block_forward:
             LOG.d("Contact %s of alias %s is blocked, do not forward", contact, alias)
 
+        Alias.lock_for_update(contact.alias_id)
         EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
@@ -814,6 +816,7 @@ def forward_email_to_mailbox(
         # so when user fixes the mailbox, the email can be delivered
         return False, status.E405
 
+    Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
         contact_id=contact.id,
         user_id=contact.user_id,
@@ -1155,6 +1158,7 @@ def handle_reply(
             # cannot use 5** because that generates bounce report
             return True, status.E201
 
+    Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
         contact_id=contact.id,
         alias_id=contact.alias_id,

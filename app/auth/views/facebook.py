@@ -8,6 +8,7 @@ from app.config import (
     URL,
     FACEBOOK_CLIENT_ID,
     FACEBOOK_CLIENT_SECRET,
+    facebook_enabled,
 )
 from app.db import Session
 from app.log import LOG
@@ -27,6 +28,9 @@ _redirect_uri = URL + "/auth/facebook/callback"
 
 @auth_bp.route("/facebook/login")
 def facebook_login():
+    if not facebook_enabled():
+        return redirect(url_for("auth.login"))
+
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
@@ -50,6 +54,9 @@ def facebook_login():
 
 @auth_bp.route("/facebook/callback")
 def facebook_callback():
+    if not facebook_enabled():
+        return redirect(url_for("auth.login"))
+
     # user clicks on cancel
     if "error" in request.args:
         flash("Please use another sign in method then", "warning")

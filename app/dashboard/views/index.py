@@ -267,5 +267,8 @@ def toggle_contact(contact_id):
         )
 
     return render_template(
-        "partials/toggle_contact.html", contact=contact, toast_msg=toast_msg
+        "partials/toggle_contact.html",
+        contact=contact,
+        toast_msg=toast_msg,
+        csrf_form=csrf_form,
     )

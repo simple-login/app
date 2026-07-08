@@ -198,7 +198,9 @@ DISABLE_ALIAS_SUFFIX = "DISABLE_ALIAS_SUFFIX" in os.environ
 
 # the email address that receives all unsubscription request
 UNSUBSCRIBER = os.environ.get("UNSUBSCRIBER")
-USERS_WITH_HTTP_UNSUBSCRIBE = get_env_csv("USERS_WITH_HTTP_UNSUBSCRIBE", "")
+USERS_WITH_HTTP_UNSUBSCRIBE = [
+    int(uid) for uid in get_env_csv("USERS_WITH_HTTP_UNSUBSCRIBE", "")
+]
 
 # due to a typo, both UNSUBSCRIBER and OLD_UNSUBSCRIBER are supported
 OLD_UNSUBSCRIBER = os.environ.get("OLD_UNSUBSCRIBER")
@@ -291,8 +293,18 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
+
+def google_enabled():
+    return GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+
+
 FACEBOOK_CLIENT_ID = os.environ.get("FACEBOOK_CLIENT_ID")
 FACEBOOK_CLIENT_SECRET = os.environ.get("FACEBOOK_CLIENT_SECRET")
+
+
+def facebook_enabled():
+    return FACEBOOK_CLIENT_ID and FACEBOOK_CLIENT_SECRET
+
 
 CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
@@ -631,6 +643,8 @@ UPCLOUD_DB_ID = os.environ.get("UPCLOUD_DB_ID", None)
 
 STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
 
+MAINTENANCE_MODE = "MAINTENANCE_MODE" in os.environ
+
 EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 
 # We want it disabled by default, so only skip if defined
@@ -722,3 +736,7 @@ if ADMIN_FIDO_REQUIRED not in ("none", "any", "hardware"):
 ADMIN_GRACE_PERIOD = int(os.environ.get("ADMIN_GRACE_PERIOD", 43200))
 
 DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = "DROP_PGP_KEY_ATTACHMENTS_ON_REPLY" in os.environ
+
+ENFORCE_OAUTH_CLIENT_APPROVED = "ENFORCE_OAUTH_CLIENT_APPROVED" in os.environ
+
+MAX_DOMAIN_CHECKS = max(int(os.environ.get("MAX_DOMAIN_CHECKS", 4)), 1)

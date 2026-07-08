@@ -1461,7 +1461,12 @@
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center header-neutral">
       <h6 class="mb-0">
         <i class="fa fa-at mr-2"></i>Aliases
-        <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
+        {% if alias_count > helper.ALIAS_DISPLAY_LIMIT %}
+          <span class="badge badge-danger ml-2" title="Unusually high alias count">{{ alias_count }} total</span>
+          <small class="text-danger ml-1"><i class="fa fa-exclamation-triangle mr-1"></i>High alias count</small>
+        {% else %}
+          <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
+        {% endif %}
         {% if alias_count > page_size %}
 
           <small class="text-muted ml-1">(showing {{ page_size }}, page {{ current_page }}/{{ total_pages }})</small>

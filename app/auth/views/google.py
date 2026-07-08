@@ -3,7 +3,7 @@ from requests_oauthlib import OAuth2Session
 
 from app import s3
 from app.auth.base import auth_bp
-from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+from app.config import URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, google_enabled
 from app.db import Session
 from app.log import LOG
 from app.models import User, File, SocialAuth
@@ -26,6 +26,9 @@ _redirect_uri = URL + "/auth/google/callback"
 
 @auth_bp.route("/google/login")
 def google_login():
+    if not google_enabled():
+        return redirect(url_for("auth.login"))
+
     # to avoid flask-login displaying the login error message
     session.pop("_flashes", None)
 
@@ -46,6 +49,9 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    if not google_enabled():
+        return redirect(url_for("auth.login"))
+
     # user clicks on cancel
     if "error" in request.args:
         flash("please use another sign in method then", "warning")

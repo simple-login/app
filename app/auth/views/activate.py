@@ -1,5 +1,6 @@
-from flask import request, redirect, url_for, flash, render_template, g
+from flask import request, redirect, url_for, flash, render_template, g, session
 from flask_login import login_user, current_user
+import uuid
 
 from app import email_utils
 from app.auth.base import auth_bp
@@ -52,6 +53,8 @@ def activate():
         action=UserAuditLogAction.ActivateUser,
         message=f"User has been activated: {user.email}",
     )
+    # Rotate session ID to prevent session fixation
+    session.session_id = str(uuid.uuid4())
     login_user(user)
 
     # activation code is to be used only once

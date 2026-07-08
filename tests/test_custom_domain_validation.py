@@ -296,6 +296,74 @@ def test_custom_domain_validation_validate_dkim_records_success():
     assert db_domain.dkim_verified is True
 
 
+def test_custom_domain_validation_validate_dkim_records_partner_domain_success():
+    """Test DKIM validation for partner domains with custom DKIM configuration."""
+    dkim_domain = random_domain()
+    partner_dkim_domain = random_domain()
+    dns_client = InMemoryDNSClient()
+
+    partner_id = get_proton_partner().id
+    validator = CustomDomainValidation(
+        dkim_domain, dns_client, partner_domains={partner_id: partner_dkim_domain}
+    )
+
+    user_domain = random_domain()
+    domain = create_custom_domain(user_domain)
+    domain.partner_id = partner_id
+    Session.commit()
+
+    # Set correct partner DKIM records (preferred)
+    dns_client.set_cname_record(
+        f"dkim._domainkey.{user_domain}", f"dkim._domainkey.{partner_dkim_domain}"
+    )
+    dns_client.set_cname_record(
+        f"dkim02._domainkey.{user_domain}", f"dkim02._domainkey.{partner_dkim_domain}"
+    )
+    dns_client.set_cname_record(
+        f"dkim03._domainkey.{user_domain}", f"dkim03._domainkey.{partner_dkim_domain}"
+    )
+
+    res = validator.validate_dkim_records(domain)
+    assert len(res) == 0
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.dkim_verified is True
+
+
+def test_custom_domain_validation_validate_dkim_records_partner_domain_fallback_success():
+    """Test DKIM validation for partner domains falls back to SL domain if partner DKIM not set."""
+    dkim_domain = random_domain()
+    partner_mx_domain = random_domain()  # Partner has MX config but not DKIM
+    dns_client = InMemoryDNSClient()
+
+    partner_id = get_proton_partner().id
+    validator = CustomDomainValidation(
+        dkim_domain, dns_client, partner_domains={partner_id: partner_mx_domain}
+    )
+
+    user_domain = random_domain()
+    domain = create_custom_domain(user_domain)
+    domain.partner_id = partner_id
+    Session.commit()
+
+    # Set correct SL DKIM records (fallback)
+    dns_client.set_cname_record(
+        f"dkim._domainkey.{user_domain}", f"dkim._domainkey.{dkim_domain}"
+    )
+    dns_client.set_cname_record(
+        f"dkim02._domainkey.{user_domain}", f"dkim02._domainkey.{dkim_domain}"
+    )
+    dns_client.set_cname_record(
+        f"dkim03._domainkey.{user_domain}", f"dkim03._domainkey.{dkim_domain}"
+    )
+
+    res = validator.validate_dkim_records(domain)
+    assert len(res) == 0
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.dkim_verified is True
+
+
 # validate_ownership
 def test_custom_domain_validation_validate_ownership_empty_records_failure():
     dns_client = InMemoryDNSClient()
@@ -418,6 +486,39 @@ def test_custom_domain_validation_validate_mx_records_success():
         priority: mx_records_by_prio[priority].allowed
         for priority in mx_records_by_prio
     }
+    dns_client.set_mx_records(domain.domain, dns_records)
+    res = validator.validate_mx_records(domain)
+
+    assert res.success is True
+    assert len(res.errors) == 0
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.verified is True
+
+
+def test_custom_domain_validation_validate_mx_records_partner_domain_success():
+    """Test MX validation for partner domains with custom MX configuration."""
+    dns_client = InMemoryDNSClient()
+    partner_id = get_proton_partner().id
+    partner_mx_domain = random_domain()
+
+    validator = CustomDomainValidation(
+        random_domain(), dns_client, partner_domains={partner_id: partner_mx_domain}
+    )
+
+    domain = create_custom_domain(random_domain())
+    domain.partner_id = partner_id
+    Session.commit()
+
+    # Get expected records (should include partner MX + fallback SL MX)
+    expected_records = validator.get_expected_mx_records(domain)
+
+    # Set MX records with partner MX first (preferred priority)
+    dns_records = {}
+    for priority in expected_records:
+        # Use the recommended record (partner MX)
+        dns_records[priority] = [expected_records[priority].recommended]
+
     dns_client.set_mx_records(domain.domain, dns_records)
     res = validator.validate_mx_records(domain)
 

@@ -69,7 +69,8 @@ def reset_password():
         ResetPasswordCode.filter_by(user_id=user.id).delete()
 
         # change the alternative_id to log user out on other browsers
-        regenerate_user_alternative_id(user)
+        # do not update session here to require MFA first
+        regenerate_user_alternative_id(user, update_session=False)
 
         Session.commit()
 

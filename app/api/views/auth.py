@@ -10,7 +10,12 @@ from itsdangerous import Signer
 from app import email_utils
 from app.abuser_utils import check_if_abuser_email
 from app.api.base import api_bp
-from app.config import FLASK_SECRET, DISABLE_REGISTRATION
+from app.config import (
+    FLASK_SECRET,
+    DISABLE_REGISTRATION,
+    google_enabled,
+    facebook_enabled,
+)
 from app.dashboard.views.account_setting import send_reset_password_email
 from app.db import Session
 from app.email_utils import (
@@ -22,7 +27,7 @@ from app.email_utils import (
 from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
-from app.models import User, ApiKey, SocialAuth, AccountActivation
+from app.models import User, ApiKey, SocialAuth, AccountActivation, PasswordOracle
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import sanitize_email, canonicalize_email
 
@@ -63,6 +68,13 @@ def auth_login():
     user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
     if not user or not user.check_password(password):
+        if not user:
+            # Do the hash to avoid timing attacks nevertheless
+            dummy_pw = PasswordOracle()
+            dummy_pw.password = (
+                "$2b$12$ZWqpL73h4rGNfLkJohAFAu0isqSw/bX9p/tzpbWRz/To5FAftaW8u"
+            )
+            dummy_pw.check_password(password)
         LoginEvent(LoginEvent.ActionType.failed, LoginEvent.Source.api).send()
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
@@ -270,6 +282,9 @@ def auth_facebook():
         }
 
     """
+    if not facebook_enabled():
+        return jsonify(error="invalid login mechanism"), 400
+
     import facebook
 
     data = request.get_json()
@@ -323,6 +338,9 @@ def auth_google():
         }
 
     """
+    if not google_enabled():
+        return jsonify(error="invalid login mechanism"), 400
+
     data = request.get_json()
     if not data:
         return jsonify(error="request body cannot be empty"), 400

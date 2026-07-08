@@ -25,7 +25,10 @@ def resend_activation():
         user = User.get_by(email=email) or User.get_by(email=canonical_email)
 
         if not user:
-            flash("There is no such email", "warning")
+            flash(
+                "If this email is registered, an activation email has been sent.",
+                "warning",
+            )
             return render_template("auth/resend_activation.html", form=form)
 
         if user.activated:

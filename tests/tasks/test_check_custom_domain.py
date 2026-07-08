@@ -1,6 +1,7 @@
 import arrow
 from unittest.mock import patch
 
+from app.db import Session
 from app.models import CustomDomain
 from tasks.check_custom_domains import (
     check_all_custom_domains,
@@ -11,6 +12,7 @@ from tests.utils import create_new_user, random_string
 
 def test_check_single_custom_domain_increments_failed_checks(flask_client):
     user = create_new_user()
+    # Set updated_at to 2 days ago so the increment logic runs
     custom_domain = CustomDomain.create(
         user_id=user.id,
         domain=random_string(),
@@ -18,6 +20,10 @@ def test_check_single_custom_domain_increments_failed_checks(flask_client):
         nb_failed_checks=0,
         commit=True,
     )
+    # Manually set updated_at to simulate an old update
+    custom_domain.updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
     with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
         "tasks.check_custom_domains.is_mx_equivalent", return_value=False
     ), patch("tasks.check_custom_domains.send_email_with_rate_control"):
@@ -28,13 +34,18 @@ def test_check_single_custom_domain_increments_failed_checks(flask_client):
 
 def test_check_single_custom_domain_deactivates_after_threshold(flask_client):
     user = create_new_user()
+    # Start at 4 so that after one increment (4->5), 5 > MAX_DOMAIN_CHECKS (4) triggers deactivation
     custom_domain = CustomDomain.create(
         user_id=user.id,
         domain=random_string(),
         verified=True,
-        nb_failed_checks=2,
+        nb_failed_checks=4,
         commit=True,
     )
+    # Set updated_at to 2 days ago so the increment logic runs
+    custom_domain.updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
     with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
         "tasks.check_custom_domains.is_mx_equivalent", return_value=False
     ), patch("tasks.check_custom_domains.send_email_with_rate_control"):

@@ -1773,6 +1773,21 @@ class Alias(Base, ModelMixin):
                 return custom_domain
 
     @classmethod
+    def lock_for_update(cls, alias_id: int):
+        """Acquire an exclusive row lock on the alias to serialise concurrent writes.
+
+        Call this before creating an EmailLog for the alias so that the lock order
+        is always alias → email_log, preventing the deadlock that arises when two
+        concurrent transactions each hold a share lock (from the email_log FK insert)
+        and then both try to escalate to an exclusive lock for the
+        last_email_log_id UPDATE.
+        """
+        Session.execute(
+            "SELECT id FROM alias WHERE id = :alias_id FOR UPDATE",
+            {"alias_id": alias_id},
+        )
+
+    @classmethod
     def create(cls, **kw):
         commit = kw.pop("commit", False)
         flush = kw.pop("flush", False)
