@@ -38,6 +38,7 @@ def test_password_reset_invalidates_sessions_and_mfa(flask_client):
 
     # Create an MfaBrowser entry simulating a previously trusted device
     mfa_browser = MfaBrowser.create_new(user=user)
+    mfa_token = mfa_browser.token
     Session.commit()
 
     # Verify the MfaBrowser entry exists
@@ -59,6 +60,6 @@ def test_password_reset_invalidates_sessions_and_mfa(flask_client):
     # Reload user from database
     user = User.get(user_id)
     assert user.password != original_pass_hash
-    assert MfaBrowser.get_by(token=mfa_browser.token) is None
+    assert MfaBrowser.get_by(token=mfa_token) is None
     assert MfaBrowser.filter_by(user_id=user_id).count() == 0
     assert user.alternative_id != source_alternative_id
