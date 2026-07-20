@@ -9,6 +9,7 @@ from app.extensions import limiter
 from app.models import ResetPasswordCode
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.user_settings import regenerate_user_alternative_id
+from app.models import MfaBrowser
 
 
 class ResetPasswordForm(FlaskForm):
@@ -71,6 +72,9 @@ def reset_password():
         # change the alternative_id to log user out on other browsers
         # do not update session here to require MFA first
         regenerate_user_alternative_id(user, update_session=False)
+
+        # Revoke all trusted browser sessions to prevent MFA bypass
+        MfaBrowser.filter_by(user_id=user.id).delete()
 
         Session.commit()
 
