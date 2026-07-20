@@ -27,14 +27,9 @@ def test_successful_reset_password(flask_client):
 
 
 def test_password_reset_invalidates_sessions_and_mfa(flask_client):
-    """
-    Comprehensive test that password reset revokes all trusted browser (MfaBrowser) sessions.
-    This prevents an attacker from using a stolen mfa cookie to bypass MFA after
-    the victim resets their password.
-
-    Note: alternative_id rotation is tested separately in test_regenerate_user_alternative_id.
-    """
     user = create_new_user()
+    source_alternative_id = random_token()
+    user.alternative_id = source_alternative_id
     user.enable_otp = True
     user.otp_secret = "base32secret3232"
 
@@ -63,12 +58,7 @@ def test_password_reset_invalidates_sessions_and_mfa(flask_client):
 
     # Reload user from database
     user = User.get(user_id)
-
-    # 1. Verify the password was changed
     assert user.password != original_pass_hash
-
-    # 2. Verify the MfaBrowser entry was deleted (MFA bypass prevented)
     assert MfaBrowser.get_by(token=mfa_browser.token) is None
-
-    # 3. Verify no MfaBrowser entries remain for this user
     assert MfaBrowser.filter_by(user_id=user_id).count() == 0
+    assert user.alternative_id != source_alternative_id
