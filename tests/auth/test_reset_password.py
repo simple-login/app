@@ -1,7 +1,7 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ResetPasswordCode
+from app.models import User, ResetPasswordCode, MfaBrowser
 from tests.utils import create_new_user, random_token
 
 
@@ -24,3 +24,51 @@ def test_successful_reset_password(flask_client):
     assert ResetPasswordCode.get_by(user_id=user_id) is None
     user = User.get(user_id)
     assert user.password != original_pass_hash
+
+
+def test_password_reset_invalidates_sessions_and_mfa(flask_client):
+    """
+    Comprehensive test that password reset revokes all trusted browser (MfaBrowser) sessions.
+    This prevents an attacker from using a stolen mfa cookie to bypass MFA after
+    the victim resets their password.
+
+    Note: alternative_id rotation is tested separately in test_regenerate_user_alternative_id.
+    """
+    user = create_new_user()
+    user.enable_otp = True
+    user.otp_secret = "base32secret3232"
+
+    original_pass_hash = user.password
+    user_id = user.id
+
+    # Create an MfaBrowser entry simulating a previously trusted device
+    mfa_browser = MfaBrowser.create_new(user=user)
+    Session.commit()
+
+    # Verify the MfaBrowser entry exists
+    assert MfaBrowser.get_by(token=mfa_browser.token) is not None
+
+    # Generate a reset code
+    reset_code = random_token()
+    ResetPasswordCode.create(user_id=user.id, code=reset_code)
+    Session.commit()
+
+    # Perform password reset
+    r = flask_client.post(
+        url_for("auth.reset_password", code=reset_code),
+        data={"password": "new_secure_password_123"},
+    )
+
+    assert r.status_code == 302
+
+    # Reload user from database
+    user = User.get(user_id)
+
+    # 1. Verify the password was changed
+    assert user.password != original_pass_hash
+
+    # 2. Verify the MfaBrowser entry was deleted (MFA bypass prevented)
+    assert MfaBrowser.get_by(token=mfa_browser.token) is None
+
+    # 3. Verify no MfaBrowser entries remain for this user
+    assert MfaBrowser.filter_by(user_id=user_id).count() == 0
