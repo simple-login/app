@@ -9,7 +9,7 @@ from app.extensions import limiter
 from app.models import ResetPasswordCode
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.user_settings import regenerate_user_alternative_id
-from app.models import MfaBrowser
+from app.models import MfaBrowser, ApiKey
 
 
 class ResetPasswordForm(FlaskForm):
@@ -55,6 +55,9 @@ def reset_password():
             return render_template("auth/reset_password.html", form=form, error=error)
 
         user.set_password(new_password)
+
+        # Delete all API keys to invalidate existing sessions
+        ApiKey.delete_all(user.id)
 
         flash("Your new password has been set", "success")
 

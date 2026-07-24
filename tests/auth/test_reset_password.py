@@ -1,7 +1,7 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ResetPasswordCode, MfaBrowser
+from app.models import User, ResetPasswordCode, MfaBrowser, ApiKey
 from tests.utils import create_new_user, random_token
 
 
@@ -63,3 +63,32 @@ def test_password_reset_invalidates_sessions_and_mfa(flask_client):
     assert MfaBrowser.get_by(token=mfa_token) is None
     assert MfaBrowser.filter_by(user_id=user_id).count() == 0
     assert user.alternative_id != source_alternative_id
+
+
+def test_password_reset_deletes_api_keys(flask_client):
+    user = create_new_user()
+    user_id = user.id
+
+    # Create multiple API keys for the user
+    _api_key_1 = ApiKey.create(user_id=user_id, name="Test Key 1")
+    _api_key_2 = ApiKey.create(user_id=user_id, name="Test Key 2")
+    Session.commit()
+
+    # Verify API keys exist
+    assert ApiKey.filter_by(user_id=user_id).count() == 2
+
+    # Generate a reset code
+    reset_code = random_token()
+    ResetPasswordCode.create(user_id=user_id, code=reset_code)
+    Session.commit()
+
+    # Perform password reset
+    r = flask_client.post(
+        url_for("auth.reset_password", code=reset_code),
+        data={"password": "new_secure_password_123"},
+    )
+
+    assert r.status_code == 302
+
+    # Verify all API keys have been deleted
+    assert ApiKey.filter_by(user_id=user_id).count() == 0

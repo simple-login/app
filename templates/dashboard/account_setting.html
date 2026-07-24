@@ -73,6 +73,9 @@
       <div class="card-body">
         <div class="card-title">Password</div>
         <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
+        <div class="alert alert-warning mb-3">
+          All existing API keys will be invalidated once you change your password.
+        </div>
         <form method="post">
           {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-password">
