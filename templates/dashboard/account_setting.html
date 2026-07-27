@@ -38,6 +38,10 @@
             </a>
             instead.
           </div>
+          <div class="alert alert-warning mb-3">
+            Changing your email will invalidate all existing API keys, revoke all trusted browser sessions,
+            and log you out from all other devices. You will need to re-authenticate everywhere.
+          </div>
           <div class="form-group mt-2">
             <!-- Not allow user to change email if there's a pending change -->
             {{ change_email_form.email(class="form-control", value=current_user.email, readonly=pending_email != None) }}
@@ -75,6 +79,8 @@
         <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
         <div class="alert alert-warning mb-3">
           All existing API keys will be invalidated once you change your password.
+          Additionally, any pending email change requests will be cancelled,
+          all trusted browser sessions will be revoked, and you will be logged out from all other devices.
         </div>
         <form method="post">
           {{ csrf_form.csrf_token }}
