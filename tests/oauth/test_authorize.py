@@ -349,6 +349,70 @@ def test_authorize_code_flow_with_openid_scope(flask_client):
     assert verify_id_token(r.json["id_token"])
 
 
+def test_authorize_code_flow_with_openid_and_other_scopes_returns_nonce(flask_client):
+    """make sure the nonce supplied in the authorization request is forwarded
+    to the id_token when openid is combined with other scopes,
+    ie when response_type=code, scope="openid email"
+    """
+
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+
+    Session.commit()
+
+    domain = random_domain()
+    uri = f"https://{domain}/callback"
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
+
+    nonce = "test-nonce-123"
+
+    # user allows client on the authorization page
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="teststate",
+            redirect_uri=uri,
+            response_type="code",
+            scope="openid email",  # openid combined with another scope
+            nonce=nonce,
+        ),
+        data={
+            "button": "allow",
+            "suggested-email": "x@sl.lan",
+            "suggested-name": "AB CD",
+        },
+    )
+
+    assert r.status_code == 302  # user gets redirected back to client page
+
+    o = urlparse(r.location)
+    queries = parse_qs(o.query)
+
+    # Exchange the code to get access_token
+    basic_auth_headers = base64.b64encode(
+        f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
+    ).decode("utf-8")
+
+    r = flask_client.post(
+        url_for("oauth.token"),
+        headers={"Authorization": "Basic " + basic_auth_headers},
+        data={"grant_type": "authorization_code", "code": queries["code"][0]},
+    )
+
+    assert r.status_code == 200
+    assert r.json["id_token"]
+    assert verify_id_token(r.json["id_token"])
+
+    decoded = decode_id_token(r.json["id_token"])
+    claims = json.loads(decoded.claims)
+    assert claims["nonce"] == nonce
+
+
 def test_authorize_token_flow(flask_client):
     """make sure the authorize redirects user to correct page for the *Token Flow*
     , ie when response_type=token
