@@ -1,8 +1,8 @@
 from flask import url_for
 
 from app.db import Session
-from app.models import User, ResetPasswordCode, MfaBrowser, ApiKey
-from tests.utils import create_new_user, random_token
+from app.models import User, ResetPasswordCode, MfaBrowser, ApiKey, EmailChange
+from tests.utils import create_new_user, random_token, random_email
 
 
 def test_successful_reset_password(flask_client):
@@ -92,3 +92,37 @@ def test_password_reset_deletes_api_keys(flask_client):
 
     # Verify all API keys have been deleted
     assert ApiKey.filter_by(user_id=user_id).count() == 0
+
+
+def test_password_reset_invalidates_email_change_tokens(flask_client):
+    user = create_new_user()
+    user_id = user.id
+
+    # Create a pending email change token
+    email_change = EmailChange.create(
+        user_id=user_id,
+        code=random_token(),
+        new_email=random_email(),
+    )
+    email_change_code = email_change.code
+    Session.commit()
+
+    # Verify email change exists
+    assert EmailChange.get_by(code=email_change_code) is not None
+
+    # Generate a reset code
+    reset_code = random_token()
+    ResetPasswordCode.create(user_id=user_id, code=reset_code)
+    Session.commit()
+
+    # Perform password reset
+    r = flask_client.post(
+        url_for("auth.reset_password", code=reset_code),
+        data={"password": "new_secure_password_123"},
+    )
+
+    assert r.status_code == 302
+
+    # Verify email change token has been invalidated
+    assert EmailChange.get_by(code=email_change_code) is None
+    assert EmailChange.filter_by(user_id=user_id).count() == 0
