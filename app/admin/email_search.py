@@ -92,6 +92,7 @@ class EmailSearchResult:
             output.alias_audit_log = (
                 AliasAuditLog.filter_by(alias_id=alias.id)
                 .order_by(AliasAuditLog.created_at.desc())
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
             output.no_match = False
@@ -104,6 +105,7 @@ class EmailSearchResult:
                 output.deleted_alias_audit_log = (
                     AliasAuditLog.filter_by(alias_email=deleted_alias.email)
                     .order_by(AliasAuditLog.created_at.desc())
+                    .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                     .all()
                 )
                 output.no_match = False
@@ -116,6 +118,7 @@ class EmailSearchResult:
                 output.domain_deleted_alias_audit_log = (
                     AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
                     .order_by(AliasAuditLog.created_at.desc())
+                    .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                     .all()
                 )
                 output.no_match = False
@@ -196,6 +199,7 @@ class EmailSearchResult:
             user_audit_log = (
                 UserAuditLog.filter_by(user_email=query)
                 .order_by(UserAuditLog.created_at.desc())
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
             if user_audit_log:
@@ -232,9 +236,13 @@ class EmailSearchResult:
                 output.no_match = False
         else:
             # Search by external_user_id
-            partner_users = PartnerUser.filter_by(
-                partner_id=proton_partner.id, external_user_id=query
-            ).all()
+            partner_users = (
+                PartnerUser.filter_by(
+                    partner_id=proton_partner.id, external_user_id=query
+                )
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
+                .all()
+            )
             if partner_users:
                 output.partner_users = partner_users
                 output.partner_users_found_by_regex = False
@@ -322,6 +330,7 @@ class EmailSearchResult:
 class EmailSearchHelpers:
     PAGE_SIZE = 25
     ALIAS_DISPLAY_LIMIT = 5000
+    UNPAGINATED_QUERY_LIMIT = 100
 
     @staticmethod
     def mailbox_list(
@@ -382,7 +391,20 @@ class EmailSearchHelpers:
 
     @staticmethod
     def alias_mailbox_count(alias: Alias) -> int:
-        return len(alias.mailboxes)
+        # An alias's mailboxes come from two places: its primary mailbox
+        # (Alias.mailbox_id) and any extra ones linked via AliasMailbox.
+        # Union these (dedup) to match alias_mailboxes() instead of loading
+        # alias.mailboxes into memory just to call len() on it.
+        return (
+            Session.query(Mailbox)
+            .filter(Mailbox.id == Alias.mailbox_id, Alias.id == alias.id)
+            .union(
+                Session.query(Mailbox)
+                .join(AliasMailbox, Mailbox.id == AliasMailbox.mailbox_id)
+                .filter(AliasMailbox.alias_id == alias.id)
+            )
+            .count()
+        )
 
     @staticmethod
     def alias_list(user: User, page: int = 1) -> list[Alias]:
