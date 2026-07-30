@@ -147,6 +147,51 @@ def check_if_alias_can_be_auto_created_for_custom_domain(
     return custom_domain, None
 
 
+def _find_directory_from_address(address: str) -> Optional[Tuple[str, Directory]]:
+    """
+    Parse directory name from an on-the-fly alias address.
+
+    Supported separators: "/", "+", "#", "-", "_".
+    "/" "+" "#" cannot appear in directory names, so the first occurrence is used.
+    "-" and "_" can appear in directory names, so the longest matching directory is preferred.
+    """
+    at = address.find("@")
+    if at <= 0:
+        return None
+    local = address[:at]
+
+    # Unambiguous separators (cannot appear in directory names)
+    for sep in ("/", "+", "#"):
+        if sep in local:
+            directory_name = local[: local.find(sep)]
+            if not directory_name:
+                continue
+            directory = Directory.get_by(name=directory_name)
+            if directory:
+                return directory_name, directory
+
+    # "-" and "_" may appear inside directory names — pick longest match
+    best_name = None
+    best_directory = None
+    for sep in ("-", "_"):
+        pos = -1
+        while True:
+            pos = local.find(sep, pos + 1)
+            if pos == -1:
+                break
+            directory_name = local[:pos]
+            if not directory_name:
+                continue
+            directory = Directory.get_by(name=directory_name)
+            if directory and (best_name is None or len(directory_name) > len(best_name)):
+                best_name = directory_name
+                best_directory = directory
+
+    if best_directory:
+        return best_name, best_directory
+    return None
+
+
 def check_if_alias_can_be_auto_created_for_a_directory(
     address: str, notify_user: bool = True
 ) -> Optional[Directory]:
@@ -158,27 +203,15 @@ def check_if_alias_can_be_auto_created_for_a_directory(
     if not can_create_directory_for_address(address):
         return None
 
-    # alias contains one of the 3 special directory separator: "/", "+" or "#"
-    if "/" in address:
-        sep = "/"
-    elif "+" in address:
-        sep = "+"
-    elif "#" in address:
-        sep = "#"
-    else:
-        # if there's no directory separator in the alias, no way to auto-create it
-        LOG.info(f"Cannot auto-create {address} since it has no directory separator")
-        return None
-
-    directory_name = address[: address.find(sep)]
-    LOG.d("directory_name %s", directory_name)
-
-    directory = Directory.get_by(name=directory_name)
-    if not directory:
+    found = _find_directory_from_address(address)
+    if not found:
         LOG.info(
-            f"Cannot auto-create {address} because there is no directory for {directory_name}"
+            f"Cannot auto-create {address} since no matching directory separator/name found"
         )
         return None
+
+    directory_name, directory = found
+    LOG.d("directory_name %s", directory_name)
 
     user: User = directory.user
     if user.disabled:
