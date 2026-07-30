@@ -14,11 +14,12 @@ _s3_client = None
 def _get_s3client():
     global _s3_client
     if _s3_client is None:
-        args = {
-            "aws_access_key_id": config.AWS_ACCESS_KEY_ID,
-            "aws_secret_access_key": config.AWS_SECRET_ACCESS_KEY,
-            "region_name": config.AWS_REGION,
-        }
+        args = {"region_name": config.AWS_REGION}
+        if not config.AWS_USE_IAM_ROLE:
+            if config.AWS_ACCESS_KEY_ID:
+                args["aws_access_key_id"] = config.AWS_ACCESS_KEY_ID
+            if config.AWS_SECRET_ACCESS_KEY:
+                args["aws_secret_access_key"] = config.AWS_SECRET_ACCESS_KEY
         if config.AWS_ENDPOINT_URL:
             args["endpoint_url"] = config.AWS_ENDPOINT_URL
         _s3_client = boto3.client("s3", **args)

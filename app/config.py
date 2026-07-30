@@ -232,6 +232,7 @@ BUCKET = os.environ.get("BUCKET")
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 AWS_ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL", None)
+AWS_USE_IAM_ROLE = os.environ.get("AWS_USE_IAM_ROLE")
 
 # Paddle
 try:
@@ -355,6 +356,11 @@ if LOCAL_FILE_UPLOAD:
     if not os.path.exists(UPLOAD_DIR):
         print("Create upload dir")
         os.makedirs(UPLOAD_DIR)
+elif not AWS_USE_IAM_ROLE and not (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY):
+    print(
+        "WARNING: Neither AWS credentials nor AWS_USE_IAM_ROLE are set. "
+        "S3 uploads/downloads will fail."
+    )
 
 LANDING_PAGE_URL = os.environ.get("LANDING_PAGE_URL") or "https://simplelogin.io"
 
