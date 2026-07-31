@@ -1485,6 +1485,7 @@ def spf_pass(
     alias: Alias,
     contact_email: str,
     msg: Message,
+    strict: bool = False,
 ) -> bool:
     ip = msg[headers.SL_CLIENT_IP]
     if ip:
@@ -1493,10 +1494,13 @@ def spf_pass(
             r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
             LOG.e("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+            if strict:
+                return False
         else:
             # TODO: Handle temperr case (e.g. dns timeout)
-            # only an absolute pass, or no SPF policy at all is 'valid'
-            if r[0] not in ["pass", "none"]:
+            # only an absolute pass, or no SPF policy at all is 'valid' -- unless `strict`
+            valid_results = ["pass"] if strict else ["pass", "none"]
+            if r[0] not in valid_results:
                 LOG.w(
                     "SPF fail for mailbox %s, reason %s, failed IP %s",
                     mailbox.email,
@@ -1538,6 +1542,8 @@ def spf_pass(
             mailbox.email,
             contact_email,
         )
+        if strict:
+            return False
 
     return True
 

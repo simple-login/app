@@ -1095,7 +1095,7 @@ def handle_reply(
         return False, dmarc_delivery_status
 
     # Anti-spoofing
-    mailbox = get_mailbox_for_reply_phase(
+    mailbox, used_header_fallback = get_mailbox_for_reply_phase(
         envelope.mail_from, get_header_unicode(msg[headers.FROM]), alias
     )
     if not mailbox:
@@ -1118,15 +1118,24 @@ def handle_reply(
         LOG.i(f"User {user} tried to send a mail from admin disabled mailbox {mailbox}")
         return False, status.E207
 
-    if (
-        config.ENFORCE_SPF
-        and mailbox.force_spf
-        and not alias.disable_email_spoofing_check
-    ):
-        if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
-            # cannot use 4** here as sender will retry.
-            # cannot use 5** because that generates bounce report
-            return True, status.E201
+    if not alias.disable_email_spoofing_check:
+        if used_header_fallback:
+            # The mailbox was picked by trusting the From: header. In that case force spf pass
+            # to avoid anyone sharing a domain with an owning mailbox impersonating by just
+            # setting the From: header.
+            if not spf_pass(
+                envelope, mailbox, user, alias, contact.website_email, msg, strict=True
+            ):
+                LOG.i(
+                    "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+                )
+                return True, status.E201
+        elif config.ENFORCE_SPF and mailbox.force_spf:
+            LOG.i(
+                "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+            )
+            if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
+                return True, status.E201
 
     Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
