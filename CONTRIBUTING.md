@@ -237,7 +237,7 @@ POSTFIX_PORT=1025
 3) Run email_handler
 
 ```bash
-python email_handler.py
+uv run python3 email_handler.py
 ```
 
 4) Send a test email
@@ -253,7 +253,7 @@ Now open [http://localhost:1080/](http://localhost:1080/) (or [http://localhost:
 Some features require a job handler (such as GDPR data export). To test such feature you need to run the job_runner
 
 ```bash
-python job_runner.py
+uv run python3 job_runner.py
 ```
 
 # Setup for Mac
