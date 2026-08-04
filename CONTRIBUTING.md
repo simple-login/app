@@ -62,7 +62,14 @@ To install it in your development environment.
 
 ## Run tests
 
-For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
+For most tests, you will need to have `redis` installed and started on your machine (listening on port 6379).
+
+```
+docker pull redis:latest
+docker run -d --name redis -p 6379:6379 redis:latest redis-server
+```
+
+Run tests using the following command:
 
 ```bash
 sh scripts/run-test.sh
@@ -70,11 +77,28 @@ sh scripts/run-test.sh
 
 You can also run tests using a local Postgres DB to speed things up. This can be done by
 
-- creating an empty test DB and running the database migration by `dropdb test || true && createdb test && cp example.env .env && DB_URI=postgresql://localhost:5432/test uv run alembic upgrade head`
+- creating a database role for the current user by:
 
-- replacing the `DB_URI` in `test.env` file by `DB_URI=postgresql://localhost:5432/test`
+```bash
+sudo -u postgres createuser --superuser --createdb "$(whoami)"`
+sudo -u postgres psql -c "ALTER ROLE $(whoami) WITH PASSWORD 'mypassword'";
+```
 
-- then run all tests with `uv run pytest -c pytest.ci.ini`
+- creating an empty test DB and running the database migrations by:
+
+```bash
+export PGPASSWORD=mypassword
+dropdb test || true && createdb test && cp example.env .env && DB_URI=postgresql://localhost:5432/test uv run alembic upgrade head
+```
+
+- replacing the `DB_URI` in `tests/test.env` file by `DB_URI=postgresql://localhost:5432/test`
+
+- then running all tests with:
+
+```bash
+export PGPASSWORD=mypassword
+uv run pytest -c pytest.ci.ini
+```
 
 ## Run the code locally
 
