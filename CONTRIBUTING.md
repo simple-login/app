@@ -88,7 +88,10 @@ sudo -u postgres psql -c "ALTER ROLE $(whoami) WITH PASSWORD 'mypassword'";
 
 ```bash
 export PGPASSWORD=mypassword
-dropdb test || true && createdb test && cp example.env .env && DB_URI=postgresql://localhost:5432/test uv run alembic upgrade head
+dropdb test || true && \
+createdb test && \
+cp example.env .env && \
+DB_URI=postgresql://localhost:5432/test uv run alembic upgrade head
 ```
 
 - replacing the `DB_URI` in `tests/test.env` file by `DB_URI=postgresql://localhost:5432/test`
