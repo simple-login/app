@@ -105,7 +105,7 @@ uv run pytest -c pytest.ci.ini
 Install npm packages
 
 ```bash
-cd static && npm install & cd ..
+cd static && npm install && cd ..
 ```
 
 To run the code locally, please create a local setting file based on `example.env`:
