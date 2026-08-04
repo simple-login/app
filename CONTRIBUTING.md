@@ -64,7 +64,7 @@ To install it in your development environment.
 
 For most tests, you will need to have `redis` installed and started on your machine (listening on port 6379).
 
-```
+```bash
 docker pull redis:latest
 docker run -d --name redis -p 6379:6379 redis:latest redis-server
 ```
