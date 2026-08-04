@@ -105,7 +105,7 @@ uv run pytest -c pytest.ci.ini
 Install npm packages
 
 ```bash
-cd static && npm install
+cd static && npm install & cd ..
 ```
 
 To run the code locally, please create a local setting file based on `example.env`:
@@ -117,19 +117,21 @@ cp example.env .env
 You need to edit your .env to reflect the postgres exposed port, edit the `DB_URI` to:
 
 ```
-DB_URI=postgresql://myuser:mypassword@localhost:35432/simplelogin
+DB_URI=postgresql://myuser:mypassword@localhost:15432/simplelogin
 ```
 
 Run the postgres database:
 
 ```bash
-docker run -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 15432:5432 postgres:13
+docker run -d -e POSTGRES_PASSWORD=mypassword -e POSTGRES_USER=myuser -e POSTGRES_DB=simplelogin -p 15432:5432 postgres:13
 ```
 
 To run the server:
 
 ```
-alembic upgrade head && flask dummy-data && python3 server.py
+uv run alembic upgrade head && \
+uv run flask dummy-data && \
+uv run python3 server.py
 ```
 
 then open http://localhost:7777, you should be able to login with `john@wick.com / password` account.
