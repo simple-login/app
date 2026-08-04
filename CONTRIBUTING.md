@@ -243,10 +243,10 @@ python email_handler.py
 4) Send a test email
 
 ```bash
-swaks --to e1@sl.lan --from hey@google.com --server 127.0.0.1:20381
+swaks --to first@ab.cd --from hey@google.com --server 127.0.0.1:20381
 ```
 
-Now open http://localhost:1080/ (or http://localhost:1080/ for MailHog), you should see the forwarded email.
+Now open [http://localhost:1080/](http://localhost:1080/) (or [http://localhost:8025/](http://localhost:8025) for MailHog), you should see the forwarded email.
 
 ## Job runner
 
