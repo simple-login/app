@@ -154,7 +154,9 @@ def authorize():
 
         if request.form.get("button") == "deny":
             LOG.d("User %s denies Client %s", current_user, client)
-            final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
+            final_redirect_uri = f"{redirect_uri}?error=deny"
+            if state:
+                final_redirect_uri += f"&state={encode_url(state)}"
             return redirect(final_redirect_uri)
 
         LOG.d("User %s allows Client %s", current_user, client)
