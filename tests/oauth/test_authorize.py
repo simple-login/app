@@ -780,6 +780,40 @@ def test_authorize_code_id_token_flow(flask_client):
     assert verify_id_token(r.json["id_token"])
 
 
+def test_authorize_deny_escapes_state_param(flask_client):
+    """state must be URL-encoded on the deny path to prevent parameter injection"""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+    Session.commit()
+
+    uri = generate_random_uri()
+    RedirectUri.create(
+        client_id=client.id,
+        uri=uri,
+        commit=True,
+    )
+
+    r = flask_client.post(
+        url_for(
+            "oauth.authorize",
+            client_id=client.oauth_client_id,
+            state="malicious&injected=param#fragment",
+            redirect_uri=uri,
+            response_type="code",
+        ),
+        data={"button": "deny"},
+    )
+
+    assert r.status_code == 302
+    o = urlparse(r.location)
+    queries = parse_qs(o.query)
+    assert queries["error"] == ["deny"]
+    # state must round-trip exactly; no extra params or fragment may be injected
+    assert queries["state"] == ["malicious&injected=param#fragment"]
+    assert "injected" not in queries
+    assert o.fragment == ""
+
+
 def test_authorize_page_invalid_client_id(flask_client):
     """make sure to redirect user to redirect_url?error=invalid_client_id"""
     user = login(flask_client)
