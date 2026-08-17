@@ -164,6 +164,24 @@ def alias_transfer_receive_route():
             flash("You must select at least 1 mailbox", "warning")
             return redirect(request.url)
 
+        Alias.lock_for_update(alias.id)
+        Session.refresh(alias)
+
+        if alias.transfer_token != token and alias.transfer_token != hashed_token:
+            flash("Invalid link", "error")
+            return redirect(url_for("dashboard.index"))
+
+        if (
+            alias.transfer_token_expiration is not None
+            and alias.transfer_token_expiration < arrow.utcnow()
+        ):
+            flash("Expired link, please request a new one", "error")
+            return redirect(url_for("dashboard.index"))
+
+        if alias.user_id == current_user.id:
+            flash("You already own this alias", "warning")
+            return redirect(url_for("dashboard.index"))
+
         LOG.d(
             "transfer alias %s from %s to %s with %s with token %s",
             alias,
@@ -174,7 +192,6 @@ def alias_transfer_receive_route():
         )
         transfer_alias(alias, current_user, mailboxes)
 
-        # reset transfer token
         alias.transfer_token = None
         alias.transfer_token_expiration = None
         Session.commit()
