@@ -1,3 +1,5 @@
+from random import random
+
 import app.alias_utils
 from app import config
 from app.db import Session
@@ -6,6 +8,9 @@ from app.models import (
     Alias,
     Mailbox,
     AliasMailbox,
+    Contact,
+    EmailLog,
+    RefusedEmail,
 )
 from tests.events.event_test_utils import (
     OnMemoryDispatcher,
@@ -70,3 +75,47 @@ def test_alias_transfer(flask_client):
     assert alias.email == alias_created.email
     assert alias.note or "" == alias_created.note
     assert alias.enabled == alias_created.enabled
+
+
+def test_alias_transfer_reassigns_quarantine_history(flask_client):
+    (source_user, _) = _create_linked_user()
+    source_user = login(flask_client, source_user)
+    mb = Mailbox.create(user_id=source_user.id, email="mb@gmail.com", commit=True)
+
+    alias = Alias.create_new_random(source_user)
+    Session.commit()
+    AliasMailbox.create(alias_id=alias.id, mailbox_id=mb.id, commit=True)
+
+    contact = Contact.create(
+        user_id=source_user.id,
+        alias_id=alias.id,
+        website_email="contact@example.com",
+        reply_email="rep@sl.lan",
+        commit=True,
+    )
+    refused_email = RefusedEmail.create(
+        path=None,
+        full_report_path=f"some/path/{random()}",
+        user_id=source_user.id,
+        commit=True,
+    )
+    email_log = EmailLog.create(
+        user_id=source_user.id,
+        contact_id=contact.id,
+        alias_id=alias.id,
+        refused_email_id=refused_email.id,
+        commit=True,
+    )
+
+    (target_user, _) = _create_linked_user()
+    Mailbox.create(
+        user_id=target_user.id, email="hey3@example.com", verified=True, commit=True
+    )
+
+    on_memory_dispatcher.clear()
+    app.alias_utils.transfer_alias(alias, target_user, target_user.mailboxes())
+
+    email_log = EmailLog.get(email_log.id)
+    refused_email = RefusedEmail.get(refused_email.id)
+    assert email_log.user_id == target_user.id
+    assert refused_email.user_id == target_user.id
