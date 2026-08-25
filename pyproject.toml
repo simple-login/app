@@ -46,8 +46,9 @@ dependencies = [
   "pyotp ~= 2.4.0",
   "flask_profiler ~= 1.8.1",
   "facebook-sdk ~= 3.1.0",
-  "google-api-python-client ~= 1.12.3",
-  "google-auth-httplib2 ~= 0.0.4",
+  "google-api-python-client >= 2.100, < 3",
+  "google-auth-httplib2 >= 0.2.0, < 1.0",
+  "protobuf >= 4.25, < 6",
   "python-gnupg ~= 0.4.6",
   "webauthn ~= 0.4.7",
 
