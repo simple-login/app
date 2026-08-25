@@ -125,6 +125,7 @@ from app.handler.spamd_result import (
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
+from app.sender_blacklist import is_sender_blocked_for_user
 from app.mail_sender import sl_sendmail
 from app.mailbox_utils import (
     get_mailbox_for_reply_phase,
@@ -185,13 +186,42 @@ def get_or_create_contact(
                 mail_from,
             )
             contact_email = mail_from
+
+    # Normalize sender address to lowercase so blacklist patterns are easy to write.
+    sanitized_contact_email = sanitize_email(contact_email)
+
+    # If a Contact already exists and is NOT blocked, it takes precedence over the blacklist.
+    # This allows users to "whitelist" a specific sender by manually creating/enabling a Contact.
+    existing_contact = Contact.get_by(
+        alias_id=alias.id,
+        website_email=sanitized_contact_email,
+    )
+
+    block_forward = False
+    if existing_contact is None:
+        # Check the blacklist BEFORE creating the contact.
+        # Otherwise an auto-created contact could allow subsequent emails to bypass the blacklist.
+        block_forward = is_sender_blocked_for_user(
+            alias.user_id,
+            candidates=[mail_from, sanitized_contact_email],
+        )
+
+    if block_forward:
+        LOG.i(
+            "Sender matched sender blacklist (global or user); creating disabled contact: mail_from=%s header_from=%s alias=%s",
+            mail_from,
+            sanitized_contact_email,
+            alias,
+        )
+
     contact_result = contact_utils.create_contact(
-        email=contact_email,
+        email=sanitized_contact_email,
         alias=alias,
         name=contact_name,
         mail_from=mail_from,
         allow_empty_email=True,
         automatic_created=True,
+        block_forward=block_forward,
         from_partner=False,
     )
     if contact_result.error:
