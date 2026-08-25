@@ -394,6 +394,9 @@ Some have "dummy" values, fill them up if you want to enable these features (Pad
 # WebApp URL
 URL=http://app.mydomain.com
 
+# URL of the landing page linked from the app and emails (e.g. referral links); defaults to https://simplelogin.io
+LANDING_PAGE_URL=http://mydomain.com
+
 # domain used to create alias
 EMAIL_DOMAIN=mydomain.com
 
