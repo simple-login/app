@@ -50,6 +50,7 @@ from app.models import (
     AutoCreateRule,
     AliasUsedOn,
     ClientUser,
+    RefusedEmail,
 )
 from app.regex_utils import regex_match
 
@@ -437,6 +438,23 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
 
     Session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
         {"user_id": new_user.id}
+    )
+
+    # Reassign quarantine history (email logs + their refused emails) so it
+    # follows the alias instead of staying visible to the former owner.
+    alias_refused_email_ids = Session.query(EmailLog.refused_email_id).filter(
+        EmailLog.alias_id == alias.id, EmailLog.refused_email_id.isnot(None)
+    )
+
+    # We need to use synchronize_session=False as none of these rows are loaded
+    # as ORM objects in this session, so there is nothing to keep in sync.
+    # This avoids the default "evaluate" strategy re-checking every already-loaded object.
+    Session.query(RefusedEmail).filter(
+        RefusedEmail.id.in_(alias_refused_email_ids)
+    ).update({"user_id": new_user.id}, synchronize_session=False)
+
+    Session.query(EmailLog).filter(EmailLog.alias_id == alias.id).update(
+        {"user_id": new_user.id}, synchronize_session=False
     )
 
     # remove existing mailboxes from the alias
