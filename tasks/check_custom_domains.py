@@ -126,7 +126,6 @@ def check_single_custom_domain(custom_domain: CustomDomain):
     expected_custom_domains = validator.get_expected_mx_records(custom_domain)
     mx_ok = is_mx_equivalent(mx_domains, expected_custom_domains)
     if custom_domain.is_sl_subdomain:
-        # SimpleLogin subdomains don't need ownership/SPF/DKIM/DMARC records set up
         dkim_ok = True
         dmarc_ok = True
     else:
