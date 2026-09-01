@@ -1097,6 +1097,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
+            # Request domains to also be MX verified
+            if not custom_domain.verified:
+                continue
             res.append((False, custom_domain.domain))
 
         return res
@@ -1771,6 +1774,21 @@ class Alias(Base, ModelMixin):
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
                 return custom_domain
+
+    @classmethod
+    def lock_for_update(cls, alias_id: int):
+        """Acquire an exclusive row lock on the alias to serialise concurrent writes.
+
+        Call this before creating an EmailLog for the alias so that the lock order
+        is always alias → email_log, preventing the deadlock that arises when two
+        concurrent transactions each hold a share lock (from the email_log FK insert)
+        and then both try to escalate to an exclusive lock for the
+        last_email_log_id UPDATE.
+        """
+        Session.execute(
+            "SELECT id FROM alias WHERE id = :alias_id FOR UPDATE",
+            {"alias_id": alias_id},
+        )
 
     @classmethod
     def create(cls, **kw):

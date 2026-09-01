@@ -1,11 +1,11 @@
 from typing import Dict
 from urllib.parse import urlparse
 
+from email_validator import validate_email, EmailNotValidError
 from flask import request, render_template, redirect, flash, url_for
 from flask_login import current_user
 
-from email_validator import validate_email, EmailNotValidError
-
+from app import config
 from app.alias_suffix import (
     get_alias_suffixes,
     check_suffix_signature,
@@ -77,19 +77,19 @@ def authorize():
     if not client:
         return redirect(url_for("auth.login"))
 
-    # allow localhost by default
-    # allow any redirect_uri if the app isn't approved
-    hostname, scheme = get_host_name_and_scheme(redirect_uri)
-    if hostname != "localhost" and hostname != "127.0.0.1":
-        # support custom scheme for mobile app
-        if scheme == "http":
-            flash("The external client must use HTTPS", "error")
-            return redirect(url_for("dashboard.index"))
+    if config.ENFORCE_OAUTH_CLIENT_APPROVED and not client.approved:
+        flash("This application has not been approved by SimpleLogin", "error")
+        return redirect(url_for("dashboard.index"))
 
-        # check if redirect_uri is valid
-        if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
-            flash("The external client is using an invalid URL", "error")
-            return redirect(url_for("dashboard.index"))
+    hostname, scheme = get_host_name_and_scheme(redirect_uri)
+    # always enforce redirect_uri registration; allow HTTP only for localhost
+    if hostname not in ("localhost", "127.0.0.1") and scheme == "http":
+        flash("The external client must use HTTPS", "error")
+        return redirect(url_for("dashboard.index"))
+
+    if not RedirectUri.get_by(client_id=client.id, uri=redirect_uri):
+        flash("The external client is using an invalid URL", "error")
+        return redirect(url_for("dashboard.index"))
 
     # redirect from client website
     if request.method == "GET":
@@ -154,7 +154,9 @@ def authorize():
 
         if request.form.get("button") == "deny":
             LOG.d("User %s denies Client %s", current_user, client)
-            final_redirect_uri = f"{redirect_uri}?error=deny&state={state}"
+            final_redirect_uri = f"{redirect_uri}?error=deny"
+            if state:
+                final_redirect_uri += f"&state={encode_url(state)}"
             return redirect(final_redirect_uri)
 
         LOG.d("User %s allows Client %s", current_user, client)
@@ -297,16 +299,11 @@ def authorize():
 
 
 def get_fragment(response_mode, response_types):
-    # should all params appended the url using fragment (#) or query
-    fragment = False
-    if response_mode and response_mode == "fragment":
-        fragment = True
-    # if response_types contain "token" => implicit flow => should use fragment
-    # except if client sets explicitly response_mode
-    if not response_mode:
-        if ResponseType.TOKEN in response_types:
-            fragment = True
-    return fragment
+    # RFC 6749 §4.2.2 and RFC 9700 §4.7 prohibit tokens in the query string.
+    # Ignore any caller-supplied response_mode when a token is being issued.
+    if ResponseType.TOKEN in response_types:
+        return True
+    return response_mode == "fragment"
 
 
 def construct_redirect_args(

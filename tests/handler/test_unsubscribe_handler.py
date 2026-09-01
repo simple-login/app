@@ -29,19 +29,18 @@ def _get_envelope_and_message(user: User, subject: str) -> (Envelope, Message):
 
 
 @mail_sender.store_emails_test_decorator
-def test_old_subject_disable_alias():
+def test_old_subject_disable_alias_rejected():
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
     envelope, message = _get_envelope_and_message(user, f"{alias.id}=")
     response = UnsubscribeHandler().handle_unsubscribe_from_message(envelope, message)
-    assert status.E202 == response
-    assert not Alias.get(alias.id).enabled
-    assert 1 == len(mail_sender.get_stored_emails())
+    assert status.E507 == response
+    assert Alias.get(alias.id).enabled
 
 
 @mail_sender.store_emails_test_decorator
-def test_old_subject_block_contact():
+def test_old_subject_block_contact_rejected():
     user = create_new_user()
     alias = Alias.create_new_random(user)
     Session.commit()
@@ -55,19 +54,17 @@ def test_old_subject_block_contact():
     )
     envelope, message = _get_envelope_and_message(user, f"{contact.id}_")
     response = UnsubscribeHandler().handle_unsubscribe_from_message(envelope, message)
-    assert status.E202 == response
-    assert Contact.get(contact.id).block_forward
-    assert 1 == len(mail_sender.get_stored_emails())
+    assert status.E507 == response
+    assert not Contact.get(contact.id).block_forward
 
 
 @mail_sender.store_emails_test_decorator
-def test_old_subject_disable_newsletter():
+def test_old_subject_disable_newsletter_rejected():
     user = create_new_user()
     envelope, message = _get_envelope_and_message(user, f"{user.id}*")
     response = UnsubscribeHandler().handle_unsubscribe_from_message(envelope, message)
-    assert status.E202 == response
-    assert not User.get(user.id).notification
-    assert 1 == len(mail_sender.get_stored_emails())
+    assert status.E507 == response
+    assert User.get(user.id).notification
 
 
 @mail_sender.store_emails_test_decorator

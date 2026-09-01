@@ -82,13 +82,11 @@ def token():
         "user": user_data,  # todo: remove this
     }
 
-    if oauth_token.scope and Scope.OPENID.value in oauth_token.scope:
-        res["id_token"] = make_id_token(client_user)
-
     # Also return id_token if the initial flow is "code,id_token"
     # cf https://medium.com/@darutk/diagrams-of-all-the-openid-connect-flows-6968e3990660
+    scopes = set((oauth_token.scope or "").replace(",", " ").split())
     response_types = get_response_types_from_str(auth_code.response_type)
-    if ResponseType.ID_TOKEN in response_types or auth_code.scope == "openid":
+    if Scope.OPENID.value in scopes or ResponseType.ID_TOKEN in response_types:
         res["id_token"] = make_id_token(client_user, nonce=auth_code.nonce)
 
     # Auth code can be used only once

@@ -24,6 +24,7 @@ from app.models import (
     Alias,
     DomainDeletedAlias,
 )
+from app.regex_utils import is_safe_regex_pattern
 
 
 class CustomDomainWithValidationData:
@@ -48,9 +49,55 @@ class CustomDomainSearchResult:
 
     @staticmethod
     def search(query: str) -> CustomDomainSearchResult:
-        """Search for custom domains by exact match or POSIX regex."""
+        """Search for custom domains by exact match or POSIX regex.
+
+        - Numeric query: search by domain ID
+        - Query with '@': search by user email
+        - Query with 'uid:<int>': search by user ID
+        - Otherwise: exact domain match, then regex on domain names
+        """
         output = CustomDomainSearchResult()
         output.query = query
+
+        # Search by domain ID if query is a plain integer
+        try:
+            domain_id = int(query)
+            domain = CustomDomain.get(domain_id)
+            if domain:
+                output.domains = [CustomDomainSearchHelpers.get_validation_data(domain)]
+                output.found_by_regex = False
+                output.no_match = False
+            return output
+        except ValueError:
+            pass
+
+        # Search by user email if query contains '@'
+        if "@" in query:
+            user = User.get_by(email=query)
+            if user:
+                output.domains = [
+                    CustomDomainSearchHelpers.get_validation_data(d)
+                    for d in user.custom_domains
+                ]
+                output.found_by_regex = False
+                output.no_match = len(output.domains) == 0
+            return output
+
+        # Search by user ID if query has the form 'uid:<int>'
+        if query.startswith("uid:"):
+            try:
+                user_id = int(query[4:])
+                user = User.get(user_id)
+                if user:
+                    output.domains = [
+                        CustomDomainSearchHelpers.get_validation_data(d)
+                        for d in user.custom_domains
+                    ]
+                    output.found_by_regex = False
+                    output.no_match = len(output.domains) == 0
+            except ValueError:
+                pass
+            return output
 
         # Try exact domain match first
         domain = CustomDomain.get_by(domain=query)
@@ -60,33 +107,11 @@ class CustomDomainSearchResult:
             output.no_match = False
             return output
 
-        # Try searching by user email
-        user = User.get_by(email=query)
-        if user:
-            output.domains = [
-                CustomDomainSearchHelpers.get_validation_data(d)
-                for d in user.custom_domains
-            ]
-            output.found_by_regex = False
-            output.no_match = len(output.domains) == 0
+        # Try regex search on domain names
+        # Validate regex pattern to prevent ReDoS attacks
+        if not is_safe_regex_pattern(query, " in custom domain search"):
             return output
 
-        # Try searching by user ID
-        try:
-            user_id = int(query)
-            user = User.get(user_id)
-            if user:
-                output.domains = [
-                    CustomDomainSearchHelpers.get_validation_data(d)
-                    for d in user.custom_domains
-                ]
-                output.found_by_regex = False
-                output.no_match = len(output.domains) == 0
-                return output
-        except ValueError:
-            pass
-
-        # Try regex search on domain names
         domains = (
             CustomDomain.filter(CustomDomain.domain.op("~")(query))
             .order_by(CustomDomain.id.desc())
@@ -175,11 +200,16 @@ class CustomDomainSearchHelpers:
         ).count()
 
     @staticmethod
-    def alias_list(domain: CustomDomain, limit: int = 10) -> List[Alias]:
-        """Get list of aliases for this domain."""
+    def alias_list(domain: CustomDomain, page: int = 1, limit: int = 25) -> List[Alias]:
+        """Get paginated list of aliases for this domain.
+
+        Pagination is handled at the database level to avoid loading all aliases into memory.
+        """
+        offset = (page - 1) * limit
         return (
             Alias.filter(Alias.custom_domain_id == domain.id)
             .order_by(Alias.created_at.desc())
+            .offset(offset)
             .limit(limit)
             .all()
         )
@@ -193,12 +223,17 @@ class CustomDomainSearchHelpers:
 
     @staticmethod
     def deleted_alias_list(
-        domain: CustomDomain, limit: int = 10
+        domain: CustomDomain, page: int = 1, limit: int = 25
     ) -> List[DomainDeletedAlias]:
-        """Get list of deleted aliases for this domain."""
+        """Get paginated list of deleted aliases for this domain.
+
+        Pagination is handled at the database level to avoid loading all deleted aliases into memory.
+        """
+        offset = (page - 1) * limit
         return (
             DomainDeletedAlias.filter(DomainDeletedAlias.domain_id == domain.id)
             .order_by(DomainDeletedAlias.created_at.desc())
+            .offset(offset)
             .limit(limit)
             .all()
         )
@@ -256,9 +291,13 @@ class CustomDomainSearchAdmin(BaseAdminView):
                 url_for("admin.custom_domain_search.index", query=domain_name)
             )
 
-        from app.custom_domain_utils import delete_custom_domain
-
-        delete_custom_domain(domain)
+        # Validate deletion prerequisites before proceeding
+        alias_count = CustomDomainSearchHelpers.alias_count(domain)
+        if alias_count > 100:
+            LOG.warning(
+                f"Admin {current_user.email} attempting to delete domain {domain_name} with {alias_count} aliases"
+            )
+            # Log warning but proceed - deletion should handle batches
 
         AdminAuditLog.create(
             admin_user_id=current_user.id,

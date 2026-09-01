@@ -179,6 +179,8 @@ def fake_data():
             Session.commit()
 
     custom_domain1 = CustomDomain.create(user_id=user.id, domain="ab.cd", verified=True)
+    for i in range(26):
+        Alias.create(email=f"cd_{i}@ab.cd", user_id=user.id, mailbox_id=m1.id)
     Session.commit()
 
     alias = Alias.create(

@@ -73,6 +73,16 @@ def domain_detail_dns(custom_domain_id):
                 ownership_errors = ownership_validation_result.errors
 
         elif request.form.get("form-name") == "check-mx":
+            if not custom_domain.ownership_verified:
+                flash("You need to verify the domain ownership first", "error")
+                return redirect(
+                    url_for(
+                        "dashboard.domain_detail_dns",
+                        custom_domain_id=custom_domain.id,
+                        _anchor="ownership-form",
+                    )
+                )
+
             mx_validation_result = domain_validator.validate_mx_records(custom_domain)
             if mx_validation_result.success:
                 flash(

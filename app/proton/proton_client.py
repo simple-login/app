@@ -49,13 +49,13 @@ def convert_access_token(access_token_response: str) -> AccessCredentials:
     This method takes the Access token response and extracts the session ID and the access token.
     """
     parts = access_token_response.split("-")
-    if len(parts) != 3:
+    if len(parts) < 3:
         raise Exception("Invalid access token response")
     if parts[0] != "pt":
         raise Exception("Invalid access token response format")
     return AccessCredentials(
         session_id=parts[1],
-        access_token=parts[2],
+        access_token="-".join(parts[2:]),
     )
 
 

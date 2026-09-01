@@ -8,6 +8,7 @@ from app.dns_utils import (
     DNSClient,
     get_network_dns_client,
 )
+from app.log import LOG
 from app.models import CustomDomain
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
@@ -235,6 +236,14 @@ class CustomDomainValidation:
                 for mx_domain in mx_domains[prio]:
                     errors.append(f"{prio} {mx_domain}")
             return DomainValidationResult(success=False, errors=errors)
+        elif not custom_domain.ownership_verified:
+            # Only verify MX if the ownership is verified
+            LOG.i(
+                f"Not marking custom domain {custom_domain.id} ({custom_domain.domain}) as MX verified: ownership is not verified"
+            )
+            return DomainValidationResult(
+                success=False, errors=["The domain ownership must be verified first"]
+            )
         else:
             custom_domain.verified = True
             emit_user_audit_log(
