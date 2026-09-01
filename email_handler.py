@@ -33,6 +33,7 @@ It should contain the following info:
 
 import argparse
 import email
+import html
 import time
 import uuid
 from email import encoders
@@ -872,9 +873,12 @@ def forward_email_to_mailbox(
         LOG.d("Use a generic subject for %s", mailbox)
         orig_subject = msg[headers.SUBJECT]
         orig_subject = get_header_unicode(orig_subject)
+        orig_subject = html.escape(orig_subject)
         add_or_replace_header(msg, "Subject", mailbox.generic_subject)
         sender = msg[headers.FROM]
         sender = get_header_unicode(sender)
+        sender = html.escape(sender)
+
         msg = add_header(
             msg,
             f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
