@@ -1097,6 +1097,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
+            # Request domains to also be MX verified
+            if not custom_domain.verified:
+                continue
             res.append((False, custom_domain.domain))
 
         return res
