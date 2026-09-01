@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           # Install a specific version of uv.
           version: ${{ env.UV_VERSION }}
@@ -71,10 +71,10 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           # Install a specific version of uv.
           version: ${{ env.UV_VERSION }}
@@ -91,7 +91,7 @@ jobs:
 
 
       - name: Start Redis v6
-        uses: superchargejs/redis-github-action@1.8.1
+        uses: superchargejs/redis-github-action@bc274cb7238cd63a45029db04ee48c07a72609fd # 1.8.1
         with:
           redis-version: 6
 
@@ -111,7 +111,7 @@ jobs:
           GITHUB_ACTIONS_TEST: true
 
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: code-coverage-report
           path: htmlcov
@@ -124,30 +124,30 @@ jobs:
     steps:
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
           images: simplelogin/app-ci
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PAT_TOKEN }}
 
       # We need to checkout the repository in order for the "Create Sentry release" to work
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Create Sentry release
-        uses: getsentry/action-release@v1
+        uses: getsentry/action-release@ff07929a6537bac57790c3451cf4d364aca38528 # v3.7.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -162,7 +162,7 @@ jobs:
           cat app/build_info.py
 
       - name: Build image and publish to Docker Registry
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           platforms: linux/amd64
@@ -171,7 +171,7 @@ jobs:
 
 
       #- name: Send Telegram message
-      #  uses: appleboy/telegram-action@master
+      #  uses: appleboy/telegram-action@221e6b684967abe813051ee4a37dd61770a83ad3 # v1.0.1
       #  with:
       #    to: ${{ secrets.TELEGRAM_TO }}
       #    token: ${{ secrets.TELEGRAM_TOKEN }}
@@ -181,7 +181,7 @@ jobs:
       - name: Build Changelog
         id: build_changelog
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: mikepenz/release-changelog-builder-action@v3
+        uses: mikepenz/release-changelog-builder-action@348e88fab4c37338b1e803ceb2d4a7a5db6c0833 # v6.2.2
         with:
           configuration: ".github/changelog_configuration.json"
         env:
@@ -201,9 +201,10 @@ jobs:
           echo "SLACK_CHANGELOG=${messageWithoutDoubleQuotes}" >> $GITHUB_ENV
 
       - name: Post notification to Slack
-        uses: slackapi/slack-github-action@v1.19.0
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         if: startsWith(github.ref, 'refs/tags/v')
         with:
+          method: chat.postMessage
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
@@ -237,7 +238,7 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/create-release@v1
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
