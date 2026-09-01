@@ -409,6 +409,8 @@ ALERT_INVALID_TOTP_LOGIN = "invalid_totp_login"
 ALERT_MAILBOX_IS_ALIAS = "mailbox_is_alias"
 
 AlERT_WRONG_MX_RECORD_CUSTOM_DOMAIN = "custom_domain_mx_record_issue"
+ALERT_WRONG_DKIM_RECORD_CUSTOM_DOMAIN = "custom_domain_dkim_record_issue"
+ALERT_WRONG_DMARC_RECORD_CUSTOM_DOMAIN = "custom_domain_dmarc_record_issue"
 
 # alert when a new alias is about to be created on a disabled directory
 ALERT_DIRECTORY_DISABLED_ALIAS_CREATION = "alert_directory_disabled_alias_creation"
