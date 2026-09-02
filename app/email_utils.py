@@ -1030,7 +1030,7 @@ def should_add_dkim_signature(domain: str) -> bool:
         return True
 
     custom_domain: CustomDomain = CustomDomain.get_by(domain=domain)
-    if custom_domain.dkim_verified:
+    if custom_domain and custom_domain.dkim_verified:
         return True
 
     return False
