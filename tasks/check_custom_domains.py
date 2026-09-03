@@ -110,6 +110,8 @@ def _send_alert(
 
 
 def check_single_custom_domain(custom_domain: CustomDomain):
+    if custom_domain.is_sl_subdomain:
+        return
     if custom_domain.user.disabled:
         return
     user = custom_domain.user
@@ -125,13 +127,10 @@ def check_single_custom_domain(custom_domain: CustomDomain):
     )
     expected_custom_domains = validator.get_expected_mx_records(custom_domain)
     mx_ok = is_mx_equivalent(mx_domains, expected_custom_domains)
-    if custom_domain.is_sl_subdomain:
-        dkim_ok = True
-        dmarc_ok = True
-    else:
-        dkim_errors = validator.validate_dkim_records(custom_domain)
-        dkim_ok = len(dkim_errors) == 0
-        dmarc_ok = validator.validate_dmarc_records(custom_domain).success
+
+    dkim_errors = validator.validate_dkim_records(custom_domain)
+    dkim_ok = len(dkim_errors) == 0
+    dmarc_ok = validator.validate_dmarc_records(custom_domain).success
 
     if mx_ok and dkim_ok and dmarc_ok:
         # reset checks
