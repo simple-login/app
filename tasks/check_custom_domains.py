@@ -91,7 +91,9 @@ def _send_alert(
     provider: str,
     cfg: RecordAlertConfig,
 ):
-    LOG.w("Alert domain %s check fails %s about %s", cfg.record_name, user, custom_domain)
+    LOG.w(
+        "Alert domain %s check fails %s about %s", cfg.record_name, user, custom_domain
+    )
     send_email_with_rate_control(
         user,
         cfg.alert_type,

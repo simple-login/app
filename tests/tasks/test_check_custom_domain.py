@@ -1,6 +1,7 @@
 import arrow
 from unittest.mock import patch
 
+from app.custom_domain_validation import DomainValidationResult
 from app.db import Session
 from app.models import CustomDomain
 from tasks.check_custom_domains import (
@@ -68,6 +69,12 @@ def test_check_single_custom_domain_resets_on_success(flask_client):
     )
     with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
         "tasks.check_custom_domains.is_mx_equivalent", return_value=True
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=[],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
     ):
         check_single_custom_domain(custom_domain)
     assert custom_domain.nb_failed_checks == 0
