@@ -118,8 +118,10 @@ def check_single_custom_domain(custom_domain: CustomDomain):
         return
     user = custom_domain.user
     # snapshot before validate_dkim_records()/validate_dmarc_records() below can commit
-    # and bump updated_at, which would otherwise throw off the once-a-day throttle
-    last_updated_at = custom_domain.updated_at
+    # and bump these, which would otherwise throw off the once-a-day throttles
+    mx_last_updated_at = custom_domain.updated_at
+    dkim_last_updated_at = custom_domain.dkim_nb_failed_checks_updated_at
+    dmarc_last_updated_at = custom_domain.dmarc_nb_failed_checks_updated_at
 
     mx_domains = get_mx_domains(custom_domain.domain)
     validator = CustomDomainValidation(
@@ -134,42 +136,71 @@ def check_single_custom_domain(custom_domain: CustomDomain):
     dkim_ok = len(dkim_errors) == 0
     dmarc_ok = validator.validate_dmarc_records(custom_domain).success
 
-    if mx_ok and dkim_ok and dmarc_ok:
-        # reset checks
+    domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
+    provider = "Proton" if user.has_used_alias_from_partner() else "SimpleLogin"
+    now = arrow.now()
+
+    if mx_ok:
         custom_domain.nb_failed_checks = 0
     else:
-        failing = [
-            cfg
-            for cfg, ok in (
-                (MX_ALERT, mx_ok),
-                (DKIM_ALERT, dkim_ok),
-                (DMARC_ALERT, dmarc_ok),
-            )
-            if not ok
-        ]
         LOG.w(
-            f"DNS check(s) failed for domain {custom_domain} of user {user}: "
-            f"{', '.join(cfg.record_name for cfg in failing)}. Retried {custom_domain.nb_failed_checks} days",
+            f"MX check failed for domain {custom_domain} of user {user}. "
+            f"Retried {custom_domain.nb_failed_checks} days",
         )
-
-        if not last_updated_at or last_updated_at <= arrow.now().shift(days=-1):
-            # Only update it once a day
+        if not mx_last_updated_at or mx_last_updated_at <= now.shift(days=-1):
             custom_domain.nb_failed_checks += 1
 
-        # send alert if fail for MAX_DOMAIN_CHECKS consecutive days
         if custom_domain.nb_failed_checks > config.MAX_DOMAIN_CHECKS:
-            domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
-            provider = "Proton" if user.has_used_alias_from_partner() else "SimpleLogin"
-            for cfg in failing:
-                _send_alert(custom_domain, user, domain_dns_url, provider, cfg)
-
+            _send_alert(custom_domain, user, domain_dns_url, provider, MX_ALERT)
             LOG.w(
-                "De-verifying domain %s after %d failed checks",
+                "De-verifying domain %s after %d failed MX checks",
                 custom_domain,
                 custom_domain.nb_failed_checks,
             )
-            # reset domain
             custom_domain.verified = False
             custom_domain.spf_verified = False
             custom_domain.nb_failed_checks = 0
+
+    if dkim_ok:
+        custom_domain.dkim_nb_failed_checks = 0
+    else:
+        LOG.w(
+            f"DKIM check failed for domain {custom_domain} of user {user}. "
+            f"Retried {custom_domain.dkim_nb_failed_checks} days",
+        )
+        if not dkim_last_updated_at or dkim_last_updated_at <= now.shift(days=-1):
+            custom_domain.dkim_nb_failed_checks += 1
+            custom_domain.dkim_nb_failed_checks_updated_at = now
+
+        if custom_domain.dkim_nb_failed_checks > config.MAX_DOMAIN_CHECKS:
+            _send_alert(custom_domain, user, domain_dns_url, provider, DKIM_ALERT)
+            LOG.w(
+                "Un-verifying DKIM for domain %s after %d failed checks",
+                custom_domain,
+                custom_domain.dkim_nb_failed_checks,
+            )
+            custom_domain.dkim_verified = False
+            custom_domain.dkim_nb_failed_checks = 0
+
+    if dmarc_ok:
+        custom_domain.dmarc_nb_failed_checks = 0
+    else:
+        LOG.w(
+            f"DMARC check failed for domain {custom_domain} of user {user}. "
+            f"Retried {custom_domain.dmarc_nb_failed_checks} days",
+        )
+        if not dmarc_last_updated_at or dmarc_last_updated_at <= now.shift(days=-1):
+            custom_domain.dmarc_nb_failed_checks += 1
+            custom_domain.dmarc_nb_failed_checks_updated_at = now
+
+        if custom_domain.dmarc_nb_failed_checks > config.MAX_DOMAIN_CHECKS:
+            _send_alert(custom_domain, user, domain_dns_url, provider, DMARC_ALERT)
+            LOG.w(
+                "Un-verifying DMARC for domain %s after %d failed checks",
+                custom_domain,
+                custom_domain.dmarc_nb_failed_checks,
+            )
+            custom_domain.dmarc_verified = False
+            custom_domain.dmarc_nb_failed_checks = 0
+
     Session.commit()
