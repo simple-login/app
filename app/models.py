@@ -2618,11 +2618,22 @@ class CustomDomain(Base, ModelMixin):
         sa.Boolean, nullable=False, default=False, server_default="0"
     )
 
-    # incremented when a check is failed on the domain
+    # incremented when the MX check is failed on the domain
     # alert when the number exceeds a threshold
     # used in check_custom_domain()
     nb_failed_checks = sa.Column(
         sa.Integer, default=0, server_default="0", nullable=False
+    )
+
+    dkim_nb_failed_checks = sa.Column(
+        sa.Integer, default=0, server_default="0", nullable=False
+    )
+    dkim_nb_failed_checks_updated_at = sa.Column(ArrowType, default=None, nullable=True)
+    dmarc_nb_failed_checks = sa.Column(
+        sa.Integer, default=0, server_default="0", nullable=False
+    )
+    dmarc_nb_failed_checks_updated_at = sa.Column(
+        ArrowType, default=None, nullable=True
     )
 
     # only domain has the ownership verified can go the next DNS step
