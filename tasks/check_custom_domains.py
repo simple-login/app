@@ -8,8 +8,10 @@ from app.custom_domain_validation import CustomDomainValidation, is_mx_equivalen
 from app.db import Session
 from app.dns_utils import get_mx_domains
 from app.email_utils import send_email_with_rate_control, render
+from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
 from app.models import CustomDomain, Alias
+from app.proton.proton_partner import get_proton_partner
 
 
 @dataclass
@@ -137,7 +139,11 @@ def check_single_custom_domain(custom_domain: CustomDomain):
     dmarc_ok = validator.validate_dmarc_records(custom_domain).success
 
     domain_dns_url = f"{config.URL}/dashboard/domains/{custom_domain.id}/dns"
-    provider = "Proton" if user.has_used_alias_from_partner() else "SimpleLogin"
+    try:
+        is_proton_domain = custom_domain.partner_id == get_proton_partner().id
+    except ProtonPartnerNotSetUp:
+        is_proton_domain = False
+    provider = "Proton" if is_proton_domain else "SimpleLogin"
     now = arrow.now()
 
     if mx_ok:
