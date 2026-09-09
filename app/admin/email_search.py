@@ -515,6 +515,8 @@ class EmailSearchHelpers:
             result.append("FREE_OLD_ALIAS_LIMIT")
         if flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER:
             result.append("CREATED_ALIAS_FROM_PARTNER")
+        if flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT:
+            result.append("REFERRAL_PROGRAM_PARTICIPANT")
         return result
 
     @staticmethod
