@@ -22,6 +22,7 @@ El núcleo (compose, Postfix, cron, scripts, `lib/`) es común; cada modo añade
 cd .docker/selfhosted
 ./install.sh --mode caddy      # o simple / traefik, o sin --mode y responde
 ./manage.sh set-mode traefik   # cambiar de modo más tarde
+./uninstall.sh [--purge]       # desinstalar
 ```
 
 ## Estructura
@@ -35,7 +36,7 @@ cd .docker/selfhosted
 │   └── certs/  data/             # (git-ignored)
 └── selfhosted/
     ├── docker-compose.yml        # núcleo: db, app, email, job-runner, postfix, cron…
-    ├── install.sh  manage.sh
+    ├── install.sh  manage.sh  uninstall.sh
     ├── .env.example  simplelogin.env.template
     ├── lib/                      # preflight, secrets, dns, ports, verify
     ├── postfix/  cron/           # imágenes propias (postfix compartida con la demo)

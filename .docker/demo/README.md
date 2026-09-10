@@ -8,7 +8,7 @@ cd .docker/demo
 ./demo.sh                 # arranca
 ./demo.sh send-test <alias@slapp.traefik.me>
 ./demo.sh down            # para (conserva datos)
-./demo.sh destroy         # para y borra todo
+./demo.sh destroy         # para y borra todo (datos + imágenes)  [alias: uninstall]
 ```
 
 ## Qué levanta
@@ -25,9 +25,9 @@ cd .docker/demo
 - Certificado **autofirmado** para `*.traefik.me` (un aviso del navegador la
   primera vez). Si tienes un wildcard válido, pásalo con `DEMO_CERT_URL` /
   `DEMO_KEY_URL`.
-- La imagen de la app se construye desde el repo (`../..`); la de Postfix desde
-  [`../selfhosted/postfix`](../selfhosted/postfix). Son las mismas que usa el
-  despliegue real.
+- Imágenes propias `simplelogin-demo{,-postfix}:local` (se construyen desde el
+  repo y desde [`../selfhosted/postfix`](../selfhosted/postfix)). Aisladas del
+  despliegue real: `../selfhosted/uninstall.sh --purge` no las borra.
 - Datos aislados en `.docker/demo/data/` (no comparte nada con `../selfhosted`).
 
 ## Flujo completo

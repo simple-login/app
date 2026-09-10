@@ -54,6 +54,29 @@ open_firewall() {
   fi
 }
 
+close_firewall() {
+  step "Firewall — cerrar puertos de SimpleLogin"
+  # 22 NUNCA se toca (SSH). El resto según el modo/submission.
+  local ports=(25)
+  [ "${DEPLOY_MODE:-simple}" != simple ] && ports+=(80 443)
+  [ "${POSTFIX_SUBMISSION:-0}" = "1" ] && ports+=(587)
+
+  if has_cmd ufw && ufw status 2>/dev/null | grep -qi active; then
+    if confirm "¿Quitar de UFW las reglas allow para ${ports[*]}? (22/SSH no se toca)"; then
+      local p; for p in "${ports[@]}"; do sudo ufw delete allow "$p" >/dev/null 2>&1 && ok "ufw delete allow $p"; done
+    fi
+  elif has_cmd firewall-cmd && firewall-cmd --state 2>/dev/null | grep -qi running; then
+    if confirm "¿Quitar de firewalld los puertos ${ports[*]}/tcp? (22/SSH no se toca)"; then
+      local p; for p in "${ports[@]}"; do
+        sudo firewall-cmd --permanent --remove-port="${p}/tcp" >/dev/null 2>&1 && ok "firewalld -${p}/tcp"
+      done
+      sudo firewall-cmd --reload >/dev/null
+    fi
+  else
+    warn "Sin UFW/firewalld activos. Si abriste puertos en el panel de tu VPS, ciérralos a mano: ${ports[*]}"
+  fi
+}
+
 check_outbound_25() {
   step "Puerto 25 saliente (envío de correo)"
   local hosts=(aspmx.l.google.com alt1.aspmx.l.google.com)

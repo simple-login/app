@@ -102,6 +102,31 @@ cloudflare_apply() {
   [ "$rc" -eq 0 ] || warn "Algún registro falló; revísalo en el panel de Cloudflare."
 }
 
+cf_delete() {  # cf_delete TYPE NAME
+  local type="$1" name="$2" rec_id resp
+  rec_id="$(cf_api GET "zones/${ZONE_ID}/dns_records?type=${type}&name=${name}" \
+            | jq -r '.result[0].id // empty')"
+  if [ -z "$rec_id" ]; then log "${type} ${name}: no existe (nada que borrar)"; return 0; fi
+  resp="$(cf_api DELETE "zones/${ZONE_ID}/dns_records/${rec_id}")"
+  if [ "$(printf '%s' "$resp" | jq -r '.success')" = "true" ]; then
+    ok "borrado ${type} ${name}"
+  else
+    err "no se pudo borrar ${type} ${name}: $(printf '%s' "$resp" | jq -c '.errors')"; return 1
+  fi
+}
+
+cloudflare_remove() {
+  require_cmd jq; require_cmd curl
+  step "Cloudflare — borrando los registros de SimpleLogin por API"
+  cf_resolve_zone || { warn "no encuentro la zona; borra los registros a mano"; return 1; }
+  ok "zona: ${CF_ZONE_NAME} (${ZONE_ID})"
+  local r type name val prio
+  for r in "${RECORDS[@]}"; do
+    IFS='|' read -r type name val prio <<< "$r"
+    cf_delete "$type" "$name" || true
+  done
+}
+
 # ── Verificación con dig ───────────────────────────────────────────────────
 _norm() { printf '%s' "$1" | tr -d '"' | tr '[:upper:]' '[:lower:]' | tr -s ' '; }
 

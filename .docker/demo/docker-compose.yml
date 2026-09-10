@@ -9,14 +9,15 @@ name: simplelogin-demo
 #   • Postfix no publica el :25 y relaya todo a Mailpit  -> puedes probar el
 #     reenvío de un alias con  ./demo.sh send-test <alias>.
 #
-# La imagen de la app y la de Postfix se construyen desde el repo / desde
-# ../selfhosted/postfix (compartidas con el despliegue real).
+# Imágenes propias (simplelogin-demo:local / simplelogin-demo-postfix:local),
+# construidas desde el repo y desde ../selfhosted/postfix. Aisladas de las del
+# despliegue real: `../selfhosted/uninstall.sh --purge` no las toca.
 
 x-sl-common: &sl-common
   build:
     context: ../..
     dockerfile: Dockerfile
-  image: simplelogin-selfhosted:local
+  image: simplelogin-demo:local
   restart: unless-stopped
   volumes:
     - ./simplelogin.env:/code/.env:ro
@@ -70,7 +71,7 @@ services:
   postfix:
     build:
       context: ../selfhosted/postfix
-    image: simplelogin-selfhosted-postfix:local
+    image: simplelogin-demo-postfix:local
     restart: unless-stopped
     depends_on:
       db:

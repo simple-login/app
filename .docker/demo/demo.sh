@@ -18,8 +18,8 @@
 #   • send-test envía un correo a postfix:25 dirigido al alias -> email_handler lo
 #     reenvía a tu buzón -> Postfix -> Mailpit. Así ves el alias funcionando en local.
 #
-# La imagen de la app se construye desde el repo; la de Postfix desde
-# ../selfhosted/postfix (compartidas con el despliegue real).
+# Imágenes propias de la demo (simplelogin-demo{,-postfix}:local), construidas
+# desde el repo y desde ../selfhosted/postfix. Aisladas del despliegue real.
 #
 set -euo pipefail
 
@@ -209,12 +209,13 @@ PY
     ;;
 
   down)   dc down ;;
-  destroy)
-    dc down -v
+  destroy|uninstall)
+    dc down -v --remove-orphans
     docker run --rm -v "$DEMO_DIR":/w alpine sh -c 'rm -rf /w/data /w/certs /w/traefik/dynamic.yml' 2>/dev/null \
       || rm -rf "$DATA_DIR" "$CERT_DIR" "$DEMO_DIR/traefik/dynamic.yml"
     rm -f "$ENV_FILE" "$SL_ENV"
-    ok "demo destruida (datos borrados)"
+    docker image rm -f simplelogin-demo:local simplelogin-demo-postfix:local >/dev/null 2>&1 || true
+    ok "demo destruida (datos e imágenes borrados)"
     ;;
   logs)   shift; dc logs --tail=200 "$@" ;;
   ps)     dc ps ;;

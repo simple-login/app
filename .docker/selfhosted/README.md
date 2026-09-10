@@ -224,6 +224,19 @@ git pull
 No se pierde ningún dato. Si una versión mayor requiere migración manual, sigue
 primero [`../../docs/upgrade.md`](../../docs/upgrade.md).
 
+## Desinstalar
+
+```bash
+./uninstall.sh            # para y elimina contenedores + red (conserva data/, imágenes, config)
+./uninstall.sh --purge    # + borra data/, config generada, imágenes y volúmenes
+./uninstall.sh --purge --yes    # sin preguntar (IRREVERSIBLE)
+```
+
+Durante `--purge` ofrece (preguntando): un **backup** previo (`manage.sh backup`),
+**cerrar** los puertos del firewall que abrió el instalador (el 22/SSH nunca se
+toca) y **borrar** los registros DNS de Cloudflare si hay `CF_API_TOKEN` en
+`.env`. Nunca borra `backups/` ni el PTR (ese lo quitas en tu proveedor).
+
 ## Backup / restauración
 
 - `./manage.sh backup` genera en `./backups/`: `db-<ts>.sql.gz` (pg_dump),
@@ -254,6 +267,7 @@ Referencia general: [`../../docs/troubleshooting.md`](../../docs/troubleshooting
 | `simplelogin.env` / `.template` | config de la app, montada en los contenedores — **secreto** |
 | `install.sh` | instalador guiado (`--mode simple\|caddy\|traefik`) |
 | `manage.sh` | operaciones del día a día |
+| `uninstall.sh` | desinstalador (`--purge` borra datos e imágenes) |
 | `lib/*.sh` | preflight, secrets, dns, ports, verify |
 | `postfix/` | imagen de Postfix (ubuntu + postfix-pgsql/pcre) — compartida con la demo |
 | `cron/` | imagen del cron de mantenimiento (supercronic) |
