@@ -1,0 +1,147 @@
+name: simplelogin-demo
+
+# Stack de DEMO LOCAL, autocontenido. No necesita dominio ni DNS reales.
+# Lo gestiona  ./demo.sh  (no lo levantes a mano salvo que sepas lo que haces).
+#
+#   • Traefik sirve el webapp por HTTPS en https://slapp.traefik.me/
+#     (cualquier *.traefik.me resuelve a 127.0.0.1; certificado autofirmado).
+#   • Mailpit (https://slmail.traefik.me/) captura TODO el correo.
+#   • Postfix no publica el :25 y relaya todo a Mailpit  -> puedes probar el
+#     reenvío de un alias con  ./demo.sh send-test <alias>.
+#
+# La imagen de la app y la de Postfix se construyen desde el repo / desde
+# ../selfhosted/postfix (compartidas con el despliegue real).
+
+x-sl-common: &sl-common
+  build:
+    context: ../..
+    dockerfile: Dockerfile
+  image: simplelogin-selfhosted:local
+  restart: unless-stopped
+  volumes:
+    - ./simplelogin.env:/code/.env:ro
+    - ./data/dkim/dkim.key:/dkim.key:ro
+    - ./data/dkim/dkim.pub.key:/dkim.pub.key:ro
+    - ./data/pgp:/sl/pgp
+    - ./data/upload:/code/static/upload
+  networks:
+    - sl
+
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-simplelogin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?ejecuta ./demo.sh}
+      POSTGRES_DB: ${DB_NAME:-simplelogin}
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-simplelogin} -d ${DB_NAME:-simplelogin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - sl
+
+  app:
+    <<: *sl-common
+    depends_on:
+      db:
+        condition: service_healthy
+
+  email:
+    <<: *sl-common
+    command: python email_handler.py
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+
+  job-runner:
+    <<: *sl-common
+    command: python job_runner.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+  postfix:
+    build:
+      context: ../selfhosted/postfix
+    image: simplelogin-selfhosted-postfix:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTFIX_MYHOSTNAME: ${DEMO_APP_HOST:-slapp.traefik.me}
+      POSTFIX_MYDOMAIN: ${DEMO_APP_HOST:-slapp.traefik.me}
+      POSTFIX_MYNETWORKS: "127.0.0.0/8 10.43.0.0/24"
+      EMAIL_HANDLER_HOST: email
+      EMAIL_HANDLER_PORT: "20381"
+      DB_HOST: db
+      DB_USER: ${DB_USER:-simplelogin}
+      DB_PASSWORD: ${DB_PASSWORD:?ejecuta ./demo.sh}
+      DB_NAME: ${DB_NAME:-simplelogin}
+      # relaya TODO el correo saliente a Mailpit
+      RELAY_HOST: "[mailpit]:1025"
+    networks:
+      - sl
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      MP_MAX_MESSAGES: "500"
+    networks:
+      - sl
+
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro"
+      - "./certs:/certs:ro"
+    depends_on:
+      - app
+    networks:
+      - sl
+
+  migration:
+    <<: *sl-common
+    profiles: ["setup"]
+    restart: "no"
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  init:
+    <<: *sl-common
+    profiles: ["setup"]
+    restart: "no"
+    command: python init_app.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  sl:
+    name: simplelogin-demo-sl
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.43.0.0/24
