@@ -68,6 +68,15 @@ For most tests, you will need to have ``redis`` installed and started on your ma
 sh scripts/run-test.sh
 ```
 
+The Redis Unix socket integration tests start a temporary `redis-server` process
+with TCP and persistence disabled. Install `redis-server` on your `PATH` to run
+them; these integration tests are skipped if the executable is unavailable.
+To run the Redis service tests independently of the database:
+
+```bash
+CONFIG=tests/test.env uv run --locked pytest --noconftest tests/test_redis_services.py
+```
+
 You can also run tests using a local Postgres DB to speed things up. This can be done by
 
 - creating an empty test DB and running the database migration by `dropdb test || true && createdb test && cp example.env .env && DB_URI=postgresql://localhost:5432/test uv run alembic upgrade head`
