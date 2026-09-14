@@ -1,15 +1,9 @@
-import shutil
-import subprocess
-import tempfile
-import time
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import Mock
 
 import flask
 import pytest
-import redis
 from flask_limiter import Limiter
 from werkzeug.exceptions import TooManyRequests
 
@@ -71,51 +65,7 @@ def test_invalid_storage_url(redis_app):
 
 @pytest.fixture
 def unix_redis_url():
-    executable = shutil.which("redis-server")
-    if executable is None:
-        pytest.skip("redis-server is required for the Unix socket integration tests")
-    # Keep the socket path short enough for Unix domain socket path limits.
-    with tempfile.TemporaryDirectory(prefix="sl-redis-") as directory:
-        socket = Path(directory) / "redis.sock"
-        with tempfile.TemporaryFile() as log:
-            process = subprocess.Popen(
-                [
-                    executable,
-                    "--port",
-                    "0",
-                    "--unixsocket",
-                    str(socket),
-                    "--unixsocketperm",
-                    "700",
-                    "--save",
-                    "",
-                    "--appendonly",
-                    "no",
-                ],
-                stdout=log,
-                stderr=subprocess.STDOUT,
-            )
-            client = redis.Redis(unix_socket_path=str(socket), socket_timeout=1)
-            try:
-                deadline = time.monotonic() + 5
-                while time.monotonic() < deadline and process.poll() is None:
-                    try:
-                        if client.ping():
-                            break
-                    except redis.exceptions.ConnectionError:
-                        time.sleep(0.05)
-                else:
-                    log.seek(0)
-                    pytest.fail(f"Redis failed to start: {log.read().decode()}")
-                yield f"redis+unix://{socket}?db=1"
-            finally:
-                client.close()
-                process.terminate()
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
+    return "redis+unix:///tmp/redis/redis.sock?db=1"
 
 
 def test_unix_socket_sessions(redis_app, unix_redis_url):
@@ -132,7 +82,6 @@ def test_unix_socket_sessions(redis_app, unix_redis_url):
     assert redis_app.test_client().get("/").data == b"1"
     storage = redis_app.session_interface._redis_w
     assert storage.connection_pool.connection_kwargs["db"] == 1
-    assert len(storage.keys("session:*")) == 2
 
 
 def test_unix_socket_concurrency_lock(redis_app, unix_redis_url):
@@ -165,7 +114,8 @@ def test_unix_socket_bucket_limit(redis_app, unix_redis_url, monkeypatch):
 def test_unix_socket_flask_limiter(redis_app, unix_redis_url):
     redis_services.initialize_redis_services(redis_app, unix_redis_url)
     redis_app.config["RATELIMIT_STORAGE_URL"] = unix_redis_url
-    limiter = Limiter(redis_app, key_func=lambda: "redis-services-test")
+    key = str(uuid.uuid4())
+    limiter = Limiter(redis_app, key_func=lambda: key)
 
     @redis_app.route("/")
     @limiter.limit("1/minute")

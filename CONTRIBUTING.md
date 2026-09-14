@@ -62,19 +62,10 @@ To install it in your development environment.
 
 ## Run tests
 
-For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
+For most tests, you will need to have ``redis`` installed and started on your machine (listening on TCP port 6379 and Unix socket `/tmp/redis/redis.sock`, accessible to the user running the tests). The Unix socket tests use Redis database 1.
 
 ```bash
 sh scripts/run-test.sh
-```
-
-The Redis Unix socket integration tests start a temporary `redis-server` process
-with TCP and persistence disabled. Install `redis-server` on your `PATH` to run
-them; these integration tests are skipped if the executable is unavailable.
-To run the Redis service tests independently of the database:
-
-```bash
-CONFIG=tests/test.env uv run --locked pytest --noconftest tests/test_redis_services.py
 ```
 
 You can also run tests using a local Postgres DB to speed things up. This can be done by
