@@ -98,16 +98,7 @@ jobs:
             --publish 127.0.0.1:6379:6379 \
             --volume /tmp/redis:/run/redis \
             redis:6 redis-server \
-            --unixsocket /run/redis/redis.sock --unixsocketperm 700 \
-            --save '' --appendonly no
-          for attempt in {1..30}; do
-            if docker exec redis redis-cli -s /run/redis/redis.sock ping | grep -q PONG; then
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs redis
-          exit 1
+            --unixsocket /run/redis/redis.sock --unixsocketperm 700 --save ''
 
       - name: Run db migration
         run: |
