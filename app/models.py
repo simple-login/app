@@ -411,6 +411,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     FLAG_CREATED_FROM_PARTNER = 1 << 1
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
     FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
+    FLAG_REFERRAL_PROGRAM_PARTICIPANT = 1 << 4
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -1259,6 +1260,23 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             + Client.filter(Client.user_id == self.id).count()
             > 0
         )
+
+    def can_use_referral_program(self) -> bool:
+        """The referral program is closed to new participants. Only users who already
+        have a referral code, or were paid out before, keep access."""
+        if self.flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT > 0:
+            return True
+
+        if (
+            Session.query(Referral.id).filter_by(user_id=self.id).first() is None
+            and Session.query(Payout.id).filter_by(user_id=self.id).first() is None
+        ):
+            return False
+
+        # remember it so deleting all their codes later doesn't lock them out
+        self.flags = self.flags | User.FLAG_REFERRAL_PROGRAM_PARTICIPANT
+        Session.commit()
+        return True
 
     def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
