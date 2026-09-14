@@ -28,6 +28,7 @@
   {% set pu = helper.partner_user(user) %}
   {% set active_sub = user.get_active_subscription() %}
   {% set sub_end = user.get_active_subscription_end() %}
+  {% set paddle_sub = helper.paddle_subscription(user) %}
   <div class="row mb-4 user-info-row">
     {# Account Information - 3/4 width #}
     <div class="col-lg-9 mb-3 mb-lg-0">
@@ -147,6 +148,30 @@
                     <td class="py-1">
                       <span class="{% if user.trial_end < now %}
                        text-danger{% else %}text-info{% endif %}">{{ user.trial_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ user.trial_end.humanize() }}</small>
+                    </td>
+                  </tr>
+                {% endif %}
+                {% if paddle_sub %}
+
+                  <tr>
+                    <td class="text-muted text-nowrap py-1">Paddle:</td>
+                    <td class="py-1">
+                      <a href="{{ helper.paddle_subscription_url(paddle_sub) }}"
+                         target="_blank"
+                         rel="noopener noreferrer">{{ paddle_sub.subscription_id }}</a>
+                      {{ copy_btn(paddle_sub.subscription_id) }}
+                      {% if paddle_sub.cancelled %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+                      <br>
+                      <small class="text-muted">
+                        {{ paddle_sub.plan_name() }},
+                        {% if paddle_sub.cancelled or paddle_sub.next_bill_date < now.date() %}
+
+                          last bill
+                        {% else %}
+                          next bill
+                        {% endif %}
+                        {{ paddle_sub.next_bill_date }}
+                      </small>
                     </td>
                   </tr>
                 {% endif %}
