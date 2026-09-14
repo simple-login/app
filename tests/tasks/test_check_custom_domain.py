@@ -1,13 +1,15 @@
 import arrow
 from unittest.mock import patch
 
+from app.custom_domain_validation import DomainValidationResult
 from app.db import Session
 from app.models import CustomDomain
+from app.proton.proton_partner import get_proton_partner
 from tasks.check_custom_domains import (
     check_all_custom_domains,
     check_single_custom_domain,
 )
-from tests.utils import create_new_user, random_string
+from tests.utils import create_partner_linked_user, create_new_user, random_string
 
 
 def test_check_single_custom_domain_increments_failed_checks(flask_client):
@@ -68,10 +70,180 @@ def test_check_single_custom_domain_resets_on_success(flask_client):
     )
     with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
         "tasks.check_custom_domains.is_mx_equivalent", return_value=True
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=[],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
     ):
         check_single_custom_domain(custom_domain)
     assert custom_domain.nb_failed_checks == 0
     assert custom_domain.verified is True
+
+
+def test_check_single_custom_domain_dkim_failure_is_independent_of_mx(flask_client):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        dkim_verified=True,
+        dmarc_verified=True,
+        nb_failed_checks=0,
+        dkim_nb_failed_checks=0,
+        commit=True,
+    )
+    custom_domain.dkim_nb_failed_checks_updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
+    with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
+        "tasks.check_custom_domains.is_mx_equivalent", return_value=True
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=["bad dkim"],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
+    ), patch("tasks.check_custom_domains.send_email_with_rate_control"):
+        check_single_custom_domain(custom_domain)
+
+    assert custom_domain.dkim_nb_failed_checks == 1
+    assert custom_domain.nb_failed_checks == 0
+    assert custom_domain.verified is True
+    assert custom_domain.dkim_verified is True
+    assert custom_domain.dmarc_verified is True
+
+
+def test_check_single_custom_domain_dkim_deactivates_only_dkim_after_threshold(
+    flask_client,
+):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        dkim_verified=True,
+        dmarc_verified=True,
+        spf_verified=True,
+        nb_failed_checks=0,
+        dkim_nb_failed_checks=4,
+        commit=True,
+    )
+    custom_domain.dkim_nb_failed_checks_updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
+    with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
+        "tasks.check_custom_domains.is_mx_equivalent", return_value=True
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=["bad dkim"],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
+    ), patch("tasks.check_custom_domains.send_email_with_rate_control"):
+        check_single_custom_domain(custom_domain)
+
+    assert custom_domain.dkim_nb_failed_checks == 0
+    assert custom_domain.dkim_verified is False
+    assert custom_domain.verified is True
+    assert custom_domain.spf_verified is True
+    assert custom_domain.dmarc_verified is True
+    assert custom_domain.nb_failed_checks == 0
+
+
+def test_check_single_custom_domain_dkim_throttled_within_a_day(flask_client):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        dkim_verified=True,
+        dmarc_verified=True,
+        nb_failed_checks=0,
+        dkim_nb_failed_checks=1,
+        commit=True,
+    )
+    custom_domain.dkim_nb_failed_checks_updated_at = arrow.now()
+    Session.commit()
+
+    with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
+        "tasks.check_custom_domains.is_mx_equivalent", return_value=True
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=["bad dkim"],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
+    ), patch("tasks.check_custom_domains.send_email_with_rate_control"):
+        check_single_custom_domain(custom_domain)
+
+    assert custom_domain.dkim_nb_failed_checks == 1
+
+
+def test_check_single_custom_domain_provider_follows_domain_partner_not_user(
+    flask_client,
+):
+    user, _ = create_partner_linked_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        partner_id=None,
+        nb_failed_checks=4,
+        commit=True,
+    )
+    custom_domain.updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
+    with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
+        "tasks.check_custom_domains.is_mx_equivalent", return_value=False
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=[],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
+    ), patch(
+        "tasks.check_custom_domains.send_email_with_rate_control"
+    ) as send_email_mock:
+        check_single_custom_domain(custom_domain)
+
+    subject = send_email_mock.call_args.args[3]
+    assert "SimpleLogin" in subject
+    assert "Proton" not in subject
+
+
+def test_check_single_custom_domain_provider_uses_proton_when_domain_partner_is_proton(
+    flask_client,
+):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        partner_id=get_proton_partner().id,
+        nb_failed_checks=4,
+        commit=True,
+    )
+    custom_domain.updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
+    with patch("tasks.check_custom_domains.get_mx_domains", return_value=[]), patch(
+        "tasks.check_custom_domains.is_mx_equivalent", return_value=False
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dkim_records",
+        return_value=[],
+    ), patch(
+        "app.custom_domain_validation.CustomDomainValidation.validate_dmarc_records",
+        return_value=DomainValidationResult(success=True, errors=[]),
+    ), patch(
+        "tasks.check_custom_domains.send_email_with_rate_control"
+    ) as send_email_mock:
+        check_single_custom_domain(custom_domain)
+
+    subject = send_email_mock.call_args.args[3]
+    assert "Proton" in subject
 
 
 def test_check_custom_domain_deletes_old_domains():
