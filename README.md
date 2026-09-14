@@ -34,6 +34,14 @@ More information on https://simplelogin.io
 
 This README contains instructions on how to self host SimpleLogin.
 
+> **Fully-dockerized deployment:** a self-contained Docker Compose stack (webapp,
+> email handler, job runner, cron, Postfix and PostgreSQL) plus a guided
+> installer that configures DNS, ports and TLS lives in
+> [`.docker/`](./.docker/README.md) — [`selfhosted/`](./.docker/selfhosted/README.md)
+> for a real server (simple / Caddy / Traefik modes) and
+> [`demo/`](./.docker/demo/README.md) for a local demo. Use it instead of the
+> host-based steps below if you want everything in containers.
+
 Once you have your own SimpleLogin instance running, you can change the `API URL` in SimpleLogin's Chrome/Firefox extension, Android/iOS app to your server.
 
 SimpleLogin roadmap is at https://github.com/simple-login/app/projects/1 and our forum at https://github.com/simple-login/app/discussions, feel free to submit new ideas or vote on features.
