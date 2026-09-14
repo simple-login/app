@@ -30,6 +30,7 @@ from app.models import (
     Contact,
     EmailLog,
     Fido,
+    Subscription,
 )
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_delete import delete_alias as perform_alias_delete
@@ -331,6 +332,9 @@ class EmailSearchHelpers:
     PAGE_SIZE = 25
     ALIAS_DISPLAY_LIMIT = 5000
     UNPAGINATED_QUERY_LIMIT = 100
+    PADDLE_SUBSCRIPTION_URL = (
+        "https://vendors.paddle.com/subscriptions/customers/manage/{}"
+    )
 
     @staticmethod
     def mailbox_list(
@@ -440,6 +444,21 @@ class EmailSearchHelpers:
         return PartnerUser.get_by(user_id=user.id)
 
     @staticmethod
+    def paddle_subscription(user: User) -> Optional[Subscription]:
+        """Return the user's Paddle subscription, even if cancelled or expired.
+
+        Unlike User.get_paddle_subscription(), past subscriptions are returned
+        too, so admins can always reach the subscription in Paddle.
+        """
+        return Subscription.get_by(user_id=user.id)
+
+    @staticmethod
+    def paddle_subscription_url(subscription: Subscription) -> str:
+        return EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(
+            subscription.subscription_id
+        )
+
+    @staticmethod
     def user_audit_log(user: User) -> list[UserAuditLog]:
         return (
             UserAuditLog.filter_by(user_id=user.id)
@@ -515,6 +534,8 @@ class EmailSearchHelpers:
             result.append("FREE_OLD_ALIAS_LIMIT")
         if flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER:
             result.append("CREATED_ALIAS_FROM_PARTNER")
+        if flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT:
+            result.append("REFERRAL_PROGRAM_PARTICIPANT")
         return result
 
     @staticmethod
