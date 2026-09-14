@@ -3,12 +3,20 @@
 {% block title %}Activation Email Sent{% endblock %}
 {% block single_content %}
 
-  <div class="card">
+ <div class="card">
     <div class="card-body p-6 text-center">
       <h1 class="h4">An email to validate your email is on its way.</h1>
       <p>Please check your inbox/spam folder.</p>
       <p>Make sure to mark the message as not spam so that future messages come to your normal inbox</p>
+      <h2><strong>Acceptable Use Policy</strong></h2>
+      <p>Please adhere to the following guidelines to ensure a smooth and secure experience:</p>
+      <p><strong>No Mass Signups</strong></p>
+      <p>Do not use SimpleLogin to create large numbers of accounts on other websites or services</p>
+      <p><strong>No Multiple Free Accounts</strong></p>
+      <p>Do not create multiple free accounts as this is not considered an acceptable use of the service</p>
+      <p><strong>No Marking Emails as Spam</strong></p>
+      <p>Do not mark emails forwarded to you by SimpleLogin as spam</p>
     </div>
-  </div>
+ </div>
 {% endblock %}
 {% block script %}<script>plausible('Complete registration')</script>{% endblock %}
