@@ -9,26 +9,23 @@ import time
 from flask_wtf import FlaskForm
 from unidecode import unidecode
 
-from .config import WORDS_FILE_PATH, ALLOWED_REDIRECT_DOMAINS
+from .words import safe_words
+from .config import ALLOWED_REDIRECT_DOMAINS
 from .log import LOG
-
-with open(WORDS_FILE_PATH) as f:
-    LOG.d("load words file: %s", WORDS_FILE_PATH)
-    _words = f.read().split()
 
 
 def random_word():
-    return secrets.choice(_words)
+    return secrets.choice(safe_words)
 
 
 def word_exist(word):
-    return word in _words
+    return word in safe_words
 
 
 def random_words(words: int = 2, numbers: int = 0):
     """Generate a random words. Used to generate user-facing string, for ex email addresses"""
     # nb_words = random.randint(2, 3)
-    fields = [secrets.choice(_words) for i in range(words)]
+    fields = [secrets.choice(safe_words) for i in range(words)]
 
     if numbers > 0:
         digits = [n for n in range(10)]
