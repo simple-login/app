@@ -81,6 +81,7 @@ openssl rsa -in dkim.key -pubout -out dkim.pub.key
 You will need the files `dkim.key` and `dkim.pub.key` for the next steps.
 
 For email gurus, we have chosen 1024 key length instead of 2048 for DNS simplicity as some registrars don't play well with long TXT record.
+Cloudflare supports 2048 key length.
 
 ### DNS
 
@@ -112,6 +113,38 @@ dig @1.1.1.1 app.mydomain.com a
 ```
 
 should return your server IP.
+
+#### AAAA record (optional, IPv6)
+If your server has an IPv6 address, also create an **AAAA record** that points `app.mydomain.com.` to that IPv6 address.
+If you are using CloudFlare, we recommend to disable the "Proxy" option.
+To verify, the following command
+
+```bash
+dig @1.1.1.1 app.mydomain.com aaaa
+```
+
+should return your server's IPv6 address.
+
+#### PTR record (reverse DNS)
+Many mail providers reject or penalize mail from an IP without a matching reverse DNS (PTR) record. The PTR should point back to the sending hostname `app.mydomain.com` (the same name used as `myhostname` in the Postfix config below), and that name must forward-resolve to the same IP.
+
+A PTR record can usually only be set by whoever controls the IP address, i.e. your hosting/VPS provider — often in their control panel rather than your DNS registrar.
+
+For an IPv4 address `192.0.2.1`, create a **PTR record** for `1.2.0.192.in-addr.arpa` pointing to `app.mydomain.com` (the address is written in reverse order, followed by `.in-addr.arpa`). To verify:
+
+```bash
+dig @1.1.1.1 -x 192.0.2.1
+```
+
+should return `app.mydomain.com`.
+
+For an IPv6 address `2001:db8::567:89ab`, create a **PTR record** for `b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa` pointing to `app.mydomain.com` (each nibble written in reverse order, followed by `.ip6.arpa`). To verify:
+
+```bash
+dig @1.1.1.1 -x 2001:db8::567:89ab
+```
+
+should return `app.mydomain.com`.
 
 #### DKIM
 Set up DKIM by adding a TXT record for `dkim._domainkey.mydomain.com.` with the following value:
@@ -164,6 +197,12 @@ Add a TXT record for `mydomain.com.` with the value:
 v=spf1 mx ~all
 ```
 
+or, to also authorize your server's IP addresses explicitly:
+
+```
+v=spf1 ip4:SERVER_IPV4/32 ip6:SERVER_IPV6/128 mx ~all
+```
+
 What it means is only your server can send email with `@mydomain.com` domain.
 To verify, the following command
 
@@ -184,6 +223,12 @@ Add a TXT record for `_dmarc.mydomain.com.` with the following value
 
 ```
 v=DMARC1; p=quarantine; adkim=r; aspf=r
+```
+
+or, adding an address to receive aggregate reports:
+
+```
+v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:support@mydomain.com;
 ```
 
 This is a `relaxed` DMARC policy. You can also use a more strict policy with `v=DMARC1; p=reject; adkim=s; aspf=s` value.
