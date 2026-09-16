@@ -314,7 +314,7 @@ CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
-OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES", "openid email profile").split()
 OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
 
 PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")

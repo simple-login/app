@@ -36,7 +36,7 @@ def oidc_login():
     auth_url = requests.get(config.OIDC_WELL_KNOWN_URL).json()["authorization_endpoint"]
 
     oidc = OAuth2Session(
-        config.OIDC_CLIENT_ID, scope=[OIDC_SCOPES], redirect_uri=redirect_uri
+        config.OIDC_CLIENT_ID, scope=OIDC_SCOPES, redirect_uri=redirect_uri
     )
     authorization_url, state = oidc.authorization_url(auth_url)
 
@@ -66,7 +66,7 @@ def oidc_callback():
     oidc = OAuth2Session(
         config.OIDC_CLIENT_ID,
         state=session[SESSION_STATE_KEY],
-        scope=[OIDC_SCOPES],
+        scope=OIDC_SCOPES,
         redirect_uri=redirect_uri,
     )
     oidc.fetch_token(
