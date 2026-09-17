@@ -71,6 +71,17 @@ def token():
     client_user: ClientUser = ClientUser.get_by(
         client_id=auth_code.client_id, user_id=auth_code.user_id
     )
+    if not client_user:
+        # the user has removed the link with this client: the identity does not exist anymore
+        AuthorizationCode.delete(auth_code.id)
+        Session.commit()
+        LOG.w(
+            "authorization code %s refers to a revoked client-user (client %s, user %s)",
+            auth_code.id,
+            auth_code.client_id,
+            auth_code.user_id,
+        )
+        return jsonify(error="the authorization has been revoked"), 400
 
     user_data = client_user.get_user_info()
 
