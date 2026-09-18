@@ -94,7 +94,7 @@ def setup_paddle_callback(app: Flask):
                 emit_user_audit_log(
                     user=user,
                     action=UserAuditLogAction.Upgrade,
-                    message="Upgraded through Paddle",
+                    message=f"Upgraded through Paddle, subscription {subscription_id}",
                 )
             else:
                 LOG.d(f"Update an existing Subscription for user {user}")
@@ -113,7 +113,7 @@ def setup_paddle_callback(app: Flask):
                 emit_user_audit_log(
                     user=user,
                     action=UserAuditLogAction.SubscriptionExtended,
-                    message="Extended Paddle subscription",
+                    message=f"Extended Paddle subscription, subscription {subscription_id}",
                 )
 
             execute_subscription_webhook(user)
@@ -215,7 +215,7 @@ def setup_paddle_callback(app: Flask):
                 emit_user_audit_log(
                     user=sub.user,
                     action=UserAuditLogAction.SubscriptionExtended,
-                    message="Extended Paddle subscription",
+                    message=f"Extended Paddle subscription, subscription {subscription_id}",
                 )
 
                 Session.commit()

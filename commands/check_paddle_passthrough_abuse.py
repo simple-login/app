@@ -27,9 +27,15 @@ Usage
 
 This command only reports: repairing a subscription means moving it back in
 Paddle, which has to be done by hand.
+
+Known blind spot: a takeover naming a user who had no subscription at all is
+recorded as `upgrade`, not `subscription_extended`, so it does not show up here.
+That variant hands someone a subscription rather than destroying one, but it
+means a clean run does not prove the passthrough was never abused.
 """
 
 import argparse
+import re
 import sys
 from typing import List, Optional
 
@@ -99,6 +105,17 @@ def paddle_audit_log(user_id: int) -> List[UserAuditLog]:
     )
 
 
+def subscription_id_of(entry: UserAuditLog) -> Optional[str]:
+    """
+    The paddle subscription an audit entry refers to. Entries written before the
+    id was recorded return None, which the caller treats as "unknown".
+    """
+    match = re.search(r"subscription (\S+)$", entry.message or "")
+    if not match or match.group(1) == "None":
+        return None
+    return match.group(1)
+
+
 def suspicious_extensions(
     entries: List[UserAuditLog], window_days: int, ignore_window: bool
 ) -> List[UserAuditLog]:
@@ -123,7 +140,19 @@ def suspicious_extensions(
                 period_start is not None
                 and (entry.created_at - period_start.created_at).days <= window_days
             )
-            if not cancelled_since and (ignore_window or within_window):
+            # paddle redelivering a callback rewrites the same subscription,
+            # which is noise rather than a takeover
+            entry_id = subscription_id_of(entry)
+            redelivery = (
+                entry_id is not None
+                and period_start is not None
+                and entry_id == subscription_id_of(period_start)
+            )
+            if (
+                not cancelled_since
+                and not redelivery
+                and (ignore_window or within_window)
+            ):
                 found.append(entry)
 
         # both Upgrade and SubscriptionExtended start a new paid period

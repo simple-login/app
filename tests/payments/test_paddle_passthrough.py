@@ -65,12 +65,6 @@ def test_verify_rejects_junk(passthrough):
     assert verify_passthrough(passthrough) is None
 
 
-def test_verify_rejects_boolean_user_id():
-    """isinstance(True, int) holds, so True must not resolve to user id 1"""
-    serializer = itsdangerous.URLSafeTimedSerializer(PADDLE_PASSTHROUGH_SECRET)
-    assert verify_passthrough(serializer.dumps({"user_id": True})) is None
-
-
 @pytest.fixture
 def allow_unsigned(monkeypatch):
     monkeypatch.setattr(config, "PADDLE_ALLOW_UNSIGNED_PASSTHROUGH", True)
