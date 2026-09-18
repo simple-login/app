@@ -143,6 +143,30 @@ def sanitize_scheme(scheme: Optional[str]) -> Optional[str]:
     return None
 
 
+# query string parameters that must never reach the logs in clear
+_SENSITIVE_QUERY_ARGS = {
+    "access_token",
+    "api_key",
+    "client_secret",
+    "code",
+    "password",
+    "refresh_token",
+    "token",
+}
+
+_REDACTED = "[redacted]"
+
+
+def redact_query_args(args) -> dict:
+    """Turn a request query string into a loggable dict, hiding secret values"""
+    return {
+        key: [_REDACTED] * len(values)
+        if key.lower() in _SENSITIVE_QUERY_ARGS
+        else values
+        for key, values in args.lists()
+    }
+
+
 def query2str(query):
     """Useful utility method to print out a SQLAlchemy query"""
     return query.statement.compile(compile_kwargs={"literal_binds": True})

@@ -16,14 +16,24 @@ def user_info():
     Call by client to get user information
     Usually bearer token is used.
     """
+    from_query_string = False
     if "AUTHORIZATION" in request.headers:
         access_token = request.headers["AUTHORIZATION"].replace("Bearer ", "")
     else:
+        # deprecated, cf RFC 6750 §2.3: the token ends up in logs, referrers and
+        # browser history. Kept until the remaining clients have migrated.
         access_token = request.args.get("access_token")
+        from_query_string = access_token is not None
 
     oauth_token: OauthToken = OauthToken.get_by(access_token=access_token)
     if not oauth_token:
         return jsonify(error="Invalid access token"), 400
+
+    if from_query_string:
+        LOG.w(
+            "deprecated: bearer token passed in query string, client %s",
+            oauth_token.client_id,
+        )
     elif oauth_token.is_expired():
         LOG.d("delete oauth token %s", oauth_token)
         OauthToken.delete(oauth_token.id)
