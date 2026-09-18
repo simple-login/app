@@ -1,8 +1,5 @@
 import arrow
-import json
 from dateutil.relativedelta import relativedelta
-
-
 from flask import Flask, request
 
 from app import paddle_utils, paddle_callback
@@ -16,6 +13,7 @@ from app.db import Session
 from app.email_utils import send_email, render
 from app.log import LOG
 from app.models import Subscription, PlanEnum, User, Coupon
+from app.payments.paddle_passthrough import verify_passthrough
 from app.subscription_webhook import execute_subscription_webhook
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 from app.utils import random_string
@@ -34,11 +32,17 @@ def setup_paddle_callback(app: Flask):
         if (
             request.form.get("alert_name") == "subscription_created"
         ):  # new user subscribes
-            # the passthrough is json encoded, e.g.
-            # request.form.get("passthrough") = '{"user_id": 88 }'
-            passthrough = json.loads(request.form.get("passthrough"))
-            user_id = passthrough.get("user_id")
+            # the passthrough is set by the browser when opening the checkout,
+            # only trust it if it carries our own signature
+            user_id = verify_passthrough(request.form.get("passthrough"))
+            if user_id is None:
+                LOG.e("Paddle passthrough not signed by us. %s", request.form)
+                return "Invalid passthrough", 400
+
             user = User.get(user_id)
+            if not user:
+                LOG.e("No such user %s for paddle callback %s", user_id, request.form)
+                return "No such user", 400
 
             subscription_plan_id = int(request.form.get("subscription_plan_id"))
 
@@ -55,6 +59,24 @@ def setup_paddle_callback(app: Flask):
                 return "No such subscription", 400
 
             sub = Subscription.get_by(user_id=user.id)
+            subscription_id = request.form.get("subscription_id")
+
+            # defense in depth: a user with an active subscription cannot reach
+            # the pricing page, so a checkout for a different subscription can
+            # only be someone else's.
+            if (
+                sub
+                and sub.subscription_id != subscription_id
+                and not sub.cancelled
+                and sub.is_active()
+            ):
+                LOG.e(
+                    "Paddle callback would overwrite the active subscription %s of user %s. %s",
+                    sub.subscription_id,
+                    user,
+                    request.form,
+                )
+                return "User already has an active subscription", 400
 
             if not sub:
                 LOG.d(f"create a new Subscription for user {user}")
@@ -62,7 +84,7 @@ def setup_paddle_callback(app: Flask):
                     user_id=user.id,
                     cancel_url=request.form.get("cancel_url"),
                     update_url=request.form.get("update_url"),
-                    subscription_id=request.form.get("subscription_id"),
+                    subscription_id=subscription_id,
                     event_time=arrow.now(),
                     next_bill_date=arrow.get(
                         request.form.get("next_bill_date"), "YYYY-MM-DD"
@@ -78,7 +100,7 @@ def setup_paddle_callback(app: Flask):
                 LOG.d(f"Update an existing Subscription for user {user}")
                 sub.cancel_url = request.form.get("cancel_url")
                 sub.update_url = request.form.get("update_url")
-                sub.subscription_id = request.form.get("subscription_id")
+                sub.subscription_id = subscription_id
                 sub.event_time = arrow.now()
                 sub.next_bill_date = arrow.get(
                     request.form.get("next_bill_date"), "YYYY-MM-DD"
