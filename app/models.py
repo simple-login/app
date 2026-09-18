@@ -1042,19 +1042,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         sub = Subscription.get_by(user_id=self.id)
 
-        if sub:
-            # grace period is 14 days
-            # sub is active until the next billing_date + PADDLE_SUBSCRIPTION_GRACE_DAYS
-            if (
-                sub.next_bill_date
-                >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
-            ):
-                return sub
-            # past subscription, user is considered not having a subscription = free plan
-            else:
-                return None
-        else:
-            return sub
+        # past subscription, user is considered not having a subscription = free plan
+        if sub and not sub.is_active():
+            return None
+
+        return sub
 
     def verified_custom_domains(self) -> List["CustomDomain"]:
         return (
@@ -2412,6 +2404,16 @@ class Subscription(Base, ModelMixin):
     )
 
     user = orm.relationship(User)
+
+    def is_active(self) -> bool:
+        """whether the subscription still entitles the user to the paid plan.
+        A subscription stays active until its next billing date plus the grace
+        period, whether or not it has been cancelled in the meantime.
+        """
+        return (
+            self.next_bill_date
+            >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
+        )
 
     def plan_name(self):
         if self.plan == PlanEnum.monthly:

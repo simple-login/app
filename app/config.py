@@ -225,6 +225,7 @@ SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
+PADDLE_PASSTHROUGH_SECRET = FLASK_SECRET + "paddle_passthrough"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
@@ -256,6 +257,9 @@ PADDLE_PUBLIC_KEY_PATH = get_abs_path(
 )
 
 PADDLE_AUTH_CODE = os.environ.get("PADDLE_AUTH_CODE")
+
+# Transition flag
+PADDLE_ALLOW_UNSIGNED_PASSTHROUGH = True
 
 PADDLE_COUPON_ID = os.environ.get("PADDLE_COUPON_ID")
 
