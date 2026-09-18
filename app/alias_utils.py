@@ -509,6 +509,9 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
     # set some fields back to default
     alias.disable_pgp = False
     alias.pinned = False
+    # the directory belongs to the previous owner: keeping the reference would let
+    # them delete the alias (ondelete=cascade) and would skew their alias count
+    alias.directory_id = None
 
     emit_alias_audit_log(
         alias=alias,

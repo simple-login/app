@@ -9,6 +9,7 @@ from app.models import (
     AuthorizationCode,
     Client,
     ClientUser,
+    Directory,
     Mailbox,
     AliasMailbox,
     OauthToken,
@@ -19,7 +20,13 @@ from tests.events.event_test_utils import (
     _get_event_from_string,
     _create_linked_user,
 )
-from tests.utils import create_new_user, login, random_domain, random_email
+from tests.utils import (
+    create_new_user,
+    login,
+    random_domain,
+    random_email,
+    random_token,
+)
 from app.models import User
 from app.utils import random_string
 from flask import url_for
@@ -80,6 +87,33 @@ def test_alias_transfer(flask_client):
     assert alias.email == alias_created.email
     assert alias.note or "" == alias_created.note
     assert alias.enabled == alias_created.enabled
+
+
+def test_alias_transfer_clears_source_directory(flask_client):
+    """
+    The directory belongs to the previous owner: an alias must not keep pointing
+    at it once transferred, otherwise the previous owner can still delete the
+    alias (directory_id is ondelete=cascade) and still counts it as theirs.
+    """
+    source_user = login(flask_client)
+    directory = Directory.create(
+        name=random_token(), user_id=source_user.id, commit=True
+    )
+
+    alias = Alias.create_new_random(source_user)
+    alias.directory_id = directory.id
+    Session.commit()
+    assert directory.nb_alias() == 1
+
+    target_user = _create_user_with_mailbox()
+
+    app.alias_utils.transfer_alias(alias, target_user, target_user.mailboxes())
+    Session.commit()
+
+    alias = Alias.get(alias.id)
+    assert alias.user_id == target_user.id
+    assert alias.directory_id is None
+    assert directory.nb_alias() == 0
 
 
 def _create_oauth_client(user) -> Client:
