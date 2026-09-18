@@ -59,7 +59,9 @@ def _legacy_user_id(passthrough: str) -> Optional[int]:
         return None
 
     user_id = _user_id_from(payload)
-    if user_id is None:
+    # json has a native true, and isinstance(True, int) holds, so without this
+    # a buyer sending {"user_id": true} would land on the user with id 1
+    if user_id is None or isinstance(user_id, bool):
         LOG.e("Legacy Paddle passthrough without a user_id %s", passthrough)
         return None
 

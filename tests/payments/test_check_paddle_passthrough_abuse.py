@@ -8,19 +8,21 @@ from commands.check_paddle_passthrough_abuse import (
 
 
 class FakeEntry:
-    """just the two UserAuditLog fields the detector looks at"""
+    """just the UserAuditLog fields the detector looks at"""
 
-    def __init__(self, action: UserAuditLogAction, day: int):
+    def __init__(self, action: UserAuditLogAction, day: int, sub_id: str = None):
         self.action = action.value
         self.created_at = arrow.get("2026-01-01").shift(days=day)
+        # entries written before the id was recorded have no id in the message
+        self.message = f"whatever, subscription {sub_id}" if sub_id else "whatever"
 
 
-def _upgrade(day: int) -> FakeEntry:
-    return FakeEntry(UserAuditLogAction.Upgrade, day)
+def _upgrade(day: int, sub_id: str = None) -> FakeEntry:
+    return FakeEntry(UserAuditLogAction.Upgrade, day, sub_id)
 
 
-def _extended(day: int) -> FakeEntry:
-    return FakeEntry(UserAuditLogAction.SubscriptionExtended, day)
+def _extended(day: int, sub_id: str = None) -> FakeEntry:
+    return FakeEntry(UserAuditLogAction.SubscriptionExtended, day, sub_id)
 
 
 def _cancelled(day: int) -> FakeEntry:
@@ -96,3 +98,40 @@ def test_extension_without_a_known_start_needs_ignore_window():
     entries = [_extended(5)]
     assert _find(entries) == []
     assert len(_find(entries, ignore_window=True)) == 1
+
+
+def test_redelivered_callback_is_not_a_takeover():
+    """paddle resending subscription_created rewrites the same subscription"""
+    entries = [_upgrade(0, "sub-a"), _extended(2, "sub-a")]
+    assert _find(entries) == []
+
+
+def test_takeover_by_a_different_subscription_is_still_reported():
+    entries = [_upgrade(0, "sub-a"), _extended(2, "sub-b")]
+    assert len(_find(entries)) == 1
+
+
+def test_redelivery_is_ignored_even_with_ignore_window():
+    entries = [_upgrade(0, "sub-a"), _extended(200, "sub-a")]
+    assert _find(entries, ignore_window=True) == []
+
+
+def test_entries_without_a_subscription_id_are_still_reported():
+    """old audit rows carry no id, so we cannot rule out a takeover"""
+    entries = [_upgrade(0), _extended(2)]
+    assert len(_find(entries)) == 1
+
+
+def test_a_redelivery_does_not_mask_a_later_takeover():
+    entries = [
+        _upgrade(0, "sub-a"),
+        _extended(2, "sub-a"),  # redelivery, ignored
+        _extended(4, "sub-b"),  # takeover of the still-active sub-a
+    ]
+    assert [e.created_at.day for e in _find(entries)] == [5]
+
+
+def test_a_missing_subscription_id_is_not_treated_as_a_match():
+    """'subscription None' must not make two unrelated entries look alike"""
+    entries = [_upgrade(0, "None"), _extended(2, "None")]
+    assert len(_find(entries)) == 1

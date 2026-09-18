@@ -100,6 +100,7 @@ from app.email_utils import (
     save_email_for_debugging,
     save_envelope_for_debugging,
     get_verp_info_from_email,
+    is_expired_verp_address,
     generate_verp_email,
     sl_formataddr,
 )
@@ -2140,6 +2141,12 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     # region mail sent to VERP
     verp_info = get_verp_info_from_email(rcpt_tos[0])
+
+    # an address we issued, just too old: drop it instead of letting it fall
+    # through and be handled as mail to an unknown alias.
+    # get_verp_info_from_email has already logged it
+    if verp_info is None and is_expired_verp_address(rcpt_tos[0]):
+        return status.E217
 
     # sent to transactional VERP. Either bounce emails or out-of-office
     if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.transactional:
