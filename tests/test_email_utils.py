@@ -1,5 +1,6 @@
 import email
 import os
+import time
 from email.message import EmailMessage
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -929,6 +930,50 @@ def test_generate_verp_email(object_id):
     info = get_verp_info_from_email(generated_email.lower())
     assert info[0] == VerpType.bounce_forward
     assert info[1] == object_id
+
+
+def _verp_generated_at(monkeypatch, shift_seconds: float) -> str:
+    """a VERP address as it would have been generated shift_seconds from now"""
+    generated_at = time.time() + shift_seconds
+    monkeypatch.setattr(time, "time", lambda: generated_at)
+    verp = generate_verp_email(VerpType.bounce_reply, 100, "somewhere.net")
+    monkeypatch.undo()
+    return verp
+
+
+@pytest.mark.parametrize(
+    "age_seconds",
+    [
+        0,
+        3600,
+        config.VERP_MESSAGE_LIFETIME / 2,
+        config.VERP_MESSAGE_LIFETIME - 3600,
+    ],
+)
+def test_verp_email_within_lifetime_is_accepted(monkeypatch, age_seconds):
+    verp = _verp_generated_at(monkeypatch, -age_seconds)
+    assert get_verp_info_from_email(verp) == (VerpType.bounce_reply, 100)
+
+
+@pytest.mark.parametrize(
+    "age_seconds",
+    [
+        config.VERP_MESSAGE_LIFETIME + 3600,
+        config.VERP_MESSAGE_LIFETIME * 2,
+        # still within the 14 days the email_log row is kept
+        13 * 86400,
+    ],
+)
+def test_verp_email_past_its_lifetime_is_rejected(monkeypatch, age_seconds):
+    """correctly signed, but too old to still speak for its email log"""
+    verp = _verp_generated_at(monkeypatch, -age_seconds)
+    assert get_verp_info_from_email(verp) is None
+
+
+def test_verp_email_slightly_ahead_of_our_clock_is_accepted(monkeypatch):
+    """another host being a bit ahead must not invalidate a fresh address"""
+    verp = _verp_generated_at(monkeypatch, 600)
+    assert get_verp_info_from_email(verp) == (VerpType.bounce_reply, 100)
 
 
 def test_generate_verp_email_forward_reply_phase():
