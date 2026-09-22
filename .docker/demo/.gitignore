@@ -1,0 +1,6 @@
+# Estado local de la demo — NO subir a git
+.env
+simplelogin.env
+traefik/dynamic.yml
+certs/
+data/
