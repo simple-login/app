@@ -6,6 +6,7 @@ from app.constants import JobType
 from app.db import Session
 from app.models import Job, ApiToCookieToken
 from tests.api.utils import get_new_user_and_api_key
+from tests.utils import login
 
 
 def test_delete_without_sudo(flask_client):
@@ -50,6 +51,24 @@ def test_delete_with_sudo(flask_client):
     job = jobs[0]
     assert job.name == JobType.DELETE_ACCOUNT.value
     assert job.payload == {"user_id": user.id}
+
+
+def test_delete_with_another_user_session_sudo(flask_client):
+    # user A is logged in in the browser and its session is in sudo mode
+    login(flask_client)
+    # user B only has an api key, it never entered sudo mode
+    user, api_key = get_new_user_and_api_key()
+    for job in Job.all():
+        job.delete(job.id)
+    Session.commit()
+
+    r = flask_client.delete(
+        url_for("api.delete_user"),
+        headers={"Authentication": api_key.code},
+    )
+
+    assert r.status_code == 440
+    assert Job.count() == 0
 
 
 def test_get_cookie_token(flask_client):
