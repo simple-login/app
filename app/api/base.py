@@ -1,14 +1,14 @@
 from functools import wraps
-from time import time
 from typing import Tuple, Optional
 
 import arrow
-from flask import Blueprint, request, jsonify, g, session
+from flask import Blueprint, request, jsonify, g
 from flask_login import current_user
 
 from app import constants
 from app.db import Session
 from app.models import ApiKey
+from app.session import is_session_sudo_mode_active
 
 api_bp = Blueprint(name="api", import_name=__name__, url_prefix="/api")
 
@@ -46,8 +46,9 @@ def authorize_request() -> Optional[Tuple[str, int]]:
 
 
 def check_sudo_mode_is_active(api_key: ApiKey) -> bool:
-    return api_key.sudo_mode_at and g.api_key.sudo_mode_at >= arrow.now().shift(
-        minutes=-SUDO_MODE_MINUTES_VALID
+    return bool(
+        api_key.sudo_mode_at
+        and api_key.sudo_mode_at >= arrow.now().shift(minutes=-SUDO_MODE_MINUTES_VALID)
     )
 
 
@@ -63,11 +64,11 @@ def require_api_auth(f):
 
 
 def check_session_sudo_mode_is_active() -> bool:
-    sudo_time = session.get("sudo_time")
-    return (
-        sudo_time is not None
-        and (time() - int(sudo_time)) <= SUDO_MODE_MINUTES_VALID * 60
-    )
+    # The session sudo mode is only a valid proof for the user it was granted
+    # to. Without this check a session with a fresh sudo mode could approve a
+    # sensitive action performed as another user, e.g. via an api key sent in
+    # the same request
+    return is_session_sudo_mode_active(g.user.id, SUDO_MODE_MINUTES_VALID * 60)
 
 
 def require_api_sudo(f):
