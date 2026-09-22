@@ -1,5 +1,6 @@
 import email
 import os
+import time
 from email.message import EmailMessage
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -44,6 +45,7 @@ from app.email_utils import (
     is_invalid_mailbox_domain,
     generate_verp_email,
     get_verp_info_from_email,
+    is_expired_verp_address,
     get_noreply_address,
     get_noreply_email,
     get_noreply_domain,
@@ -929,6 +931,64 @@ def test_generate_verp_email(object_id):
     info = get_verp_info_from_email(generated_email.lower())
     assert info[0] == VerpType.bounce_forward
     assert info[1] == object_id
+
+
+def _verp_generated_at(shift_seconds: float) -> str:
+    """a VERP address as it would have been generated shift_seconds from now"""
+    generated_at = time.time() + shift_seconds
+    # patch only for the generation, without disturbing anything the test
+    # itself may have patched
+    with patch.object(time, "time", return_value=generated_at):
+        return generate_verp_email(VerpType.bounce_reply, 100, "somewhere.net")
+
+
+@pytest.mark.parametrize(
+    "age_seconds",
+    [
+        0,
+        3600,
+        config.VERP_MESSAGE_LIFETIME / 2,
+        config.VERP_MESSAGE_LIFETIME - 3600,
+    ],
+)
+def test_verp_email_within_lifetime_is_accepted(age_seconds):
+    verp = _verp_generated_at(-age_seconds)
+    assert get_verp_info_from_email(verp) == (VerpType.bounce_reply, 100)
+
+
+@pytest.mark.parametrize(
+    "age_seconds",
+    [
+        config.VERP_MESSAGE_LIFETIME + 3600,
+        config.VERP_MESSAGE_LIFETIME * 2,
+        # still within the 14 days the email_log row is kept
+        13 * 86400,
+    ],
+)
+def test_verp_email_past_its_lifetime_is_rejected(age_seconds):
+    """correctly signed, but too old to still speak for its email log"""
+    verp = _verp_generated_at(-age_seconds)
+    assert get_verp_info_from_email(verp) is None
+
+
+def test_verp_email_slightly_ahead_of_our_clock_is_accepted():
+    """another host being a bit ahead must not invalidate a fresh address"""
+    verp = _verp_generated_at(600)
+    assert get_verp_info_from_email(verp) == (VerpType.bounce_reply, 100)
+
+
+def test_is_expired_verp_address_tells_ours_apart_from_unknown():
+    """an expired address of ours must not look like an unknown recipient"""
+    assert is_expired_verp_address(_verp_generated_at(-(2 * 86400 + 7 * 86400)))
+    assert not is_expired_verp_address(_verp_generated_at(0))
+    assert not is_expired_verp_address("someone@example.com")
+    assert not is_expired_verp_address("sl.notbase32.notasignature@example.com")
+
+
+def test_expired_verp_address_of_another_secret_is_not_ours():
+    verp = _verp_generated_at(-(2 * 86400 + 7 * 86400))
+    with patch.object(config, "VERP_EMAIL_SECRET", "a" * 40):
+        assert not is_expired_verp_address(verp)
 
 
 def test_generate_verp_email_forward_reply_phase():

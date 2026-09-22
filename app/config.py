@@ -225,6 +225,7 @@ SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
+PADDLE_PASSTHROUGH_SECRET = FLASK_SECRET + "paddle_passthrough"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
@@ -256,6 +257,9 @@ PADDLE_PUBLIC_KEY_PATH = get_abs_path(
 )
 
 PADDLE_AUTH_CODE = os.environ.get("PADDLE_AUTH_CODE")
+
+# Transition flag:
+PADDLE_ALLOW_UNSIGNED_PASSTHROUGH = "PADDLE_ALLOW_UNSIGNED_PASSTHROUGH" in os.environ
 
 PADDLE_COUPON_ID = os.environ.get("PADDLE_COUPON_ID")
 
@@ -310,7 +314,7 @@ CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
-OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES", "openid email profile").split()
 OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
 
 PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
@@ -520,8 +524,10 @@ ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
 DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
 
-# Bounces can happen after 5 days
-VERP_MESSAGE_LIFETIME = 5 * 86400
+# How long a VERP address stays valid. Bounces can happen after 5 days, as mail
+# servers retry for days before giving up, so leave some margin: 7 days also
+# matches how long the transactional_email rows a VERP can point at are kept.
+VERP_MESSAGE_LIFETIME = 7 * 86400
 VERP_PREFIX = os.environ.get("VERP_PREFIX") or "sl"
 # Generate with python3 -c 'import secrets; print(secrets.token_hex(28))'
 VERP_EMAIL_SECRET = os.environ.get("VERP_EMAIL_SECRET") or (

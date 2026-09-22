@@ -17,6 +17,7 @@ from app.models import (
     PartnerUser,
     PartnerSubscription,
 )
+from app.payments.paddle_passthrough import sign_passthrough
 from app.proton.proton_partner import get_proton_partner
 
 
@@ -65,6 +66,7 @@ def pricing():
         PADDLE_MONTHLY_PRODUCT_ID=PADDLE_MONTHLY_PRODUCT_ID,
         PADDLE_YEARLY_PRODUCT_ID=PADDLE_YEARLY_PRODUCT_ID,
         success_url=URL + "/dashboard/subscription_success",
+        paddle_passthrough=sign_passthrough(current_user.id),
         manual_sub=manual_sub,
         coinbase_sub=coinbase_sub,
         now=now,
