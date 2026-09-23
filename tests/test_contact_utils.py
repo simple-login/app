@@ -243,3 +243,29 @@ def test_create_contact_with_reply_email():
     assert out.contact is None
     assert out.created is False
     assert out.error == ContactCreateError.InvalidEmail
+
+
+def test_create_contact_with_linebreak_in_name():
+    """A line break in the name would inject a header in the messages we send"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact_result = create_contact(
+        random_email(), alias, name="Evil\nReply-To: attacker@evil.com"
+    )
+    assert contact_result.error is None
+    assert contact_result.contact.name == "Evil Reply-To: attacker@evil.com"
+
+
+def test_update_contact_with_linebreak_in_name():
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    email = random_email()
+    assert create_contact(email, alias, name="Initial").error is None
+    contact_result = create_contact(
+        email, alias, name="Evil\r\nReply-To: attacker@evil.com"
+    )
+    assert contact_result.error is None
+    assert "\n" not in contact_result.contact.name
+    assert "\r" not in contact_result.contact.name
