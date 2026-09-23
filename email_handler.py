@@ -93,6 +93,7 @@ from app.email_utils import (
     parse_id_from_bounce,
     spf_pass,
     sanitize_header,
+    sanitize_header_value,
     get_queue_id,
     should_ignore_bounce,
     parse_full_address,
@@ -908,12 +909,12 @@ def forward_email_to_mailbox(
 
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
     if user.include_header_email_header:
-        msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+        msg[headers.SL_ENVELOPE_FROM] = sanitize_header_value(envelope.mail_from)
         if contact.name:
             original_from = f"{contact.name} <{contact.website_email}>"
         else:
             original_from = contact.website_email
-        msg[headers.SL_ORIGINAL_FROM] = original_from
+        msg[headers.SL_ORIGINAL_FROM] = sanitize_header_value(original_from)
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 

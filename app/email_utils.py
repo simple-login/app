@@ -580,6 +580,10 @@ def delete_header(msg: Message, header: str):
             del msg._headers[i]
 
 
+def sanitize_header_value(value: str) -> str:
+    return value.strip().replace("\n", " ").replace("\r", "")
+
+
 def sanitize_header(msg: Message, header: str):
     """remove trailing space and remove linebreak from a header"""
     header_lowercase = header.lower()
@@ -590,7 +594,7 @@ def sanitize_header(msg: Message, header: str):
             if msg._headers[i][1]:
                 msg._headers[i] = (
                     msg._headers[i][0],
-                    msg._headers[i][1].strip().replace("\n", " ").replace("\r", ""),
+                    sanitize_header_value(msg._headers[i][1]),
                 )
 
 
@@ -1762,5 +1766,8 @@ def is_expired_verp_address(email: str) -> bool:
 def sl_formataddr(name_address_tuple: Tuple[str, str]):
     """Same as formataddr but use utf-8 encoding by default and always return str (and never Header)"""
     name, addr = name_address_tuple
+    # a line break in the name would inject a header in the generated message
+    if name:
+        name = sanitize_header_value(name)
     # formataddr can return Header, make sure to convert to str
     return str(formataddr((name, Header(addr, "utf-8"))))

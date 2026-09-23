@@ -1027,6 +1027,14 @@ def test_sl_formataddr():
         formataddr(("é", "è@ç.à"))
 
 
+def test_sl_formataddr_removes_linebreaks_from_the_name():
+    """a line break in the name would inject a header in the generated message"""
+    assert (
+        sl_formataddr(("Evil\r\nReply-To: attacker@evil.com", "a@b.c"))
+        == '"Evil Reply-To: attacker@evil.com" <a@b.c>'
+    )
+
+
 def test_add_header_to_invalid_multipart():
     msg = load_eml_file("add_header_multipart.eml")
     msg = add_header(msg, "test", "test")
