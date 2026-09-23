@@ -34,7 +34,8 @@ def user_info():
             "deprecated: bearer token passed in query string, client %s",
             oauth_token.client_id,
         )
-    elif oauth_token.is_expired():
+
+    if oauth_token.is_expired():
         LOG.d("delete oauth token %s", oauth_token)
         OauthToken.delete(oauth_token.id)
         Session.commit()
