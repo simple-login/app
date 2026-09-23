@@ -681,6 +681,10 @@ EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
 MAX_BOUNCES_1D = int(os.environ.get("MAX_BOUNCES_1D", 12))
 MAX_BOUNCES_1W = int(os.environ.get("MAX_BOUNCES_1W", 10))
 
+# How many provider complaints we store per user and per day. Complaints are
+# only identified by the envelope sender, so anybody can have us store one
+MAX_PROVIDER_COMPLAINTS_1D = int(os.environ.get("MAX_PROVIDER_COMPLAINTS_1D", 10))
+
 
 def read_partner_dict(var: str) -> dict[int, str]:
     partner_value = get_env_dict(var)
