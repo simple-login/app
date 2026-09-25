@@ -1,9 +1,11 @@
-import app.alias_utils
 import arrow
 import pytest
+from flask import url_for
+
+import app.alias_utils
 from app import config
-from app.db import Session
 from app.dashboard.views.alias_transfer import hmac_alias_transfer_token
+from app.db import Session
 from app.events.event_dispatcher import GlobalDispatcher
 from app.models import (
     Alias,
@@ -16,6 +18,8 @@ from app.models import (
     OauthToken,
     RedirectUri,
 )
+from app.models import User
+from app.utils import random_string
 from tests.events.event_test_utils import (
     OnMemoryDispatcher,
     _get_event_from_string,
@@ -28,9 +32,6 @@ from tests.utils import (
     random_email,
     random_token,
 )
-from app.models import User
-from app.utils import random_string
-from flask import url_for
 
 on_memory_dispatcher = OnMemoryDispatcher()
 
@@ -274,6 +275,7 @@ def test_alias_transfer_when_receiver_uses_same_client(flask_client):
 def _assert_alias_not_transferred(alias, source_user, source_mailbox_ids):
     Session.expire_all()
     alias = Alias.get(alias.id)
+    assert alias is not None
     assert alias.user_id == source_user.id
     assert alias.original_owner_id is None
     assert {mb.id for mb in alias.mailboxes} == source_mailbox_ids
@@ -290,7 +292,6 @@ def test_alias_transfer_rejects_mailbox_of_another_user(flask_client):
 
     with pytest.raises(Exception, match="not owned by the new user"):
         app.alias_utils.transfer_alias(alias, target_user, third_user.mailboxes())
-    Session.rollback()
 
     _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
 
@@ -310,7 +311,6 @@ def test_alias_transfer_rejects_previous_owner_mailbox(flask_client):
             target_user,
             [target_user.default_mailbox, source_user.default_mailbox],
         )
-    Session.rollback()
 
     _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
 
@@ -325,7 +325,6 @@ def test_alias_transfer_rejects_empty_mailboxes(flask_client):
 
     with pytest.raises(Exception, match="without a mailbox"):
         app.alias_utils.transfer_alias(alias, target_user, [])
-    Session.rollback()
 
     _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
 
