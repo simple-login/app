@@ -462,6 +462,22 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
     if User.get_by(newsletter_alias_id=alias.id):
         raise Exception("Cannot transfer alias that's used to receive newsletter")
 
+    # validate before touching anything: the alias must only be delivered to the new owner's mailboxes
+    if not new_mailboxes:
+        raise Exception("Cannot transfer alias without a mailbox")
+    for mb in new_mailboxes:
+        if mb.user_id != new_user.id:
+            LOG.w(
+                "Cannot transfer alias %s to user %s with mailbox %s owned by user %s",
+                alias.id,
+                new_user.id,
+                mb.id,
+                mb.user_id,
+            )
+            raise Exception(
+                "Cannot transfer alias to a mailbox not owned by the new user"
+            )
+
     # update user_id
     Session.query(Contact).filter(Contact.alias_id == alias.id).update(
         {"user_id": new_user.id}

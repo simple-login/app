@@ -1,5 +1,6 @@
 import app.alias_utils
 import arrow
+import pytest
 from app import config
 from app.db import Session
 from app.dashboard.views.alias_transfer import hmac_alias_transfer_token
@@ -268,3 +269,83 @@ def test_alias_transfer_when_receiver_uses_same_client(flask_client):
     kept = ClientUser.get(target_client_user.id)
     assert kept is not None
     assert kept.user_id == target_user.id
+
+
+def _assert_alias_not_transferred(alias, source_user, source_mailbox_ids):
+    Session.expire_all()
+    alias = Alias.get(alias.id)
+    assert alias.user_id == source_user.id
+    assert alias.original_owner_id is None
+    assert {mb.id for mb in alias.mailboxes} == source_mailbox_ids
+
+
+def test_alias_transfer_rejects_mailbox_of_another_user(flask_client):
+    source_user = _create_user_with_mailbox()
+    alias = Alias.create_new_random(source_user)
+    Session.commit()
+    source_mailbox_ids = {mb.id for mb in alias.mailboxes}
+
+    target_user = _create_user_with_mailbox()
+    third_user = _create_user_with_mailbox()
+
+    with pytest.raises(Exception, match="not owned by the new user"):
+        app.alias_utils.transfer_alias(alias, target_user, third_user.mailboxes())
+    Session.rollback()
+
+    _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
+
+
+def test_alias_transfer_rejects_previous_owner_mailbox(flask_client):
+    """the previous owner must not keep receiving the alias emails"""
+    source_user = _create_user_with_mailbox()
+    alias = Alias.create_new_random(source_user)
+    Session.commit()
+    source_mailbox_ids = {mb.id for mb in alias.mailboxes}
+
+    target_user = _create_user_with_mailbox()
+
+    with pytest.raises(Exception, match="not owned by the new user"):
+        app.alias_utils.transfer_alias(
+            alias,
+            target_user,
+            [target_user.default_mailbox, source_user.default_mailbox],
+        )
+    Session.rollback()
+
+    _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
+
+
+def test_alias_transfer_rejects_empty_mailboxes(flask_client):
+    source_user = _create_user_with_mailbox()
+    alias = Alias.create_new_random(source_user)
+    Session.commit()
+    source_mailbox_ids = {mb.id for mb in alias.mailboxes}
+
+    target_user = _create_user_with_mailbox()
+
+    with pytest.raises(Exception, match="without a mailbox"):
+        app.alias_utils.transfer_alias(alias, target_user, [])
+    Session.rollback()
+
+    _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
+
+
+def test_alias_transfer_receive_rejects_mailbox_of_another_user(flask_client):
+    source_user = _create_user_with_mailbox()
+    alias = Alias.create_new_random(source_user)
+    Session.commit()
+    source_mailbox_ids = {mb.id for mb in alias.mailboxes}
+
+    target_user = _create_user_with_mailbox()
+    transfer_token = _start_transfer(alias)
+    login(flask_client, target_user)
+
+    r = flask_client.post(
+        url_for("dashboard.alias_transfer_receive_route", token=transfer_token),
+        data={"mailbox_ids": str(source_user.default_mailbox_id)},
+        follow_redirects=True,
+    )
+
+    assert r.status_code == 200
+    assert "Something went wrong, please retry" in r.get_data(as_text=True)
+    _assert_alias_not_transferred(alias, source_user, source_mailbox_ids)
