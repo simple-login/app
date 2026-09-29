@@ -49,7 +49,7 @@ from typing import List, Tuple, Optional, Set
 import newrelic.agent
 import sentry_sdk
 from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
+from aiosmtpd.smtp import Envelope, SMTP
 from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
@@ -2488,6 +2488,9 @@ class MailHandler:
 
 def main(port: int):
     """Use aiosmtpd Controller"""
+    # Increase max line length to allow for non-compliant senders
+    # See https://aiosmtpd.aio-libs.org/en/stable/smtp.html#aiosmtpd.smtp.SMTP.line_length_limit
+    SMTP.line_length_limit = 2**16
     controller = Controller(
         MailHandler(),
         hostname="0.0.0.0",
