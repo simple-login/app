@@ -1,5 +1,4 @@
 from functools import wraps
-from time import time
 
 from flask import render_template, flash, redirect, url_for, session, request
 from flask_login import login_required, current_user
@@ -12,6 +11,7 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import PartnerUser, SocialAuth
 from app.proton.proton_partner import get_proton_partner
+from app.session import is_session_sudo_mode_active, set_session_sudo_mode
 from app.utils import sanitize_next_url
 
 _SUDO_GAP = 120
@@ -31,7 +31,7 @@ def enter_sudo():
         password = password_check_form.password.data
 
         if current_user.check_password(password):
-            session["sudo_time"] = int(time())
+            set_session_sudo_mode(current_user.id)
 
             # Restore flash messages that were preserved when sudo_required intercepted
             if "_preserved_flashes" in session:
@@ -76,10 +76,7 @@ def enter_sudo():
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if (
-            "sudo_time" not in session
-            or (time() - int(session["sudo_time"])) > _SUDO_GAP
-        ):
+        if not is_session_sudo_mode_active(current_user.id, _SUDO_GAP):
             # Preserve pending flash messages so they aren't consumed by enter_sudo
             # and are shown on the destination page after sudo completes.
             if session.get("_flashes"):

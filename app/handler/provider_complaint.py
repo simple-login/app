@@ -5,11 +5,14 @@ from io import BytesIO
 from mailbox import Message
 from typing import Optional, Union
 
+import arrow
+
 from app import s3
 from app.config import (
     ALERT_COMPLAINT_REPLY_PHASE,
     ALERT_COMPLAINT_TRANSACTIONAL_PHASE,
     ALERT_COMPLAINT_FORWARD_PHASE,
+    MAX_PROVIDER_COMPLAINTS_1D,
 )
 from app.email import headers
 from app.email_utils import (
@@ -79,6 +82,9 @@ class ProviderComplaintOrigin(ABC):
         of the original message, since in the original message there can be more than one recipients.
         There can only be one sender so that one can safely be extracted from the message headers.
         """
+        if message is None:
+            LOG.w("Cannot find the original message in the complaint")
+            return None
         try:
             if not rcpt_header:
                 rcpt_header = message[headers.TO]
@@ -129,7 +135,9 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         for part in message.walk():
             if part["content-type"] == "message/feedback-report":
                 content = part.get_payload()
-                if not content:
+                # a message/* part is parsed as a list holding the sub message.
+                # Anything else is not a report we can read
+                if not content or not isinstance(content, list):
                     continue
                 return content[0]
         return None
@@ -144,7 +152,7 @@ class ProviderComplaintYahoo(ProviderComplaintOrigin):
         """
         report = cls.get_feedback_report(message)
         original = cls.get_original_message(message)
-        rcpt_header = report[headers.YAHOO_ORIGINAL_RECIPIENT]
+        rcpt_header = report[headers.YAHOO_ORIGINAL_RECIPIENT] if report else None
         return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod
@@ -173,7 +181,7 @@ class ProviderComplaintHotmail(ProviderComplaintOrigin):
         Try to get the proper recipient from original x-simplelogin-envelope-to header we add on delivery.
         If we can't find the header, use the first address in the original message from"""
         original = cls.get_original_message(message)
-        rcpt_header = original[headers.SL_ENVELOPE_TO]
+        rcpt_header = original[headers.SL_ENVELOPE_TO] if original else None
         return cls.sanitize_addresses_and_extract_mailbox_id(rcpt_header, original)
 
     @classmethod
@@ -334,7 +342,26 @@ def report_complaint_to_user_in_forward_phase(
     )
 
 
+def can_store_provider_complaint(user_id: int) -> bool:
+    """A complaint is only identified by the envelope sender, so anybody can
+    have us store one. Cap how many we keep for a user in a day"""
+    nb_complaints = ProviderComplaint.filter(
+        ProviderComplaint.user_id == user_id,
+        ProviderComplaint.created_at > arrow.now().shift(days=-1),
+    ).count()
+    if nb_complaints < MAX_PROVIDER_COMPLAINTS_1D:
+        return True
+    LOG.w(
+        f"Not storing provider complaint for user {user_id}, "
+        f"already {nb_complaints} in the last day"
+    )
+    return False
+
+
 def store_provider_complaint(alias, message):
+    if not can_store_provider_complaint(alias.user_id):
+        return
+
     email_name = f"reply-{uuid.uuid4().hex}.eml"
     full_report_path = f"provider_complaint/{email_name}"
     s3.upload_email_from_bytesio(

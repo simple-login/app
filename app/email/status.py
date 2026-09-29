@@ -22,6 +22,7 @@ E213 = "250 SL E213 Unknown email ignored"
 E214 = "250 SL E214 Unauthorized for using reverse alias"
 E215 = "250 SL E215 Handled dmarc policy"
 E216 = "250 SL E216 Handled spf policy"
+E217 = "250 SL E217 Expired VERP address ignored"
 
 # endregion
 
@@ -53,6 +54,7 @@ E516 = "550 SL E516 invalid mailbox"
 E517 = "550 SL E517 unverified mailbox"
 E518 = "550 SL E518 Disabled mailbox"
 E519 = "550 SL E519 Email detected as spam"
+E520 = "550 SL E520 Unverified custom domain"
 E521 = "550 SL E521 Cannot reach mailbox"
 E522 = (
     "550 SL E522 The user you are trying to contact is receiving mail "

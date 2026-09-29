@@ -91,6 +91,9 @@
               <option value="{{ current_user.email }}">{{ current_user.email }} (Personal Email)</option>
               {% for email in other_emails %}<option value="{{ email }}">{{ email }}</option>{% endfor %}
             </select>
+            <input type="hidden"
+                   name="signed-suggested-email"
+                   value="{{ signed_suggested_email }}">
             {% if current_user.can_create_new_alias() %}
 
               <div class="mt-2 mb-2">OR</div>

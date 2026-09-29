@@ -50,6 +50,8 @@ from app.models import (
     AutoCreateRule,
     AliasUsedOn,
     ClientUser,
+    AuthorizationCode,
+    OauthToken,
 )
 from app.regex_utils import regex_match
 
@@ -421,10 +423,60 @@ def alias_export_csv(user, csv_direct_export=False):
     return output
 
 
+def revoke_client_user(client_user: ClientUser):
+    Session.query(AuthorizationCode).filter(
+        AuthorizationCode.client_id == client_user.client_id,
+        AuthorizationCode.user_id == client_user.user_id,
+    ).delete(synchronize_session=False)
+    Session.query(OauthToken).filter(
+        OauthToken.client_id == client_user.client_id,
+        OauthToken.user_id == client_user.user_id,
+    ).delete(synchronize_session=False)
+    ClientUser.delete(client_user.id)
+    LOG.i(
+        "revoked client-user %s (client %s, user %s)",
+        client_user.id,
+        client_user.client_id,
+        client_user.user_id,
+    )
+
+
+def revoke_client_users_for_alias(alias: Alias) -> int:
+    client_users = ClientUser.filter_by(alias_id=alias.id).all()
+    for client_user in client_users:
+        LOG.i(
+            "revoke client-user %s due to transfer of alias %s",
+            client_user.id,
+            alias.email,
+        )
+        revoke_client_user(client_user)
+    return len(client_users)
+
+
+def alias_used_for_sign_in(alias: Alias) -> bool:
+    return ClientUser.filter(ClientUser.alias_id == alias.id).count() > 0
+
+
 def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
     # cannot transfer alias which is used for receiving newsletter
     if User.get_by(newsletter_alias_id=alias.id):
         raise Exception("Cannot transfer alias that's used to receive newsletter")
+
+    # validate before touching anything: the alias must only be delivered to the new owner's mailboxes
+    if not new_mailboxes:
+        raise Exception("Cannot transfer alias without a mailbox")
+    for mb in new_mailboxes:
+        if mb.user_id != new_user.id:
+            LOG.w(
+                "Cannot transfer alias %s to user %s with mailbox %s owned by user %s",
+                alias.id,
+                new_user.id,
+                mb.id,
+                mb.user_id,
+            )
+            raise Exception(
+                "Cannot transfer alias to a mailbox not owned by the new user"
+            )
 
     # update user_id
     Session.query(Contact).filter(Contact.alias_id == alias.id).update(
@@ -435,9 +487,7 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
         {"user_id": new_user.id}
     )
 
-    Session.query(ClientUser).filter(ClientUser.alias_id == alias.id).update(
-        {"user_id": new_user.id}
-    )
+    revoke_client_users_for_alias(alias)
 
     # remove existing mailboxes from the alias
     Session.query(AliasMailbox).filter(AliasMailbox.alias_id == alias.id).delete()
@@ -475,6 +525,9 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
     # set some fields back to default
     alias.disable_pgp = False
     alias.pinned = False
+    # the directory belongs to the previous owner: keeping the reference would let
+    # them delete the alias (ondelete=cascade) and would skew their alias count
+    alias.directory_id = None
 
     emit_alias_audit_log(
         alias=alias,

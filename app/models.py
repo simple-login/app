@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import arrow
 import base64
 import dataclasses
 import enum
@@ -9,14 +8,17 @@ import hmac
 import os
 import random
 import secrets
-import sqlalchemy as sa
 import uuid
+from typing import List, Tuple, Optional, Union
+
+import arrow
+import sqlalchemy as sa
 from arrow import Arrow
 from email_validator import validate_email
 from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
-from jinja2 import FileSystemLoader, Environment
+from jinja2 import FileSystemLoader, Environment, select_autoescape
 from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
@@ -26,7 +28,6 @@ from sqlalchemy.orm import deferred
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
-from typing import List, Tuple, Optional, Union
 
 from app import config, rate_limiter
 from app import s3
@@ -410,6 +411,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     FLAG_CREATED_FROM_PARTNER = 1 << 1
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
     FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
+    FLAG_REFERRAL_PROGRAM_PARTICIPANT = 1 << 4
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -1043,19 +1045,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         sub = Subscription.get_by(user_id=self.id)
 
-        if sub:
-            # grace period is 14 days
-            # sub is active until the next billing_date + PADDLE_SUBSCRIPTION_GRACE_DAYS
-            if (
-                sub.next_bill_date
-                >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
-            ):
-                return sub
-            # past subscription, user is considered not having a subscription = free plan
-            else:
-                return None
-        else:
-            return sub
+        # past subscription, user is considered not having a subscription = free plan
+        if sub and not sub.is_active():
+            return None
+
+        return sub
 
     def verified_custom_domains(self) -> List["CustomDomain"]:
         return (
@@ -1099,6 +1093,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
+            # Request domains to also be MX verified
+            if not custom_domain.verified:
+                continue
             res.append((False, custom_domain.domain))
 
         return res
@@ -1258,6 +1255,23 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             + Client.filter(Client.user_id == self.id).count()
             > 0
         )
+
+    def can_use_referral_program(self) -> bool:
+        """The referral program is closed to new participants. Only users who already
+        have a referral code, or were paid out before, keep access."""
+        if self.flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT > 0:
+            return True
+
+        if (
+            Session.query(Referral.id).filter_by(user_id=self.id).first() is None
+            and Session.query(Payout.id).filter_by(user_id=self.id).first() is None
+        ):
+            return False
+
+        # remember it so deleting all their codes later doesn't lock them out
+        self.flags = self.flags | User.FLAG_REFERRAL_PROGRAM_PARTICIPANT
+        Session.commit()
+        return True
 
     def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
@@ -1773,6 +1787,21 @@ class Alias(Base, ModelMixin):
             custom_domain = CustomDomain.get_by(domain=alias_domain)
             if custom_domain:
                 return custom_domain
+
+    @classmethod
+    def lock_for_update(cls, alias_id: int):
+        """Acquire an exclusive row lock on the alias to serialise concurrent writes.
+
+        Call this before creating an EmailLog for the alias so that the lock order
+        is always alias → email_log, preventing the deadlock that arises when two
+        concurrent transactions each hold a share lock (from the email_log FK insert)
+        and then both try to escalate to an exclusive lock for the
+        last_email_log_id UPDATE.
+        """
+        Session.execute(
+            "SELECT id FROM alias WHERE id = :alias_id FOR UPDATE",
+            {"alias_id": alias_id},
+        )
 
     @classmethod
     def create(cls, **kw):
@@ -2378,6 +2407,16 @@ class Subscription(Base, ModelMixin):
     )
 
     user = orm.relationship(User)
+
+    def is_active(self) -> bool:
+        """whether the subscription still entitles the user to the paid plan.
+        A subscription stays active until its next billing date plus the grace
+        period, whether or not it has been cancelled in the meantime.
+        """
+        return (
+            self.next_bill_date
+            >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
+        )
 
     def plan_name(self):
         if self.plan == PlanEnum.monthly:
@@ -3341,7 +3380,10 @@ class Notification(Base, ModelMixin):
     @staticmethod
     def render(template_name, **kwargs) -> str:
         templates_dir = os.path.join(config.ROOT_DIR, "templates")
-        env = Environment(loader=FileSystemLoader(templates_dir))
+        env = Environment(
+            loader=FileSystemLoader(templates_dir),
+            autoescape=select_autoescape(["html"]),
+        )
 
         template = env.get_template(template_name)
 

@@ -1,11 +1,16 @@
 from dataclasses import dataclass
 from enum import Enum
-from sqlalchemy.exc import IntegrityError
 from typing import Optional
+
+from sqlalchemy.exc import IntegrityError
 
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
-from app.email_utils import generate_reply_email, parse_full_address
+from app.email_utils import (
+    generate_reply_email,
+    parse_full_address,
+    sanitize_header_value,
+)
 from app.email_validation import is_valid_email
 from app.errors import CannotCreateContactForReverseAlias
 from app.log import LOG
@@ -74,6 +79,13 @@ def create_contact(
     if name is not None and "\x00" in name:
         LOG.w("Cannot use contact name because has \\x00")
         name = ""
+    if name:
+        # the name ends up in the headers of the messages we send. A line break
+        # in it, which an RFC 2047 encoded word can carry, would break
+        sanitized_name = sanitize_header_value(name)
+        if sanitized_name != name:
+            LOG.w("Contact name had to be sanitized")
+            name = sanitized_name
     # Sanitize email and if it's not valid only allow to create a contact if it's explicitly allowed. Otherwise fail
     email = sanitize_email(email, not_lower=True)
     if not is_valid_email(email):

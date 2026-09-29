@@ -11,11 +11,15 @@ BASE64_LINELENGTH = 76
 
 def message_to_bytes(msg: Message) -> bytes:
     """replace Message.as_bytes() method by trying different policies"""
+    errors = []
     for generator_policy in [None, policy.SMTP, policy.SMTPUTF8]:
         try:
             return msg.as_bytes(policy=generator_policy)
-        except Exception:
-            LOG.w("as_bytes() fails with %s policy", policy, exc_info=True)
+        except Exception as e:
+            errors.append((generator_policy, e))
+
+    for generator_policy, e in errors:
+        LOG.w("as_bytes() fails with %s policy: %s", generator_policy, e)
 
     msg_string = msg.as_string()
     try:

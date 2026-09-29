@@ -1,7 +1,8 @@
 import random
-from email.message import Message
+from email.message import EmailMessage, Message
 
 import pytest
+from app import config
 from app.config import (
     ALERT_COMPLAINT_FORWARD_PHASE,
     ALERT_COMPLAINT_REPLY_PHASE,
@@ -9,6 +10,7 @@ from app.config import (
     POSTMASTER,
 )
 from app.db import Session
+from app.email import headers
 from app.email_utils import generate_verp_email
 from app.handler.provider_complaint import (
     handle_hotmail_complaint,
@@ -18,6 +20,7 @@ from app.mail_sender import mail_sender
 from app.models import (
     Alias,
     ProviderComplaint,
+    RefusedEmail,
     SentAlert,
     EmailLog,
     VerpType,
@@ -109,3 +112,38 @@ def test_provider_reply_phase(flask_client, handle_ftor, provider):
     sent_mails = mail_sender.get_stored_emails()
     assert len(sent_mails) == 1
     assert alerts[0].alert_type == f"{ALERT_COMPLAINT_FORWARD_PHASE}_{provider}"
+
+
+@pytest.mark.parametrize("handle_ftor,provider", origins)
+def test_provider_complaints_are_capped_per_day(flask_client, handle_ftor, provider):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    for _ in range(config.MAX_PROVIDER_COMPLAINTS_1D + 3):
+        complaint = prepare_complaint(
+            provider, alias, "nobody@nowhere.net", alias.email
+        )
+        assert handle_ftor(complaint)
+
+    assert (
+        ProviderComplaint.filter_by(user_id=user.id).count()
+        == config.MAX_PROVIDER_COMPLAINTS_1D
+    )
+    assert (
+        RefusedEmail.filter_by(user_id=user.id).count()
+        == config.MAX_PROVIDER_COMPLAINTS_1D
+    )
+
+
+@pytest.mark.parametrize("handle_ftor,provider", origins)
+def test_complaint_without_original_message_is_not_handled(
+    flask_client, handle_ftor, provider
+):
+    """A message that does not have the parts we expect must be forwarded
+    normally instead of raising"""
+    message = EmailMessage()
+    message[headers.FROM] = "someone@nowhere.net"
+    message.set_content("not a complaint")
+
+    assert handle_ftor(message) is False

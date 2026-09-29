@@ -15,6 +15,7 @@
         After this, you will stop receiving all emails sent to this alias, please confirm. You will always be able to re-activate it untill you will decide to delete it.
       </p>
       <form method="post">
+        {{ csrf_form.csrf_token }}
         <button class="btn btn-warning">Confirm</button>
       </form>
     </div>

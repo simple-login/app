@@ -4,6 +4,7 @@ import os
 import random
 import string
 from email.message import EmailMessage
+from time import time
 from typing import Optional, Dict
 
 import jinja2
@@ -12,6 +13,7 @@ from flask import url_for
 from app.db import Session
 from app.models import User, PartnerUser, UserAliasDeleteAction
 from app.proton.proton_partner import get_proton_partner
+from app.session import SUDO_TIME_KEY, SUDO_USER_ID_KEY
 from app.utils import random_string
 
 
@@ -64,6 +66,19 @@ def login(flask_client, user: Optional[User] = None) -> User:
     assert b"/auth/logout" in r.data
 
     return user
+
+
+def enter_sudo_mode(flask_client, user: User):
+    """Put the session of flask_client in sudo mode for user"""
+    with flask_client.session_transaction() as session:
+        session[SUDO_TIME_KEY] = int(time())
+        session[SUDO_USER_ID_KEY] = user.id
+
+
+def exit_sudo_mode(flask_client):
+    with flask_client.session_transaction() as session:
+        session.pop(SUDO_TIME_KEY, None)
+        session.pop(SUDO_USER_ID_KEY, None)
 
 
 def random_domain() -> str:

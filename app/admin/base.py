@@ -6,8 +6,11 @@ import sqlalchemy
 from flask import redirect, url_for, request, flash, session, Response
 from flask_admin import expose, AdminIndexView, BaseView
 from flask_admin.contrib import sqla
+from flask_admin.contrib.sqla import tools
 from flask_login import current_user
 from markupsafe import Markup
+from sqlalchemy import Unicode, or_
+from sqlalchemy.sql.expression import cast
 from time import time
 
 from app import config
@@ -28,6 +31,24 @@ def _has_valid_admin_time() -> bool:
     ):
         return False
     return True
+
+
+_MAX_BIGINT = 2**63 - 1
+
+
+def _term_as_int(term: str) -> Optional[int]:
+    """Return the term as an int if it is a plain positive integer, else None.
+
+    flask-admin's `=` (exact match) prefix is accepted, as an exact match on a
+    number is exactly what the integer lookup does.
+    """
+    digits = term[1:] if term.startswith("=") else term
+    if not (digits.isascii() and digits.isdigit()):
+        return None
+    value = int(digits)
+    if value > _MAX_BIGINT:
+        return None
+    return value
 
 
 def _admin_action_formatter(view, context, model, name):
@@ -80,6 +101,73 @@ class SLModelView(sqla.ModelView, BaseAdminView):
     can_create = False
     can_delete = False
     edit_modal = True
+
+    def _apply_search(self, query, count_query, joins, count_joins, search):
+        """Numeric-aware version of flask-admin's search.
+
+        flask-admin casts *every* searchable column to text and matches it with
+        ILIKE '%term%'. On the user list that means searching an id runs
+        `CAST(users.id AS VARCHAR) ILIKE '%123%' OR CAST(users.email AS VARCHAR)
+        ILIKE '%123%'`, so both the list and the count query sequentially scan
+        the whole table.
+
+        Instead, when a term is a plain integer we compare the integer columns
+        directly (indexed lookup) and skip the text columns for that term; when
+        it is not, we skip the integer columns, which can never match by
+        equality. So a term is either an id lookup or a text search, never
+        both. To search text columns for a number, use flask-admin's `^`
+        (starts with) prefix.
+        """
+        for term in search.split(" "):
+            if not term:
+                continue
+
+            term_as_int = _term_as_int(term)
+            stmt = tools.parse_like_term(term)
+
+            int_filter, int_count_filter = [], []
+            text_filter, text_count_filter = [], []
+
+            for field, path in self._search_fields:
+                query, joins, alias = self._apply_path_joins(
+                    query, joins, path, inner_join=False
+                )
+
+                count_alias = None
+                if count_query is not None:
+                    count_query, count_joins, count_alias = self._apply_path_joins(
+                        count_query, count_joins, path, inner_join=False
+                    )
+
+                column = field if alias is None else getattr(alias, field.key)
+                count_column = (
+                    field if count_alias is None else getattr(count_alias, field.key)
+                )
+
+                # hybrid properties have no type, treat them as text
+                if isinstance(getattr(field, "type", None), sqlalchemy.Integer):
+                    if term_as_int is not None:
+                        int_filter.append(column == term_as_int)
+                        int_count_filter.append(count_column == term_as_int)
+                else:
+                    text_filter.append(cast(column, Unicode).ilike(stmt))
+                    text_count_filter.append(cast(count_column, Unicode).ilike(stmt))
+
+            # Prefer the integer columns, and only fall back to the text ones
+            # if the term produced no integer clause. If the term produced no
+            # clause at all - a non-numeric term on a view that only has
+            # integer searchable columns - nothing can match, and the filter
+            # must say so rather than be dropped.
+            filter_stmt = int_filter or text_filter or [sqlalchemy.false()]
+            count_filter_stmt = (
+                int_count_filter or text_count_filter or [sqlalchemy.false()]
+            )
+
+            query = query.filter(or_(*filter_stmt))
+            if count_query is not None:
+                count_query = count_query.filter(or_(*count_filter_stmt))
+
+        return query, count_query, joins, count_joins
 
     def on_model_change(self, form, model, is_created):
         changes = {}

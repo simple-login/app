@@ -15,7 +15,10 @@ from app.models import (
     Fido,
     AdminAuditLog,
     AuditLogActionEnum,
+    Subscription,
+    PlanEnum,
 )
+from app.admin.email_search import EmailSearchHelpers
 from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_token
 
@@ -211,6 +214,82 @@ def test_email_search_user_with_subscription(flask_client):
     assert r.status_code == 200
     assert b"Manual" in r.data  # Subscription type badge
     assert b"Subscription" in r.data  # Subscription section header
+
+
+def test_email_search_user_with_paddle_subscription_shows_link(flask_client):
+    """Test that a Paddle subscription links to the Paddle dashboard."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"paddle_{random_token(8)}@example.com")
+    subscription_id = random_token(10)
+    Subscription.create(
+        user_id=test_user.id,
+        cancel_url="https://checkout.paddle.com/cancel",
+        update_url="https://checkout.paddle.com/update",
+        subscription_id=subscription_id,
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(months=1).date(),
+        plan=PlanEnum.monthly,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    expected_url = EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(subscription_id)
+    assert expected_url.encode() in r.data
+    assert subscription_id.encode() in r.data
+
+
+def test_email_search_user_without_paddle_subscription_has_no_link(flask_client):
+    """Test that users without a Paddle subscription get no Paddle link."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"nopaddle_{random_token(8)}@example.com")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"vendors.paddle.com" not in r.data
+
+
+def test_email_search_expired_paddle_subscription_still_shows_link(flask_client):
+    """An expired Paddle subscription is still reachable from the admin panel."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"oldpaddle_{random_token(8)}@example.com")
+    subscription_id = random_token(10)
+    Subscription.create(
+        user_id=test_user.id,
+        cancel_url="https://checkout.paddle.com/cancel",
+        update_url="https://checkout.paddle.com/update",
+        subscription_id=subscription_id,
+        event_time=arrow.now().shift(years=-1),
+        next_bill_date=arrow.now().shift(years=-1).date(),
+        plan=PlanEnum.yearly,
+        cancelled=True,
+        flush=True,
+    )
+    Session.commit()
+    # the subscription is past its billing date, so it is not the active one
+    assert test_user.get_paddle_subscription() is None
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    expected_url = EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(subscription_id)
+    assert expected_url.encode() in r.data
+    assert b"Cancelled" in r.data
+    # a subscription that will never bill again isn't labelled "next bill"
+    assert b"last bill" in r.data
 
 
 def test_email_search_user_with_audit_logs(flask_client):

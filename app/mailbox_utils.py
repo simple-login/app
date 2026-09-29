@@ -4,7 +4,7 @@ import uuid
 from email.message import Message
 from enum import Enum
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Tuple
 
 import arrow
 from aiosmtpd.smtp import Envelope
@@ -514,22 +514,21 @@ def __get_alias_mailbox_from_email_or_canonical_email(
 
 def get_mailbox_for_reply_phase(
     envelope_mail_from: str, header_mail_from: str, alias
-) -> Optional[Mailbox]:
-    """return the corresponding mailbox given the mail_from and alias
-    Usually the mail_from=mailbox.email but it can also be one of the authorized address
-    """
+) -> Tuple[Optional[Mailbox], bool]:
     mbox = __get_alias_mailbox_from_email_or_canonical_email(envelope_mail_from, alias)
     if mbox is not None:
-        return mbox
+        return mbox, False
     if not header_mail_from:
-        return None
+        return None, False
     envelope_from_domain = get_email_domain_part(envelope_mail_from)
     header_from_domain = get_email_domain_part(header_mail_from)
     if envelope_from_domain != header_from_domain:
-        return None
+        return None, False
     # For services that use VERP sending (envelope from has encoded data to account for bounces)
     # if the domain is the same in the header from as the envelope from we can use the header from
-    return __get_alias_mailbox_from_email_or_canonical_email(header_mail_from, alias)
+    mbox = __get_alias_mailbox_from_email_or_canonical_email(header_mail_from, alias)
+    # Second param returns whether the mbox comes from the From header as a fallback
+    return mbox, mbox is not None
 
 
 def count_mailbox_aliases(mailbox: Mailbox) -> int:

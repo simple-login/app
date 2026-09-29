@@ -12,6 +12,7 @@ from app.models import (
     generate_random_alias_email,
     Alias,
     Contact,
+    EmailLog,
     Mailbox,
     SenderFormatEnum,
     EnumE,
@@ -388,3 +389,40 @@ def test_sync_event_dead_letter():
     assert e3 not in dead_letter_events
     assert e4 not in dead_letter_events
     assert e5 not in dead_letter_events
+
+
+def test_email_log_create_updates_alias_last_email_log_id(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    mailbox = Mailbox.get(alias.mailbox_id)
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=f"{random_token()}@example.com",
+        reply_email=f"reply-{random_token()}@sl.local",
+        commit=True,
+    )
+
+    el1 = EmailLog.create(
+        contact_id=contact.id,
+        user_id=user.id,
+        mailbox_id=mailbox.id,
+        alias_id=alias.id,
+        message_id="msg1@test",
+        commit=True,
+    )
+
+    Session.expire(alias)
+    assert alias.last_email_log_id == el1.id
+
+    el2 = EmailLog.create(
+        contact_id=contact.id,
+        user_id=user.id,
+        mailbox_id=mailbox.id,
+        alias_id=alias.id,
+        message_id="msg2@test",
+        commit=True,
+    )
+
+    Session.expire(alias)
+    assert alias.last_email_log_id == el2.id

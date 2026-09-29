@@ -12,6 +12,7 @@
       </p>
       <p>Please choose the mailbox(es) that owns this alias 👇</p>
       <form method="post" class="mt-2">
+        {{ csrf_form.csrf_token }}
         <select data-width="100%" class="mailbox-select" multiple name="mailbox_ids">
           {% for mailbox in mailboxes %}
 

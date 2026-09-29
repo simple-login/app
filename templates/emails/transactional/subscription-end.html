@@ -3,7 +3,7 @@
 {% block content %}
 
   {{ render_text("Hi") }}
-  {{ render_text("Your subscription will end on " + next_bill_date + ".") }}
+  {{ render_text("Your subscription will end on " + (next_bill_date | safe) + ".") }}
   {{ render_text("When the subscription ends:") }}
   {{ render_text("- All aliases/domains/directories you have created are <b>kept</b> and continue working normally.") }}
   {{ render_text("- You cannot create new reverse aliases.") }}
@@ -18,7 +18,7 @@
 
   {{ render_text("- You cannot add new domain or directory.") }}
   {{ render_text("You can upgrade today to continue using all these Premium features (and much more coming).") }}
-  {{ render_button("Upgrade your account", URL ~ "/dashboard/pricing") }}
+  {{ render_button("Upgrade your account", URL + "/dashboard/pricing") }}
   {{ render_text('Regardless of your choice, we want to say thank you for trying SimpleLogin. We know the product
     requires an investment of your time, and we appreciate you giving us a chance.') }}
   {{ render_text('Thanks,
@@ -27,5 +27,5 @@
   {{ render_text('P.S. If you have any questions or need any help, please don\'t hesitate to
     <a href="https://app.simplelogin.io/dashboard/support">reach out</a>
     ') }}
-  {{ raw_url(URL ~ "/dashboard/pricing") }}
+  {{ raw_url(URL + "/dashboard/pricing") }}
 {% endblock %}

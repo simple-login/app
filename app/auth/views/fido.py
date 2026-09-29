@@ -1,5 +1,6 @@
 import json
 import secrets
+import uuid
 
 import webauthn
 from flask import (
@@ -14,7 +15,6 @@ from flask import (
 )
 from flask_login import login_user
 from flask_wtf import FlaskForm
-from time import time
 from wtforms import HiddenField, validators, BooleanField
 
 from app.auth.base import auth_bp
@@ -24,6 +24,7 @@ from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, Fido, MfaBrowser
+from app.session import set_session_sudo_mode
 from app.utils import sanitize_next_url
 
 
@@ -61,6 +62,8 @@ def fido():
     if request.cookies.get("mfa"):
         browser = MfaBrowser.get_by(token=request.cookies.get("mfa"))
         if browser and not browser.is_expired() and browser.user_id == user.id:
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
             # Redirect user to correct page
@@ -108,7 +111,9 @@ def fido():
             Session.commit()
             del session[MFA_USER_ID]
 
-            session["sudo_time"] = int(time())
+            set_session_sudo_mode(user.id)
+            # Rotate session ID to prevent session fixation
+            session.session_id = str(uuid.uuid4())
             login_user(user)
             flash("Welcome back!", "success")
 

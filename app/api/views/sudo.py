@@ -3,9 +3,11 @@ from sqlalchemy_utils.types.arrow import arrow
 
 from app.api.base import api_bp, require_api_auth
 from app.db import Session
+from app.extensions import limiter
 
 
 @api_bp.route("/sudo", methods=["PATCH"])
+@limiter.limit("5/minute")
 @require_api_auth
 def enter_sudo():
     """

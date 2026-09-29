@@ -473,11 +473,15 @@ def test_get_mailbox_from_mail_from(flask_client):
     alias = Alias.create_new_random(user)
     Session.commit()
 
-    mb = get_mailbox_for_reply_phase(user.email, "", alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(user.email, "", alias)
     assert mb.email == user.email
+    assert used_header_fallback is False
 
-    mb = get_mailbox_for_reply_phase("unauthorized@gmail.com", "", alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(
+        "unauthorized@gmail.com", "", alias
+    )
     assert mb is None
+    assert used_header_fallback is False
 
     # authorized address
     AuthorizedAddress.create(
@@ -486,8 +490,11 @@ def test_get_mailbox_from_mail_from(flask_client):
         email="unauthorized@gmail.com",
         commit=True,
     )
-    mb = get_mailbox_for_reply_phase("unauthorized@gmail.com", "", alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(
+        "unauthorized@gmail.com", "", alias
+    )
     assert mb.email == user.email
+    assert used_header_fallback is False
 
 
 def test_get_mailbox_from_mail_from_for_canonical_email(flask_client):
@@ -503,11 +510,13 @@ def test_get_mailbox_from_mail_from_for_canonical_email(flask_client):
     alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
     Session.flush()
 
-    mb = get_mailbox_for_reply_phase(email, "", alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(email, "", alias)
     assert mb.email == canonical_email
+    assert used_header_fallback is False
 
-    mb = get_mailbox_for_reply_phase(canonical_email, "", alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(canonical_email, "", alias)
     assert mb.email == canonical_email
+    assert used_header_fallback is False
 
 
 def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_aligned(
@@ -521,8 +530,11 @@ def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_aligned(
     alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
     Session.flush()
 
-    mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(
+        envelope_from, mail_from, alias
+    )
     assert mb.email == mail_from
+    assert used_header_fallback is True
 
 
 def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
@@ -536,8 +548,11 @@ def test_get_mailbox_from_mail_from_coming_from_header_if_domain_is_not_aligned(
     alias = Alias.create(user_id=user.id, email=random_email(), mailbox_id=mbox.id)
     Session.flush()
 
-    mb = get_mailbox_for_reply_phase(envelope_from, mail_from, alias)
+    mb, used_header_fallback = get_mailbox_for_reply_phase(
+        envelope_from, mail_from, alias
+    )
     assert mb is None
+    assert used_header_fallback is False
 
 
 @mail_sender.store_emails_test_decorator

@@ -2,6 +2,7 @@
 
 from flask import url_for
 
+from app.admin.custom_domain_search import CustomDomainSearchResult
 from app.db import Session
 from app.models import User, CustomDomain
 from tests.utils import create_new_user, random_token
@@ -121,8 +122,24 @@ def test_custom_domain_search_by_user_email(flask_client):
     assert domain2.domain.encode() in r.data
 
 
+def test_custom_domain_search_by_domain_id(flask_client):
+    """Test searching for a custom domain by its ID."""
+    login_admin(flask_client)
+
+    test_user = create_new_user()
+    domain = create_custom_domain(test_user, f"bydomainid-{random_token(8)}.com")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.custom_domain_search.index"),
+        query_string={"query": str(domain.id)},
+    )
+    assert r.status_code == 200
+    assert domain.domain.encode() in r.data
+
+
 def test_custom_domain_search_by_user_id(flask_client):
-    """Test searching for custom domains by user ID."""
+    """Test searching for custom domains by user ID using uid: prefix."""
     login_admin(flask_client)
 
     # Create a user with a custom domain
@@ -132,7 +149,7 @@ def test_custom_domain_search_by_user_id(flask_client):
 
     r = flask_client.get(
         url_for("admin.custom_domain_search.index"),
-        query_string={"query": str(test_user.id)},
+        query_string={"query": f"uid:{test_user.id}"},
     )
     assert r.status_code == 200
     assert domain.domain.encode() in r.data
@@ -293,3 +310,140 @@ def test_custom_domain_search_user_without_domains(flask_client):
     assert r.status_code == 200
     # Should show no domains found since user has no domains
     assert b"No custom domains found" in r.data
+
+
+# ============================================================================
+# Unit tests for CustomDomainSearchResult.search
+# ============================================================================
+
+
+def test_search_by_domain_id_found(flask_client):
+    """Plain integer finds domain by ID."""
+    test_user = create_new_user()
+    domain = create_custom_domain(test_user, f"unitid-{random_token(8)}.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(str(domain.id))
+
+    assert not result.no_match
+    assert len(result.domains) == 1
+    assert result.domains[0].domain.id == domain.id
+    assert not result.found_by_regex
+
+
+def test_search_by_domain_id_not_found(flask_client):
+    """Plain integer with no matching domain returns no match."""
+    result = CustomDomainSearchResult.search("999999999")
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_user_email_found(flask_client):
+    """Query with @ searches by user email."""
+    test_user = create_new_user(email=f"unitsearch_{random_token(8)}@example.com")
+    domain = create_custom_domain(test_user, f"unitemail-{random_token(8)}.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(test_user.email)
+
+    assert not result.no_match
+    assert len(result.domains) == 1
+    assert result.domains[0].domain.id == domain.id
+    assert not result.found_by_regex
+
+
+def test_search_by_user_email_not_found(flask_client):
+    """Query with @ for non-existent email returns no match."""
+    result = CustomDomainSearchResult.search(f"nobody_{random_token(8)}@example.com")
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_user_email_no_domains(flask_client):
+    """Query with @ for a user with no domains returns no match."""
+    test_user = create_new_user(email=f"nodom_{random_token(8)}@example.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(test_user.email)
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_uid_found(flask_client):
+    """uid:<int> searches by user ID."""
+    test_user = create_new_user()
+    domain = create_custom_domain(test_user, f"unituid-{random_token(8)}.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(f"uid:{test_user.id}")
+
+    assert not result.no_match
+    assert len(result.domains) == 1
+    assert result.domains[0].domain.id == domain.id
+    assert not result.found_by_regex
+
+
+def test_search_by_uid_not_found(flask_client):
+    """uid:<int> with no matching user returns no match."""
+    result = CustomDomainSearchResult.search("uid:999999999")
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_uid_invalid_format(flask_client):
+    """uid: with non-integer suffix returns no match without raising."""
+    result = CustomDomainSearchResult.search("uid:notanumber")
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_uid_user_without_domains(flask_client):
+    """uid:<int> for a user with no domains returns no match."""
+    test_user = create_new_user()
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(f"uid:{test_user.id}")
+
+    assert result.no_match
+    assert result.domains == []
+
+
+def test_search_by_domain_name_found(flask_client):
+    """Exact domain name returns matching domain."""
+    test_user = create_new_user()
+    domain = create_custom_domain(test_user, f"unitexact-{random_token(8)}.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(domain.domain)
+
+    assert not result.no_match
+    assert len(result.domains) == 1
+    assert result.domains[0].domain.id == domain.id
+    assert not result.found_by_regex
+
+
+def test_search_by_regex_found(flask_client):
+    """Non-matching exact name falls through to regex search."""
+    test_user = create_new_user()
+    prefix = f"unitregex{random_token(4)}"
+    domain = create_custom_domain(test_user, f"{prefix}-abc.com")
+    Session.commit()
+
+    result = CustomDomainSearchResult.search(f"{prefix}-.*\\.com")
+
+    assert not result.no_match
+    assert any(d.domain.id == domain.id for d in result.domains)
+    assert result.found_by_regex
+
+
+def test_search_no_match_returns_no_match(flask_client):
+    """Query that matches nothing returns no_match=True."""
+    result = CustomDomainSearchResult.search(f"nomatch-{random_token(16)}.com")
+
+    assert result.no_match
+    assert result.domains == []

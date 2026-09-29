@@ -33,6 +33,8 @@ It should contain the following info:
 
 import argparse
 import email
+import html
+import time
 import uuid
 from email import encoders
 from email.encoders import encode_noop
@@ -46,7 +48,6 @@ from typing import List, Tuple, Optional, Set
 
 import newrelic.agent
 import sentry_sdk
-import time
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope
 from email_validator import validate_email, EmailNotValidError
@@ -92,6 +93,7 @@ from app.email_utils import (
     parse_id_from_bounce,
     spf_pass,
     sanitize_header,
+    sanitize_header_value,
     get_queue_id,
     should_ignore_bounce,
     parse_full_address,
@@ -99,6 +101,7 @@ from app.email_utils import (
     save_email_for_debugging,
     save_envelope_for_debugging,
     get_verp_info_from_email,
+    is_expired_verp_address,
     generate_verp_email,
     sl_formataddr,
 )
@@ -575,6 +578,10 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         else:
             return [(False, status.E504)]
 
+    if alias.custom_domain_id and not alias.custom_domain.verified:
+        LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
+        return [(False, status.E520)]
+
     # check if email is sent from alias's owning mailbox(es)
     mail_from = envelope.mail_from
     for addr in alias.authorized_addresses():
@@ -621,6 +628,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     if alias.user.delete_on is not None:
         LOG.d(f"user {user} is pending to be deleted. Do not forward")
+        Alias.lock_for_update(contact.alias_id)
         EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
@@ -640,6 +648,7 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
         if contact.block_forward:
             LOG.d("Contact %s of alias %s is blocked, do not forward", contact, alias)
 
+        Alias.lock_for_update(contact.alias_id)
         EmailLog.create(
             contact_id=contact.id,
             user_id=contact.user_id,
@@ -780,6 +789,7 @@ def forward_email_to_mailbox(
         # so when user fixes the mailbox, the email can be delivered
         return False, status.E405
 
+    Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
         contact_id=contact.id,
         user_id=contact.user_id,
@@ -865,9 +875,12 @@ def forward_email_to_mailbox(
         LOG.d("Use a generic subject for %s", mailbox)
         orig_subject = msg[headers.SUBJECT]
         orig_subject = get_header_unicode(orig_subject)
+        orig_subject = html.escape(orig_subject)
         add_or_replace_header(msg, "Subject", mailbox.generic_subject)
         sender = msg[headers.FROM]
         sender = get_header_unicode(sender)
+        sender = html.escape(sender)
+
         msg = add_header(
             msg,
             f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
@@ -896,12 +909,12 @@ def forward_email_to_mailbox(
 
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
     if user.include_header_email_header:
-        msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+        msg[headers.SL_ENVELOPE_FROM] = sanitize_header_value(envelope.mail_from)
         if contact.name:
             original_from = f"{contact.name} <{contact.website_email}>"
         else:
             original_from = contact.website_email
-        msg[headers.SL_ORIGINAL_FROM] = original_from
+        msg[headers.SL_ORIGINAL_FROM] = sanitize_header_value(original_from)
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 
@@ -1057,6 +1070,10 @@ def handle_reply(
 
     alias = contact.alias
 
+    if alias.custom_domain_id and not alias.custom_domain.verified:
+        LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
+        return False, status.E520
+
     if alias.is_trashed():
         LOG.d("%s is trashed, do not forward", alias)
         return False, status.E502
@@ -1084,7 +1101,7 @@ def handle_reply(
         return False, dmarc_delivery_status
 
     # Anti-spoofing
-    mailbox = get_mailbox_for_reply_phase(
+    mailbox, used_header_fallback = get_mailbox_for_reply_phase(
         envelope.mail_from, get_header_unicode(msg[headers.FROM]), alias
     )
     if not mailbox:
@@ -1107,16 +1124,26 @@ def handle_reply(
         LOG.i(f"User {user} tried to send a mail from admin disabled mailbox {mailbox}")
         return False, status.E207
 
-    if (
-        config.ENFORCE_SPF
-        and mailbox.force_spf
-        and not alias.disable_email_spoofing_check
-    ):
-        if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
-            # cannot use 4** here as sender will retry.
-            # cannot use 5** because that generates bounce report
-            return True, status.E201
+    if not alias.disable_email_spoofing_check:
+        if used_header_fallback:
+            # The mailbox was picked by trusting the From: header. In that case force spf pass
+            # to avoid anyone sharing a domain with an owning mailbox impersonating by just
+            # setting the From: header.
+            if not spf_pass(
+                envelope, mailbox, user, alias, contact.website_email, msg, strict=True
+            ):
+                LOG.i(
+                    "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+                )
+                return True, status.E201
+        elif config.ENFORCE_SPF and mailbox.force_spf:
+            LOG.i(
+                "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+            )
+            if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
+                return True, status.E201
 
+    Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
         contact_id=contact.id,
         alias_id=contact.alias_id,
@@ -2115,6 +2142,12 @@ def handle(envelope: Envelope, msg: Message) -> str:
 
     # region mail sent to VERP
     verp_info = get_verp_info_from_email(rcpt_tos[0])
+
+    # an address we issued, just too old: drop it instead of letting it fall
+    # through and be handled as mail to an unknown alias.
+    # get_verp_info_from_email has already logged it
+    if verp_info is None and is_expired_verp_address(rcpt_tos[0]):
+        return status.E217
 
     # sent to transactional VERP. Either bounce emails or out-of-office
     if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.transactional:

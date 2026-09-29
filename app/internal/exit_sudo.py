@@ -1,10 +1,11 @@
-from flask import session, redirect, url_for, flash
+from flask import redirect, url_for, flash
 
 from app.internal.base import internal_bp
+from app.session import clear_session_sudo_mode
 
 
 @internal_bp.route("/exit-sudo-mode")
 def exit_sudo_mode():
-    session["sudo_time"] = 0
+    clear_session_sudo_mode()
     flash("Exited sudo mode", "info")
     return redirect(url_for("dashboard.index"))

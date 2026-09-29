@@ -214,6 +214,12 @@ def client_detail_referral(client_id):
         flash("you cannot see this app", "warning")
         return redirect(url_for("developer.index"))
 
+    if not current_user.can_use_referral_program():
+        LOG.d("referral program is closed for %s", current_user)
+        flash("The referral program is closed to new participants", "warning")
+        # the client is theirs, only the referral tab is off limits
+        return redirect(url_for("developer.client_detail", client_id=client.id))
+
     if request.method == "POST":
         referral_id = request.form.get("referral-id")
         if not referral_id:

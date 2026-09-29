@@ -20,6 +20,7 @@ def setup_module():
         catch_all=True,
         domain=random_token() + ".com",
         verified=True,
+        ownership_verified=True,
         flush=True,
     ).domain
     sl_domain_name = SLDomain.create(
@@ -95,6 +96,7 @@ def test_set_other_user_custom_domain():
         catch_all=True,
         domain=random_token() + ".com",
         verified=True,
+        ownership_verified=True,
     ).domain
     Session.flush()
     with pytest.raises(user_settings.CannotSetAlias):
@@ -120,6 +122,21 @@ def test_set_custom_domain():
     user_settings.set_default_alias_domain(user, custom_domain_name)
     assert user.default_alias_public_domain_id is None
     assert user.default_alias_custom_domain_id == domain.id
+
+
+def test_set_custom_domain_without_ownership_verified():
+    user = User.get(user_id)
+    user.lifetime = True
+    domain = CustomDomain.get_by(domain=custom_domain_name)
+    domain.verified = True
+    domain.ownership_verified = False
+    Session.flush()
+    try:
+        with pytest.raises(user_settings.CannotSetAlias):
+            user_settings.set_default_alias_domain(user, custom_domain_name)
+    finally:
+        domain.ownership_verified = True
+        Session.flush()
 
 
 def test_set_invalid_custom_domain():
