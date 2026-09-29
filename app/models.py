@@ -845,6 +845,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         self, include_partner_subscription: bool = True
     ) -> bool:
         """True if user has lifetime licence or active subscription"""
+        if config.DISABLE_PRICING:
+            return True
+
         if self.lifetime:
             return True
 
