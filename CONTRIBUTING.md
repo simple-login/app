@@ -62,7 +62,7 @@ To install it in your development environment.
 
 ## Run tests
 
-For most tests, you will need to have ``redis`` installed and started on your machine (listening on port 6379).
+For most tests, you will need to have ``redis`` installed and started on your machine (listening on TCP port 6379 and Unix socket `/tmp/redis/redis.sock`, accessible to the user running the tests). The Unix socket tests use Redis database 1.
 
 ```bash
 sh scripts/run-test.sh
