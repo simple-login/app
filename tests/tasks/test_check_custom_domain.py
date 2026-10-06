@@ -548,3 +548,30 @@ def test_alerted_domain_gets_no_further_alerts(flask_client):
 
     assert _alert_count(user, DKIM_ALERT.alert_type, custom_domain.domain) == 1
     assert custom_domain.dkim_nb_failed_checks == 0
+
+
+def test_counter_timestamp_resets_after_alert(flask_client):
+    """After the alert goes out, the debounce timestamp must not throttle a new cycle."""
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        dkim_verified=True,
+        dmarc_verified=True,
+        dkim_nb_failed_checks=config.MAX_DOMAIN_CHECKS,
+        commit=True,
+    )
+    dns_client = InMemoryDNSClient()
+    dns_client.set_mx_records(
+        custom_domain.domain, {10: [config.EMAIL_SERVERS_WITH_PRIORITY[0][1]]}
+    )
+    Session.commit()
+
+    custom_domain.dkim_nb_failed_checks_updated_at = None
+    Session.commit()
+    run_check(custom_domain, dns_client)
+
+    assert custom_domain.dkim_verified is False
+    assert custom_domain.dkim_nb_failed_checks == 0
+    assert custom_domain.dkim_nb_failed_checks_updated_at is None

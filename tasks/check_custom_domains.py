@@ -184,6 +184,8 @@ def _check_record(
     )
     setattr(custom_domain, cfg.verified_field, False)
     setattr(custom_domain, cfg.counter_field, 0)
+    # clear the debounce timestamp so a future failure cycle starts counting immediately
+    setattr(custom_domain, cfg.counter_updated_at_field, None)
 
 
 def check_single_custom_domain(custom_domain: CustomDomain):
