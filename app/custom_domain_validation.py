@@ -152,11 +152,10 @@ class CustomDomainValidation:
 
         return output
 
-    def validate_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
-        """
-        Check if dkim records are properly set for this custom domain.
-        Returns empty list if all records are ok. Other-wise return the records that aren't properly configured
-        """
+    def _resolve_dkim_records(
+        self, custom_domain: CustomDomain
+    ) -> tuple[dict[str, str], dict[str, str]]:
+        """Resolve the DKIM CNAMEs and split them into (correct, invalid) records."""
         correct_records = {}
         invalid_records = {}
         expected_records = self.get_dkim_records(custom_domain)
@@ -167,6 +166,39 @@ class CustomDomainValidation:
                 correct_records[prefix] = custom_record
             else:
                 invalid_records[custom_record] = dkim_record or "empty"
+        return correct_records, invalid_records
+
+    def check_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
+        """
+        Read-only DKIM check: resolve the records and report the ones that are not
+        correctly set up, without touching custom_domain.dkim_verified or committing.
+        Applies the same legacy compatibility rule as validate_dkim_records: a domain
+        that is already dkim_verified and still has the original dkim._domainkey CNAME
+        is considered fine even if the newer dkim02/dkim03 records are missing.
+        """
+        correct_records, invalid_records = self._resolve_dkim_records(custom_domain)
+        if (
+            custom_domain.dkim_verified
+            and correct_records.get("dkim._domainkey") is not None
+        ):
+            # Legacy single-record configuration: the original dkim CNAME is enough
+            return {}
+        return invalid_records
+
+    def check_dmarc_record(self, custom_domain: CustomDomain) -> bool:
+        """
+        Read-only DMARC check: returns whether the expected DMARC TXT record is
+        published, without touching custom_domain.dmarc_verified or committing.
+        """
+        txt_records = self._dns_client.get_txt_record("_dmarc." + custom_domain.domain)
+        return DMARC_RECORD in txt_records
+
+    def validate_dkim_records(self, custom_domain: CustomDomain) -> dict[str, str]:
+        """
+        Check if dkim records are properly set for this custom domain.
+        Returns empty list if all records are ok. Other-wise return the records that aren't properly configured
+        """
+        correct_records, invalid_records = self._resolve_dkim_records(custom_domain)
 
         # HACK
         # As initially we only had one dkim record, we want to allow users that had only the original dkim record and
@@ -278,12 +310,15 @@ class CustomDomainValidation:
     ) -> DomainValidationResult:
         txt_records = self._dns_client.get_txt_record("_dmarc." + custom_domain.domain)
         if DMARC_RECORD in txt_records:
+            # Only write an audit log entry when the flag actually flips, so periodic
+            # checks (dashboard refreshes, cron) don't spam user_audit_log.
+            if not custom_domain.dmarc_verified:
+                emit_user_audit_log(
+                    user=custom_domain.user,
+                    action=UserAuditLogAction.VerifyCustomDomain,
+                    message=f"Verified DMARC records for custom domain {custom_domain.id} ({custom_domain.domain})",
+                )
             custom_domain.dmarc_verified = True
-            emit_user_audit_log(
-                user=custom_domain.user,
-                action=UserAuditLogAction.VerifyCustomDomain,
-                message=f"Verified DMARC records for custom domain {custom_domain.id} ({custom_domain.domain})",
-            )
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
         else:
