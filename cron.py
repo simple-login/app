@@ -153,6 +153,11 @@ def delete_refused_emails():
     LOG.d("Finish delete_refused_emails")
 
 
+def _has_active_partner_subscription(user: User) -> bool:
+    partner_sub = PartnerSubscription.find_by_user_id(user.id)
+    return partner_sub is not None and partner_sub.is_active()
+
+
 def notify_premium_end():
     """sent to user who has canceled their subscription and who has their subscription ending soon"""
     for sub in Subscription.filter_by(cancelled=True).all():
@@ -164,6 +169,10 @@ def notify_premium_end():
             user = sub.user
 
             if user.lifetime:
+                continue
+
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
                 continue
 
             LOG.d(f"Send subscription ending soon email to user {user}")
@@ -225,6 +234,10 @@ def notify_manual_sub_end():
                     LOG.d("%s has a active Apple subscription", user)
                     continue
 
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
+                continue
+
             LOG.d("Remind user %s that their manual sub is ending soon", user)
             if user.can_send_or_receive():
                 send_email(
@@ -261,6 +274,10 @@ def notify_manual_sub_end():
         if need_reminder:
             user = coinbase_subscription.user
             if user.lifetime:
+                continue
+
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
                 continue
 
             LOG.d(
