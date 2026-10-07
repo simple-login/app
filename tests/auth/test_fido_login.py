@@ -55,6 +55,10 @@ def test_fido_login_updates_stored_sign_count(flask_client):
 
     Session.expire_all()
     assert Fido.get_by(id=fido_key.id).sign_count == 42
+    with flask_client.session_transaction() as sess:
+        # login completed: MFA step cleared and user logged in
+        assert MFA_USER_ID not in sess
+        assert sess.get("_user_id") == user.get_id()
 
 
 def test_fido_login_failure_leaves_sign_count_unchanged(flask_client):
