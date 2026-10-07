@@ -107,7 +107,7 @@ def fido():
             g.deduct_limit = True
             auto_activate = False
         else:
-            user.fido_sign_count = new_sign_count
+            fido_key.sign_count = new_sign_count
             Session.commit()
             del session[MFA_USER_ID]
 
