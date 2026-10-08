@@ -1,0 +1,12 @@
+# Secretos y estado local del despliegue — NO subir a git
+.env
+# ...pero .env.example SÍ (el root .gitignore lo excluye con ".env.*")
+!.env.example
+simplelogin.env
+caddy/Caddyfile
+traefik/traefik.yml
+traefik/dynamic.yml
+data/
+backups/
+*.key
+*.pub.key

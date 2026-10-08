@@ -1,0 +1,29 @@
+# Modo "traefik": reverse proxy Traefik v3 con HTTPS automático (Let's Encrypt).
+# Lo activa  install.sh --mode traefik  (o DEPLOY_MODE=traefik en .env).
+#
+#   docker compose -f docker-compose.yml -f traefik/docker-compose.traefik.yml up -d
+#
+# Requisitos:
+#   - DEPLOY_MODE=traefik y ACME_EMAIL=<tu-email> en .env
+#   - Puertos 80 y 443 abiertos y APUNTANDO a este servidor (registro A propagado)
+#
+# Usa el "file provider" (traefik/dynamic.yml) — no monta el socket de Docker.
+
+services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - sl
+
+volumes:
+  traefik_letsencrypt:
