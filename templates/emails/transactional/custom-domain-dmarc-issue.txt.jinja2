@@ -1,0 +1,7 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+We have detected that the DMARC record for your domain {{ custom_domain.domain }} is no longer correctly set up.
+
+To fix this, please update the DMARC TXT record and re-run the DNS check at {{ domain_dns_url }}.
+{% endblock %}
