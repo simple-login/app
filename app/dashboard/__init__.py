@@ -1,5 +1,6 @@
 from .views import (
     index,
+    dashboard_spa,
     pricing,
     setting,
     custom_alias,
