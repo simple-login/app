@@ -19,12 +19,13 @@ from app.models import (
 )
 from app.payments.paddle_passthrough import sign_passthrough
 from app.proton.proton_partner import get_proton_partner
+from app import config
 
 
 @dashboard_bp.route("/pricing", methods=["GET", "POST"])
 @login_required
 def pricing():
-    if current_user.lifetime:
+    if current_user.lifetime or config.DISABLE_PRICING:
         flash("You already have a lifetime subscription", "error")
         return redirect(url_for("dashboard.index"))
 
