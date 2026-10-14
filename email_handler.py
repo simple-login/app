@@ -567,16 +567,16 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     user = alias.user
 
-    if not user.is_active():
-        LOG.w(f"User {user} has been soft deleted")
-        return [(False, status.E502)]
-
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot receive emails")
         if should_ignore_bounce(envelope.mail_from):
             return [(True, status.E207)]
         else:
             return [(False, status.E504)]
+
+    if not user.is_active():
+        LOG.w(f"User {user} has been soft deleted")
+        return [(False, status.E502)]
 
     if alias.custom_domain_id and not alias.custom_domain.verified:
         LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
