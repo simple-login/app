@@ -124,13 +124,21 @@ class RedisSessionStore(SessionInterface):
         )
 
 
-def logout_session():
-    logout_user()
+def rotate_session():
+    """Drop the current session and start a fresh one with a new session id.
+
+    Call it right before logging a user in to prevent session fixation.
+    """
     purge_fn = getattr(current_app.session_interface, "purge_session", None)
     if callable(purge_fn):
         purge_fn(session)
     else:
         session.clear()
+
+
+def logout_session():
+    logout_user()
+    rotate_session()
 
 
 def set_session_sudo_mode(user_id: int):
