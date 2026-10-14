@@ -333,6 +333,15 @@ def test_user_can_send_receive():
     assert not user.can_send_or_receive()
 
 
+def test_user_is_active():
+    user = create_new_user()
+    assert user.is_active()
+    user.delete_on = arrow.now()
+    assert not user.is_active()
+    user.delete_on = arrow.now().shift(days=-10)
+    assert not user.is_active()
+
+
 def test_sync_event_dead_letter():
     # remove all SyncEvents before the test
     all_events = SyncEvent.all()
