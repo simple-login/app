@@ -85,7 +85,6 @@ from app.email_utils import (
     should_add_dkim_signature,
     add_header,
     get_header_unicode,
-    generate_reply_email,
     is_reverse_alias,
     replace,
     remove_sender_pgp_key_attachment,
@@ -249,7 +248,11 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
 
         # no transformation when alias is already in the header
         if contact_email.lower() == alias.email:
-            new_addrs.append(full_address.full_spec())
+            # not using full_spec() as it would keep a line break in the
+            # display name as is
+            new_addrs.append(
+                sl_formataddr((full_address.display_name, full_address.address))
+            )
             continue
 
         try:
@@ -261,45 +264,28 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
 
-        contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         contact_name = full_address.display_name
         if len(contact_name) >= Contact.MAX_NAME_LENGTH:
             contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
 
-        if contact:
-            # update the contact name if needed
-            if contact.name != full_address.display_name:
-                LOG.d(
-                    "Update contact %s name %s to %s",
-                    contact,
-                    contact.name,
-                    contact_name,
-                )
-                contact.name = contact_name
-                Session.commit()
-        else:
-            LOG.d(
-                "create contact for alias %s and email %s, header %s",
-                alias,
+        # create_contact sanitizes the name: an RFC 2047 encoded word can carry
+        # a line break or a NUL byte
+        contact_result = contact_utils.create_contact(
+            contact_email,
+            alias,
+            contact_name,
+            automatic_created=True,
+            is_cc=header.lower() == "cc",
+        )
+        contact = contact_result.contact
+        if contact is None:
+            LOG.w(
+                "Cannot create contact for %s in %s header: %s",
                 contact_email,
                 header,
+                contact_result.error,
             )
-
-            try:
-                contact = Contact.create(
-                    user_id=alias.user_id,
-                    alias_id=alias.id,
-                    website_email=contact_email,
-                    name=contact_name,
-                    reply_email=generate_reply_email(contact_email, alias),
-                    is_cc=header.lower() == "cc",
-                    automatic_created=True,
-                )
-                Session.commit()
-            except IntegrityError:
-                LOG.w("Contact %s %s already exist", alias, contact_email)
-                Session.rollback()
-                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+            continue
 
         new_addrs.append(contact.new_addr())
 

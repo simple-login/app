@@ -53,6 +53,7 @@ def create_contact(
     allow_empty_email: bool = False,
     automatic_created: bool = False,
     from_partner: bool = False,
+    is_cc: bool = False,
 ) -> ContactCreateResult:
     LOG.i(
         f"User {alias.user} is trying to create a new contact for alias {alias} with email {email}"
@@ -117,6 +118,7 @@ def create_contact(
             automatic_created=automatic_created,
             flags=flags,
             invalid_email=is_invalid_email,
+            is_cc=is_cc,
             commit=True,
         )
         contact_id = contact.id
