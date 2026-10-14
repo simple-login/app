@@ -41,6 +41,7 @@ from app.db import Session
 from app.dns_utils import get_mx_domains, get_a_record
 from app.email import headers
 from app.log import LOG
+from app.mailbox_email_match import is_email_admin_disabled
 from app.mail_sender import sl_sendmail
 from app.message_utils import message_to_bytes
 from app.models import (
@@ -645,6 +646,7 @@ class EmailCannotBeUsedReason(enum.Enum):
     )
     EmailOfDisabledUser = "This email address is not allowed"
     MailboxOfDisabledUser = "This email address is not allowed"
+    MailboxAdminDisabled = "This email address is not allowed"
 
 
 class MailboxDomainCheckResult:
@@ -779,6 +781,10 @@ def email_can_be_used_as_mailbox_with_reason(
                 f"User {existing_user} is disabled and has a mailbox with {email_address}. It cannot be used for other mailbox"
             )
             return EmailCannotBeUsedReason.MailboxOfDisabledUser
+
+    if is_email_admin_disabled(email_address):
+        LOG.d(f"{email_address} matches an admin-disabled mailbox")
+        return EmailCannotBeUsedReason.MailboxAdminDisabled
 
     return None
 
