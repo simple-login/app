@@ -115,8 +115,7 @@ def proton_login():
     if mode == "apikey" and action != Action.Link:
         session["oauth_mode"] = "apikey"
     else:
-        # An api key must never be minted from the link flow: it is not a
-        # sudo-equivalent credential (see 9c02e4f)
+        # An api key must never be minted from the link flow
         session["oauth_mode"] = "session"
 
     proton = OAuth2Session(PROTON_CLIENT_ID, redirect_uri=_redirect_uri)
@@ -226,6 +225,7 @@ def proton_callback():
         # different (Proton) identity, not of this account: never grant sudo
         # nor mint an API key here. Redirect with the result message instead.
         link_redirect = next_url if next_url and next_url[0] == "/" else res.redirect
+        link_redirect = sanitize_next_url(link_redirect)
         return redirect(link_redirect or url_for("dashboard.setting"))
 
     if session.get("oauth_mode", "session") == "apikey":
