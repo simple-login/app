@@ -4,7 +4,7 @@ from flask_login import current_user, login_user
 
 from app.auth.base import auth_bp
 from app.models import ApiToCookieToken
-from app.session import clear_session_sudo_mode
+from app.session import clear_session_sudo_mode, rotate_session
 from app.utils import sanitize_next_url
 
 
@@ -34,6 +34,7 @@ def api_to_cookie():
     # An api key is not a password, the session it creates must not be in sudo
     # mode, not even if the previous session of this browser was
     clear_session_sudo_mode()
+    rotate_session()
     login_user(user)
 
     next_url = sanitize_next_url(request.args.get("next"))

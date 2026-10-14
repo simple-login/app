@@ -11,6 +11,7 @@ from app.email_utils import send_invalid_totp_login_email
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey
+from app.session import rotate_session
 
 
 @api_bp.route("/auth/mfa", methods=["POST"])
@@ -75,6 +76,7 @@ def auth_mfa():
     ret["api_key"] = api_key.code
 
     # so user is logged in automatically on the web
+    rotate_session()
     login_user(user)
 
     return jsonify(**ret), 200
