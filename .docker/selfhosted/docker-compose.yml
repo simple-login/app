@@ -1,0 +1,150 @@
+name: simplelogin
+
+# Imagen y montajes comunes a todos los servicios que ejecutan el código de SimpleLogin.
+x-sl-common: &sl-common
+  build:
+    context: ../..
+    dockerfile: Dockerfile
+  image: simplelogin-selfhosted:local
+  restart: unless-stopped
+  volumes:
+    - ./simplelogin.env:/code/.env:ro
+    - ./data/dkim/dkim.key:/dkim.key:ro
+    - ./data/dkim/dkim.pub.key:/dkim.pub.key:ro
+    - ./data/pgp:/sl/pgp
+    - ./data/upload:/code/static/upload
+  networks:
+    - sl
+
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-simplelogin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env (o ejecuta ./install.sh)}
+      POSTGRES_DB: ${DB_NAME:-simplelogin}
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-simplelogin} -d ${DB_NAME:-simplelogin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - sl
+
+  app:
+    <<: *sl-common
+    # gunicorn wsgi:app -b 0.0.0.0:7777  (CMD por defecto del Dockerfile)
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:7777:7777"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:7777/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  email:
+    <<: *sl-common
+    command: python email_handler.py
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    ports:
+      - "127.0.0.1:20381:20381"
+
+  job-runner:
+    <<: *sl-common
+    command: python job_runner.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+  postfix:
+    build:
+      context: ./postfix
+    image: simplelogin-selfhosted-postfix:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "25:25"
+    environment:
+      POSTFIX_MYHOSTNAME: ${APP_HOSTNAME:?define APP_HOSTNAME en .env}
+      POSTFIX_MYDOMAIN: ${ROOT_DOMAIN:?define ROOT_DOMAIN en .env}
+      POSTFIX_MYNETWORKS: "127.0.0.0/8 10.42.0.0/24"
+      EMAIL_HANDLER_HOST: email
+      EMAIL_HANDLER_PORT: "20381"
+      DB_HOST: db
+      DB_USER: ${DB_USER:-simplelogin}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env}
+      DB_NAME: ${DB_NAME:-simplelogin}
+      POSTFIX_SUBMISSION: ${POSTFIX_SUBMISSION:-0}
+      RELAY_HOST: ${RELAY_HOST:-}
+      RELAY_USER: ${RELAY_USER:-}
+      RELAY_PASSWORD: ${RELAY_PASSWORD:-}
+    networks:
+      - sl
+
+  # ── Servicios de un solo uso (perfil "setup"): se lanzan con `docker compose run` ──
+  migration:
+    <<: *sl-common
+    profiles: ["setup"]
+    restart: "no"
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  init:
+    <<: *sl-common
+    profiles: ["setup"]
+    restart: "no"
+    command: python init_app.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Cron de mantenimiento (perfil "cron", opcional pero recomendado) ──
+  # Necesita que la imagen simplelogin-selfhosted:local exista (build de `app` primero).
+  cron:
+    build:
+      context: ./cron
+    image: simplelogin-selfhosted-cron:local
+    restart: unless-stopped
+    profiles: ["cron"]
+    volumes:
+      - ./simplelogin.env:/code/.env:ro
+      - ./data/dkim/dkim.key:/dkim.key:ro
+      - ./data/pgp:/sl/pgp
+      - ./data/upload:/code/static/upload
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sl
+
+  # ── Event listener (perfil "events", opcional; sincronización con partners) ──
+  event-listener:
+    <<: *sl-common
+    command: python event_listener.py listener
+    profiles: ["events"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  sl:
+    name: simplelogin-sl
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.42.0.0/24

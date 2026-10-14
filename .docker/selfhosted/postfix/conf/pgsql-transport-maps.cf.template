@@ -1,0 +1,8 @@
+hosts = ${DB_HOST}
+user = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname = ${DB_NAME}
+
+# Reenvía a smtp:email:20381 tanto para EMAIL_DOMAIN como para los dominios propios verificados
+query = SELECT 'smtp:${EMAIL_HANDLER_HOST}:${EMAIL_HANDLER_PORT}' FROM custom_domain WHERE domain = '%s' AND verified=true
+    UNION SELECT 'smtp:${EMAIL_HANDLER_HOST}:${EMAIL_HANDLER_PORT}' WHERE '%s' = '${POSTFIX_MYDOMAIN}' LIMIT 1;
