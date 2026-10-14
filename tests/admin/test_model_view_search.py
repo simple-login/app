@@ -2,9 +2,10 @@
 
 from app.admin.alias import AliasAdmin
 from app.admin.email_log import EmailLogAdmin
+from app.admin.mailbox import MailboxAdmin
 from app.admin.user import UserAdmin
 from app.db import Session
-from app.models import Alias, EmailLog, User
+from app.models import Alias, EmailLog, Mailbox, User
 from tests.utils import create_new_user, random_token
 
 
@@ -89,3 +90,42 @@ def test_numeric_search_does_not_match_ids_by_substring(flask_client):
         Session.query(User), Session.query(User), {}, {}, str(user.id * 10)
     )
     assert user.id not in [found.id for found in query.all()]
+
+
+def _search_mailbox_ids(term: str) -> tuple[list[int], int]:
+    view = MailboxAdmin(Mailbox, Session)
+    query, count_query, _, _ = view._apply_search(
+        Session.query(Mailbox), Session.query(Mailbox), {}, {}, term
+    )
+    return [found.id for found in query.all()], count_query.count()
+
+
+def test_mailbox_search_finds_equivalent_addresses(flask_client):
+    local = f"search{random_token(8).lower()}"
+    user = create_new_user()
+    mailbox = Mailbox.create(
+        user_id=user.id, email=f"{local[:4]}.{local[4:]}+work@gmail.com", verified=True
+    )
+    Session.commit()
+
+    for term in (f"{local}@googlemail.com", f"{local}+x@gmail.com"):
+        ids, count = _search_mailbox_ids(term)
+        assert ids == [mailbox.id], term
+        assert count == 1, term
+
+
+def test_mailbox_search_keeps_literal_search_for_prefixed_terms(flask_client):
+    local = f"search{random_token(8).lower()}"
+    user = create_new_user()
+    mailbox = Mailbox.create(
+        user_id=user.id, email=f"{local}+work@gmail.com", verified=True
+    )
+    Session.commit()
+
+    assert _search_mailbox_ids(f"={local}@googlemail.com") == ([], 0)
+    assert _search_mailbox_ids(f"={local}+work@gmail.com") == ([mailbox.id], 1)
+
+
+def test_mailbox_numeric_search_does_not_use_the_equivalence_matcher():
+    sql = _search_sql(MailboxAdmin, Mailbox, "12345")
+    assert "split_part" not in sql

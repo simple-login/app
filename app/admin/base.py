@@ -153,6 +153,11 @@ class SLModelView(sqla.ModelView, BaseAdminView):
                     text_filter.append(cast(column, Unicode).ilike(stmt))
                     text_count_filter.append(cast(count_column, Unicode).ilike(stmt))
 
+            if term_as_int is None:
+                extra_filter = self._extra_text_search_filters(term)
+                text_filter.extend(extra_filter)
+                text_count_filter.extend(extra_filter)
+
             # Prefer the integer columns, and only fall back to the text ones
             # if the term produced no integer clause. If the term produced no
             # clause at all - a non-numeric term on a view that only has
@@ -168,6 +173,10 @@ class SLModelView(sqla.ModelView, BaseAdminView):
                 count_query = count_query.filter(or_(*count_filter_stmt))
 
         return query, count_query, joins, count_joins
+
+    def _extra_text_search_filters(self, term: str) -> list:
+        """Conditions on the view model OR-ed with the text column search of `term`."""
+        return []
 
     def on_model_change(self, form, model, is_created):
         changes = {}
