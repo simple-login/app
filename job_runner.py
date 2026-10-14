@@ -28,6 +28,7 @@ from app.jobs.mark_abuser_job import MarkAbuserJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.jobs.sync_subscription_job import SyncSubscriptionJob
 from app.log import LOG
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import User, Job, BatchImport, Mailbox, JobState
 from app.monitor_utils import send_version_event
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
@@ -162,6 +163,13 @@ def delete_mailbox_job(job: Job):
     if transfer_mailbox_id:
         transfer_mailbox = Mailbox.get(transfer_mailbox_id)
         if transfer_mailbox:
+            try:
+                ensure_mailbox_assignable(transfer_mailbox)
+            except MailboxError:
+                LOG.w(
+                    f"Not deleting mailbox {mailbox.id}: transfer mailbox {transfer_mailbox.id} cannot be assigned"
+                )
+                return
             alias_transferred_to = transfer_mailbox.email
 
             for alias in mailbox.aliases:
