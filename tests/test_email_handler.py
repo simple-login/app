@@ -647,3 +647,82 @@ def test_encoded_word_linebreak_in_from_does_not_inject_header(flask_client):
     for header_name, header_value in forwarded.items():
         if header_name not in (headers.FROM, headers.SL_ORIGINAL_FROM):
             assert "attacker@evil.com" not in str(header_value)
+
+
+def _encoded_word(value: bytes) -> str:
+    return f"=?UTF-8?B?{base64.b64encode(value).decode()}?="
+
+
+@pytest.mark.parametrize(
+    "display_name",
+    [
+        b'"Bob\nX"',
+        b'"Evil\nReply-To: attacker@evil.com"',
+    ],
+)
+@mail_sender.store_emails_test_decorator
+def test_encoded_word_linebreak_in_to_alias_does_not_break_headers(
+    flask_client, display_name
+):
+    """The alias address in To: is kept as is during the forward phase. A line
+    break in its display name must not end up in the headers we forward"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    raw = (
+        "From: spammer@gmail.com\r\n"
+        f"To: {_encoded_word(display_name)} <{alias.email}>\r\n"
+        "Subject: hello\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "body\r\n"
+    ).encode()
+    envelope = Envelope()
+    envelope.mail_from = "spammer@gmail.com"
+    envelope.rcpt_tos = [alias.email]
+
+    assert email_handler.handle(envelope, message_from_bytes(raw)) == status.E200
+
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    wire = message_to_bytes(sent_mails[0].msg)
+    header_block = wire.split(b"\r\n\r\n", 1)[0].decode()
+    # every line is either a header or the folded continuation of one
+    for line in header_block.split("\r\n"):
+        assert re.match(r"^([\w-]+:|[ \t])", line), line
+    assert re.search(r"^\s*Reply-To:", header_block, re.MULTILINE) is None
+
+    forwarded = message_from_bytes(wire)
+    assert forwarded.get_all(headers.REPLY_TO) is None
+    assert alias.email in forwarded[headers.TO]
+
+
+@pytest.mark.parametrize("header", [headers.TO, headers.CC])
+@mail_sender.store_emails_test_decorator
+def test_encoded_word_linebreak_in_to_cc_contact_is_sanitized(flask_client, header):
+    """Contacts created from To: and Cc: must have their name sanitized"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    display_name = _encoded_word(b'"Bob\rX\nY"')
+    raw = (
+        "From: spammer@gmail.com\r\n"
+        f"To: {alias.email}\r\n"
+        f"{header}: {display_name} <cc-victim@gmail.com>\r\n"
+        "Subject: hello\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "body\r\n"
+    ).encode()
+    envelope = Envelope()
+    envelope.mail_from = "spammer@gmail.com"
+    envelope.rcpt_tos = [alias.email]
+
+    assert email_handler.handle(envelope, message_from_bytes(raw)) == status.E200
+
+    contact = Contact.get_by(alias_id=alias.id, website_email="cc-victim@gmail.com")
+    assert contact is not None
+    assert contact.name == "BobX Y"
+    assert contact.is_cc == (header == headers.CC)
