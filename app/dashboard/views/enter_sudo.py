@@ -11,10 +11,12 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import PartnerUser, SocialAuth
 from app.proton.proton_partner import get_proton_partner
-from app.session import is_session_sudo_mode_active, set_session_sudo_mode
+from app.session import (
+    SUDO_MODE_SECONDS_VALID,
+    is_session_sudo_mode_active,
+    set_session_sudo_mode,
+)
 from app.utils import sanitize_next_url
-
-_SUDO_GAP = 120
 
 
 class LoginForm(FlaskForm):
@@ -76,7 +78,7 @@ def enter_sudo():
 def sudo_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if not is_session_sudo_mode_active(current_user.id, _SUDO_GAP):
+        if not is_session_sudo_mode_active(current_user.id, SUDO_MODE_SECONDS_VALID):
             # Preserve pending flash messages so they aren't consumed by enter_sudo
             # and are shown on the destination page after sudo completes.
             if session.get("_flashes"):

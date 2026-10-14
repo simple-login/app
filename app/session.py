@@ -24,6 +24,10 @@ SUDO_TIME_KEY = "sudo_time"
 # another principal.
 SUDO_USER_ID_KEY = "sudo_user_id"
 
+# How long sudo mode lasts once entered. Shared by @sudo_required and the
+# Proton link gate so they cannot drift apart.
+SUDO_MODE_SECONDS_VALID = 120
+
 
 class ServerSession(CallbackDict, SessionMixin):
     def __init__(self, initial=None, session_id=None):
