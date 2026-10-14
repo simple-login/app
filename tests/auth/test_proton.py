@@ -81,7 +81,9 @@ def test_link_start_without_sudo_redirects_to_enter_sudo(flask_client):
     assert r.status_code == 302
     location = parse_url(r.headers["Location"])
     assert location.path == "/dashboard/enter_sudo"
-    assert parse_qs(location.query)["next"] == ["/auth/proton/login"]
+    # next must keep action=link so the user resumes the link flow after sudo
+    next_query = parse_qs(parse_url(parse_qs(location.query)["next"][0]).query)
+    assert next_query["action"] == ["link"]
     # The link must not have started: no OAuth state stored
     with flask_client.session_transaction() as sess:
         assert SESSION_STATE_KEY not in sess
@@ -228,3 +230,38 @@ def test_link_callback_with_different_bound_user_does_not_link(
     assert (
         PartnerUser.get_by(user_id=user.id, partner_id=get_proton_partner().id) is None
     )
+
+
+def test_link_start_sudo_roundtrip_keeps_link_action(flask_client):
+    """Full enter_sudo round-trip: after the password check the user lands back
+    on the Proton link start, not on the login flow."""
+    user = login(flask_client)
+    # password login grants sudo; simulate a session whose sudo has expired
+    exit_sudo_mode(flask_client)
+
+    r = flask_client.get(
+        url_for("auth.proton_login", action="link"),
+        follow_redirects=False,
+    )
+    assert r.status_code == 302
+    location = parse_url(r.headers["Location"])
+    assert location.path == "/dashboard/enter_sudo"
+    next_url = parse_qs(location.query)["next"][0]
+
+    # keep the full next URL (path + query) as the real redirector does
+    r = flask_client.post(
+        f"/dashboard/enter_sudo?next={next_url}",
+        data={"password": "password"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 302
+    # enter_sudo redirects to the proton link start...
+    assert parse_url(r.headers["Location"]).path == "/auth/proton/login"
+
+    r = flask_client.get(r.headers["Location"], follow_redirects=False)
+    assert r.status_code == 302
+    # ...which now starts the LINK flow, not the login flow
+    assert "/oauth/authorize" in r.headers["Location"]
+    with flask_client.session_transaction() as sess:
+        assert sess[SESSION_ACTION_KEY] == Action.Link.value
+        assert sess[SESSION_LINK_USER_ID_KEY] == user.id

@@ -26,7 +26,7 @@ from app.proton.proton_callback_handler import (
 )
 from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_partner import get_proton_partner
-from app.session import is_session_sudo_mode_active
+from app.session import SUDO_MODE_SECONDS_VALID, is_session_sudo_mode_active
 from app.utils import sanitize_next_url, sanitize_scheme
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"
@@ -40,9 +40,6 @@ SESSION_ACTION_KEY = "oauth_action"
 SESSION_STATE_KEY = "oauth_state"
 SESSION_LINK_USER_ID_KEY = "oauth_link_user_id"
 DEFAULT_SCHEME = "auth.simplelogin"
-
-# Same gap used by @sudo_required on the dashboard
-_SUDO_GAP = 120
 
 
 def get_api_key_for_user(user: User) -> str:
@@ -87,11 +84,17 @@ def proton_login():
     if action == Action.Link and not current_user.is_authenticated:
         return redirect(url_for("auth.login"))
     if action == Action.Link and not is_session_sudo_mode_active(
-        current_user.id, _SUDO_GAP
+        current_user.id, SUDO_MODE_SECONDS_VALID
     ):
         # Linking a Proton account is a sensitive action: it must not be
-        # reachable from a non-sudo session (e.g. one created via api_to_cookie)
-        return redirect(url_for("dashboard.enter_sudo", next=request.path))
+        # reachable from a non-sudo session (e.g. one created via api_to_cookie).
+        # Keep action=link in next so that after enter_sudo the user resumes the
+        # link flow and not the login flow (mode/scheme are ignored by Link).
+        return redirect(
+            url_for(
+                "dashboard.enter_sudo", next=url_for("auth.proton_login", action="link")
+            )
+        )
 
     next_url = sanitize_next_url(request.args.get("next"))
     if next_url:
