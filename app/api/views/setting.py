@@ -1,7 +1,7 @@
 import arrow
 from flask import jsonify, g, request
 
-from app.api.base import api_bp, require_api_auth
+from app.api.base import api_bp, require_api_auth, require_api_sudo
 from app.db import Session
 from app.log import LOG
 from app.models import (
@@ -126,7 +126,7 @@ def get_available_domains_for_random_alias_v2():
 
 
 @api_bp.route("/setting/unlink_proton_account", methods=["DELETE"])
-@require_api_auth
+@require_api_sudo
 def unlink_proton_account():
     user = g.user
     if not perform_proton_account_unlink(user):
