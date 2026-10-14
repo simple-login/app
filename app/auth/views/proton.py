@@ -199,9 +199,12 @@ def proton_callback():
         # The link must be performed by the same user that started it,
         # verified in sudo mode on /proton/login. Do not re-check sudo here:
         # a slow Proton login would expire the 120s gap for real users.
+        # Single-use binding: consume it so no failed path leaves it behind.
+        bound_user_id = session.pop(SESSION_LINK_USER_ID_KEY, None)
         if (
             not current_user.is_authenticated
-            or session.get(SESSION_LINK_USER_ID_KEY) != current_user.id
+            or bound_user_id is None
+            or bound_user_id != current_user.id
         ):
             LOG.w("Proton link callback without matching bound user id")
             flash("Invalid link request, please retry", "error")
@@ -222,10 +225,6 @@ def proton_callback():
         # The user is already authenticated and has just proven control of a
         # different (Proton) identity, not of this account: never grant sudo
         # nor mint an API key here. Redirect with the result message instead.
-        session.pop(SESSION_LINK_USER_ID_KEY, None)
-        if res.user is None:
-            LOG.warning("No user after linking with proton. Redirecting to login")
-            return redirect(url_for("auth.login"))
         link_redirect = next_url if next_url and next_url[0] == "/" else res.redirect
         return redirect(link_redirect or url_for("dashboard.setting"))
 
