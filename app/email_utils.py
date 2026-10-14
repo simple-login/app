@@ -41,7 +41,12 @@ from app.db import Session
 from app.dns_utils import get_mx_domains, get_a_record
 from app.email import headers
 from app.log import LOG
-from app.mailbox_email_match import is_email_admin_disabled
+from app.mailbox_email_match import (
+    equivalence_reasons,
+    is_email_admin_disabled,
+    mailboxes_matching_email,
+    users_matching_email,
+)
 from app.mail_sender import sl_sendmail
 from app.message_utils import message_to_bytes
 from app.models import (
@@ -762,18 +767,20 @@ def email_can_be_used_as_mailbox_with_reason(
     if not domain_result.can_be_used:
         return domain_result.reason
 
-    existing_user = User.get_by(email=email_address)
-    if existing_user and existing_user.disabled:
-        LOG.d(
-            f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
-        )
-        return EmailCannotBeUsedReason.EmailOfDisabledUser
+    for existing_user in users_matching_email(email_address).all():
+        if existing_user.disabled:
+            LOG.d(
+                f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
+            )
+            return EmailCannotBeUsedReason.EmailOfDisabledUser
 
     for existing_user in (
         User.query()
-        .join(Mailbox, User.id == Mailbox.user_id)
-        .filter(Mailbox.email == email_address)
-        .group_by(User.id)
+        .filter(
+            User.id.in_(
+                mailboxes_matching_email(email_address).with_entities(Mailbox.user_id)
+            )
+        )
         .all()
     ):
         if existing_user.disabled:
@@ -829,11 +836,19 @@ def get_mx_domain_list(domain) -> List[str]:
 
 
 def personal_email_already_used(email_address: str) -> bool:
-    """test if an email can be used as user email"""
-    if User.get_by(email=email_address):
-        return True
-
-    return False
+    """test if an email, or an equivalent of it, is already a user email"""
+    existing_user = users_matching_email(email_address).first()
+    if existing_user is None:
+        return False
+    reasons = equivalence_reasons(email_address, existing_user.email)
+    LOG.i(
+        "Email %s is already used by user %s: it is equivalent to %s (%s)",
+        email_address,
+        existing_user.id,
+        existing_user.email,
+        ", ".join(reasons) or "same address",
+    )
+    return True
 
 
 def mailbox_already_used(email: str, user) -> bool:
