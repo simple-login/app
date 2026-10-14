@@ -31,6 +31,7 @@ from app.errors import (
 )
 from app.extensions import limiter
 from app.log import LOG
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import Alias, Contact, Mailbox, AliasDeleteReason
 
 
@@ -297,7 +298,12 @@ def update_alias(alias_id):
         mailbox = Mailbox.get(mailbox_id)
         if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
             return jsonify(error="Forbidden"), 400
+        try:
+            ensure_mailbox_assignable(mailbox)
+        except MailboxError:
+            return jsonify(error="Forbidden"), 400
 
+        # keep the legacy semantics: only the main mailbox changes, extra mailboxes stay
         alias.mailbox_id = mailbox_id
         changed_fields.append(f"mailbox_id ({mailbox_id})")
         changed = True

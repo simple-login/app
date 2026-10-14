@@ -823,7 +823,12 @@ def check_mailbox_valid_domain():
     """detect if there's mailbox that's using an invalid domain"""
     mailbox_ids = (
         Session.query(Mailbox.id)
-        .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
+        .filter(
+            Mailbox.verified.is_(True),
+            Mailbox.disabled.is_(False),
+            # admin-disabled mailboxes are already blocked and would fail the check
+            Mailbox.flags.op("&")(Mailbox.FLAG_ADMIN_DISABLED) == 0,
+        )
         .all()
     )
     mailbox_ids = [e[0] for e in mailbox_ids]
