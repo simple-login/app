@@ -864,9 +864,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return True
 
     def is_active(self) -> bool:
-        if self.delete_on is None:
-            return True
-        return self.delete_on < arrow.now()
+        # delete_on is the time deletion was requested: any value means the
+        # account is in its grace period and must not be usable
+        return self.delete_on is None
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""

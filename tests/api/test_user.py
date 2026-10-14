@@ -1,3 +1,4 @@
+import arrow
 from random import random
 
 from flask import url_for
@@ -85,3 +86,15 @@ def test_get_cookie_token(flask_client):
     token = ApiToCookieToken.get_by(code=code)
     assert token is not None
     assert token.user_id == user.id
+
+
+def test_cookie_token_refused_for_user_scheduled_for_deletion(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    user.delete_on = arrow.now().shift(days=-1)
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("api.get_api_session_token"),
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 401

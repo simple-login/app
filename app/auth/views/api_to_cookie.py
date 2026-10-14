@@ -25,6 +25,11 @@ def api_to_cookie():
         return redirect(url_for("auth.login"))
 
     user = token.user
+    if user.disabled or user.delete_on is not None:
+        ApiToCookieToken.delete(token.id, commit=True)
+        flash("Missing token", "error")
+        return redirect(url_for("auth.login"))
+
     ApiToCookieToken.delete(token.id, commit=True)
     # An api key is not a password, the session it creates must not be in sudo
     # mode, not even if the previous session of this browser was
