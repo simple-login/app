@@ -57,7 +57,11 @@ from app.models import (
 )
 from app.pgp_utils import load_public_key_and_check, PGPException, create_pgp_context
 from app.proton.proton_partner import get_proton_partner
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_user_deleted_audit_log,
+    UserAuditLogAction,
+)
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.check_custom_domains import check_all_custom_domains
@@ -1236,10 +1240,10 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         )
         if dry_run:
             continue
-        emit_user_audit_log(
+        emit_user_deleted_audit_log(
             user=user,
-            action=UserAuditLogAction.DeleteUser,
-            message=f"Delete user {user.id} ({user.email})",
+            deleted_by="scheduled deletion cron",
+            reason=f"User marked for deletion on {user.delete_on} and the {DELETE_GRACE_DAYS} days grace period has expired",
         )
         User.delete(user.id)
         Session.commit()

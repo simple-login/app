@@ -37,6 +37,9 @@ class UserAuditLogAction(Enum):
     DeleteUser = "delete_user"
 
 
+USER_REQUESTED_DELETION_REASON = "Account deletion requested by the user"
+
+
 def emit_user_audit_log(
     user: User, action: UserAuditLogAction, message: str, commit: bool = False
 ):
@@ -46,4 +49,20 @@ def emit_user_audit_log(
         action=action.value,
         message=message,
         commit=commit,
+    )
+
+
+def emit_user_marked_for_deletion_audit_log(user: User, source: str, reason: str):
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.UserMarkedForDeletion,
+        message=f"User {user.id} ({user.email}) marked for deletion. Source: {source}. Reason: {reason}",
+    )
+
+
+def emit_user_deleted_audit_log(user: User, deleted_by: str, reason: str):
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.DeleteUser,
+        message=f"User {user.id} ({user.email}) deleted. Deleted by: {deleted_by}. Reason: {reason}",
     )

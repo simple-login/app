@@ -606,6 +606,15 @@
                      required
                      autocomplete="off">
             </div>
+            <div class="form-group">
+              <label for="deleteUserReason{{ user.id }}" class="font-weight-bold">Reason (required)</label>
+              <textarea class="form-control"
+                        id="deleteUserReason{{ user.id }}"
+                        name="reason"
+                        rows="3"
+                        required
+                        placeholder="Enter the reason for deleting this user..."></textarea>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>

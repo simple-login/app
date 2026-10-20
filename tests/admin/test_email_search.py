@@ -341,6 +341,58 @@ def test_email_search_deleted_user_by_id_shows_audit_logs(flask_client):
     assert b"deleted_user_action" in r.data
 
 
+def test_admin_delete_user_records_who_and_why(flask_client):
+    """Test that an admin deletion records the admin and the reason."""
+    admin = login_admin(flask_client)
+    test_user = create_new_user()
+    Session.commit()
+    user_id = test_user.id
+
+    r = flask_client.post(
+        url_for("admin.email_search.delete_user"),
+        data={
+            "user_id": user_id,
+            "confirm_email": test_user.email,
+            "reason": "Requested by support ticket",
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    assert User.get(user_id) is None
+    audit_log = UserAuditLog.get_by(user_id=user_id, action="delete_user")
+    assert audit_log is not None
+    assert f"Deleted by: admin {admin.id} ({admin.email})" in audit_log.message
+    assert "Reason: Requested by support ticket" in audit_log.message
+    admin_audit_log = (
+        Session.query(AdminAuditLog)
+        .filter(
+            AdminAuditLog.model == "User",
+            AdminAuditLog.model_id == user_id,
+            AdminAuditLog.admin_user_id == admin.id,
+        )
+        .first()
+    )
+    assert admin_audit_log.data["reason"] == "Requested by support ticket"
+
+
+def test_admin_delete_user_requires_reason(flask_client):
+    """Test that an admin cannot delete a user without a reason."""
+    login_admin(flask_client)
+    test_user = create_new_user()
+    Session.commit()
+    user_id = test_user.id
+
+    r = flask_client.post(
+        url_for("admin.email_search.delete_user"),
+        data={"user_id": user_id, "confirm_email": test_user.email, "reason": " "},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    assert User.get(user_id) is not None
+
+
 def test_email_search_user_with_abuse_logs(flask_client):
     """Test that abuse audit logs are displayed."""
     login_admin(flask_client)

@@ -5,7 +5,11 @@ from flask import url_for
 
 from app.constants import JobType
 from app.db import Session
-from app.models import Job, ApiToCookieToken
+from app.models import Job, ApiToCookieToken, UserAuditLog
+from app.user_audit_log_utils import (
+    UserAuditLogAction,
+    USER_REQUESTED_DELETION_REASON,
+)
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
 
@@ -51,7 +55,18 @@ def test_delete_with_sudo(flask_client):
     assert len(jobs) == 1
     job = jobs[0]
     assert job.name == JobType.DELETE_ACCOUNT.value
-    assert job.payload == {"user_id": user.id}
+    source = f"api key {api_key.id}"
+    assert job.payload == {
+        "user_id": user.id,
+        "source": source,
+        "reason": USER_REQUESTED_DELETION_REASON,
+    }
+    audit_log = UserAuditLog.get_by(
+        user_id=user.id, action=UserAuditLogAction.UserMarkedForDeletion.value
+    )
+    assert audit_log is not None
+    assert f"Source: {source}" in audit_log.message
+    assert f"Reason: {USER_REQUESTED_DELETION_REASON}" in audit_log.message
 
 
 def test_delete_with_another_user_session_sudo(flask_client):
