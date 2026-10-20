@@ -2,6 +2,7 @@ import json
 import pickle
 
 import flask
+import pytest
 
 from app import config
 from app.session import RedisSessionStore
@@ -38,7 +39,8 @@ def _request_with_session_id(app, session_id):
     return flask.Request.from_values(headers={"Cookie": f"slapp={signed}"})
 
 
-def test_save_session_stores_json():
+def test_save_session_stores_json(monkeypatch):
+    monkeypatch.setattr(config, "SESSION_SERIALIZATION", "json")
     app = _make_app()
     store, redis = _store()
     session = store.open_session(app, flask.Request.from_values())
@@ -47,6 +49,41 @@ def test_save_session_stores_json():
 
     raw = redis.data[RedisSessionStore._get_key(session.session_id)]
     assert json.loads(raw) == {"_user_id": "abc"}
+
+
+def test_save_session_stores_pickle_by_default(monkeypatch):
+    monkeypatch.setattr(config, "SESSION_SERIALIZATION", "pickle")
+    app = _make_app()
+    store, redis = _store()
+    session = store.open_session(app, flask.Request.from_values())
+    session["_user_id"] = "abc"
+    store.save_session(app, session, flask.Response())
+
+    raw = redis.data[RedisSessionStore._get_key(session.session_id)]
+    assert pickle.loads(raw) == {"_user_id": "abc"}
+
+
+@pytest.mark.parametrize("written,reading", [("json", "pickle"), ("pickle", "json")])
+def test_session_written_in_one_format_is_readable_in_the_other(
+    monkeypatch, written: str, reading: str
+):
+    """Mixed fleet: a worker writing one format, another reading it."""
+    monkeypatch.setattr(config, "SESSION_PICKLE_FALLBACK", True)
+    app = _make_app()
+    store, redis = _store()
+
+    monkeypatch.setattr(config, "SESSION_SERIALIZATION", written)
+    session = store.open_session(app, flask.Request.from_values())
+    session["_user_id"] = "abc"
+    session["csrf_token"] = "token-123"
+    session_id = session.session_id
+    store.save_session(app, session, flask.Response())
+
+    monkeypatch.setattr(config, "SESSION_SERIALIZATION", reading)
+    reopened = store.open_session(app, _request_with_session_id(app, session_id))
+    assert reopened.session_id == session_id
+    assert dict(reopened) == {"_user_id": "abc", "csrf_token": "token-123"}
+    assert reopened["csrf_token"] == "token-123"
 
 
 def test_open_session_reads_json():

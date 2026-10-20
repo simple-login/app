@@ -87,7 +87,9 @@ class RedisSessionStore(SessionInterface):
         return config.SESSION_PICKLE_FALLBACK
 
     def _serialize(self, session: ServerSession) -> bytes:
-        return json.dumps(dict(session)).encode()
+        if config.SESSION_SERIALIZATION == "json":
+            return json.dumps(dict(session)).encode()
+        return pickle.dumps(dict(session))
 
     def _deserialize(self, val: bytes) -> Optional[dict]:
         try:

@@ -725,6 +725,17 @@ SESSION_PICKLE_FALLBACK = (
     os.environ.get("SESSION_PICKLE_FALLBACK", "true").lower() != "false"
 )
 
+# Format used when writing new sessions. Reads always try JSON and still try
+# pickle while SESSION_PICKLE_FALLBACK is on, so switching writes to json is
+# only safe once every worker can read json.
+SESSION_SERIALIZATION = os.environ.get("SESSION_SERIALIZATION", "pickle").lower()
+if SESSION_SERIALIZATION not in ("pickle", "json"):
+    raise ValueError(f"Invalid SESSION_SERIALIZATION: {SESSION_SERIALIZATION}")
+if SESSION_SERIALIZATION == "pickle" and not SESSION_PICKLE_FALLBACK:
+    raise ValueError(
+        "SESSION_PICKLE_FALLBACK=false requires SESSION_SERIALIZATION=json"
+    )
+
 
 def read_hex_data(key: string, default: bytes) -> bytes:
     data = os.environ.get(key)
