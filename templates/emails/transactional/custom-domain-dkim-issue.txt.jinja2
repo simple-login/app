@@ -1,0 +1,9 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+We have detected that the DKIM records for your domain {{ custom_domain.domain }} are no longer correctly set up.
+
+To fix this, please update the DKIM CNAME records and re-run the DNS check at {{ domain_dns_url }}.
+
+Until this is fixed, emails sent from {{ custom_domain.domain }} may not be signed correctly and could be marked as spam.
+{% endblock %}
