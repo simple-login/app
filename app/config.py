@@ -724,6 +724,9 @@ MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS"
 SESSION_PICKLE_FALLBACK = (
     os.environ.get("SESSION_PICKLE_FALLBACK", "true").lower() != "false"
 )
+SESSION_JSON_SERIALIZATION = (
+    os.environ.get("SESSION_JSON_SERIALIZATION", "false").lower() != "false"
+)
 
 
 def read_hex_data(key: string, default: bytes) -> bytes:
