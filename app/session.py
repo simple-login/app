@@ -1,15 +1,14 @@
 import json
 import uuid
-from time import time
 from typing import Optional
 
 import flask
 from flask import current_app, session
 from flask_login import logout_user
+from time import time
 
 from app import config
 from app.log import LOG
-
 
 try:
     import cPickle as pickle
@@ -87,7 +86,9 @@ class RedisSessionStore(SessionInterface):
         return config.SESSION_PICKLE_FALLBACK
 
     def _serialize(self, session: ServerSession) -> bytes:
-        return json.dumps(dict(session)).encode()
+        if config.SESSION_JSON_SERIALIZATION:
+            return json.dumps(dict(session)).encode()
+        return pickle.dumps(dict(session))
 
     def _deserialize(self, val: bytes) -> Optional[dict]:
         try:

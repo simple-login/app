@@ -38,7 +38,8 @@ def _request_with_session_id(app, session_id):
     return flask.Request.from_values(headers={"Cookie": f"slapp={signed}"})
 
 
-def test_save_session_stores_json():
+def test_save_session_stores_json(monkeypatch):
+    monkeypatch.setattr(config, "SESSION_JSON_SERIALIZATION", True)
     app = _make_app()
     store, redis = _store()
     session = store.open_session(app, flask.Request.from_values())
@@ -47,6 +48,18 @@ def test_save_session_stores_json():
 
     raw = redis.data[RedisSessionStore._get_key(session.session_id)]
     assert json.loads(raw) == {"_user_id": "abc"}
+
+
+def test_save_session_stores_pickle_when_json_disabled(monkeypatch):
+    monkeypatch.setattr(config, "SESSION_JSON_SERIALIZATION", False)
+    app = _make_app()
+    store, redis = _store()
+    session = store.open_session(app, flask.Request.from_values())
+    session["_user_id"] = "abc"
+    store.save_session(app, session, flask.Response())
+
+    raw = redis.data[RedisSessionStore._get_key(session.session_id)]
+    assert pickle.loads(raw) == {"_user_id": "abc"}
 
 
 def test_open_session_reads_json():
