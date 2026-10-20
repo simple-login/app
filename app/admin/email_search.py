@@ -148,6 +148,7 @@ class EmailSearchResult:
 
         # Search users by exact match (id or email)
         user = None
+        user_id = None
         try:
             user_id = int(query)
             user = User.get(user_id)
@@ -195,11 +196,14 @@ class EmailSearchResult:
             # Proton partner not configured, skip this search
             pass
 
-        # Check user audit log by user_email if no users found
+        # Check user audit log if no users found (e.g. the user has been deleted)
         if not output.users:
+            if user_id is not None:
+                audit_log_query = UserAuditLog.filter_by(user_id=user_id)
+            else:
+                audit_log_query = UserAuditLog.filter_by(user_email=query)
             user_audit_log = (
-                UserAuditLog.filter_by(user_email=query)
-                .order_by(UserAuditLog.created_at.desc())
+                audit_log_query.order_by(UserAuditLog.created_at.desc())
                 .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
