@@ -1,0 +1,67 @@
+# Postfix main.cf — adaptado de SimpleLogin para despliegue dockerizado.
+# Renderizado por entrypoint.sh (envsubst con lista explícita de variables).
+
+smtpd_banner = $myhostname ESMTP $mail_name
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 3.6
+
+# Log a stdout (contenedor)
+maillog_file = /dev/stdout
+
+# TLS
+smtpd_tls_cert_file = /etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file = /etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtp_tls_security_level = may
+smtpd_tls_security_level = may
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+
+mydestination =
+myhostname = ${POSTFIX_MYHOSTNAME}
+mydomain = ${POSTFIX_MYDOMAIN}
+myorigin = ${POSTFIX_MYDOMAIN}
+mynetworks = ${POSTFIX_MYNETWORKS}
+
+# Tamaño máximo de mensaje (50 MB) para reenviar adjuntos
+message_size_limit = 52428800
+
+# El contenedor solo tiene IPv4 en la red de compose
+inet_interfaces = all
+inet_protocols = ipv4
+
+# Enrutado hacia SimpleLogin (consulta PostgreSQL)
+relay_domains = pgsql:/etc/postfix/pgsql-relay-domains.cf
+transport_maps = pgsql:/etc/postfix/pgsql-transport-maps.cf
+
+# HELO
+smtpd_delay_reject = yes
+smtpd_helo_required = yes
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_helo_hostname,
+    reject_invalid_helo_hostname,
+    permit
+
+# Remitente
+smtpd_sender_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain,
+    permit
+
+# Destinatario
+smtpd_recipient_restrictions =
+    reject_unauth_pipelining,
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain,
+    permit_mynetworks,
+    reject_unauth_destination,
+    reject_rbl_client zen.spamhaus.org=127.0.0.[2..11],
+    reject_rbl_client bl.spamcop.net,
+    permit

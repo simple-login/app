@@ -10,6 +10,7 @@ adhoc
 static/node_modules
 db.sqlite-journal
 static/upload
+.docker/
 venv/
 .venv
 .coverage

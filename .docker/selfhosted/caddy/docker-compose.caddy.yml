@@ -1,0 +1,31 @@
+# Modo "caddy": reverse proxy Caddy con HTTPS automático (Let's Encrypt).
+# Lo activa  install.sh --mode caddy  (o DEPLOY_MODE=caddy en .env).
+#
+#   docker compose -f docker-compose.yml -f caddy/docker-compose.caddy.yml up -d
+#
+# Requisitos:
+#   - DEPLOY_MODE=caddy y ACME_EMAIL=<tu-email> en .env
+#   - Puertos 80 y 443 abiertos y APUNTANDO a este servidor (registro A propagado)
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_HOSTNAME: ${APP_HOSTNAME:?define APP_HOSTNAME en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?define ACME_EMAIL en .env}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - sl
+
+volumes:
+  caddy_data:
+  caddy_config:

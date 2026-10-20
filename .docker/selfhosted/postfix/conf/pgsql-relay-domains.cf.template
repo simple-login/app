@@ -1,0 +1,7 @@
+hosts = ${DB_HOST}
+user = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname = ${DB_NAME}
+
+query = SELECT domain FROM custom_domain WHERE domain='%s' AND verified=true
+    UNION SELECT '%s' WHERE '%s' = '${POSTFIX_MYDOMAIN}' LIMIT 1;
