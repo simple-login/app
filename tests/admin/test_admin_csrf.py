@@ -23,9 +23,9 @@ from itsdangerous.encoding import base64_encode, int_to_bytes, want_bytes
 from app import config
 from app.db import Session
 from app.models import (
-    AuditLogActionEnum,
     AdminAuditLog,
     Alias,
+    AuditLogActionEnum,
     CustomDomain,
     Fido,
     ForbiddenMxIp,
@@ -39,7 +39,12 @@ from tests.utils import create_new_user, random_token
 
 
 class _csrf_enabled:
-    """Context manager restoring the previous ``WTF_CSRF_ENABLED`` on exit."""
+    """Context manager restoring the previous ``WTF_CSRF_ENABLED`` on exit.
+
+    The suite disables CSRF globally (tests/conftest.py); these tests need it
+    back on, and a sign-in needs it pinned off, because a login attempted with
+    validation on does not fail loudly - it re-renders the login page.
+    """
 
     def __init__(self, enabled: bool):
         self.enabled = enabled
@@ -124,23 +129,32 @@ def _unlock_admin_panel(flask_client) -> None:
     patching it works even though ``enter_admin`` itself imported the constant
     at import time.
     """
-    monkeypatched_required = config.ADMIN_FIDO_REQUIRED
-    assert (
-        monkeypatched_required == "none"
-    ), "this helper assumes the tests run with no FIDO requirement"
     with flask_client.session_transaction() as sess:
         sess["admin_time"] = int(time())
         sess["admin_hardware_auth"] = True
 
 
-def csrf_token(flask_client) -> str:
-    """A valid token bound to the session of ``flask_client``.
+def fresh_csrf_token(flask_client) -> str:
+    """A valid token taken from the rendered email-search page.
 
-    Flask-WTF writes the token into the session, which only exists inside a
-    request, so it is seeded in the client's session directly.
+    Reading the token out of the served HTML - the exact value a browser would
+    submit - is what proves the token the UI hands out is the one the server
+    accepts. Hand-signing tokens (see the expiry test) bypasses that link.
+    The token lives in the action forms, which only render for a search that
+    found something, so the page is fetched with a fresh user's email.
     """
-    with flask_client.session_transaction() as sess:
-        return _seed_csrf_token(sess)
+    user = create_new_user()
+    Session.commit()
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": user.email, "search_type": "email"},
+        follow_redirects=True,
+    )
+    if r.status_code != 200 or "csrf_token" not in r.data.decode(errors="ignore"):
+        # A denial (logout, expired grace) redirects away from the page; make
+        # sure the caller's own denial is the one under test, not ours.
+        raise AssertionError(f"could not load the admin page: {r.status_code}")
+    return _extract_csrf_token(r.data.decode())
 
 
 def expired_csrf_token(flask_client, age_seconds: int) -> str:
@@ -148,34 +162,30 @@ def expired_csrf_token(flask_client, age_seconds: int) -> str:
 
     Flask-WTF stores a random value in the session and sends a timed, signed
     serialization of it, so the pair stays consistent; only the timestamp lies.
+    This is the one case that cannot come from a rendered page: no honest
+    server hands out an expired token.
     """
-    with flask_client.session_transaction() as sess:
-        unsigned = _seed_csrf_token(sess)
-        return _sign_older_than(unsigned, age_seconds)
-
-
-def _seed_csrf_token(sess) -> str:
-    """Put Flask-WTF's session value in place and return the matching token."""
-    from tests.conftest import app as app_
-
-    field_name = app_.config.get("WTF_CSRF_FIELD_NAME", "csrf_token")
-    secret_key = app_.config.get("WTF_CSRF_SECRET_KEY") or app_.secret_key
-    assert secret_key is not None, "a secret key is required to sign CSRF tokens"
-    unsigned = sess.get(field_name)
-    if not unsigned:
-        unsigned = hashlib.sha1(os.urandom(64)).hexdigest()
-        sess[field_name] = unsigned
-    return str(
-        URLSafeTimedSerializer(secret_key, salt="wtf-csrf-token").dumps(unsigned)
+    # Seed the session value through Flask-WTF itself, via a page that renders
+    # a form; the value is deliberately absent from the session until then.
+    seed = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": create_new_user_email(), "search_type": "email"},
     )
+    assert seed.status_code == 200
+    unsigned = _extract_csrf_token(seed.data.decode()).rsplit(".", 1)[0]
+    return _sign_older_than(unsigned, age_seconds)
+
+
+def create_new_user_email() -> str:
+    user = create_new_user()
+    Session.commit()
+    return user.email
 
 
 def _sign_older_than(value: str, age_seconds: int) -> str:
     """itsdangerous timestamps a ``sign`` call with the current time only, so
     build the payload exactly like ``TimestampSigner.sign`` and sign that."""
-    from tests.conftest import app as app_
-
-    secret_key = app_.config.get("WTF_CSRF_SECRET_KEY") or app_.secret_key
+    secret_key = app.config.get("WTF_CSRF_SECRET_KEY") or app.secret_key
     assert secret_key is not None, "a secret key is required to sign CSRF tokens"
     signer = TimestampSigner(secret_key, salt="wtf-csrf-token")
     payload = (
@@ -184,11 +194,6 @@ def _sign_older_than(value: str, age_seconds: int) -> str:
         + base64_encode(int_to_bytes(int(time()) - age_seconds))
     )
     return (payload + signer.sep + signer.get_signature(payload)).decode()
-
-
-def _session_csrf_value(client) -> str:
-    with client.session_transaction() as sess:
-        return str(sess.get("csrf_token"))
 
 
 def flash_messages(client) -> str:
@@ -200,6 +205,12 @@ def flash_messages(client) -> str:
     """
     with client.session_transaction() as sess:
         return "; ".join(str(message[1]) for message in sess.get("_flashes", []))
+
+
+def clear_flash_messages(client) -> None:
+    """Drop queued flashes so the next assertion cannot match an older request's."""
+    with client.session_transaction() as sess:
+        sess.pop("_flashes", None)
 
 
 def assert_rejected_by_csrf_guard(flask_client, url: str, data: dict) -> None:
@@ -535,6 +546,7 @@ def test_post_with_invalid_csrf_token_is_rejected(
     url, data, target_state_changed = _run_payload(payload_factory, sent_mail)
 
     for bad_token in ("", "not-a-real-token"):
+        clear_flash_messages(flask_client)
         assert_rejected_by_csrf_guard(
             flask_client, url, {**data, "csrf_token": bad_token}
         )
@@ -560,6 +572,10 @@ def test_post_with_expired_csrf_token_is_rejected_and_reload_recovers(
     csrf_admin, flask_client
 ):
     url, data, target_state_changed = _payload_disable_2fa()
+    # The disable-2fa form renders on this user's search page; reuse that page
+    # for the reload-recovery step so the retry token comes from rendered HTML.
+    target_email = User.get(int(data["user_id"])).email
+    page_query = {"query": target_email, "search_type": "email"}
     expired_token = expired_csrf_token(flask_client, EXPIRED_TOKEN_AGE_SECONDS)
 
     assert_rejected_by_csrf_guard(
@@ -569,13 +585,33 @@ def test_post_with_expired_csrf_token_is_rejected_and_reload_recovers(
     assert not target_state_changed()
 
     # The admin reloads the page - which hands out a fresh token - and retries.
-    assert flask_client.get(url_for("admin.email_search.index")).status_code == 200
+    # The disable-2fa form is rendered only on the search page that finds the
+    # target user, so reload exactly that page and take its token.
+    page = flask_client.get(
+        url_for("admin.email_search.index"), query_string=page_query
+    )
+    assert page.status_code == 200
+    page_html = page.data.decode()
+    # The form tag spans several lines, so search the whole page for a POST
+    # form aimed at the target endpoint and take the first token after it.
+    # Jinja escapes the url_for output inside the action attribute (& -> &amp;),
+    # so match on the endpoint name instead of the exact URL.
+    form_match = re.search(
+        r'<form[^>]{0,400}?action="[^"]*disable_2fa"', page_html, re.DOTALL
+    )
+    assert form_match is not None, "the reload did not render the disable-2fa form"
+    token_input = _CSRF_INPUT_TAG.search(page_html, form_match.start())
+    assert token_input is not None, "the rendered form carries no CSRF token"
     r = flask_client.post(
         url,
-        data={**data, "csrf_token": csrf_token(flask_client)},
+        data={
+            **data,
+            "csrf_token": _extract_csrf_token(page_html[form_match.start() :]),
+        },
         follow_redirects=True,
     )
     assert r.status_code == 200
+    assert CSRF_WARNING_MESSAGE not in flash_messages(flask_client)
     Session.expire_all()
     assert target_state_changed()
 
@@ -590,7 +626,7 @@ def test_post_with_valid_csrf_token_succeeds(csrf_admin, flask_client, payload_f
 
     r = flask_client.post(
         url,
-        data={**data, "csrf_token": csrf_token(flask_client)},
+        data={**data, "csrf_token": fresh_csrf_token(flask_client)},
         follow_redirects=True,
     )
 
@@ -606,16 +642,29 @@ def test_index_get_still_works_with_csrf_enabled(csrf_admin, flask_client):
     assert b"Email Search" in r.data
 
 
+def test_index_post_without_csrf_token_is_rejected(csrf_admin, flask_client):
+    """The email-search index itself accepts POST and is covered by the same
+    guard as the action endpoints."""
+    url = url_for("admin.email_search.index")
+
+    r = flask_client.post(url, data={"query": "someone@example.com"})
+
+    assert r.status_code == 302
+    assert url_for("admin.email_search.index") in r.headers["Location"]
+    assert CSRF_WARNING_MESSAGE in flash_messages(flask_client)
+
+
 def test_anonymous_post_is_denied_before_csrf(csrf_admin, flask_client):
     """Access control runs first, so an anonymous visitor gets the login
     redirect - and no hint that a valid token would have been accepted."""
     url, data, target_state_changed = _payload_disable_2fa()
+    token = fresh_csrf_token(flask_client)
     flask_client.get(url_for("auth.logout"))
 
     assert_redirected_before_csrf(
         flask_client,
         url,
-        {**data, "csrf_token": csrf_token(flask_client)},
+        {**data, "csrf_token": token},
         _login_url_prefix(),
     )
 
@@ -638,7 +687,7 @@ def test_non_admin_post_is_denied_before_csrf(csrf_admin, flask_client):
     assert_redirected_before_csrf(
         flask_client,
         url,
-        {**data, "csrf_token": csrf_token(flask_client)},
+        {**data, "csrf_token": fresh_csrf_token(flask_client)},
         _login_url_prefix(),
     )
 
@@ -664,15 +713,17 @@ def test_admin_past_grace_period_is_denied_before_csrf(
     # switch that on and stamp admin_time before the window opened.
     monkeypatch.setattr("app.admin.base.config.ADMIN_FIDO_REQUIRED", "any")
     _give_admin_a_fido_key(csrf_admin)
+    token = fresh_csrf_token(flask_client)
     with flask_client.session_transaction() as sess:
         sess["admin_time"] = int(time()) - config.ADMIN_GRACE_PERIOD - 60
+    del sess  # noqa: B018 - readability; the with-block above already committed
 
     url, data, target_state_changed = _payload_disable_2fa()
 
     assert_redirected_before_csrf(
         flask_client,
         url,
-        {**data, "csrf_token": csrf_token(flask_client)},
+        {**data, "csrf_token": token},
         url_for("dashboard.enter_admin"),
     )
 
@@ -686,6 +737,7 @@ def test_admin_without_hardware_key_auth_is_denied_before_csrf(
     """Grace-period entry obtained without a hardware key still expires."""
     monkeypatch.setattr("app.admin.base.config.ADMIN_FIDO_REQUIRED", "hardware")
     _give_admin_a_fido_key(csrf_admin)
+    token = fresh_csrf_token(flask_client)
     with flask_client.session_transaction() as sess:
         sess.pop("admin_hardware_auth", None)
 
@@ -694,7 +746,7 @@ def test_admin_without_hardware_key_auth_is_denied_before_csrf(
     assert_redirected_before_csrf(
         flask_client,
         url,
-        {**data, "csrf_token": csrf_token(flask_client)},
+        {**data, "csrf_token": token},
         url_for("dashboard.enter_admin"),
     )
 
@@ -725,9 +777,7 @@ def _give_admin_a_fido_key(admin_user: User) -> None:
 def _token_of_a_different_session() -> str:
     """A token signed with the app secret but bound to no session the server
     can see, so it can only fail the session comparison."""
-    from tests.conftest import app as app_
-
-    secret_key = app_.config.get("WTF_CSRF_SECRET_KEY") or app_.secret_key
+    secret_key = app.config.get("WTF_CSRF_SECRET_KEY") or app.secret_key
     assert secret_key is not None, "a secret key is required to sign CSRF tokens"
     foreign = hashlib.sha1(os.urandom(64)).hexdigest()
     return str(URLSafeTimedSerializer(secret_key, salt="wtf-csrf-token").dumps(foreign))
@@ -738,6 +788,17 @@ def _token_of_a_different_session() -> str:
 # ---------------------------------------------------------------------------
 
 _FORM_TAG = re.compile(r"<form\b[^>]*>", re.IGNORECASE)
+_CSRF_INPUT_TAG = re.compile(r"""<input[^>]*name=["']csrf_token["'][^>]*>""")
+_ATTR_VALUE = re.compile(r"""value=["']([^"']*)["']""")
+
+
+def _extract_csrf_token(html: str) -> str:
+    """The first CSRF token rendered in ``html`` - the one the UI would submit."""
+    tag = _CSRF_INPUT_TAG.search(html)
+    assert tag is not None, "no csrf_token input in the page"
+    match = _ATTR_VALUE.search(tag.group(0))
+    assert match is not None and match.group(1), "csrf_token input carries no value"
+    return match.group(1)
 
 
 def _post_forms(html: str) -> list[tuple[str, str]]:
@@ -894,7 +955,7 @@ def test_custom_domain_delete_with_csrf_token_succeeds(csrf_admin, flask_client)
 
     r = flask_client.post(
         url,
-        data={**data, "csrf_token": csrf_token(flask_client)},
+        data={**data, "csrf_token": fresh_csrf_token(flask_client)},
         follow_redirects=True,
     )
 
@@ -904,17 +965,9 @@ def test_custom_domain_delete_with_csrf_token_succeeds(csrf_admin, flask_client)
     assert target_state_changed()
 
 
-_CSRF_INPUT_TAG = re.compile(r"""<input[^>]*name=["']csrf_token["'][^>]*>""")
-_ATTR_VALUE = re.compile(r"""value=["']([^"']*)["']""")
-
-
-def _extract_csrf_token(html: str) -> str:
-    """The first CSRF token rendered in ``html`` - the one the UI would submit."""
-    tag = _CSRF_INPUT_TAG.search(html)
-    assert tag is not None, "no csrf_token input in the page"
-    match = _ATTR_VALUE.search(tag.group(0))
-    assert match is not None and match.group(1), "csrf_token input carries no value"
-    return match.group(1)
+# ---------------------------------------------------------------------------
+# ModelView regression: the SecureForm token flow must keep working
+# ---------------------------------------------------------------------------
 
 
 def test_modelview_secureform_still_validates_with_csrf_enabled(
