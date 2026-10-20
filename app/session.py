@@ -1,3 +1,4 @@
+import json
 import uuid
 from time import time
 from typing import Optional
@@ -5,6 +6,9 @@ from typing import Optional
 import flask
 from flask import current_app, session
 from flask_login import logout_user
+
+from app import config
+from app.log import LOG
 
 
 try:
@@ -79,6 +83,30 @@ class RedisSessionStore(SessionInterface):
         except AttributeError:
             pass
 
+    def _should_unpickle(self) -> bool:
+        return config.SESSION_PICKLE_FALLBACK
+
+    def _serialize(self, session: ServerSession) -> bytes:
+        return json.dumps(dict(session)).encode()
+
+    def _deserialize(self, val: bytes) -> Optional[dict]:
+        try:
+            data = json.loads(val)
+            return data if isinstance(data, dict) else None
+        except Exception:
+            pass
+
+        # Only try pickle if we still support the fallback
+        if not self._should_unpickle():
+            return None
+
+        try:
+            data = pickle.loads(val)
+        except Exception:
+            LOG.w("Cannot deserialize session value")
+            return None
+        return data if isinstance(data, dict) else None
+
     def open_session(self, app: flask.Flask, request: flask.Request):
         session_id = self.extract_and_validate_session_id(app, request)
         if not session_id:
@@ -86,11 +114,9 @@ class RedisSessionStore(SessionInterface):
 
         val = self._redis_r.get(self._get_key(session_id))
         if val is not None:
-            try:
-                data = pickle.loads(val)
+            data = self._deserialize(val)
+            if data is not None:
                 return ServerSession(data, session_id=session_id)
-            except Exception:
-                pass
         return ServerSession(session_id=str(uuid.uuid4()))
 
     def save_session(
@@ -102,7 +128,7 @@ class RedisSessionStore(SessionInterface):
         secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
         samesite = self.get_cookie_samesite(app)
-        val = pickle.dumps(dict(session))
+        val = self._serialize(session)
         ttl = int(app.permanent_session_lifetime.total_seconds())
         # Only 5 minutes for non-authenticated sessions.
         # We need to keep the non-authenticated ones because the csrf token is stored in the session.

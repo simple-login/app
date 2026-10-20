@@ -717,6 +717,14 @@ ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
 ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
 MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
 
+# Sessions are stored in Redis serialized with JSON.
+# Sessions written before the switch are stored with pickle.
+# Unpickling is still tried as a fallback so logged in users are not logged out,
+# set SESSION_PICKLE_FALLBACK=false to stop accepting pickled sessions.
+SESSION_PICKLE_FALLBACK = (
+    os.environ.get("SESSION_PICKLE_FALLBACK", "true").lower() != "false"
+)
+
 
 def read_hex_data(key: string, default: bytes) -> bytes:
     data = os.environ.get(key)
