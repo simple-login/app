@@ -23,17 +23,36 @@ from itsdangerous.encoding import base64_encode, int_to_bytes, want_bytes
 from app import config
 from app.db import Session
 from app.models import (
+    AuditLogActionEnum,
     AdminAuditLog,
     Alias,
     CustomDomain,
     Fido,
+    ForbiddenMxIp,
     Mailbox,
     PartnerUser,
     User,
 )
 from app.proton.proton_partner import get_proton_partner
-from tests.admin.conftest import _csrf_enabled
+from tests.conftest import app
 from tests.utils import create_new_user, random_token
+
+
+class _csrf_enabled:
+    """Context manager restoring the previous ``WTF_CSRF_ENABLED`` on exit."""
+
+    def __init__(self, enabled: bool):
+        self.enabled = enabled
+
+    def __enter__(self):
+        self.previous = app.config.get("WTF_CSRF_ENABLED")
+        app.config["WTF_CSRF_ENABLED"] = self.enabled
+        return self
+
+    def __exit__(self, *exc_info):
+        app.config["WTF_CSRF_ENABLED"] = self.previous
+        return False
+
 
 CSRF_WARNING_MESSAGE = "Invalid request"
 
@@ -883,3 +902,76 @@ def test_custom_domain_delete_with_csrf_token_succeeds(csrf_admin, flask_client)
     assert CSRF_WARNING_MESSAGE not in flash_messages(flask_client)
     Session.expire_all()
     assert target_state_changed()
+
+
+_CSRF_INPUT_TAG = re.compile(r"""<input[^>]*name=["']csrf_token["'][^>]*>""")
+_ATTR_VALUE = re.compile(r"""value=["']([^"']*)["']""")
+
+
+def _extract_csrf_token(html: str) -> str:
+    """The first CSRF token rendered in ``html`` - the one the UI would submit."""
+    tag = _CSRF_INPUT_TAG.search(html)
+    assert tag is not None, "no csrf_token input in the page"
+    match = _ATTR_VALUE.search(tag.group(0))
+    assert match is not None and match.group(1), "csrf_token input carries no value"
+    return match.group(1)
+
+
+def test_modelview_secureform_still_validates_with_csrf_enabled(
+    csrf_admin, flask_client
+):
+    """Binding correction 5: ``SLModelView`` views use flask-admin's
+    ``SecureForm``, whose token is a plain session hash - a different scheme
+    from the Flask-WTF token checked by ``CSRFProtectedAdminView``. The two
+    guards must not be mixed: a create form rendered by a ModelView and
+    submitted with its own page token still succeeds with CSRF enforcement on,
+    and the missing guard there is flask-admin's own, not the new hook."""
+    ip = "203.0.113.23"
+    create_url = url_for("forbiddenmxip.create_view")
+
+    r = flask_client.get(create_url)
+    assert r.status_code == 200
+    token = _extract_csrf_token(r.data.decode())
+
+    r = flask_client.post(
+        create_url,
+        data={"ip": ip, "comment": "csrf regression", "csrf_token": token},
+        follow_redirects=True,
+    )
+
+    assert r.status_code == 200
+    assert CSRF_WARNING_MESSAGE not in flash_messages(flask_client)
+    # The row exists and the create audit row was written with .value: an
+    # unvalidated form never reaches on_model_change, and an audit write that
+    # crashes there rolls the create back, so together they prove the
+    # SecureForm token was accepted end to end.
+    assert Session.query(ForbiddenMxIp).filter_by(ip=ip).first() is not None
+    assert (
+        Session.query(AdminAuditLog)
+        .filter_by(model="ForbiddenMxIp", action=AuditLogActionEnum.create_object.value)
+        .first()
+        is not None
+    )
+
+
+def test_modelview_secureform_without_token_is_refused_by_flask_admin(
+    csrf_admin, flask_client
+):
+    """Same view, no token: flask-admin's own SecureForm validation refuses the
+    create, so the ModelView was never unprotected by the absence of the new
+    hook."""
+    ip = "203.0.113.24"
+    create_url = url_for("forbiddenmxip.create_view")
+
+    r = flask_client.get(create_url)
+    assert r.status_code == 200
+
+    r = flask_client.post(
+        create_url, data={"ip": ip, "comment": "no token"}, follow_redirects=True
+    )
+
+    assert r.status_code == 200
+    # flask-admin re-renders the create form with the field value kept and the
+    # model untouched when SecureForm rejects the missing token.
+    assert b"no token" in r.data
+    assert Session.query(ForbiddenMxIp).filter_by(ip=ip).first() is None
