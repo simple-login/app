@@ -299,6 +299,8 @@
               <form action="{{ url_for('admin.email_search.disable_2fa') }}"
                     method="POST"
                     class="mb-2">
+                    {{ csrf_form.csrf_token }}
+
                 <input type="hidden" name="user_id" value="{{ user.id }}">
                 <button type="submit"
                         class="btn btn-sm btn-block btn-caution-modern"
@@ -320,6 +322,8 @@
               <form action="{{ url_for('admin.email_search.stop_user_deletion') }}"
                     method="POST"
                     class="mb-2">
+                    {{ csrf_form.csrf_token }}
+
                 <input type="hidden" name="user_id" value="{{ user.id }}">
                 <button type="submit"
                         class="btn btn-sm btn-block btn-danger-modern"
@@ -414,6 +418,8 @@
         </div>
         <form action="{{ url_for('admin.email_search.mark_abuser') }}"
               method="POST">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <div class="alert alert-warning">
@@ -462,6 +468,8 @@
         </div>
         <form action="{{ url_for('admin.email_search.unmark_abuser') }}"
               method="POST">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <p class="text-muted">
@@ -512,6 +520,8 @@
           <form action="{{ url_for('admin.email_search.delete_partner_link') }}"
                 method="POST"
                 id="unlinkProtonForm{{ user.id }}">
+                {{ csrf_form.csrf_token }}
+
             <div class="modal-body">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <div class="alert alert-warning">
@@ -582,6 +592,8 @@
         <form action="{{ url_for('admin.email_search.delete_user') }}"
               method="POST"
               id="deleteUserForm{{ user.id }}">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <div class="alert alert-danger">
@@ -659,6 +671,8 @@
         <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
               method="POST"
               id="subdomainQuotaForm{{ user.id }}">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <input type="hidden"
@@ -695,6 +709,8 @@
         <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
               method="POST"
               id="directoryQuotaForm{{ user.id }}">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <input type="hidden"
@@ -776,6 +792,8 @@
           <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
                 method="POST"
                 id="disableAliasForm{{ alias.id }}">
+                {{ csrf_form.csrf_token }}
+
             <div class="modal-body">
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
               <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
@@ -839,6 +857,8 @@
           <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
                 method="POST"
                 id="enableAliasForm{{ alias.id }}">
+                {{ csrf_form.csrf_token }}
+
             <div class="modal-body">
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
               <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
@@ -901,6 +921,8 @@
         <form action="{{ url_for('admin.email_search.delete_alias') }}"
               method="POST"
               id="deleteAliasForm{{ alias.id }}">
+              {{ csrf_form.csrf_token }}
+
           <div class="modal-body">
             <input type="hidden" name="alias_id" value="{{ alias.id }}">
             <div class="alert alert-danger">
@@ -1073,6 +1095,8 @@
         <div class="col-md-6 mb-3">
           <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
                 method="POST">
+                {{ csrf_form.csrf_token }}
+
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <label class="font-weight-bold">Subdomain Quota</label>
             <div class="input-group">
@@ -1096,6 +1120,8 @@
         <div class="col-md-6 mb-3">
           <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
                 method="POST">
+                {{ csrf_form.csrf_token }}
+
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <label class="font-weight-bold">Directory Quota</label>
             <div class="input-group">
@@ -1252,6 +1278,8 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.set_default_mailbox') }}"
                             method="POST">
+                            {{ csrf_form.csrf_token }}
+
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <p>
@@ -1296,6 +1324,8 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.admin_reenable_mailbox') }}"
                             method="POST">
+                            {{ csrf_form.csrf_token }}
+
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <p>
@@ -1347,6 +1377,8 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.send_mailbox_disable_warning') }}"
                             method="POST">
+                            {{ csrf_form.csrf_token }}
+
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <div class="alert alert-warning">
@@ -1396,6 +1428,8 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.admin_disable_mailbox') }}"
                             method="POST">
+                            {{ csrf_form.csrf_token }}
+
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <div class="alert alert-danger">

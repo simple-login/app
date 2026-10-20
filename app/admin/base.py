@@ -92,6 +92,40 @@ class BaseAdminView(BaseView):
         return redirect_destination or redirect(url_for("dashboard.index"))
 
 
+class CSRFProtectedAdminView(BaseAdminView):
+    """Base view for the hand-written admin pages that mutate state.
+
+    Unlike a ``ModelView``, these views act straight on ``request.form``, so
+    nothing checks where the form came from. Every POST must carry a valid
+    Flask-WTF token: ``csrf_form`` is built inside ``_handle_view``, which
+    flask-admin calls before the view method, so access control still runs
+    first and an unauthorized client never learns that a valid token would
+    have been accepted. Views deriving from this must render ``csrf_form`` in
+    every POST form.
+    """
+
+    def _handle_view(self, name, **kwargs):
+        abort = super()._handle_view(name, **kwargs)
+        if abort is not None:
+            return abort
+
+        from app.utils import CSRFValidationForm
+
+        self.csrf_form = CSRFValidationForm()
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            if not self.csrf_form.validate():
+                flash("Invalid request", "warning")
+                index_endpoint = f"{self.endpoint}.index"
+                return redirect(
+                    url_for(index_endpoint, query=request.form.get("query"))
+                )
+        return None
+
+    def render(self, template, **kwargs):
+        kwargs.setdefault("csrf_form", self.csrf_form)
+        return super().render(template, **kwargs)
+
+
 class SLModelView(sqla.ModelView, BaseAdminView):
     column_default_sort = ("id", True)
     column_display_pk = True
