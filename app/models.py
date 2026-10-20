@@ -776,11 +776,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         user: User = cls.get(obj_id)
         EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
 
-        # Manually delete all aliases for the user that is about to be deleted
-        from app.alias_delete import delete_alias
+        # Manually delete all aliases for the user that is about to be deleted.
+        # Never move them to the trash: the user row is about to be deleted and
+        # would cascade-delete the trashed aliases without a DeletedAlias entry
+        from app.alias_delete import perform_alias_deletion
 
         for alias in Alias.filter_by(user_id=user.id):
-            delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
+            perform_alias_deletion(alias, user, AliasDeleteReason.UserHasBeenDeleted)
 
         res = super(User, cls).delete(obj_id)
         if commit:

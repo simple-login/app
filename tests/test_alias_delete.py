@@ -20,6 +20,7 @@ from app.models import (
     PartnerUser,
     CustomDomain,
     DomainDeletedAlias,
+    User,
 )
 from tests.events.event_test_utils import (
     OnMemoryDispatcher,
@@ -223,6 +224,25 @@ def test_delete_mailbox_deletes_alias_with_user_setting(
         ensure_alias_is_deleted(
             alias_id, alias_email, 2, reason=AliasDeleteReason.MailboxDeleted
         )
+
+
+# delete user
+@pytest.mark.parametrize("user_setting", generate_user_setting())
+def test_delete_user_moves_aliases_to_deleted_alias_with_user_setting(
+    user_setting: UserAliasDeleteAction,
+):
+    user = create_new_user(alias_delete_action=user_setting)
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    alias_id = alias.id
+    alias_email = alias.email
+
+    User.delete(user.id)
+    Session.commit()
+
+    ensure_alias_is_deleted(
+        alias_id, alias_email, 2, reason=AliasDeleteReason.UserHasBeenDeleted
+    )
 
 
 # Restore alias
