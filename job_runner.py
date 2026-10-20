@@ -276,6 +276,11 @@ def process_job(job: Job):
             render("transactional/account-delete.html", user=user),
             retries=3,
         )
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.DeleteUser,
+            message=f"Delete user {user.id} ({user_email})",
+        )
         User.delete(user.id)
         Session.commit()
     elif job.name == JobType.DELETE_MAILBOX.value:
