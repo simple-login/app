@@ -995,6 +995,8 @@
           <form action="{{ url_for('admin.custom_domain_search.delete_custom_domain') }}"
                 method="POST"
                 id="deleteDomainForm{{ domain.id }}">
+                {{ csrf_form.csrf_token }}
+
             <div class="modal-body">
               <input type="hidden" name="domain_id" value="{{ domain.id }}">
               <div class="alert alert-danger">
