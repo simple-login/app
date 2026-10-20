@@ -16,6 +16,7 @@ from time import time
 from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum, Fido
+from app.utils import CSRFValidationForm
 
 
 def _has_valid_admin_time() -> bool:
@@ -97,11 +98,13 @@ class CSRFProtectedAdminView(BaseAdminView):
 
     Unlike a ``ModelView``, these views act straight on ``request.form``, so
     nothing checks where the form came from. Every POST must carry a valid
-    Flask-WTF token: ``csrf_form`` is built inside ``_handle_view``, which
-    flask-admin calls before the view method, so access control still runs
-    first and an unauthorized client never learns that a valid token would
-    have been accepted. Views deriving from this must render ``csrf_form`` in
-    every POST form.
+    Flask-WTF token: the validation form is built inside ``_handle_view``,
+    which flask-admin calls before the view method, so access control still
+    runs first and an unauthorized client never learns that a valid token would
+    have been accepted. The form is request-local by necessity: flask-admin
+    keeps one view instance per app, shared by every request, so storing it on
+    ``self`` would let concurrent requests overwrite each other's token. Views
+    deriving from this must render ``csrf_form`` in every POST form.
     """
 
     def _handle_view(self, name, **kwargs):
@@ -109,20 +112,14 @@ class CSRFProtectedAdminView(BaseAdminView):
         if abort is not None:
             return abort
 
-        from app.utils import CSRFValidationForm
-
-        self.csrf_form = CSRFValidationForm()
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-            if not self.csrf_form.validate():
+            if not CSRFValidationForm().validate():
                 flash("Invalid request", "warning")
-                index_endpoint = f"{self.endpoint}.index"
-                return redirect(
-                    url_for(index_endpoint, query=request.form.get("query"))
-                )
+                return redirect(url_for(f"{self.endpoint}.index"))
         return None
 
     def render(self, template, **kwargs):
-        kwargs.setdefault("csrf_form", self.csrf_form)
+        kwargs.setdefault("csrf_form", CSRFValidationForm())
         return super().render(template, **kwargs)
 
 
