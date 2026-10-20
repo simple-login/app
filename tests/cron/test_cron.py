@@ -12,7 +12,9 @@ from app.models import (
     Subscription,
     User,
     PlanEnum,
+    UserAuditLog,
 )
+from app.user_audit_log_utils import UserAuditLogAction
 from tests.utils import create_new_user, create_partner_linked_user, random_token
 
 
@@ -194,3 +196,13 @@ def test_cleanup_users():
     assert User.get(u_delete_none_id) is not None
     assert User.get(u_delete_grace_has_not_expired_id) is not None
     assert User.get(u_delete_grace_has_expired_id) is None
+    audit_log = UserAuditLog.get_by(
+        user_id=u_delete_grace_has_expired_id,
+        action=UserAuditLogAction.DeleteUser.value,
+    )
+    assert audit_log is not None
+    assert "Deleted by: scheduled deletion cron" in audit_log.message
+    assert (
+        f"the {cron.DELETE_GRACE_DAYS} days grace period has expired"
+        in audit_log.message
+    )

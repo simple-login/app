@@ -8,7 +8,10 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.log import LOG
 from app.models import Subscription, Job
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_marked_for_deletion_audit_log,
+    USER_REQUESTED_DELETION_REASON,
+)
 
 
 class DeleteDirForm(FlaskForm):
@@ -34,14 +37,17 @@ def delete_account():
 
         # Schedule delete account job
         LOG.w("schedule delete account job for %s", current_user)
-        emit_user_audit_log(
-            user=current_user,
-            action=UserAuditLogAction.UserMarkedForDeletion,
-            message=f"User {current_user.id} ({current_user.email}) marked for deletion via webapp",
+        source = "webapp"
+        emit_user_marked_for_deletion_audit_log(
+            user=current_user, source=source, reason=USER_REQUESTED_DELETION_REASON
         )
         Job.create(
             name=JobType.DELETE_ACCOUNT.value,
-            payload={"user_id": current_user.id},
+            payload={
+                "user_id": current_user.id,
+                "source": source,
+                "reason": USER_REQUESTED_DELETION_REASON,
+            },
             run_at=arrow.now(),
             commit=True,
         )
