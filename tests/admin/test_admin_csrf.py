@@ -18,7 +18,6 @@ import pytest
 from flask import url_for
 from itsdangerous import TimestampSigner
 from itsdangerous.url_safe import URLSafeTimedSerializer
-from itsdangerous.encoding import base64_encode, int_to_bytes, want_bytes
 
 from app import config
 from app.db import Session
@@ -155,45 +154,6 @@ def fresh_csrf_token(flask_client) -> str:
         # sure the caller's own denial is the one under test, not ours.
         raise AssertionError(f"could not load the admin page: {r.status_code}")
     return _extract_csrf_token(r.data.decode())
-
-
-def expired_csrf_token(flask_client, age_seconds: int) -> str:
-    """A token whose signature matches the session but is stamped too far back.
-
-    Flask-WTF stores a random value in the session and sends a timed, signed
-    serialization of it, so the pair stays consistent; only the timestamp lies.
-    This is the one case that cannot come from a rendered page: no honest
-    server hands out an expired token.
-    """
-    # Seed the session value through Flask-WTF itself, via a page that renders
-    # a form; the value is deliberately absent from the session until then.
-    seed = flask_client.get(
-        url_for("admin.email_search.index"),
-        query_string={"query": create_new_user_email(), "search_type": "email"},
-    )
-    assert seed.status_code == 200
-    unsigned = _extract_csrf_token(seed.data.decode()).rsplit(".", 1)[0]
-    return _sign_older_than(unsigned, age_seconds)
-
-
-def create_new_user_email() -> str:
-    user = create_new_user()
-    Session.commit()
-    return user.email
-
-
-def _sign_older_than(value: str, age_seconds: int) -> str:
-    """itsdangerous timestamps a ``sign`` call with the current time only, so
-    build the payload exactly like ``TimestampSigner.sign`` and sign that."""
-    secret_key = app.config.get("WTF_CSRF_SECRET_KEY") or app.secret_key
-    assert secret_key is not None, "a secret key is required to sign CSRF tokens"
-    signer = TimestampSigner(secret_key, salt="wtf-csrf-token")
-    payload = (
-        want_bytes(value)
-        + signer.sep
-        + base64_encode(int_to_bytes(int(time()) - age_seconds))
-    )
-    return (payload + signer.sep + signer.get_signature(payload)).decode()
 
 
 def flash_messages(client) -> str:
@@ -569,18 +529,27 @@ def test_post_with_foreign_session_csrf_token_is_rejected(csrf_admin, flask_clie
 
 
 def test_post_with_expired_csrf_token_is_rejected_and_reload_recovers(
-    csrf_admin, flask_client
+    csrf_admin, flask_client, monkeypatch
 ):
     url, data, target_state_changed = _payload_disable_2fa()
     # The disable-2fa form renders on this user's search page; reuse that page
     # for the reload-recovery step so the retry token comes from rendered HTML.
     target_email = User.get(int(data["user_id"])).email
     page_query = {"query": target_email, "search_type": "email"}
-    expired_token = expired_csrf_token(flask_client, EXPIRED_TOKEN_AGE_SECONDS)
-
-    assert_rejected_by_csrf_guard(
-        flask_client, url, {**data, "csrf_token": expired_token}
+    # The token is a genuine one handed out by a rendered page - the same value
+    # a browser would submit. It is made stale by moving the server's clock
+    # forward at validation time rather than forging a token: a forged payload
+    # fails the signature check and never reaches the expiry rule, so the test
+    # would pass even with expiry enforcement switched off entirely.
+    token = fresh_csrf_token(flask_client)
+    monkeypatch.setattr(
+        TimestampSigner,
+        "get_timestamp",
+        lambda self: int(time()) + EXPIRED_TOKEN_AGE_SECONDS,
     )
+
+    assert_rejected_by_csrf_guard(flask_client, url, {**data, "csrf_token": token})
+    monkeypatch.undo()
     Session.expire_all()
     assert not target_state_changed()
 
