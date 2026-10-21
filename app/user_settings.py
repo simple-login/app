@@ -5,7 +5,7 @@ from flask import session as flask_session
 
 from app.db import Session
 from app.log import LOG
-from app.models import User, SLDomain, CustomDomain, Mailbox
+from app.models import AliasOptions, User, SLDomain, CustomDomain, Mailbox
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 
@@ -19,7 +19,11 @@ class CannotSetMailbox(Exception):
         self.msg = msg
 
 
-def set_default_alias_domain(user: User, domain_name: Optional[str]):
+def set_default_alias_domain(
+    user: User,
+    domain_name: Optional[str],
+    alias_options: Optional[AliasOptions] = None,
+):
     if not domain_name:
         LOG.i(f"User {user} has set no domain as default domain")
         user.default_alias_public_domain_id = None
@@ -31,7 +35,9 @@ def set_default_alias_domain(user: User, domain_name: Optional[str]):
     # the same list that the settings page and the API expose keeps this check from
     # drifting away from what the user is actually allowed to pick
     is_sl_domain = None
-    for is_public, available_domain in user.available_domains_for_random_alias():
+    for is_public, available_domain in user.available_domains_for_random_alias(
+        alias_options=alias_options
+    ):
         if available_domain == domain_name:
             is_sl_domain = is_public
             break
