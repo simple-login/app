@@ -655,6 +655,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             postgresql_ops={"email": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
+        # canonical email lookups in app.mailbox_email_match
+        sa.Index(
+            "ix_users_email_canonical",
+            sa.text(
+                "replace(split_part(split_part(lower(email), '@', 1), '+', 1), '.', '')"
+            ),
+            sa.text("split_part(lower(email), '@', 2)"),
+        ),
     )
 
     @property
@@ -3019,6 +3027,14 @@ class Mailbox(Base, ModelMixin):
             "email",
             postgresql_ops={"email": "gin_trgm_ops"},
             postgresql_using="gin",
+        ),
+        # canonical email lookups in app.mailbox_email_match
+        sa.Index(
+            "ix_mailbox_email_canonical",
+            sa.text(
+                "replace(split_part(split_part(lower(email), '@', 1), '+', 1), '.', '')"
+            ),
+            sa.text("split_part(lower(email), '@', 2)"),
         ),
     )
 
