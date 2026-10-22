@@ -4055,6 +4055,12 @@ class PartnerUser(Base, ModelMixin):
         sa.UniqueConstraint(
             "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
         ),
+        sa.Index(
+            "ix_partner_user_partner_email_trgm",
+            "partner_email",
+            postgresql_ops={"partner_email": "gin_trgm_ops"},
+            postgresql_using="gin",
+        ),
     )
 
 
