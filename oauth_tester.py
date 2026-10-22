@@ -20,8 +20,8 @@ app.secret_key = "very secret"
 # "prettify" the returned json in /profile
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
 
-# This client credential is obtained upon registration of a new SimpleLogin App on
-# https://app.simplelogin.io/developer/new_client
+# This client credential belongs to an existing SimpleLogin App registered on
+# https://app.simplelogin.io/developer (creating new apps is no longer possible).
 # Please make sure to export these credentials to env variables:
 # export CLIENT_ID={your_client_id}
 # export CLIENT_SECRET={your_client_secret}
