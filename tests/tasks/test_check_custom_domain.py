@@ -92,3 +92,23 @@ def test_check_custom_domain_deletes_old_domains():
     check_all_custom_domains()
     assert CustomDomain.get(cd_to_delete) is None
     assert CustomDomain.get(cd_to_keep) is not None
+
+
+def test_check_custom_domain_deletes_unverified_domains_after_five_days():
+    user = create_new_user()
+    now = arrow.utcnow()
+    stale = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=False,
+        created_at=now.shift(days=-6),
+    ).id
+    recent = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=False,
+        created_at=now.shift(days=-4),
+    ).id
+    check_all_custom_domains()
+    assert CustomDomain.get(stale) is None
+    assert CustomDomain.get(recent) is not None

@@ -1,9 +1,11 @@
 from flask import url_for
 
 from app.config import MAX_NB_SUBDOMAIN
+from app.custom_domain_utils import MAX_UNVERIFIED_CUSTOM_DOMAINS
 from app.db import Session
 from app.models import SLDomain, CustomDomain, Job
-from tests.utils import login
+from app.utils import random_string
+from tests.utils import login, random_domain
 
 
 def setup_sl_domain() -> SLDomain:
@@ -82,6 +84,28 @@ def test_create_subdomain_in_trash(flask_client):
         f"test.{sl_domain.domain} has been used before and cannot be reused"
         in r.data.decode()
     )
+
+
+def test_create_subdomain_blocked_at_unverified_domain_limit(flask_client):
+    user = login(flask_client)
+    sl_domain = setup_sl_domain()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS):
+        CustomDomain.create(user_id=user.id, domain=random_domain(), commit=True)
+
+    subdomain = random_string(10)
+
+    r = flask_client.post(
+        url_for("dashboard.subdomain_route"),
+        data={
+            "form-name": "create",
+            "subdomain": subdomain,
+            "domain": sl_domain.domain,
+        },
+        follow_redirects=True,
+    )
+
+    assert str(MAX_UNVERIFIED_CUSTOM_DOMAINS) in r.data.decode()
+    assert CustomDomain.get_by(domain=f"{subdomain}.{sl_domain.domain}") is None
 
 
 def test_create_subdomain_out_of_quota(flask_client):
