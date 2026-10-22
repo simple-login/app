@@ -38,15 +38,20 @@
   </div>
   <div class="row">
     <div class="col">
-      <div class="alert alert-info" role="alert">
-        Heads up: Sign in with SimpleLogin is no longer accepting new websites.
-        Websites you already created keep working exactly as before, so there is nothing you need to do.
-      </div>
+      {% if not allow_new_clients %}
+        <div class="alert alert-info" role="alert">
+          Heads up: Sign in with SimpleLogin is no longer accepting new websites.
+          Websites you already created keep working exactly as before, so there is nothing you need to do.
+        </div>
+      {% endif %}
       <div class="btn-group" role="group" aria-label="Basic example">
+        {% if allow_new_clients %}
+          <a href="{{ url_for("developer.new_client") }}" class="btn btn-primary">New website</a>
+        {% endif %}
         <a href="https://simplelogin.io/docs/siwsl/app/"
            target="_blank"
            rel="noopener noreferrer"
-           class="btn btn-secondary">
+           class="{% if allow_new_clients %}ml-2 {% endif %}btn btn-secondary">
           Docs <i class="fe fe-external-link"></i>
         </a>
       </div>
