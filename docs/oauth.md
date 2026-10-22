@@ -1,5 +1,8 @@
 ## OAuth
 
+> **Heads up:** Sign in with SimpleLogin is no longer accepting new websites, so it is not possible to create new OAuth clients anymore.
+> Clients that already exist keep working exactly as before, so there is nothing you need to change.
+
 SL currently supports code and implicit flow.
 
 #### Code flow
