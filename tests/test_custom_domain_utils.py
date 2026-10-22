@@ -69,6 +69,19 @@ def test_can_domain_be_used_sl_domain():
     assert res is CannotUseDomainReason.BuiltinDomain
 
 
+def test_can_domain_be_used_subdomain_of_sl_domain():
+    domain = f"{random_string(10)}.{ALIAS_DOMAINS[0]}"
+    res = can_domain_be_used(user, domain)
+    assert res is CannotUseDomainReason.BuiltinDomain
+
+
+def test_create_custom_domain_subdomain_of_sl_domain_is_rejected():
+    domain = f"{random_string(10)}.{ALIAS_DOMAINS[0]}"
+    res = create_custom_domain(user=user, domain=domain)
+    assert res.success is False
+    assert CustomDomain.get_by(domain=domain) is None
+
+
 def test_can_domain_be_used_domain_of_user_email():
     domain = user.email.split("@")[1]
     res = can_domain_be_used(user, domain)
@@ -141,6 +154,23 @@ def test_can_create_custom_domain_validates_if_parent_is_validated():
     assert res.instance.domain == subdomain
     assert res.instance.user_id == user.id
     assert res.instance.ownership_verified is True
+
+
+def test_create_custom_domain_does_not_inherit_ownership_from_sl_subdomain():
+    # Not under an SL suffix, so only the inheritance check can stop the child
+    sl_subdomain = random_domain()
+    CustomDomain.create(
+        user_id=user.id,
+        domain=sl_subdomain,
+        verified=True,
+        ownership_verified=True,
+        is_sl_subdomain=True,
+        commit=True,
+    )
+
+    res = create_custom_domain(user=user, domain=f"{random_string(10)}.{sl_subdomain}")
+    assert res.success is True
+    assert res.instance.ownership_verified is False
 
 
 def test_creates_custom_domain_with_partner_id():
