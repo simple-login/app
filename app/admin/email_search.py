@@ -8,7 +8,7 @@ from flask_admin import expose
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
-from app.admin.base import BaseAdminView
+from app.admin.base import CSRFProtectedAdminView
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
@@ -701,7 +701,7 @@ class EmailSearchHelpers:
         return None
 
 
-class EmailSearchAdmin(BaseAdminView):
+class EmailSearchAdmin(CSRFProtectedAdminView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         search = EmailSearchResult()

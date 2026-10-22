@@ -15,7 +15,7 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
-from app.models import Fido, RecoveryCode
+from app.models import Fido, MfaBrowser, RecoveryCode
 from app.user_settings import regenerate_user_alternative_id
 
 
@@ -105,6 +105,8 @@ def fido_setup():
             aaguid=extract_aaguid(sk_assertion.get("attObj", "")),
         )
         regenerate_user_alternative_id(current_user)
+        # Revoke all trusted browser sessions to prevent MFA bypass
+        MfaBrowser.filter_by(user_id=current_user.id).delete()
         Session.commit()
 
         LOG.d(
