@@ -89,10 +89,18 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
+def _is_sl_domain_or_subdomain(domain: str) -> bool:
+    # Subdomains of SL domains must go through the quota-enforced subdomain flow
+    return any(
+        domain == sl_domain.domain or domain.endswith("." + sl_domain.domain)
+        for sl_domain in SLDomain.all()
+    )
+
+
 def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReason]:
     if not is_valid_domain(domain):
         return CannotUseDomainReason.InvalidDomain
-    elif SLDomain.get_by(domain=domain):
+    elif _is_sl_domain_or_subdomain(domain):
         return CannotUseDomainReason.BuiltinDomain
     elif CustomDomain.get_by(domain=domain):
         return CannotUseDomainReason.DomainAlreadyUsed
@@ -126,7 +134,11 @@ def create_custom_domain(
 
     # new domain has ownership verified if its parent has the ownership verified
     for root_cd in user.custom_domains:
-        if new_domain.endswith("." + root_cd.domain) and root_cd.ownership_verified:
+        if (
+            new_domain.endswith("." + root_cd.domain)
+            and root_cd.ownership_verified
+            and not root_cd.is_sl_subdomain
+        ):
             LOG.i(
                 "%s ownership verified thanks to %s",
                 new_custom_domain,

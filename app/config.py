@@ -478,6 +478,9 @@ ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 
 ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
 
+# Creating new "Sign in with SimpleLogin" clients is disabled unless this is set
+ALLOW_NEW_OAUTH_CLIENTS = "ALLOW_NEW_OAUTH_CLIENTS" in os.environ
+
 ALIAS_RANDOM_SUFFIX_LENGTH = int(os.environ.get("ALIAS_RAND_SUFFIX_LENGTH", 5))
 
 try:

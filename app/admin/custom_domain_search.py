@@ -8,7 +8,7 @@ from flask_admin import expose
 from flask_login import current_user
 
 from app import config
-from app.admin.base import BaseAdminView
+from app.admin.base import CSRFProtectedAdminView
 from app.custom_domain_validation import (
     CustomDomainValidation,
     DomainValidationResult,
@@ -239,7 +239,7 @@ class CustomDomainSearchHelpers:
         )
 
 
-class CustomDomainSearchAdmin(BaseAdminView):
+class CustomDomainSearchAdmin(CSRFProtectedAdminView):
     @expose("/", methods=["GET"])
     def index(self):
         search = CustomDomainSearchResult()
