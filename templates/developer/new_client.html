@@ -1,0 +1,26 @@
+{% extends "default.html" %}
+
+{% set active_page = "developer" %}
+{% block title %}Developer - Create new website{% endblock %}
+{% block default_content %}
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="h3">New website</h1>
+      <form method="post" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          {{ form.name(class="form-control",  placeholder="My Community Forum") }}
+          {{ render_field_errors(form.name) }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Url</label>
+          {{ form.url(class="form-control",  type="url", placeholder="https://forum.com") }}
+          {{ render_field_errors(form.url) }}
+        </div>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
