@@ -1,6 +1,7 @@
 import uuid
 
 from flask import url_for
+from flask.testing import FlaskClient
 
 from app import config
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
@@ -138,6 +139,16 @@ def test_too_many_requests(flask_client):
         # last request
         assert r.status_code == 429
         assert r.json == {"error": "Rate limit exceeded"}
+
+
+def test_session_user_without_allow_cookies_header_is_rejected(flask_client):
+    login(flask_client)
+
+    # bypass CustomTestClient, which always adds the allow-cookies header
+    r = FlaskClient.open(flask_client, url_for("api.new_random_alias"), method="POST")
+
+    assert r.status_code == 401
+    assert r.json["error"] == "Wrong api key"
 
 
 def is_valid_uuid(val):
