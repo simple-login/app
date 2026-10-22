@@ -7,6 +7,7 @@ from app.custom_domain_utils import (
     can_domain_be_used,
     create_custom_domain,
     is_valid_domain,
+    MAX_UNVERIFIED_CUSTOM_DOMAINS,
     sanitize_domain,
     set_custom_domain_mailboxes,
     CannotUseDomainReason,
@@ -171,6 +172,51 @@ def test_create_custom_domain_does_not_inherit_ownership_from_sl_subdomain():
     res = create_custom_domain(user=user, domain=f"{random_string(10)}.{sl_subdomain}")
     assert res.success is True
     assert res.instance.ownership_verified is False
+
+
+def _premium_user() -> User:
+    new_user = create_new_user()
+    new_user.trial_end = None
+    new_user.lifetime = True
+    Session.commit()
+    return new_user
+
+
+def test_create_custom_domain_allowed_below_unverified_limit():
+    new_user = _premium_user()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS - 1):
+        CustomDomain.create(user_id=new_user.id, domain=random_domain(), commit=True)
+
+    res = create_custom_domain(user=new_user, domain=random_domain())
+
+    assert res.success is True
+
+
+def test_create_custom_domain_blocked_at_unverified_limit():
+    new_user = _premium_user()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS):
+        CustomDomain.create(user_id=new_user.id, domain=random_domain(), commit=True)
+    domain = random_domain()
+
+    res = create_custom_domain(user=new_user, domain=domain)
+
+    assert res.success is False
+    assert res.message_category == "error"
+    assert str(MAX_UNVERIFIED_CUSTOM_DOMAINS) in res.message
+    assert CustomDomain.get_by(domain=domain) is None
+
+
+def test_create_custom_domain_verified_domains_do_not_count_towards_limit():
+    new_user = _premium_user()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS):
+        CustomDomain.create(
+            user_id=new_user.id,
+            domain=random_domain(),
+            ownership_verified=True,
+            commit=True,
+        )
+
+    assert create_custom_domain(user=new_user, domain=random_domain()).success
 
 
 def test_creates_custom_domain_with_partner_id():
