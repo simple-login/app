@@ -52,6 +52,7 @@ def create_contact(
     mail_from: Optional[str] = None,
     allow_empty_email: bool = False,
     automatic_created: bool = False,
+    block_forward: bool = False,
     from_partner: bool = False,
     is_cc: bool = False,
 ) -> ContactCreateResult:
@@ -119,6 +120,7 @@ def create_contact(
             flags=flags,
             invalid_email=is_invalid_email,
             is_cc=is_cc,
+            block_forward=block_forward,
             commit=True,
         )
         contact_id = contact.id

@@ -65,6 +65,7 @@ dependencies = [
   "newrelic ~= 8.8.0",
   "flanker ~= 0.9.11",
   "pyre2 ~= 0.3.6",
+  "cachetools ~= 5.3.3",
   "tldextract ~= 3.1.2",
   "flask-debugtoolbar-sqlalchemy ~= 0.2.0",
   "twilio ~= 7.3.2",
