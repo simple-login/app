@@ -1,0 +1,30 @@
+{
+  "name": "simple-login-app",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/simple-login-app",
+  "remoteUser": "vscode",
+
+  "forwardPorts": [7777, 20381, 1080],
+  "portsAttributes": {
+    "7777": { "label": "webapp", "onAutoForward": "notify" },
+    "20381": { "label": "email handler SMTP" },
+    "1080": { "label": "mailcatcher UI" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "uv run alembic upgrade head",
+
+  "customizations": {
+    "jetbrains": {
+      "backend": "PyCharm"
+    },
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff", "ms-python.debugpy"],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/simple-login-app/.venv/bin/python",
+        "python.testing.pytestEnabled": false
+      }
+    }
+  }
+}
