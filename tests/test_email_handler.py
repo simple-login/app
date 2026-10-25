@@ -1,7 +1,10 @@
 import arrow
+import base64
 import pytest
 import random
+import re
 from aiosmtpd.smtp import Envelope
+from email import message_from_bytes
 from email.message import EmailMessage
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -15,6 +18,7 @@ from app.db import Session
 from app.email import headers, status
 from app.email_utils import generate_verp_email, get_noreply_email
 from app.mail_sender import mail_sender
+from app.message_utils import message_to_bytes
 from app.models import (
     Alias,
     CustomDomain,
@@ -669,3 +673,127 @@ def test_reply_preserves_pgp_key_when_config_disabled(flask_client):
         assert pgp_attachments[0].get_filename() == f"publickey - {user.email}.asc"
     finally:
         config.DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = original
+
+
+@mail_sender.store_emails_test_decorator
+def test_encoded_word_linebreak_in_from_does_not_inject_header(flask_client):
+    """An RFC 2047 encoded word can decode to a string containing a line break.
+    It must not end up as an extra header in the message we forward, otherwise
+    the sender chooses e.g. the Reply-To the mailbox sees"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    payload = base64.b64encode(b"Evil\nReply-To: attacker@evil.com").decode()
+    raw = (
+        f"From: =?UTF-8?B?{payload}?= <spammer@gmail.com>\r\n"
+        f"To: {alias.email}\r\n"
+        "Subject: hello\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "body\r\n"
+    ).encode()
+    envelope = Envelope()
+    envelope.mail_from = "spammer@gmail.com"
+    envelope.rcpt_tos = [alias.email]
+
+    assert email_handler.handle(envelope, message_from_bytes(raw)) == status.E200
+
+    contact = Contact.filter_by(alias_id=alias.id).first()
+    assert "\n" not in contact.name
+    assert "\r" not in contact.name
+
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    # serialize and re-parse the way the receiving server does it
+    wire = message_to_bytes(sent_mails[0].msg)
+    header_block = wire.split(b"\r\n\r\n", 1)[0].decode()
+    # the name the sender chose must not start a header line of its own
+    assert re.search(r"^Reply-To:", header_block, re.MULTILINE) is None
+
+    forwarded = message_from_bytes(wire)
+    assert forwarded.get_all(headers.REPLY_TO) is None
+    # the payload may only survive as text inside the headers that legitimately
+    # carry the contact name, never as a header of its own
+    for header_name, header_value in forwarded.items():
+        if header_name not in (headers.FROM, headers.SL_ORIGINAL_FROM):
+            assert "attacker@evil.com" not in str(header_value)
+
+
+def _encoded_word(value: bytes) -> str:
+    return f"=?UTF-8?B?{base64.b64encode(value).decode()}?="
+
+
+@pytest.mark.parametrize(
+    "display_name",
+    [
+        b'"Bob\nX"',
+        b'"Evil\nReply-To: attacker@evil.com"',
+    ],
+)
+@mail_sender.store_emails_test_decorator
+def test_encoded_word_linebreak_in_to_alias_does_not_break_headers(
+    flask_client, display_name
+):
+    """The alias address in To: is kept as is during the forward phase. A line
+    break in its display name must not end up in the headers we forward"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    raw = (
+        "From: spammer@gmail.com\r\n"
+        f"To: {_encoded_word(display_name)} <{alias.email}>\r\n"
+        "Subject: hello\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "body\r\n"
+    ).encode()
+    envelope = Envelope()
+    envelope.mail_from = "spammer@gmail.com"
+    envelope.rcpt_tos = [alias.email]
+
+    assert email_handler.handle(envelope, message_from_bytes(raw)) == status.E200
+
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    wire = message_to_bytes(sent_mails[0].msg)
+    header_block = wire.split(b"\r\n\r\n", 1)[0].decode()
+    # every line is either a header or the folded continuation of one
+    for line in header_block.split("\r\n"):
+        assert re.match(r"^([\w-]+:|[ \t])", line), line
+    assert re.search(r"^\s*Reply-To:", header_block, re.MULTILINE) is None
+
+    forwarded = message_from_bytes(wire)
+    assert forwarded.get_all(headers.REPLY_TO) is None
+    assert alias.email in forwarded[headers.TO]
+
+
+@pytest.mark.parametrize("header", [headers.TO, headers.CC])
+@mail_sender.store_emails_test_decorator
+def test_encoded_word_linebreak_in_to_cc_contact_is_sanitized(flask_client, header):
+    """Contacts created from To: and Cc: must have their name sanitized"""
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+
+    display_name = _encoded_word(b'"Bob\rX\nY"')
+    raw = (
+        "From: spammer@gmail.com\r\n"
+        f"To: {alias.email}\r\n"
+        f"{header}: {display_name} <cc-victim@gmail.com>\r\n"
+        "Subject: hello\r\n"
+        "Content-Type: text/plain\r\n"
+        "\r\n"
+        "body\r\n"
+    ).encode()
+    envelope = Envelope()
+    envelope.mail_from = "spammer@gmail.com"
+    envelope.rcpt_tos = [alias.email]
+
+    assert email_handler.handle(envelope, message_from_bytes(raw)) == status.E200
+
+    contact = Contact.get_by(alias_id=alias.id, website_email="cc-victim@gmail.com")
+    assert contact is not None
+    assert contact.name == "BobX Y"
+    assert contact.is_cc == (header == headers.CC)

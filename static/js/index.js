@@ -112,8 +112,10 @@ $(".pin-alias").change(async function () {
   }
 });
 
-async function handleNoteChange(aliasId, aliasEmail) {
-  const note = document.getElementById(`note-${aliasId}`).value;
+async function handleNoteChange(aliasId) {
+  const noteInput = document.getElementById(`note-${aliasId}`);
+  const note = noteInput.value;
+  const aliasEmail = noteInput.dataset.aliasEmail;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {
@@ -143,8 +145,10 @@ function handleNoteBlur(aliasId) {
   document.getElementById(`note-focus-message-${aliasId}`).classList.add('d-none');
 }
 
-async function handleMailboxChange(aliasId, aliasEmail) {
-  const selectedOptions = document.getElementById(`mailbox-${aliasId}`).selectedOptions;
+async function handleMailboxChange(aliasId) {
+  const mailboxSelect = document.getElementById(`mailbox-${aliasId}`);
+  const aliasEmail = mailboxSelect.dataset.aliasEmail;
+  const selectedOptions = mailboxSelect.selectedOptions;
   const mailbox_ids = Array.from(selectedOptions).map((selectedOption) => selectedOption.value);
 
   if (mailbox_ids.length === 0) {
@@ -172,8 +176,10 @@ async function handleMailboxChange(aliasId, aliasEmail) {
 
 }
 
-async function handleDisplayNameChange(aliasId, aliasEmail) {
-  const name = document.getElementById(`alias-name-${aliasId}`).value;
+async function handleDisplayNameChange(aliasId) {
+  const nameInput = document.getElementById(`alias-name-${aliasId}`);
+  const name = nameInput.value;
+  const aliasEmail = nameInput.dataset.aliasEmail;
 
   try {
     let res = await fetch(`/api/aliases/${aliasId}`, {

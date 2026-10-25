@@ -45,7 +45,16 @@
                class="mr-5 mb-2 float-right">See all notifications ➡</a>
             <div class="dropdown-item d-flex" v-for="notification in notifications">
               <div class="flex-grow-1">
-                <div v-html="notification.title || notification.message"
+                <!-- title is plain text; only message is server-rendered HTML -->
+                <div v-if="notification.title"
+                     v-text="notification.title"
+                     :class="!notification.read && 'font-weight-bold'"
+                     style="width: 40em;
+                            word-wrap:break-word;
+                            white-space: normal;
+                            overflow: hidden"></div>
+                <div v-else
+                     v-html="notification.message"
                      :class="!notification.read && 'font-weight-bold'"
                      style="width: 40em;
                             word-wrap:break-word;

@@ -2,10 +2,10 @@ from flask import url_for
 
 from app import config
 from app.db import Session
-from app.models import User, PartnerUser
+from app.models import ApiKey, User, PartnerUser
 from app.proton.proton_partner import get_proton_partner
 from tests.api.utils import get_new_user_and_api_key
-from tests.utils import login, random_token, random_email
+from tests.utils import exit_sudo_mode, login, random_token, random_email
 
 
 def test_user_in_trial(flask_client):
@@ -87,9 +87,8 @@ def test_wrong_api_key(flask_client):
 def test_create_api_key_without_sudo(flask_client):
     login(flask_client)
 
-    # login sets sudo_time in the session; clear it to simulate expired sudo
-    with flask_client.session_transaction() as sess:
-        sess.pop("sudo_time", None)
+    # login sets the session in sudo mode; clear it to simulate expired sudo
+    exit_sudo_mode(flask_client)
 
     # create api key
     r = flask_client.post(url_for("api.create_api_key"), json={"device": "Test device"})
@@ -120,6 +119,23 @@ def test_create_api_key_with_sudo(flask_client):
 
     assert r.status_code == 201
     assert r.json["api_key"]
+
+
+def test_create_api_key_with_another_user_session_sudo(flask_client):
+    # user A is logged in in the browser and its session is in sudo mode
+    login(flask_client)
+    # user B only has an api key, it never entered sudo mode
+    user_b, api_key_b = get_new_user_and_api_key()
+    nb_api_keys = ApiKey.filter_by(user_id=user_b.id).count()
+
+    r = flask_client.post(
+        url_for("api.create_api_key"),
+        headers={"Authentication": api_key_b.code},
+        json={"device": "Test device"},
+    )
+
+    assert r.status_code == 440
+    assert ApiKey.filter_by(user_id=user_b.id).count() == nb_api_keys
 
 
 def test_logout(flask_client):

@@ -33,10 +33,14 @@
             This email address is used to log in to SimpleLogin.
             <br />
             If you want to change the mailbox that emails are forwarded to, use the
-            <a href="{{ url_for("dashboard.mailbox_route") }}">
+            <a href="{{ url_for('dashboard.mailbox_route') }}">
               <i class="fe fe-inbox"></i> Mailboxes page
             </a>
             instead.
+          </div>
+          <div class="alert alert-warning mb-3">
+            Changing your email will invalidate all existing API keys, revoke all trusted browser sessions,
+            and log you out from all other devices. You will need to re-authenticate everywhere.
           </div>
           <div class="form-group mt-2">
             <!-- Not allow user to change email if there's a pending change -->
@@ -50,14 +54,14 @@
           <div class="mt-2">
             <span class="text-danger float-left">Pending email change: {{ pending_email }}</span>
             <form method="POST"
-                  action="{{ url_for("dashboard.resend_email_change") }}"
+                  action="{{ url_for('dashboard.resend_email_change') }}"
                   class="float-left ml-2">
               {{ change_email_form.csrf_token }}
               <a onclick="this.closest('form').submit()"
                  class="btn btn-secondary btn-sm">Resend confirmation email</a>
             </form>
             <form method="POST"
-                  action="{{ url_for("dashboard.cancel_email_change") }}"
+                  action="{{ url_for('dashboard.cancel_email_change') }}"
                   class="float-left ml-2">
               {{ change_email_form.csrf_token }}
               <a onclick="this.closest('form').submit()"
@@ -73,6 +77,11 @@
       <div class="card-body">
         <div class="card-title">Password</div>
         <div class="mb-3">You will receive an email containing instructions on how to change your password.</div>
+        <div class="alert alert-warning mb-3">
+          All existing API keys will be invalidated once you change your password.
+          Additionally, any pending email change requests will be cancelled,
+          all trusted browser sessions will be revoked, and you will be logged out from all other devices.
+        </div>
         <form method="post">
           {{ csrf_form.csrf_token }}
           <input type="hidden" name="form-name" value="change-password">
@@ -91,10 +100,10 @@
         </div>
         {% if not current_user.enable_otp %}
 
-          <a href="{{ url_for("dashboard.mfa_setup") }}"
+          <a href="{{ url_for('dashboard.mfa_setup') }}"
              class="btn btn-outline-primary">Setup TOTP</a>
         {% else %}
-          <a href="{{ url_for("dashboard.mfa_cancel") }}"
+          <a href="{{ url_for('dashboard.mfa_cancel') }}"
              class="btn btn-outline-danger">Disable TOTP</a>
         {% endif %}
       </div>
@@ -111,17 +120,17 @@
         </div>
         {% if current_user.fido_uuid is none %}
 
-          <a href="{{ url_for("dashboard.fido_setup") }}"
+          <a href="{{ url_for('dashboard.fido_setup') }}"
              class="btn btn-outline-primary">Setup WebAuthn</a>
         {% else %}
-          <a href="{{ url_for("dashboard.fido_manage") }}"
+          <a href="{{ url_for('dashboard.fido_manage') }}"
              class="btn btn-outline-info">Manage WebAuthn</a>
         {% endif %}
       </div>
     </div>
     <!-- END WebAuthn -->
     <!-- Connect with Proton -->
-    {% if connect_with_proton and can_unlink_proton_account %}
+    {% if connect_with_proton %}
 
       <div class="card" id="connect-with-proton">
         <div class="card-body">
@@ -132,14 +141,17 @@
               Your account is currently linked to the Proton account <b>{{ proton_linked_account }}</b>
               <br />
             </div>
-            <form method="post"
-                  action="{{ url_for("dashboard.unlink_proton_account") }}">
-              {{ csrf_form.csrf_token }}
-              <button id="unlink-btn" class="btn btn-primary mt-2 proton-button">
-                <img class="mr-2" src="/static/images/proton.svg">
-                Unlink account
-              </button>
-            </form>
+            {% if can_unlink_proton_account %}
+
+              <form method="post"
+                    action="{{ url_for('dashboard.unlink_proton_account') }}">
+                {{ csrf_form.csrf_token }}
+                <button id="unlink-btn" class="btn btn-primary mt-2 proton-button">
+                  <img class="mr-2" src="/static/images/proton.svg">
+                  Unlink account
+                </button>
+              </form>
+            {% endif %}
           {% else %}
             <div class="mb-3">
               You can connect your Proton and SimpleLogin accounts.
@@ -150,7 +162,7 @@
               <br />
             </div>
             <a class="btn btn-primary mt-2 proton-button"
-               href="{{ url_for("auth.proton_login", action="link") }}">
+               href="{{ url_for('auth.proton_login', action='link') }}">
               <img class="mr-2"
                    src="{{ url_for('static', filename='images/proton.svg') }}" />
               Connect with Proton
@@ -186,7 +198,7 @@
       <div class="card-body">
         <div class="card-title">Account Deletion</div>
         <div class="mb-3">If SimpleLogin isn't the right fit for you, you can simply delete your account.</div>
-        <a href="{{ url_for("dashboard.delete_account") }}"
+        <a href="{{ url_for('dashboard.delete_account') }}"
            class="btn btn-outline-danger">Delete account</a>
       </div>
     </div>

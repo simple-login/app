@@ -15,7 +15,10 @@ from app.models import (
     Fido,
     AdminAuditLog,
     AuditLogActionEnum,
+    Subscription,
+    PlanEnum,
 )
+from app.admin.email_search import EmailSearchHelpers
 from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_token
 
@@ -213,6 +216,82 @@ def test_email_search_user_with_subscription(flask_client):
     assert b"Subscription" in r.data  # Subscription section header
 
 
+def test_email_search_user_with_paddle_subscription_shows_link(flask_client):
+    """Test that a Paddle subscription links to the Paddle dashboard."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"paddle_{random_token(8)}@example.com")
+    subscription_id = random_token(10)
+    Subscription.create(
+        user_id=test_user.id,
+        cancel_url="https://checkout.paddle.com/cancel",
+        update_url="https://checkout.paddle.com/update",
+        subscription_id=subscription_id,
+        event_time=arrow.now(),
+        next_bill_date=arrow.now().shift(months=1).date(),
+        plan=PlanEnum.monthly,
+        flush=True,
+    )
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    expected_url = EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(subscription_id)
+    assert expected_url.encode() in r.data
+    assert subscription_id.encode() in r.data
+
+
+def test_email_search_user_without_paddle_subscription_has_no_link(flask_client):
+    """Test that users without a Paddle subscription get no Paddle link."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"nopaddle_{random_token(8)}@example.com")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"vendors.paddle.com" not in r.data
+
+
+def test_email_search_expired_paddle_subscription_still_shows_link(flask_client):
+    """An expired Paddle subscription is still reachable from the admin panel."""
+    login_admin(flask_client)
+
+    test_user = create_new_user(email=f"oldpaddle_{random_token(8)}@example.com")
+    subscription_id = random_token(10)
+    Subscription.create(
+        user_id=test_user.id,
+        cancel_url="https://checkout.paddle.com/cancel",
+        update_url="https://checkout.paddle.com/update",
+        subscription_id=subscription_id,
+        event_time=arrow.now().shift(years=-1),
+        next_bill_date=arrow.now().shift(years=-1).date(),
+        plan=PlanEnum.yearly,
+        cancelled=True,
+        flush=True,
+    )
+    Session.commit()
+    # the subscription is past its billing date, so it is not the active one
+    assert test_user.get_paddle_subscription() is None
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": test_user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    expected_url = EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(subscription_id)
+    assert expected_url.encode() in r.data
+    assert b"Cancelled" in r.data
+    # a subscription that will never bill again isn't labelled "next bill"
+    assert b"last bill" in r.data
+
+
 def test_email_search_user_with_audit_logs(flask_client):
     """Test that user audit logs are displayed."""
     login_admin(flask_client)
@@ -235,6 +314,83 @@ def test_email_search_user_with_audit_logs(flask_client):
     assert r.status_code == 200
     assert b"User Audit Log" in r.data
     assert b"test_action" in r.data
+
+
+def test_email_search_deleted_user_by_id_shows_audit_logs(flask_client):
+    """Test that searching a deleted user by ID still shows its audit logs."""
+    login_admin(flask_client)
+
+    test_user = create_new_user()
+    user_id = test_user.id
+    UserAuditLog.create(
+        user_id=user_id,
+        user_email=test_user.email,
+        action="deleted_user_action",
+        message="Audit log of a deleted user",
+        flush=True,
+    )
+    User.delete(user_id)
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": str(user_id), "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"User Audit Log" in r.data
+    assert b"deleted_user_action" in r.data
+
+
+def test_admin_delete_user_records_who_and_why(flask_client):
+    """Test that an admin deletion records the admin and the reason."""
+    admin = login_admin(flask_client)
+    test_user = create_new_user()
+    Session.commit()
+    user_id = test_user.id
+
+    r = flask_client.post(
+        url_for("admin.email_search.delete_user"),
+        data={
+            "user_id": user_id,
+            "confirm_email": test_user.email,
+            "reason": "Requested by support ticket",
+        },
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    assert User.get(user_id) is None
+    audit_log = UserAuditLog.get_by(user_id=user_id, action="delete_user")
+    assert audit_log is not None
+    assert f"Deleted by: admin {admin.id} ({admin.email})" in audit_log.message
+    assert "Reason: Requested by support ticket" in audit_log.message
+    admin_audit_log = (
+        Session.query(AdminAuditLog)
+        .filter(
+            AdminAuditLog.model == "User",
+            AdminAuditLog.model_id == user_id,
+            AdminAuditLog.admin_user_id == admin.id,
+        )
+        .first()
+    )
+    assert admin_audit_log.data["reason"] == "Requested by support ticket"
+
+
+def test_admin_delete_user_requires_reason(flask_client):
+    """Test that an admin cannot delete a user without a reason."""
+    login_admin(flask_client)
+    test_user = create_new_user()
+    Session.commit()
+    user_id = test_user.id
+
+    r = flask_client.post(
+        url_for("admin.email_search.delete_user"),
+        data={"user_id": user_id, "confirm_email": test_user.email, "reason": " "},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    assert User.get(user_id) is not None
 
 
 def test_email_search_user_with_abuse_logs(flask_client):

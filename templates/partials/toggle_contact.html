@@ -11,4 +11,4 @@
   {% endif %}
   </button>
 </form>
-{% if toast_msg %}<script>toastr.success("{{ toast_msg }}");</script>{% endif %}
+{% if toast_msg %}<script>toastr.success({{ toast_msg | tojson }});</script>{% endif %}

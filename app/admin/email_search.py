@@ -30,10 +30,15 @@ from app.models import (
     Contact,
     EmailLog,
     Fido,
+    Subscription,
 )
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_delete import delete_alias as perform_alias_delete
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_user_deleted_audit_log,
+    UserAuditLogAction,
+)
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.regex_utils import is_safe_regex_pattern
@@ -92,6 +97,7 @@ class EmailSearchResult:
             output.alias_audit_log = (
                 AliasAuditLog.filter_by(alias_id=alias.id)
                 .order_by(AliasAuditLog.created_at.desc())
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
             output.no_match = False
@@ -104,6 +110,7 @@ class EmailSearchResult:
                 output.deleted_alias_audit_log = (
                     AliasAuditLog.filter_by(alias_email=deleted_alias.email)
                     .order_by(AliasAuditLog.created_at.desc())
+                    .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                     .all()
                 )
                 output.no_match = False
@@ -116,6 +123,7 @@ class EmailSearchResult:
                 output.domain_deleted_alias_audit_log = (
                     AliasAuditLog.filter_by(alias_email=domain_deleted_alias.email)
                     .order_by(AliasAuditLog.created_at.desc())
+                    .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                     .all()
                 )
                 output.no_match = False
@@ -144,6 +152,7 @@ class EmailSearchResult:
 
         # Search users by exact match (id or email)
         user = None
+        user_id = None
         try:
             user_id = int(query)
             user = User.get(user_id)
@@ -191,11 +200,15 @@ class EmailSearchResult:
             # Proton partner not configured, skip this search
             pass
 
-        # Check user audit log by user_email if no users found
+        # Check user audit log if no users found (e.g. the user has been deleted)
         if not output.users:
+            if user_id is not None:
+                audit_log_query = UserAuditLog.filter_by(user_id=user_id)
+            else:
+                audit_log_query = UserAuditLog.filter_by(user_email=query)
             user_audit_log = (
-                UserAuditLog.filter_by(user_email=query)
-                .order_by(UserAuditLog.created_at.desc())
+                audit_log_query.order_by(UserAuditLog.created_at.desc())
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
             if user_audit_log:
@@ -232,9 +245,13 @@ class EmailSearchResult:
                 output.no_match = False
         else:
             # Search by external_user_id
-            partner_users = PartnerUser.filter_by(
-                partner_id=proton_partner.id, external_user_id=query
-            ).all()
+            partner_users = (
+                PartnerUser.filter_by(
+                    partner_id=proton_partner.id, external_user_id=query
+                )
+                .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
+                .all()
+            )
             if partner_users:
                 output.partner_users = partner_users
                 output.partner_users_found_by_regex = False
@@ -322,6 +339,10 @@ class EmailSearchResult:
 class EmailSearchHelpers:
     PAGE_SIZE = 25
     ALIAS_DISPLAY_LIMIT = 5000
+    UNPAGINATED_QUERY_LIMIT = 100
+    PADDLE_SUBSCRIPTION_URL = (
+        "https://vendors.paddle.com/subscriptions/customers/manage/{}"
+    )
 
     @staticmethod
     def mailbox_list(
@@ -382,7 +403,20 @@ class EmailSearchHelpers:
 
     @staticmethod
     def alias_mailbox_count(alias: Alias) -> int:
-        return len(alias.mailboxes)
+        # An alias's mailboxes come from two places: its primary mailbox
+        # (Alias.mailbox_id) and any extra ones linked via AliasMailbox.
+        # Union these (dedup) to match alias_mailboxes() instead of loading
+        # alias.mailboxes into memory just to call len() on it.
+        return (
+            Session.query(Mailbox)
+            .filter(Mailbox.id == Alias.mailbox_id, Alias.id == alias.id)
+            .union(
+                Session.query(Mailbox)
+                .join(AliasMailbox, Mailbox.id == AliasMailbox.mailbox_id)
+                .filter(AliasMailbox.alias_id == alias.id)
+            )
+            .count()
+        )
 
     @staticmethod
     def alias_list(user: User, page: int = 1) -> list[Alias]:
@@ -416,6 +450,21 @@ class EmailSearchHelpers:
     @staticmethod
     def partner_user(user: User) -> Optional[PartnerUser]:
         return PartnerUser.get_by(user_id=user.id)
+
+    @staticmethod
+    def paddle_subscription(user: User) -> Optional[Subscription]:
+        """Return the user's Paddle subscription, even if cancelled or expired.
+
+        Unlike User.get_paddle_subscription(), past subscriptions are returned
+        too, so admins can always reach the subscription in Paddle.
+        """
+        return Subscription.get_by(user_id=user.id)
+
+    @staticmethod
+    def paddle_subscription_url(subscription: Subscription) -> str:
+        return EmailSearchHelpers.PADDLE_SUBSCRIPTION_URL.format(
+            subscription.subscription_id
+        )
 
     @staticmethod
     def user_audit_log(user: User) -> list[UserAuditLog]:
@@ -493,6 +542,8 @@ class EmailSearchHelpers:
             result.append("FREE_OLD_ALIAS_LIMIT")
         if flags & User.FLAG_CREATED_ALIAS_FROM_PARTNER:
             result.append("CREATED_ALIAS_FROM_PARTNER")
+        if flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT:
+            result.append("REFERRAL_PROGRAM_PARTICIPANT")
         return result
 
     @staticmethod
@@ -1008,6 +1059,7 @@ class EmailSearchAdmin(BaseAdminView):
     def delete_user(self):
         user_id = request.form.get("user_id")
         confirm_email = request.form.get("confirm_email", "").strip()
+        reason = request.form.get("reason", "").strip()
 
         if not user_id:
             flash("Missing user_id", "error")
@@ -1023,6 +1075,10 @@ class EmailSearchAdmin(BaseAdminView):
         if user is None:
             flash("User not found", "error")
             return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if not reason:
+            flash("A reason is required to delete a user", "error")
+            return redirect(url_for("admin.email_search.index", query=user.email))
 
         # Verify email confirmation matches
         if confirm_email != user.email:
@@ -1045,7 +1101,16 @@ class EmailSearchAdmin(BaseAdminView):
             model="User",
             model_id=user.id,
             action=AuditLogActionEnum.delete_object.value,
-            data={"email": user_email, "deleted_by": current_user.email},
+            data={
+                "email": user_email,
+                "deleted_by": current_user.email,
+                "reason": reason,
+            },
+        )
+        emit_user_deleted_audit_log(
+            user=user,
+            deleted_by=f"admin {current_user.id} ({current_user.email})",
+            reason=reason,
         )
         Session.commit()
 

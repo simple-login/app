@@ -148,7 +148,8 @@ def account_setting():
                         return redirect(url_for("dashboard.account_setting"))
         elif request.form.get("form-name") == "change-password":
             flash(
-                "You are going to receive an email containing instructions to change your password",
+                "You are going to receive an email containing instructions to change your password. "
+                "All existing API keys will be invalidated once you change your password.",
                 "success",
             )
             send_reset_password_email(current_user)

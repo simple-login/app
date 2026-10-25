@@ -93,7 +93,7 @@ def subdomain_route():
                 try:
                     new_custom_domain = CustomDomain.create(
                         is_sl_subdomain=True,
-                        catch_all=True,  # by default catch-all is enabled
+                        catch_all=False,  # by default catch-all is disabled
                         domain=full_domain,
                         user_id=current_user.id,
                         verified=True,

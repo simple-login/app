@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 
 from app.dashboard.base import dashboard_bp
 from app.db import Session
+from app.log import LOG
 from app.models import Referral, Payout
 
 _REFERRAL_PATTERN = r"[0-9a-z-_]{3,}"
@@ -12,6 +13,11 @@ _REFERRAL_PATTERN = r"[0-9a-z-_]{3,}"
 @dashboard_bp.route("/referral", methods=["GET", "POST"])
 @login_required
 def referral_route():
+    if not current_user.can_use_referral_program():
+        LOG.d("referral program is closed for %s", current_user)
+        flash("The referral program is closed to new participants", "warning")
+        return redirect(url_for("dashboard.index"))
+
     if request.method == "POST":
         if request.form.get("form-name") == "create":
             code = request.form.get("code")

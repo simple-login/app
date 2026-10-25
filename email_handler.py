@@ -33,6 +33,7 @@ It should contain the following info:
 
 import argparse
 import email
+import html
 import time
 import uuid
 from email import encoders
@@ -48,7 +49,7 @@ from typing import List, Tuple, Optional, Set
 import newrelic.agent
 import sentry_sdk
 from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import Envelope
+from aiosmtpd.smtp import Envelope, SMTP
 from email_validator import validate_email, EmailNotValidError
 from flanker.addresslib import address
 from flanker.addresslib.address import EmailAddress
@@ -84,7 +85,6 @@ from app.email_utils import (
     should_add_dkim_signature,
     add_header,
     get_header_unicode,
-    generate_reply_email,
     is_reverse_alias,
     replace,
     remove_sender_pgp_key_attachment,
@@ -92,6 +92,7 @@ from app.email_utils import (
     parse_id_from_bounce,
     spf_pass,
     sanitize_header,
+    sanitize_header_value,
     get_queue_id,
     should_ignore_bounce,
     parse_full_address,
@@ -99,6 +100,7 @@ from app.email_utils import (
     save_email_for_debugging,
     save_envelope_for_debugging,
     get_verp_info_from_email,
+    is_expired_verp_address,
     generate_verp_email,
     sl_formataddr,
 )
@@ -276,7 +278,11 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
 
         # no transformation when alias is already in the header
         if contact_email.lower() == alias.email:
-            new_addrs.append(full_address.full_spec())
+            # not using full_spec() as it would keep a line break in the
+            # display name as is
+            new_addrs.append(
+                sl_formataddr((full_address.display_name, full_address.address))
+            )
             continue
 
         try:
@@ -288,45 +294,28 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
             LOG.w("invalid contact email %s. %s. Skip", contact_email, headers)
             continue
 
-        contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
         contact_name = full_address.display_name
         if len(contact_name) >= Contact.MAX_NAME_LENGTH:
             contact_name = contact_name[0 : Contact.MAX_NAME_LENGTH]
 
-        if contact:
-            # update the contact name if needed
-            if contact.name != full_address.display_name:
-                LOG.d(
-                    "Update contact %s name %s to %s",
-                    contact,
-                    contact.name,
-                    contact_name,
-                )
-                contact.name = contact_name
-                Session.commit()
-        else:
-            LOG.d(
-                "create contact for alias %s and email %s, header %s",
-                alias,
+        # create_contact sanitizes the name: an RFC 2047 encoded word can carry
+        # a line break or a NUL byte
+        contact_result = contact_utils.create_contact(
+            contact_email,
+            alias,
+            contact_name,
+            automatic_created=True,
+            is_cc=header.lower() == "cc",
+        )
+        contact = contact_result.contact
+        if contact is None:
+            LOG.w(
+                "Cannot create contact for %s in %s header: %s",
                 contact_email,
                 header,
+                contact_result.error,
             )
-
-            try:
-                contact = Contact.create(
-                    user_id=alias.user_id,
-                    alias_id=alias.id,
-                    website_email=contact_email,
-                    name=contact_name,
-                    reply_email=generate_reply_email(contact_email, alias),
-                    is_cc=header.lower() == "cc",
-                    automatic_created=True,
-                )
-                Session.commit()
-            except IntegrityError:
-                LOG.w("Contact %s %s already exist", alias, contact_email)
-                Session.rollback()
-                contact = Contact.get_by(alias_id=alias.id, website_email=contact_email)
+            continue
 
         new_addrs.append(contact.new_addr())
 
@@ -594,16 +583,16 @@ def handle_forward(envelope, msg: Message, rcpt_to: str) -> List[Tuple[bool, str
 
     user = alias.user
 
-    if not user.is_active():
-        LOG.w(f"User {user} has been soft deleted")
-        return [(False, status.E502)]
-
     if not user.can_send_or_receive():
         LOG.i(f"User {user} cannot receive emails")
         if should_ignore_bounce(envelope.mail_from):
             return [(True, status.E207)]
         else:
             return [(False, status.E504)]
+
+    if not user.is_active():
+        LOG.w(f"User {user} has been soft deleted")
+        return [(False, status.E502)]
 
     if alias.custom_domain_id and not alias.custom_domain.verified:
         LOG.w("Alias %s is on unverified custom domain, refusing email", alias)
@@ -902,9 +891,12 @@ def forward_email_to_mailbox(
         LOG.d("Use a generic subject for %s", mailbox)
         orig_subject = msg[headers.SUBJECT]
         orig_subject = get_header_unicode(orig_subject)
+        orig_subject = html.escape(orig_subject)
         add_or_replace_header(msg, "Subject", mailbox.generic_subject)
         sender = msg[headers.FROM]
         sender = get_header_unicode(sender)
+        sender = html.escape(sender)
+
         msg = add_header(
             msg,
             f"""Forwarded by SimpleLogin to {alias.email} from "{sender}" with "{orig_subject}" as subject""",
@@ -933,12 +925,12 @@ def forward_email_to_mailbox(
 
     msg[headers.SL_EMAIL_LOG_ID] = str(email_log.id)
     if user.include_header_email_header:
-        msg[headers.SL_ENVELOPE_FROM] = envelope.mail_from
+        msg[headers.SL_ENVELOPE_FROM] = sanitize_header_value(envelope.mail_from)
         if contact.name:
             original_from = f"{contact.name} <{contact.website_email}>"
         else:
             original_from = contact.website_email
-        msg[headers.SL_ORIGINAL_FROM] = original_from
+        msg[headers.SL_ORIGINAL_FROM] = sanitize_header_value(original_from)
     # when an alias isn't in the To: header, there's no way for users to know what alias has received the email
     msg[headers.SL_ENVELOPE_TO] = alias.email
 
@@ -1125,7 +1117,7 @@ def handle_reply(
         return False, dmarc_delivery_status
 
     # Anti-spoofing
-    mailbox = get_mailbox_for_reply_phase(
+    mailbox, used_header_fallback = get_mailbox_for_reply_phase(
         envelope.mail_from, get_header_unicode(msg[headers.FROM]), alias
     )
     if not mailbox:
@@ -1148,15 +1140,24 @@ def handle_reply(
         LOG.i(f"User {user} tried to send a mail from admin disabled mailbox {mailbox}")
         return False, status.E207
 
-    if (
-        config.ENFORCE_SPF
-        and mailbox.force_spf
-        and not alias.disable_email_spoofing_check
-    ):
-        if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
-            # cannot use 4** here as sender will retry.
-            # cannot use 5** because that generates bounce report
-            return True, status.E201
+    if not alias.disable_email_spoofing_check:
+        if used_header_fallback:
+            # The mailbox was picked by trusting the From: header. In that case force spf pass
+            # to avoid anyone sharing a domain with an owning mailbox impersonating by just
+            # setting the From: header.
+            if not spf_pass(
+                envelope, mailbox, user, alias, contact.website_email, msg, strict=True
+            ):
+                LOG.i(
+                    "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+                )
+                return True, status.E201
+        elif config.ENFORCE_SPF and mailbox.force_spf:
+            LOG.i(
+                "Skipping delivering reply mail since spf does not pass and mbox comes from header"
+            )
+            if not spf_pass(envelope, mailbox, user, alias, contact.website_email, msg):
+                return True, status.E201
 
     Alias.lock_for_update(contact.alias_id)
     email_log = EmailLog.create(
@@ -2158,6 +2159,12 @@ def handle(envelope: Envelope, msg: Message) -> str:
     # region mail sent to VERP
     verp_info = get_verp_info_from_email(rcpt_tos[0])
 
+    # an address we issued, just too old: drop it instead of letting it fall
+    # through and be handled as mail to an unknown alias.
+    # get_verp_info_from_email has already logged it
+    if verp_info is None and is_expired_verp_address(rcpt_tos[0]):
+        return status.E217
+
     # sent to transactional VERP. Either bounce emails or out-of-office
     if len(rcpt_tos) == 1 and verp_info and verp_info[0] == VerpType.transactional:
         if is_bounce(envelope, msg):
@@ -2497,6 +2504,9 @@ class MailHandler:
 
 def main(port: int):
     """Use aiosmtpd Controller"""
+    # Increase max line length to allow for non-compliant senders
+    # See https://aiosmtpd.aio-libs.org/en/stable/smtp.html#aiosmtpd.smtp.SMTP.line_length_limit
+    SMTP.line_length_limit = 2**16
     controller = Controller(
         MailHandler(),
         hostname="0.0.0.0",

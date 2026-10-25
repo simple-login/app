@@ -187,51 +187,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The changelog contains PR titles: only pass it to the shell via env and build the JSON with jq
       - name: Prepare Slack notification contents
+        id: slack_payload
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          CHANGELOG: ${{ steps.build_changelog.outputs.changelog }}
+          TAG: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
         run: |
-          changelog=$(cat << EOH
-          ${{ steps.build_changelog.outputs.changelog }}
-          EOH
-          )
-          messageWithoutNewlines=$(echo "${changelog}" | awk '{printf "%s\\n", $0}')
-          messageWithoutDoubleQuotes=$(echo "${messageWithoutNewlines}" | sed "s/\"/'/g")
-          echo "${messageWithoutDoubleQuotes}"
-
-          echo "SLACK_CHANGELOG=${messageWithoutDoubleQuotes}" >> $GITHUB_ENV
+          payload=$(jq -cn --arg changelog "$CHANGELOG" --arg tag "$TAG" --arg sha "$SHA" '{blocks: [
+            {type: "header", text: {type: "plain_text", text: "New tag created", emoji: true}},
+            {type: "section", text: {type: "mrkdwn", text: "*Tag: \($tag)* (\($sha))"}},
+            {type: "section", text: {type: "mrkdwn", text: "*Changelog:*\n\($changelog)"}}
+          ]}')
+          # jq -c emits a single line (newlines are escaped), so no multiline delimiter is needed
+          printf 'payload=%s\n' "$payload" >> "$GITHUB_OUTPUT"
 
       - name: Post notification to Slack
         uses: slackapi/slack-github-action@v1.19.0
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "New tag created",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                      "type": "mrkdwn",
-                      "text": "*Tag: ${{ github.ref_name }}* (${{ github.sha }})"
-                    }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Changelog:*\n${{ env.SLACK_CHANGELOG }}"
-                  }
-                }
-              ]
-            }
+          payload: ${{ steps.slack_payload.outputs.payload }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 

@@ -1,3 +1,4 @@
+import html
 import uuid
 from io import BytesIO
 from typing import Optional, Tuple
@@ -35,6 +36,7 @@ def apply_dmarc_policy_for_forward_phase(
     LOG.i(f"Spam check result in {spam_result}")
 
     from_header = get_header_unicode(msg[headers.FROM])
+    from_header = html.escape(from_header)
 
     warning_plain_text = """This email failed anti-phishing checks when it was received by SimpleLogin, be careful with its content.
 More info on https://simplelogin.io/docs/getting-started/anti-phishing/
@@ -86,8 +88,8 @@ More info on https://simplelogin.io/docs/getting-started/anti-phishing/
         DmarcCheckResult.reject,
     ):
         LOG.w(
-            f"dmarc forward: put email from {contact} to {alias} to quarantine. {spam_result.event_data()}, "
-            f"mail_from:{envelope.mail_from}, from_header: {msg[headers.FROM]}"
+            f"dmarc forward: put email from {contact.email} to {alias.email} to quarantine. {spam_result.event_data()}, "
+            f"mail_from:{envelope.mail_from}, from_header: {from_header}"
         )
         email_log = quarantine_dmarc_failed_forward_email(alias, contact, envelope, msg)
         Notification.create(

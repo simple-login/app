@@ -99,7 +99,6 @@ aground
 ahead
 ahoy
 aide
-aids
 aim
 ajar
 alabaster
@@ -879,7 +878,6 @@ cascade
 case
 cash
 casing
-casino
 casket
 cassette
 casually
@@ -891,17 +889,13 @@ catalyze
 catapult
 cataract
 catatonic
-catcall
 catchable
 catcher
 catching
 catchy
 caterer
 catering
-catfight
-catfish
 cathedral
-cathouse
 catlike
 catnap
 catnip
@@ -1637,7 +1631,6 @@ deflected
 deflector
 defog
 deforest
-defraud
 defrost
 deftly
 defuse
@@ -1808,7 +1801,6 @@ directly
 directory
 direness
 dirtiness
-disabled
 disagree
 disallow
 disarm
@@ -2749,7 +2741,6 @@ gallows
 gallstone
 galore
 galvanize
-gambling
 game
 gaming
 gamma
@@ -4096,7 +4087,6 @@ obstruct
 obtain
 obtrusive
 obvious
-occultist
 occupancy
 occupant
 occupier

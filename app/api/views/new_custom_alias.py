@@ -14,6 +14,7 @@ from app.config import MAX_NB_EMAIL_FREE_PLAN, ALIAS_LIMIT
 from app.db import Session
 from app.extensions import limiter
 from app.log import LOG
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import (
     Alias,
     AliasUsedOn,
@@ -107,6 +108,14 @@ def new_custom_alias_v2():
             jsonify(error="2 consecutive dot signs aren't allowed in an email address"),
             400,
         )
+
+    default_mailbox = Mailbox.get(user.default_mailbox_id)
+    try:
+        if default_mailbox:
+            ensure_mailbox_assignable(default_mailbox)
+    except MailboxError:
+        LOG.i(f"User {user} tried to create an alias with a disabled default mailbox")
+        return jsonify(error="Errors with Mailbox"), 400
 
     try:
         alias = Alias.create(
@@ -210,6 +219,11 @@ def new_custom_alias_v3():
         mailbox = Mailbox.get(mailbox_id)
         if not mailbox or mailbox.user_id != user.id or not mailbox.verified:
             LOG.i(f"User {user} tried to create an alias with invalid mailbox")
+            return jsonify(error="Errors with Mailbox"), 400
+        try:
+            ensure_mailbox_assignable(mailbox)
+        except MailboxError:
+            LOG.i(f"User {user} tried to create an alias with a disabled mailbox")
             return jsonify(error="Errors with Mailbox"), 400
         mailboxes.append(mailbox)
 

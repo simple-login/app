@@ -225,6 +225,7 @@ SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
+PADDLE_PASSTHROUGH_SECRET = FLASK_SECRET + "paddle_passthrough"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
@@ -256,6 +257,9 @@ PADDLE_PUBLIC_KEY_PATH = get_abs_path(
 )
 
 PADDLE_AUTH_CODE = os.environ.get("PADDLE_AUTH_CODE")
+
+# Transition flag:
+PADDLE_ALLOW_UNSIGNED_PASSTHROUGH = "PADDLE_ALLOW_UNSIGNED_PASSTHROUGH" in os.environ
 
 PADDLE_COUPON_ID = os.environ.get("PADDLE_COUPON_ID")
 
@@ -310,7 +314,7 @@ CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
-OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES", "openid email profile").split()
 OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
 
 PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
@@ -520,8 +524,10 @@ ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
 DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
 
-# Bounces can happen after 5 days
-VERP_MESSAGE_LIFETIME = 5 * 86400
+# How long a VERP address stays valid. Bounces can happen after 5 days, as mail
+# servers retry for days before giving up, so leave some margin: 7 days also
+# matches how long the transactional_email rows a VERP can point at are kept.
+VERP_MESSAGE_LIFETIME = 7 * 86400
 VERP_PREFIX = os.environ.get("VERP_PREFIX") or "sl"
 # Generate with python3 -c 'import secrets; print(secrets.token_hex(28))'
 VERP_EMAIL_SECRET = os.environ.get("VERP_EMAIL_SECRET") or (
@@ -675,6 +681,10 @@ EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
 MAX_BOUNCES_1D = int(os.environ.get("MAX_BOUNCES_1D", 12))
 MAX_BOUNCES_1W = int(os.environ.get("MAX_BOUNCES_1W", 10))
 
+# How many provider complaints we store per user and per day. Complaints are
+# only identified by the envelope sender, so anybody can have us store one
+MAX_PROVIDER_COMPLAINTS_1D = int(os.environ.get("MAX_PROVIDER_COMPLAINTS_1D", 10))
+
 
 def read_partner_dict(var: str) -> dict[int, str]:
     partner_value = get_env_dict(var)
@@ -706,6 +716,17 @@ AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
 ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
 ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
 MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
+
+# Sessions are stored in Redis serialized with JSON.
+# Sessions written before the switch are stored with pickle.
+# Unpickling is still tried as a fallback so logged in users are not logged out,
+# set SESSION_PICKLE_FALLBACK=false to stop accepting pickled sessions.
+SESSION_PICKLE_FALLBACK = (
+    os.environ.get("SESSION_PICKLE_FALLBACK", "true").lower() != "false"
+)
+SESSION_JSON_SERIALIZATION = (
+    os.environ.get("SESSION_JSON_SERIALIZATION", "false").lower() != "false"
+)
 
 
 def read_hex_data(key: string, default: bytes) -> bytes:

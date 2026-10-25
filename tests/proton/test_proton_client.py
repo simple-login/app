@@ -16,11 +16,25 @@ def test_convert_access_token_not_containing_pt():
         proton_client.convert_access_token("pb-abc-123")
 
 
-def test_convert_access_token_not_containing_invalid_length():
-    cases = ["pt-abc-too-long", "pt-short"]
-    for case in cases:
-        with pytest.raises(Exception):
-            proton_client.convert_access_token(case)
+def test_convert_access_token_too_short():
+    with pytest.raises(Exception):
+        proton_client.convert_access_token("pt-short")
+
+
+def test_convert_access_token_with_many_hyphens():
+    res = proton_client.convert_access_token("pt-abc-part1-part2-part3")
+    assert res.session_id == "abc"
+    assert res.access_token == "part1-part2-part3"
+
+
+def test_convert_access_token_real_jwt_example():
+    token_response = "pt-gj7m3zauijwvltko4d6xr5rskfq25j34-eyJpdiI6ImdTMjdYU1B.rbVN4d-mx2QnYiLCJ0YWciOi-JlMlAwT0FQVG_tWUW5kUzF-yUEQzZFJBIiwi"
+    res = proton_client.convert_access_token(token_response)
+    assert res.session_id == "gj7m3zauijwvltko4d6xr5rskfq25j34"
+    assert (
+        res.access_token
+        == "eyJpdiI6ImdTMjdYU1B.rbVN4d-mx2QnYiLCJ0YWciOi-JlMlAwT0FQVG_tWUW5kUzF-yUEQzZFJBIiwi"
+    )
 
 
 def test_handle_response_not_ok_account_not_verified():

@@ -41,6 +41,12 @@ from app.db import Session
 from app.dns_utils import get_mx_domains, get_a_record
 from app.email import headers
 from app.log import LOG
+from app.mailbox_email_match import (
+    equivalence_reasons,
+    is_email_admin_disabled,
+    mailboxes_matching_email,
+    users_matching_email,
+)
 from app.mail_sender import sl_sendmail
 from app.message_utils import message_to_bytes
 from app.models import (
@@ -580,6 +586,10 @@ def delete_header(msg: Message, header: str):
             del msg._headers[i]
 
 
+def sanitize_header_value(value: str) -> str:
+    return value.strip().replace("\n", " ").replace("\r", "")
+
+
 def sanitize_header(msg: Message, header: str):
     """remove trailing space and remove linebreak from a header"""
     header_lowercase = header.lower()
@@ -590,7 +600,7 @@ def sanitize_header(msg: Message, header: str):
             if msg._headers[i][1]:
                 msg._headers[i] = (
                     msg._headers[i][0],
-                    msg._headers[i][1].strip().replace("\n", " ").replace("\r", ""),
+                    sanitize_header_value(msg._headers[i][1]),
                 )
 
 
@@ -641,6 +651,7 @@ class EmailCannotBeUsedReason(enum.Enum):
     )
     EmailOfDisabledUser = "This email address is not allowed"
     MailboxOfDisabledUser = "This email address is not allowed"
+    MailboxAdminDisabled = "This email address is not allowed"
 
 
 class MailboxDomainCheckResult:
@@ -756,18 +767,20 @@ def email_can_be_used_as_mailbox_with_reason(
     if not domain_result.can_be_used:
         return domain_result.reason
 
-    existing_user = User.get_by(email=email_address)
-    if existing_user and existing_user.disabled:
-        LOG.d(
-            f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
-        )
-        return EmailCannotBeUsedReason.EmailOfDisabledUser
+    for existing_user in users_matching_email(email_address).all():
+        if existing_user.disabled:
+            LOG.d(
+                f"User {existing_user} is disabled. {email_address} cannot be used for other mailbox"
+            )
+            return EmailCannotBeUsedReason.EmailOfDisabledUser
 
     for existing_user in (
         User.query()
-        .join(Mailbox, User.id == Mailbox.user_id)
-        .filter(Mailbox.email == email_address)
-        .group_by(User.id)
+        .filter(
+            User.id.in_(
+                mailboxes_matching_email(email_address).with_entities(Mailbox.user_id)
+            )
+        )
         .all()
     ):
         if existing_user.disabled:
@@ -775,6 +788,10 @@ def email_can_be_used_as_mailbox_with_reason(
                 f"User {existing_user} is disabled and has a mailbox with {email_address}. It cannot be used for other mailbox"
             )
             return EmailCannotBeUsedReason.MailboxOfDisabledUser
+
+    if is_email_admin_disabled(email_address):
+        LOG.d(f"{email_address} matches an admin-disabled mailbox")
+        return EmailCannotBeUsedReason.MailboxAdminDisabled
 
     return None
 
@@ -819,11 +836,19 @@ def get_mx_domain_list(domain) -> List[str]:
 
 
 def personal_email_already_used(email_address: str) -> bool:
-    """test if an email can be used as user email"""
-    if User.get_by(email=email_address):
-        return True
-
-    return False
+    """test if an email, or an equivalent of it, is already a user email"""
+    existing_user = users_matching_email(email_address).first()
+    if existing_user is None:
+        return False
+    reasons = equivalence_reasons(email_address, existing_user.email)
+    LOG.i(
+        "Email %s is already used by user %s: it is equivalent to %s (%s)",
+        email_address,
+        existing_user.id,
+        existing_user.email,
+        ", ".join(reasons) or "same address",
+    )
+    return True
 
 
 def mailbox_already_used(email: str, user) -> bool:
@@ -1030,7 +1055,7 @@ def should_add_dkim_signature(domain: str) -> bool:
         return True
 
     custom_domain: CustomDomain = CustomDomain.get_by(domain=domain)
-    if custom_domain.dkim_verified:
+    if custom_domain and custom_domain.dkim_verified:
         return True
 
     return False
@@ -1281,7 +1306,7 @@ def replace(msg: Union[Message, str], old, new) -> Union[Message, str]:
                 try:
                     new_payload = quopri.decodestring(payload).decode("utf-8")
                 except UnicodeDecodeError:
-                    LOG.w("cannot decode payload:%s", payload)
+                    LOG.w("cannot decode payload: %s", payload[:200])
                     return msg
                 # then replace the old text
                 new_payload = new_payload.replace(old, new)
@@ -1485,6 +1510,7 @@ def spf_pass(
     alias: Alias,
     contact_email: str,
     msg: Message,
+    strict: bool = False,
 ) -> bool:
     ip = msg[headers.SL_CLIENT_IP]
     if ip:
@@ -1493,10 +1519,13 @@ def spf_pass(
             r = spf.check2(i=ip, s=envelope.mail_from, h=None)
         except Exception:
             LOG.e("SPF error, mailbox %s, ip %s", mailbox.email, ip)
+            if strict:
+                return False
         else:
             # TODO: Handle temperr case (e.g. dns timeout)
-            # only an absolute pass, or no SPF policy at all is 'valid'
-            if r[0] not in ["pass", "none"]:
+            # only an absolute pass, or no SPF policy at all is 'valid' -- unless `strict`
+            valid_results = ["pass"] if strict else ["pass", "none"]
+            if r[0] not in valid_results:
                 LOG.w(
                     "SPF fail for mailbox %s, reason %s, failed IP %s",
                     mailbox.email,
@@ -1538,6 +1567,8 @@ def spf_pass(
             mailbox.email,
             contact_email,
         )
+        if strict:
+            return False
 
     return True
 
@@ -1685,9 +1716,10 @@ def generate_verp_email(
     ).lower()
 
 
-def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
-    """This method processes the email address, checks if it's a signed verp email generated by us to receive bounces
-    and extracts the type of verp email and associated email log id/transactional email id stored as object_id
+def _decode_verp_payload(email: str) -> Optional[list]:
+    """The signed payload of a verp address we generated, freshness aside.
+    Returns [verp type, object_id, creation time in minutes] or None if the
+    address is not one of ours.
     """
     idx = email.find("@")
     if idx == -1:
@@ -1714,13 +1746,49 @@ def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
     # verp type, object_id, time
     if len(data) != 3:
         return None
-    if data[2] > (time.time() + config.VERP_MESSAGE_LIFETIME - VERP_TIME_START) / 60:
+
+    return data
+
+
+def _is_expired_verp_payload(data: list) -> bool:
+    """Whether the address is too old to still speak for the object it points
+    at. The lifetime dwarfs any clock difference between the host that
+    generated the address and this one, so no skew margin is needed.
+    """
+    now_minutes = (time.time() - VERP_TIME_START) / 60
+    return data[2] < now_minutes - config.VERP_MESSAGE_LIFETIME / 60
+
+
+def get_verp_info_from_email(email: str) -> Optional[Tuple[VerpType, int]]:
+    """This method processes the email address, checks if it's a signed verp email generated by us to receive bounces
+    and extracts the type of verp email and associated email log id/transactional email id stored as object_id
+    """
+    data = _decode_verp_payload(email)
+    if data is None:
         return None
+
+    if _is_expired_verp_payload(data):
+        # grep this to size the bounces we are dropping for being too late
+        LOG.i("Expired VERP address %s", email)
+        return None
+
     return VerpType(data[0]), data[1]
+
+
+def is_expired_verp_address(email: str) -> bool:
+    """Whether the address is one of ours but past its lifetime.
+    Lets the caller discard the message quietly instead of treating an address
+    we issued as an unknown recipient.
+    """
+    data = _decode_verp_payload(email)
+    return data is not None and _is_expired_verp_payload(data)
 
 
 def sl_formataddr(name_address_tuple: Tuple[str, str]):
     """Same as formataddr but use utf-8 encoding by default and always return str (and never Header)"""
     name, addr = name_address_tuple
+    # a line break in the name would inject a header in the generated message
+    if name:
+        name = sanitize_header_value(name)
     # formataddr can return Header, make sure to convert to str
     return str(formataddr((name, Header(addr, "utf-8"))))

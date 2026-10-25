@@ -29,6 +29,7 @@ from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation, PasswordOracle
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.session import rotate_session
 from app.utils import sanitize_email, canonicalize_email
 
 
@@ -395,6 +396,7 @@ def auth_payload(user, device) -> dict:
         ret["api_key"] = api_key.code
 
         # so user is automatically logged in on the web
+        rotate_session()
         login_user(user)
 
     return ret

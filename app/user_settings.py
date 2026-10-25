@@ -27,28 +27,36 @@ def set_default_alias_domain(user: User, domain_name: Optional[str]):
         Session.flush()
         return
 
-    sl_domain: SLDomain = SLDomain.get_by(domain=domain_name)
-    if sl_domain:
-        if sl_domain.hidden:
-            LOG.i(f"User {user} has tried to set up a hidden domain as default domain")
-            raise CannotSetAlias("Domain does not exist")
-        if sl_domain.premium_only and not user.is_premium():
-            LOG.i(f"User {user} has tried to set up a premium domain as default domain")
-            raise CannotSetAlias("You cannot use this domain")
+    # only accept a domain that we would offer to the user in the first place. Relying on
+    # the same list that the settings page and the API expose keeps this check from
+    # drifting away from what the user is actually allowed to pick
+    is_sl_domain = None
+    for is_public, available_domain in user.available_domains_for_random_alias():
+        if available_domain == domain_name:
+            is_sl_domain = is_public
+            break
+
+    # is_sl_domain will be true/false if the domain is allowed for the user
+    if is_sl_domain is None:
+        LOG.i(
+            f"User {user} has tried to set up {domain_name} as default domain but it is not available to them"
+        )
+        raise CannotSetAlias("Domain does not exist or it hasn't been verified")
+
+    if is_sl_domain:
+        sl_domain: SLDomain = SLDomain.get_by(domain=domain_name)
         LOG.i(f"User {user} has set public {sl_domain} as default domain")
         user.default_alias_public_domain_id = sl_domain.id
         user.default_alias_custom_domain_id = None
         Session.flush()
         return
-    custom_domain = CustomDomain.get_by(domain=domain_name)
+
+    custom_domain: Optional[CustomDomain] = CustomDomain.get_by(
+        domain=domain_name, user_id=user.id
+    )
     if not custom_domain:
         LOG.i(
             f"User {user} has tried to set up an non existing domain as default domain"
-        )
-        raise CannotSetAlias("Domain does not exist or it hasn't been verified")
-    if custom_domain.user_id != user.id or not custom_domain.verified:
-        LOG.i(
-            f"User {user} has tried to set domain {custom_domain} as default domain that does not belong to the user or that is not verified"
         )
         raise CannotSetAlias("Domain does not exist or it hasn't been verified")
     LOG.i(f"User {user} has set custom {custom_domain} as default domain")

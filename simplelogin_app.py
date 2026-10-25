@@ -55,6 +55,7 @@ from app.phone.base import phone_bp
 from app.redis_services import initialize_redis_services
 from app.request_utils import generate_request_id
 from app.sentry_utils import sentry_before_send
+from app.utils import redact_query_args
 
 if config.SENTRY_DSN:
     LOG.d("enable sentry")
@@ -256,7 +257,7 @@ def set_index_page(app):
                 request.remote_addr,
                 request.method,
                 request.path,
-                request.args,
+                redact_query_args(request.args),
                 res.status_code,
                 time.time() - start_time,
             )
