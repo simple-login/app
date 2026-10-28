@@ -184,6 +184,7 @@ class FreezingProxy:
         self._target = (target_host, target_port)
         self._flowing = threading.Event()
         self._flowing.set()
+        self.freeze_on_query = False
         self._closed = threading.Event()
         self._dead_flags: List[threading.Event] = []
         self._listener = socket.socket()
@@ -220,18 +221,28 @@ class FreezingProxy:
             self._sockets += [client, upstream]
             dead = threading.Event()
             self._dead_flags.append(dead)
-            for src, dst in ((client, upstream), (upstream, client)):
-                args = (src, dst, dead)
+            for src, dst, from_client in (
+                (client, upstream, True),
+                (upstream, client, False),
+            ):
+                args = (src, dst, dead, from_client)
                 threading.Thread(target=self._pump, args=args, daemon=True).start()
 
     def _pump(
-        self, src: socket.socket, dst: socket.socket, dead: threading.Event
+        self,
+        src: socket.socket,
+        dst: socket.socket,
+        dead: threading.Event,
+        from_client: bool,
     ) -> None:
         try:
             while True:
                 data = src.recv(65536)
                 if not data:
                     return
+                if from_client and self.freeze_on_query and data[:1] == b"Q":
+                    # swallow the query and go silent: connected, then mute
+                    self.freeze()
                 self._flowing.wait()
                 if dead.is_set():
                     self._closed.wait()
@@ -266,6 +277,28 @@ def test_default_readiness_is_bounded_on_silent_db_and_recovers(db_proxy):
     # The worker thread itself must be freed (not just the await abandoned):
     # once the proxy flows again, readiness comes back without a restart.
     db_proxy.resume()
+    deadline = time.monotonic() + 2 * timeout + 5
+    while time.monotonic() < deadline:
+        if asyncio.run(checker.is_ready()):
+            return
+        time.sleep(0.2)
+    pytest.fail("readiness did not recover after the DB resumed")
+
+
+def test_default_readiness_is_bounded_when_db_goes_silent_after_connect(db_proxy):
+    timeout = 2
+    check = database_check(timeout=timeout)
+    checker = ReadinessChecker(check, timeout=timeout)
+
+    # The connection is established, the query is sent, and no reply ever comes.
+    db_proxy.freeze_on_query = True
+    start = time.monotonic()
+    with pytest.raises(TimeoutError):
+        check()
+    assert time.monotonic() - start < timeout + 1
+
+    db_proxy.resume()
+    db_proxy.freeze_on_query = False
     deadline = time.monotonic() + 2 * timeout + 5
     while time.monotonic() < deadline:
         if asyncio.run(checker.is_ready()):
