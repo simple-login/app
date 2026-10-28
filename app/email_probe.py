@@ -7,11 +7,13 @@ SMTP server would never produce (see ``scripts/smtp_probe.py``).
 """
 
 import asyncio
+import select
+import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import NullPool
+import psycopg2
+from psycopg2 import extensions
 
 from app import config
 from app.log import LOG
@@ -27,32 +29,48 @@ DEFAULT_READINESS_TIMEOUT = 2.0
 
 
 def database_check(timeout: float = DEFAULT_READINESS_TIMEOUT) -> Callable[[], None]:
-    """Return a callable running ``SELECT 1`` on its own DB connection.
+    """Return a callable running ``SELECT 1`` on a fresh DB connection.
 
-    The global ``app.db.Session`` is deliberately not used: readiness must not
-    share (or wait for) a connection with mail processing. Connect and query
-    timeouts keep a stalled DB from pinning the worker thread forever.
+    The global ``app.db`` engine/session is deliberately not used: readiness
+    must not share (or wait for) a connection with mail processing.
+
+    The connection is driven in psycopg2 async mode and polled with
+    ``select()`` against one monotonic deadline covering connect and query.
+    Server-side or TCP-level timeouts cannot do this: a peer that keeps
+    acknowledging (e.g. pgbouncer in front of a stalled Postgres) never trips
+    them, so the client has to enforce the wall-clock limit itself.
+
+    Known caveat: libpq resolves the hostname synchronously inside
+    ``connect``, so DNS is bounded only by the resolver's own timeout.
     """
-    engine = create_engine(
-        config.DB_URI,
-        poolclass=NullPool,  # no long-lived socket to go stale between probes
-        connect_args={
-            "application_name": f"{config.DB_CONN_NAME}-readiness",
-            "connect_timeout": max(1, int(timeout)),
-            "options": f"-c statement_timeout={int(timeout * 1000)}",
-            # statement_timeout is server-side and never fires against a silent
-            # server; these bound a peer that goes quiet after connecting.
-            "tcp_user_timeout": int(timeout * 1000),
-            "keepalives": 1,
-            "keepalives_idle": 1,
-            "keepalives_interval": 1,
-            "keepalives_count": max(1, int(timeout)),
-        },
-    )
+
+    def wait(conn: Any, deadline: float) -> None:
+        while True:
+            state = conn.poll()
+            if state == extensions.POLL_OK:
+                return
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"readiness DB check exceeded {timeout}s")
+            if state == extensions.POLL_READ:
+                select.select([conn.fileno()], [], [], remaining)
+            else:  # POLL_WRITE
+                select.select([], [conn.fileno()], [], remaining)
 
     def check() -> None:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        deadline = time.monotonic() + timeout
+        conn = psycopg2.connect(
+            config.DB_URI,  # libpq accepts the postgresql:// URI as-is
+            async_=1,
+            application_name=f"{config.DB_CONN_NAME}-readiness",
+        )
+        try:
+            wait(conn, deadline)
+            cursor = conn.cursor()  # must outlive the async query
+            cursor.execute("SELECT 1")
+            wait(conn, deadline)
+        finally:
+            conn.close()
 
     return check
 
