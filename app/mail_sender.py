@@ -12,12 +12,11 @@ from functools import wraps
 from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
 
-import newrelic.agent
 import sentry_sdk
 import time
 from attr import dataclass
 
-from app import config
+from app import config, metrics
 from app.email import headers
 from app.log import LOG
 from app.message_utils import message_to_bytes, message_format_base64_parts
@@ -163,14 +162,10 @@ class MailSender:
                 TimeoutError,
             ) as e:
                 LOG.w(f"Got error {e} while sending email to {server_hostname}")
-                newrelic.agent.record_custom_event("SmtpError", {"error": e.__class__})
+                metrics.record_event("SmtpError", {"error": e.__class__})
             finally:
-                newrelic.agent.record_custom_metric(
-                    "Custom/smtp_servers_tried", servers_tried
-                )
-                newrelic.agent.record_custom_metric(
-                    "Custom/smtp_sending_time", time.time() - start
-                )
+                metrics.record_metric("Custom/smtp_servers_tried", servers_tried)
+                metrics.record_metric("Custom/smtp_sending_time", time.time() - start)
         if retries > 0:
             LOG.warning(
                 f"Retrying sending email due to error. {retries} retries left. Will wait {0.3*retries} seconds."
@@ -206,7 +201,7 @@ class MailSender:
             LOG.d(
                 f"Getting a smtp connection to {server_host}:{server_port} takes seconds {elapsed:.3} seconds"
             )
-            newrelic.agent.record_custom_metric("Custom/smtp_connection_time", elapsed)
+            metrics.record_metric("Custom/smtp_connection_time", elapsed)
 
             # smtp.send_message has UnicodeEncodeError
             # encode message raw directly instead
@@ -271,18 +266,14 @@ def load_unsent_mails_from_fs_and_resend():
             send_request.ignore_smtp_errors = True
             if mail_sender.send(send_request, 2):
                 os.unlink(full_file_path)
-                newrelic.agent.record_custom_event(
-                    "DeliverUnsentEmail", {"delivered": "true"}
-                )
+                metrics.record_event("DeliverUnsentEmail", {"delivered": "true"})
             else:
                 if send_request.retries > 2:
                     os.unlink(full_file_path)
                     send_request.save_request_to_failed_dir()
                 else:
                     send_request.save_request_to_file(full_file_path)
-                newrelic.agent.record_custom_event(
-                    "DeliverUnsentEmail", {"delivered": "false"}
-                )
+                metrics.record_event("DeliverUnsentEmail", {"delivered": "false"})
         except Exception as e:
             # Unlink original file to avoid re-doing the same
             os.unlink(full_file_path)

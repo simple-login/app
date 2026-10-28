@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 
-import newrelic.agent
-
-from app import config
+from app import config, metrics
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.events.generated import event_pb2
@@ -80,7 +78,7 @@ class EventDispatcher:
         dispatcher.send(serialized)
 
         event_type = content.WhichOneof("content")
-        newrelic.agent.record_custom_event("EventStoredToDb", {"type": event_type})
+        metrics.record_event("EventStoredToDb", {"type": event_type})
         LOG.i("Sent event to the dispatcher")
 
     @staticmethod

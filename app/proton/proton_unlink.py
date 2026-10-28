@@ -1,5 +1,4 @@
-from newrelic import agent
-
+from app import metrics
 from app.db import Session
 from app.events.event_dispatcher import EventDispatcher
 from app.events.generated.event_pb2 import EventContent, UserUnlinked
@@ -35,5 +34,5 @@ def perform_proton_account_unlink(
         PartnerUser.delete(partner_user.id)
     external_user_id = partner_user.external_user_id
     Session.commit()
-    agent.record_custom_event("AccountUnlinked", {"partner": proton_partner.name})
+    metrics.record_event("AccountUnlinked", {"partner": proton_partner.name})
     return external_user_id

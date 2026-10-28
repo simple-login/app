@@ -19,7 +19,6 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment, select_autoescape
-from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -29,7 +28,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
-from app import config, rate_limiter
+from app import config, metrics, rate_limiter
 from app import s3
 from app.constants import JobType
 from app.db import Session
@@ -1885,7 +1884,7 @@ class Alias(Base, ModelMixin):
         emit_alias_audit_log(
             new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
         )
-        agent.record_custom_event(
+        metrics.record_event(
             "AliasCreated",
             {
                 "custom_domain": "custom domain"
@@ -2171,7 +2170,7 @@ class Contact(Base, ModelMixin):
         if flush:
             Session.flush()
 
-        agent.record_custom_event(
+        metrics.record_event(
             "ContactCreated",
             {
                 "is_cc": "cc" if new_contact.is_cc else "to",

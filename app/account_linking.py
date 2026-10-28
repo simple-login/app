@@ -5,11 +5,10 @@ from typing import Optional
 
 import sqlalchemy.exc
 from arrow import Arrow
-from newrelic import agent
 from psycopg2.errors import UniqueViolation
 from sqlalchemy import or_
 
-from app import config
+from app import config, metrics
 from app.db import Session
 from app.email_utils import send_welcome_email, email_can_be_used_as_mailbox
 from app.errors import (
@@ -87,7 +86,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 f"Deleting partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
             )
             PartnerSubscription.delete(sub.id)
-            agent.record_custom_event("PlanChange", {"plan": "free"})
+            metrics.record_event("PlanChange", {"plan": "free"})
     else:
         end_time = plan.expiration
         if plan.type == SLPlanType.PremiumLifetime:
@@ -102,10 +101,10 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 lifetime=is_lifetime,
                 msg="Upgraded via partner. User did not have a previous partner subscription",
             )
-            agent.record_custom_event("PlanChange", {"plan": "premium", "type": "new"})
+            metrics.record_event("PlanChange", {"plan": "premium", "type": "new"})
         else:
             if sub.end_at != plan.expiration or sub.lifetime != is_lifetime:
-                agent.record_custom_event(
+                metrics.record_event(
                     "PlanChange", {"plan": "premium", "type": "extension"}
                 )
                 sub.end_at = plan.expiration if not is_lifetime else None
@@ -209,9 +208,7 @@ class NewUserStrategy(ClientMergeStrategy):
             if not new_user.created_by_partner:
                 send_welcome_email(new_user)
 
-            agent.record_custom_event(
-                "PartnerUserCreation", {"partner": self.partner.name}
-            )
+            metrics.record_event("PartnerUserCreation", {"partner": self.partner.name})
 
             return LinkResult(
                 user=new_user,
@@ -349,7 +346,7 @@ def link_user(
     )
     set_plan_for_partner_user(partner_user, link_request.plan)
 
-    agent.record_custom_event("AccountLinked", {"partner": partner.name})
+    metrics.record_event("AccountLinked", {"partner": partner.name})
     Session.commit()
     return LinkResult(
         user=current_user,
