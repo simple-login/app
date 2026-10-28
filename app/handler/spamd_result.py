@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Optional
 
-import newrelic.agent
-
+from app import metrics
 from app.email import headers
 from app.log import LOG
 from app.models import EnumE, Phase
@@ -130,6 +129,6 @@ class SpamdResult:
     def send_to_new_relic(cls, msg: Message):
         check = cls._get_from_message(msg)
         if check:
-            newrelic.agent.record_custom_event("SpamdCheck", check.event_data())
+            metrics.record_event("SpamdCheck", check.event_data())
         else:
-            newrelic.agent.record_custom_event("SpamdCheck", {"header": "missing"})
+            metrics.record_event("SpamdCheck", {"header": "missing"})

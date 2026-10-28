@@ -6,14 +6,13 @@ Not meant for running job at precise time (+- 1h)
 from typing import List, Optional
 
 import arrow
-import newrelic.agent
 import time
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
 
-from app import config
+from app import config, metrics
 from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
@@ -386,7 +385,7 @@ def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
     return res.rowcount > 0
 
 
-@newrelic.agent.background_task()
+@metrics.background_task
 def execute():
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
     with create_light_app().app_context():
@@ -399,7 +398,7 @@ def execute():
             LOG.d("Take job %s", job)
 
             try:
-                newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
+                metrics.record_event("ProcessJob", {"job": job.name})
                 process_job(job)
                 job_result = "success"
 
@@ -421,7 +420,7 @@ def execute():
                 else:
                     job_result = "retry"
 
-            newrelic.agent.record_custom_event(
+            metrics.record_event(
                 "JobProcessed", {"job": job.name, "result": job_result}
             )
             Session.commit()

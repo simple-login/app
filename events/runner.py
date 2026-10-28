@@ -1,6 +1,6 @@
 import arrow
-import newrelic.agent
 
+from app import metrics
 from app.log import LOG
 from app.db import Session
 from app.models import SyncEvent
@@ -18,7 +18,7 @@ class Runner:
     def run(self):
         self.__source.run(self.__on_event)
 
-    @newrelic.agent.background_task()
+    @metrics.background_task
     def __on_event(self, event: SyncEvent):
         if self.__service_name:
             send_version_event(self.__service_name)
@@ -34,11 +34,11 @@ class Runner:
                 end_time = arrow.now() - start_time
                 time_between_taken_and_created = start_time - event_created_at
 
-                newrelic.agent.record_custom_metric("Custom/sync_event_processed", 1)
-                newrelic.agent.record_custom_metric(
+                metrics.record_metric("Custom/sync_event_processed", 1)
+                metrics.record_metric(
                     "Custom/sync_event_process_time", end_time.total_seconds()
                 )
-                newrelic.agent.record_custom_metric(
+                metrics.record_metric(
                     "Custom/sync_event_elapsed_time",
                     time_between_taken_and_created.total_seconds(),
                 )
@@ -47,4 +47,4 @@ class Runner:
                 Session.commit()
         except Exception as e:
             LOG.warning(f"Exception processing event [id={event.id}]: {e}")
-            newrelic.agent.record_custom_metric("Custom/sync_event_failed", 1)
+            metrics.record_metric("Custom/sync_event_failed", 1)

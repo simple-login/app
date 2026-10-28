@@ -764,3 +764,11 @@ DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = "DROP_PGP_KEY_ATTACHMENTS_ON_REPLY" in os.en
 ENFORCE_OAUTH_CLIENT_APPROVED = "ENFORCE_OAUTH_CLIENT_APPROVED" in os.environ
 
 MAX_DOMAIN_CHECKS = max(int(os.environ.get("MAX_DOMAIN_CHECKS", 4)), 1)
+
+# Comma separated list of the metrics backends to emit to, see app/metrics.py.
+# Also selects which backends may trace @metrics.background_task functions.
+# Defaults to New Relic to preserve the historical behaviour; set it to an empty
+# value to disable metrics entirely and to e.g. "newrelic,prometheus" once
+# several backends are available. Unknown names make the process fail at
+# startup.
+METRICS_BACKENDS = get_env_csv("METRICS_BACKENDS", "newrelic")

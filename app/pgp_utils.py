@@ -4,12 +4,12 @@ from io import BytesIO
 from typing import Union
 
 import gnupg
-import newrelic.agent
 import pgpy
 from memory_profiler import memory_usage
 from pgpy import PGPMessage
 from sl_pgp import PgpContext, PgpException
 
+from app import metrics
 from app.config import GNUPGHOME, PGP_SENDER_PRIVATE_KEY, USE_RUST_PGP
 from app.log import LOG
 from app.models import Mailbox, Contact
@@ -41,15 +41,13 @@ def _record_pgp_metric(
     metric_suffix = f"_{implementation}"
     if is_fallback:
         metric_suffix = f"_fallback{metric_suffix}"
-    newrelic.agent.record_custom_metric(
-        f"Custom/pgp_{operation}{metric_suffix}_time", elapsed
-    )
+    metrics.record_metric(f"Custom/pgp_{operation}{metric_suffix}_time", elapsed)
 
     # Record detailed event for analysis
     event_name = f"Pgp{operation.title()}"
     if is_fallback:
         event_name += "Fallback"
-    newrelic.agent.record_custom_event(
+    metrics.record_event(
         event_name,
         {
             "implementation": implementation,
