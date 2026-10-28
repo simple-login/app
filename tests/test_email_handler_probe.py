@@ -1,13 +1,16 @@
+import asyncio
 import smtplib
 import socket
 import threading
 import time
 from typing import Callable, Iterator, List
+from urllib.parse import urlsplit
 
 import pytest
 from aiosmtpd.controller import Controller
 from aiosmtpd.handlers import Sink
 
+from app import config
 from app.email_probe import (
     HEALTH_ADDRESS,
     HEALTH_OK,
@@ -165,6 +168,110 @@ def test_ready_recovers_after_stall():
 def test_default_readiness_checks_database(flask_client):
     # real DB reachable via its own connection
     database_check(timeout=2)()
+
+
+class FreezingProxy:
+    """TCP proxy in front of the test DB whose traffic can be frozen.
+
+    Frozen means connections stay open but no byte moves in either direction,
+    which is what a hung DB or a dead pooled socket looks like to the client.
+    Connections that exist when ``freeze`` is called stay dead for good (like
+    a socket whose peer vanished); only connections opened after ``resume``
+    flow again.
+    """
+
+    def __init__(self, target_host: str, target_port: int) -> None:
+        self._target = (target_host, target_port)
+        self._flowing = threading.Event()
+        self._flowing.set()
+        self._closed = threading.Event()
+        self._dead_flags: List[threading.Event] = []
+        self._listener = socket.socket()
+        self._listener.bind(("127.0.0.1", 0))
+        self._listener.listen()
+        self.port: int = self._listener.getsockname()[1]
+        self._sockets: List[socket.socket] = [self._listener]
+        threading.Thread(target=self._accept, daemon=True).start()
+
+    def freeze(self) -> None:
+        self._flowing.clear()
+        for dead in self._dead_flags:
+            dead.set()
+
+    def resume(self) -> None:
+        self._flowing.set()
+
+    def close(self) -> None:
+        self._closed.set()
+        self._flowing.set()
+        for s in self._sockets:
+            try:
+                s.close()
+            except OSError:
+                pass
+
+    def _accept(self) -> None:
+        while True:
+            try:
+                client, _ = self._listener.accept()
+                upstream = socket.create_connection(self._target)
+            except OSError:
+                return
+            self._sockets += [client, upstream]
+            dead = threading.Event()
+            self._dead_flags.append(dead)
+            for src, dst in ((client, upstream), (upstream, client)):
+                args = (src, dst, dead)
+                threading.Thread(target=self._pump, args=args, daemon=True).start()
+
+    def _pump(
+        self, src: socket.socket, dst: socket.socket, dead: threading.Event
+    ) -> None:
+        try:
+            while True:
+                data = src.recv(65536)
+                if not data:
+                    return
+                self._flowing.wait()
+                if dead.is_set():
+                    self._closed.wait()
+                    return
+                dst.sendall(data)
+        except OSError:
+            return
+
+
+@pytest.fixture
+def db_proxy(flask_client, monkeypatch) -> Iterator[FreezingProxy]:
+    url = urlsplit(config.DB_URI)
+    proxy = FreezingProxy(url.hostname or "localhost", url.port or 5432)
+    credentials = url.netloc.rpartition("@")[0]
+    proxied = url._replace(netloc=f"{credentials}@127.0.0.1:{proxy.port}")
+    monkeypatch.setattr(config, "DB_URI", proxied.geturl())
+    yield proxy
+    proxy.close()
+
+
+def test_default_readiness_is_bounded_on_silent_db_and_recovers(db_proxy):
+    timeout = 2
+    checker = ReadinessChecker(database_check(timeout=timeout), timeout=timeout)
+
+    assert asyncio.run(checker.is_ready()) is True
+
+    db_proxy.freeze()
+    start = time.monotonic()
+    assert asyncio.run(checker.is_ready()) is False
+    assert time.monotonic() - start < timeout + 1
+
+    # The worker thread itself must be freed (not just the await abandoned):
+    # once the proxy flows again, readiness comes back without a restart.
+    db_proxy.resume()
+    deadline = time.monotonic() + 2 * timeout + 5
+    while time.monotonic() < deadline:
+        if asyncio.run(checker.is_ready()):
+            return
+        time.sleep(0.2)
+    pytest.fail("readiness did not recover after the DB resumed")
 
 
 # --- scripts/smtp_probe.py -------------------------------------------------

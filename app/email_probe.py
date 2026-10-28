@@ -11,6 +11,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Callable, Optional
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.pool import NullPool
 
 from app import config
 from app.log import LOG
@@ -34,13 +35,18 @@ def database_check(timeout: float = DEFAULT_READINESS_TIMEOUT) -> Callable[[], N
     """
     engine = create_engine(
         config.DB_URI,
-        pool_size=1,
-        max_overflow=0,
-        pool_pre_ping=True,
+        poolclass=NullPool,  # no long-lived socket to go stale between probes
         connect_args={
             "application_name": f"{config.DB_CONN_NAME}-readiness",
             "connect_timeout": max(1, int(timeout)),
             "options": f"-c statement_timeout={int(timeout * 1000)}",
+            # statement_timeout is server-side and never fires against a silent
+            # server; these bound a peer that goes quiet after connecting.
+            "tcp_user_timeout": int(timeout * 1000),
+            "keepalives": 1,
+            "keepalives_idle": 1,
+            "keepalives_interval": 1,
+            "keepalives_count": max(1, int(timeout)),
         },
     )
 
