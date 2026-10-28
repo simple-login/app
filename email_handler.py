@@ -2386,7 +2386,7 @@ def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
 
 class MailHandler:
     def __init__(self, readiness: Optional[ReadinessChecker] = None) -> None:
-        self._readiness = readiness or ReadinessChecker(database_check())
+        self._readiness = readiness or ReadinessChecker(database_check)
 
     async def handle_RCPT(
         self, server, session, envelope: Envelope, address: str, rcpt_options

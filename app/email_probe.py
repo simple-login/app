@@ -7,15 +7,12 @@ SMTP server would never produce (see ``scripts/smtp_probe.py``).
 """
 
 import asyncio
-import select
-import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-import psycopg2
-from psycopg2 import extensions
+from sqlalchemy import text
 
-from app import config
+from app.db import Session
 from app.log import LOG
 
 HEALTH_ADDRESS = "health@probe.invalid"
@@ -28,51 +25,20 @@ READY_FAIL = "451 4.3.0 SL-PROBE READY FAIL"
 DEFAULT_READINESS_TIMEOUT = 2.0
 
 
-def database_check(timeout: float = DEFAULT_READINESS_TIMEOUT) -> Callable[[], None]:
-    """Return a callable running ``SELECT 1`` on a fresh DB connection.
+def database_check() -> None:
+    """Run ``SELECT 1`` through the app's own ``Session`` and pooled engine.
 
-    The global ``app.db`` engine/session is deliberately not used: readiness
-    must not share (or wait for) a connection with mail processing.
+    Going through the same path as mail processing makes readiness fail when
+    that path is broken (pool exhausted, engine pointing at a dead backend,
+    session in a failed transaction), not just when Postgres is unreachable.
 
-    The connection is driven in psycopg2 async mode and polled with
-    ``select()`` against one monotonic deadline covering connect and query.
-    Server-side or TCP-level timeouts cannot do this: a peer that keeps
-    acknowledging (e.g. pgbouncer in front of a stalled Postgres) never trips
-    them, so the client has to enforce the wall-clock limit itself.
-
-    Known caveat: libpq resolves the hostname synchronously inside
-    ``connect``, so DNS is bounded only by the resolver's own timeout.
+    It runs on the ReadinessChecker's worker thread; that thread's session is
+    removed afterwards so no pooled connection stays checked out.
     """
-
-    def wait(conn: Any, deadline: float) -> None:
-        while True:
-            state = conn.poll()
-            if state == extensions.POLL_OK:
-                return
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TimeoutError(f"readiness DB check exceeded {timeout}s")
-            if state == extensions.POLL_READ:
-                select.select([conn.fileno()], [], [], remaining)
-            else:  # POLL_WRITE
-                select.select([], [conn.fileno()], [], remaining)
-
-    def check() -> None:
-        deadline = time.monotonic() + timeout
-        conn = psycopg2.connect(
-            config.DB_URI,  # libpq accepts the postgresql:// URI as-is
-            async_=1,
-            application_name=f"{config.DB_CONN_NAME}-readiness",
-        )
-        try:
-            wait(conn, deadline)
-            cursor = conn.cursor()  # must outlive the async query
-            cursor.execute("SELECT 1")
-            wait(conn, deadline)
-        finally:
-            conn.close()
-
-    return check
+    try:
+        Session.execute(text("SELECT 1"))
+    finally:
+        Session.remove()
 
 
 class ReadinessChecker:
@@ -80,6 +46,11 @@ class ReadinessChecker:
 
     At most one check is outstanding: while a stalled one is still running, new
     requests fail immediately instead of piling up threads.
+
+    The timeout bounds the *reply*, not the check. A query running through the
+    pool cannot be interrupted, so a stalled query (or a pool checkout waiting
+    on ``pool_timeout``) keeps its worker thread until the driver or pool gives
+    up. Readiness reports not ready meanwhile and recovers once it returns.
     """
 
     def __init__(
