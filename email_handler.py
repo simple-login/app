@@ -92,6 +92,7 @@ from app.email_utils import (
     spf_pass,
     sanitize_header,
     sanitize_header_value,
+    sanitize_auto_submitted_header,
     get_queue_id,
     should_ignore_bounce,
     parse_full_address,
@@ -848,6 +849,8 @@ def forward_email_to_mailbox(
         headers.REFERENCES,
         headers.IN_REPLY_TO,
         headers.SL_QUEUE_ID,
+        headers.AUTO_SUBMITTED,
+        headers.X_AUTO_RESPONSE_SUPPRESS,
         headers.LIST_UNSUBSCRIBE,
         headers.LIST_ID,
         headers.LIST_UNSUBSCRIBE_POST,
@@ -1183,6 +1186,7 @@ def handle_reply(
             handle_spam(contact, alias, msg, user, mailbox, email_log, is_reply=True)
             return False, status.E506
 
+    sanitize_auto_submitted_header(msg, alias.email)
     delete_all_headers_except(
         msg,
         [
@@ -1197,6 +1201,8 @@ def handle_reply(
             headers.REFERENCES,
             headers.IN_REPLY_TO,
             headers.SL_QUEUE_ID,
+            headers.AUTO_SUBMITTED,
+            headers.X_AUTO_RESPONSE_SUPPRESS,
         ]
         + headers.MIME_HEADERS,
     )

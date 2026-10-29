@@ -50,6 +50,7 @@ from app.email_utils import (
     get_noreply_email,
     get_noreply_domain,
     sl_formataddr,
+    sanitize_auto_submitted_header,
 )
 from app.email_validation import is_valid_email, normalize_reply_email
 from app.models import (
@@ -91,6 +92,42 @@ def teardown_module():
 
 def test_get_email_domain_part():
     assert get_email_domain_part("ab@cd.com") == "cd.com"
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (None, None),
+        ("no (private owner)", "no"),
+        (" \t(private (nested\\) comment)) AUTO-REPLIED (owner)", "AUTO-REPLIED"),
+        ("x-extension; owner-token=private", "x-extension"),
+        (
+            'auto-notified; owner-email="private@example.com"',
+            'auto-notified; owner-email="alias@example.com"',
+        ),
+        ("(unterminated auto-replied", None),
+        ("auto-replied (unterminated", None),
+        ("auto(comment)-replied", None),
+        ("auto-replied@private.example.com", None),
+        ("", None),
+    ],
+)
+def test_sanitize_auto_submitted_header(value, expected):
+    msg = EmailMessage()
+    if value is not None:
+        msg[headers.AUTO_SUBMITTED] = value
+    sanitize_auto_submitted_header(msg, "alias@example.com")
+    assert msg.get_all(headers.AUTO_SUBMITTED) == (
+        [expected] if expected is not None else None
+    )
+
+
+def test_sanitize_auto_submitted_header_removes_duplicates():
+    msg = EmailMessage()
+    msg[headers.AUTO_SUBMITTED] = "auto-replied"
+    msg[headers.AUTO_SUBMITTED] = 'auto-notified; owner-email="private@example.com"'
+    sanitize_auto_submitted_header(msg, "alias@example.com")
+    assert headers.AUTO_SUBMITTED not in msg
 
 
 def test_email_belongs_to_alias_domains():
