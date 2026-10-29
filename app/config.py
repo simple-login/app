@@ -462,6 +462,14 @@ if PGP_SENDER_PRIVATE_KEY_PATH:
 # the signer address that signs outgoing encrypted emails
 PGP_SIGNER = os.environ.get("PGP_SIGNER")
 
+# SMTP probe recipients answered directly by the email handler (see app/email_probe.py)
+EMAIL_HANDLER_HEALTH_ADDRESS = os.environ.get(
+    "EMAIL_HANDLER_HEALTH_ADDRESS", "health@probe.invalid"
+)
+EMAIL_HANDLER_READY_ADDRESS = os.environ.get(
+    "EMAIL_HANDLER_READY_ADDRESS", "ready@probe.invalid"
+)
+
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f'"SimpleLogin (noreply)" <noreply@{EMAIL_DOMAIN}>')
 PARTNER_NOREPLY = os.environ.get("PARTNER_NOREPLY", NOREPLY)

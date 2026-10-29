@@ -8,14 +8,23 @@ Only EHLO/MAIL/RCPT are sent, never DATA.
 """
 
 import argparse
+import os
 import smtplib
 import sys
 from typing import Tuple
 
 # Keep in sync with app/email_probe.py; duplicated so the script needs only the stdlib.
 EXPECTED = {
-    "health": ("health@probe.invalid", 250, b"2.0.0 SL-PROBE HEALTH OK"),
-    "ready": ("ready@probe.invalid", 250, b"2.0.0 SL-PROBE READY OK"),
+    "health": (
+        os.environ.get("EMAIL_HANDLER_HEALTH_ADDRESS", "health@probe.invalid"),
+        250,
+        b"2.0.0 SL-PROBE HEALTH OK",
+    ),
+    "ready": (
+        os.environ.get("EMAIL_HANDLER_READY_ADDRESS", "ready@probe.invalid"),
+        250,
+        b"2.0.0 SL-PROBE READY OK",
+    ),
 }
 
 
