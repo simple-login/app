@@ -66,6 +66,13 @@ from app.email import status, headers
 from app.email.checks import check_recipient_limit
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
+from app.email_probe import (
+    HEALTH_OK,
+    READY_FAIL,
+    READY_OK,
+    ReadinessChecker,
+    database_check,
+)
 from app.email_utils import (
     send_email,
     add_dkim_signature,
@@ -2373,6 +2380,23 @@ def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
 
 
 class MailHandler:
+    def __init__(self, readiness: Optional[ReadinessChecker] = None) -> None:
+        self._readiness = readiness or ReadinessChecker(database_check)
+        self._health_address = config.EMAIL_HANDLER_HEALTH_ADDRESS.lower()
+        self._ready_address = config.EMAIL_HANDLER_READY_ADDRESS.lower()
+
+    async def handle_RCPT(
+        self, server, session, envelope: Envelope, address: str, rcpt_options
+    ) -> str:
+        # Probe addresses answer immediately and are never added to rcpt_tos
+        probe = address.lower()
+        if probe == self._health_address:
+            return HEALTH_OK
+        if probe == self._ready_address:
+            return READY_OK if await self._readiness.is_ready() else READY_FAIL
+        envelope.rcpt_tos.append(address)
+        return "250 OK"
+
     async def handle_DATA(self, server, session, envelope: Envelope):
         msg = email.message_from_bytes(envelope.original_content)
         try:
