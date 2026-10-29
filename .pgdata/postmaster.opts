@@ -1,0 +1,1 @@
+/opt/homebrew/Cellar/postgresql@13/13.22/bin/postgres "-D" ".pgdata" "-p" "15432" "-k" "/tmp"
