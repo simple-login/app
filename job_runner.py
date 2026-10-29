@@ -1,6 +1,6 @@
 """
 Run scheduled jobs.
-Not meant for running job at precise time (+- 1h)
+A job runs once its run_at has passed, on the runner's next poll (never before run_at).
 """
 
 from typing import List, Optional
@@ -24,6 +24,7 @@ from app.import_utils import handle_batch_import
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.jobs.mark_abuser_job import MarkAbuserJob
+from app.jobs.send_unsent_email_job import SendUnsentEmailJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.jobs.sync_subscription_job import SyncSubscriptionJob
 from app.log import LOG
@@ -325,6 +326,10 @@ def process_job(job: Job):
         mark_abuser_job = MarkAbuserJob.create_from_job(job)
         if mark_abuser_job:
             mark_abuser_job.run()
+    elif job.name == JobType.SEND_UNSENT_EMAIL.value:
+        unsent_email_job = SendUnsentEmailJob.create_from_job(job)
+        if unsent_email_job:
+            unsent_email_job.run()
     else:
         LOG.e("Unknown job name %s", job.name)
 
@@ -332,8 +337,8 @@ def process_job(job: Job):
 def get_jobs_to_run_query(taken_before_time: arrow.Arrow) -> Query:
     # Get jobs that match all conditions:
     #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
-    #  - Job.run_at is Null OR Job.run_at < now + 10 mins
-    run_at_earliest = arrow.now().shift(minutes=+10)
+    #  - Job.run_at is Null OR Job.run_at <= now
+    run_at_earliest = arrow.now()
     return Job.filter(
         and_(
             or_(

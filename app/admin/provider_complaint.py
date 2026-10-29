@@ -80,7 +80,7 @@ class ProviderComplaintAdmin(SLModelView):
         if not complaint:
             return redirect("/admin/transactionalcomplaint/")
         eml_path = complaint.refused_email.full_report_path
-        eml_data = s3.download_email(eml_path)
+        eml_data = s3.download_from_s3(eml_path)
         AdminAuditLog.downloaded_provider_complaint(current_user.id, complaint.id)
         Session.commit()
         return Response(

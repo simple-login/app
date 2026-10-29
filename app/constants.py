@@ -20,3 +20,4 @@ class JobType(enum.Enum):
     SEND_EVENT_TO_WEBHOOK = "send-event-to-webhook"
     SYNC_SUBSCRIPTION = "sync-subscription"
     ABUSER_MARK = "abuser-mark"
+    SEND_UNSENT_EMAIL = "send-unsent-email"
