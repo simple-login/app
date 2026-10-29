@@ -48,35 +48,12 @@ from app.metrics.base import (
     _P,
     _R,
     MetricsBackend,
-    MetricsError,
-    MetricTypeConflictError,
     Tracer,
 )
 from app.metrics.composite import CompositeBackend
 from app.metrics.newrelic_backend import NewRelicBackend
 from app.metrics.noop import NoopBackend
-from app.metrics.prometheus_backend import MetricKind, PrometheusBackend
-
-__all__ = [
-    "CompositeBackend",
-    "MetricKind",
-    "MetricsBackend",
-    "MetricTypeConflictError",
-    "MetricsError",
-    "NewRelicBackend",
-    "NoopBackend",
-    "PrometheusBackend",
-    "Tracer",
-    "backend_from_name",
-    "background_task",
-    "combine",
-    "configure",
-    "get_backend",
-    "record_event",
-    "record_metric",
-    "reset",
-    "set_attribute",
-]
+from app.metrics.prometheus_backend import PrometheusBackend
 
 
 def _newrelic_backend() -> MetricsBackend:
