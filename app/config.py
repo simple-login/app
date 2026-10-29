@@ -791,10 +791,23 @@ ENFORCE_OAUTH_CLIENT_APPROVED = "ENFORCE_OAUTH_CLIENT_APPROVED" in os.environ
 
 MAX_DOMAIN_CHECKS = max(int(os.environ.get("MAX_DOMAIN_CHECKS", 4)), 1)
 
-# Comma separated list of the metrics backends to emit to, see app/metrics.py.
+# Comma separated list of the metrics backends to emit to, see app/metrics/.
 # Also selects which backends may trace @metrics.background_task functions.
+# Known values: newrelic, prometheus, noop, combinable as "newrelic,prometheus".
 # Defaults to New Relic to preserve the historical behaviour; set it to an empty
-# value to disable metrics entirely and to e.g. "newrelic,prometheus" once
-# several backends are available. Unknown names make the process fail at
+# value to disable metrics entirely. Unknown names make the process fail at
 # startup.
 METRICS_BACKENDS = get_env_csv("METRICS_BACKENDS", "newrelic")
+
+# Directory shared by the gunicorn workers when running in multiprocess mode.
+# When set, the exposition uses MultiProcessCollector() instead of the default
+# registry so /metrics aggregates every worker, and the master empties it at boot
+# (see prepare_multiproc_dir()). Under gunicorn a temporary directory is used when
+# unset, see gunicorn.conf.py.
+PROMETHEUS_MULTIPROC_DIR = os.environ.get("PROMETHEUS_MULTIPROC_DIR") or None
+
+# Bearer token required by the /metrics blueprint. Compared in constant time.
+PROMETHEUS_METRICS_TOKEN = os.environ.get("PROMETHEUS_METRICS_TOKEN") or None
+
+# Prefix prepended to every metric name created by the Prometheus backend
+PROMETHEUS_METRIC_PREFIX = os.environ.get("PROMETHEUS_METRIC_PREFIX", "simplelogin")

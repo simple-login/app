@@ -51,6 +51,7 @@ from app.oauth.base import oauth_bp
 from app.onboarding.base import onboarding_bp
 from app.payments.paddle import setup_paddle_callback
 from app.phone.base import phone_bp
+from app.prometheus_export import METRICS_PATH, setup_prometheus
 from app.redis_services import initialize_redis_services
 from app.request_utils import generate_request_id
 from app.sentry_utils import sentry_before_send
@@ -241,7 +242,7 @@ def set_index_page(app):
 
     @app.after_request
     def after_request(res):
-        # not logging /static call
+        # not logging nor counting static assets, health checks and metric scrapes
         if (
             not request.path.startswith("/static")
             and not request.path.startswith("/admin/static")
@@ -249,6 +250,7 @@ def set_index_page(app):
             and not request.path.startswith("/git")
             and not request.path.startswith("/favicon.ico")
             and not request.path.startswith("/health")
+            and not request.path.startswith(METRICS_PATH)
         ):
             start_time = g.start_time or time.time()
             LOG.d(
@@ -487,5 +489,8 @@ def create_simplelogin_app():
     @app.route("/health", methods=["GET"])
     def healthcheck():
         return "success", 200
+
+    # Registers /metrics when Prometheus is enabled
+    setup_prometheus(app)
 
     return app

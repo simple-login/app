@@ -86,7 +86,7 @@ def set_plan_for_partner_user(partner_user: PartnerUser, plan: SLPlan):
                 f"Deleting partner_subscription [user_id={partner_user.user_id}] [partner_id={partner_user.partner_id}]"
             )
             PartnerSubscription.delete(sub.id)
-            metrics.record_event("PlanChange", {"plan": "free"})
+            metrics.record_event("PlanChange", {"plan": "free", "type": "cancellation"})
     else:
         end_time = plan.expiration
         if plan.type == SLPlanType.PremiumLifetime:

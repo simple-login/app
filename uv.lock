@@ -1298,6 +1298,15 @@ wheels = [
 ]
 
 [[package]]
+name = "prometheus-client"
+version = "0.26.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/73/f1334c29c2af4cd9dba6c7817e61b611bd0215e2eb5565c6064a4de18802/prometheus_client-0.26.0.tar.gz", hash = "sha256:04a91bcf94e2cf74a44a1a874d651a2e853ed354b6e822f3b7487751465d5c2b", size = 92910, upload-time = "2026-07-24T19:36:41.893Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/a3/b69efbf4143b5b9859b977770bbbabcc2796b702fa69dc40271e45cd5a56/prometheus_client-0.26.0-py3-none-any.whl", hash = "sha256:fa93d06737aa02bacd05794768508bb97d2fbee28cb3bca04eaae92f0ca953d6", size = 64494, upload-time = "2026-07-24T19:36:40.854Z" },
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1819,6 +1828,7 @@ dependencies = [
     { name = "newrelic-telemetry-sdk" },
     { name = "pgpy" },
     { name = "phpserialize" },
+    { name = "prometheus-client" },
     { name = "psycopg2-binary" },
     { name = "pycryptodome" },
     { name = "pyopenssl" },
@@ -1898,6 +1908,7 @@ requires-dist = [
     { name = "newrelic-telemetry-sdk", specifier = "~=0.5.0" },
     { name = "pgpy", specifier = "==0.5.4" },
     { name = "phpserialize", specifier = "~=1.3" },
+    { name = "prometheus-client", specifier = "~=0.26.0" },
     { name = "psycopg2-binary", specifier = "~=2.9.10" },
     { name = "pycryptodome", specifier = "~=3.9.8" },
     { name = "pyopenssl", specifier = "~=19.1.0" },

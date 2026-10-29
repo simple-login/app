@@ -131,4 +131,7 @@ class SpamdResult:
         if check:
             metrics.record_event("SpamdCheck", check.event_data())
         else:
-            metrics.record_event("SpamdCheck", {"header": "missing"})
+            # Same keys as event_data(): the Prometheus counter has fixed labels.
+            metrics.record_event(
+                "SpamdCheck", {"header": "missing", "dmarc": "", "spf": "", "phase": ""}
+            )
