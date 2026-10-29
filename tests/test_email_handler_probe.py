@@ -16,15 +16,16 @@ from sqlalchemy.exc import ProgrammingError
 from app import config
 from app.db import Session
 from app.email_probe import (
-    HEALTH_ADDRESS,
     HEALTH_OK,
-    READY_ADDRESS,
     READY_OK,
     ReadinessChecker,
     database_check,
 )
 from email_handler import MailHandler
 from scripts.smtp_probe import probe
+
+HEALTH_ADDRESS = config.EMAIL_HANDLER_HEALTH_ADDRESS
+READY_ADDRESS = config.EMAIL_HANDLER_READY_ADDRESS
 
 
 def _free_port() -> int:
@@ -291,3 +292,24 @@ def test_probe_script_fails_when_nothing_listens():
 
 def _start_sink() -> Iterator[Controller]:
     yield from _start(Sink())
+
+
+def test_probe_addresses_default_to_probe_invalid():
+    assert HEALTH_ADDRESS == "health@probe.invalid"
+    assert READY_ADDRESS == "ready@probe.invalid"
+
+
+def test_probe_addresses_are_configurable(monkeypatch):
+    monkeypatch.setattr(config, "EMAIL_HANDLER_HEALTH_ADDRESS", "H@Custom.Test")
+    monkeypatch.setattr(config, "EMAIL_HANDLER_READY_ADDRESS", "r@custom.test")
+    handler = RecordingHandler(lambda: None)
+    for controller in _start(handler):
+        assert _rcpt(controller, "h@custom.test") == (250, HEALTH_OK[4:].encode())
+        assert _rcpt(controller, "r@custom.test") == (250, READY_OK[4:].encode())
+        # the defaults are no longer special: treated as ordinary recipients
+        with smtplib.SMTP(controller.hostname, controller.port, timeout=5) as smtp:
+            smtp.ehlo()
+            smtp.mail("a@example.com")
+            assert smtp.rcpt(HEALTH_ADDRESS)[0] == 250
+            smtp.data("Subject: x\r\n\r\nbody\r\n")
+        assert handler.delivered == [[HEALTH_ADDRESS]]

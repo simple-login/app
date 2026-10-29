@@ -2,7 +2,8 @@
 
 The email handler is a single-threaded aiosmtpd server, so it cannot serve an
 HTTP endpoint. Orchestrators instead issue ``RCPT TO:<health@probe.invalid>``
-or ``RCPT TO:<ready@probe.invalid>``; the reply carries a marker that a plain
+or ``RCPT TO:<ready@probe.invalid>`` (the defaults of ``EMAIL_HANDLER_HEALTH_ADDRESS``
+and ``EMAIL_HANDLER_READY_ADDRESS``); the reply carries a marker that a plain
 SMTP server would never produce (see ``scripts/smtp_probe.py``).
 """
 
@@ -14,9 +15,6 @@ from sqlalchemy import text
 
 from app.db import Session
 from app.log import LOG
-
-HEALTH_ADDRESS = "health@probe.invalid"
-READY_ADDRESS = "ready@probe.invalid"
 
 HEALTH_OK = "250 2.0.0 SL-PROBE HEALTH OK"
 READY_OK = "250 2.0.0 SL-PROBE READY OK"
