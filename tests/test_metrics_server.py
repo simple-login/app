@@ -3,6 +3,7 @@ import threading
 import urllib.request
 
 from app import config
+from app.log import LOG
 from app.metrics_server import start_metrics_server, start_metrics_server_from_config
 
 
@@ -48,7 +49,11 @@ def test_started_from_config(monkeypatch):
         server.stop()
 
 
-def test_bind_failure_does_not_raise(monkeypatch):
+def test_bind_failure_logs_warning_and_returns_none(monkeypatch):
+    warnings = []
+    errors = []
+    monkeypatch.setattr(LOG, "w", lambda *a, **k: warnings.append(a))
+    monkeypatch.setattr(LOG, "e", lambda *a, **k: errors.append(a))
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         s.listen()
@@ -56,3 +61,11 @@ def test_bind_failure_does_not_raise(monkeypatch):
         monkeypatch.setattr(config, "METRICS_SERVER_PORT", port)
         monkeypatch.setattr(config, "METRICS_SERVER_HOST", "127.0.0.1")
         assert start_metrics_server_from_config("unit_test") is None
+    assert len(warnings) == 1
+    assert errors == []  # LOG.e would raise a Sentry event with a traceback
+
+
+def test_out_of_range_port_does_not_raise(monkeypatch):
+    monkeypatch.setattr(config, "METRICS_SERVER_PORT", 70000)
+    monkeypatch.setattr(config, "METRICS_SERVER_HOST", "127.0.0.1")
+    assert start_metrics_server_from_config("unit_test") is None

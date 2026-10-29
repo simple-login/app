@@ -46,8 +46,10 @@ def start_metrics_server(
     """
     try:
         server = make_server(host, port, create_metrics_app(), threaded=True)
-    except OSError as e:
-        LOG.e("Cannot start metrics server on %s:%s: %s", host, port, e)
+    except (OSError, OverflowError) as e:
+        # OSError: port in use (expected, e.g. several processes on one host).
+        # OverflowError: port outside 0-65535.
+        LOG.w("Cannot start metrics server on %s:%s: %s", host, port, e)
         return None
 
     _process_info.labels(service=service_name).set(1)

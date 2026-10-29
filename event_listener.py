@@ -102,9 +102,9 @@ if __name__ == "__main__":
         exit(1)
 
     args = args()
-    start_metrics_server_from_config("event_listener")
 
     if args.command in [Mode.LISTENER.value, Mode.DEAD_LETTER.value]:
+        start_metrics_server_from_config("event_listener")
         main(
             mode=Mode.from_str(args.command),
             dry_run=args.dry_run,
