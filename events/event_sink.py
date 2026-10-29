@@ -1,7 +1,8 @@
 import requests
-import newrelic.agent
 
 from abc import ABC, abstractmethod
+
+from app import metrics
 from app.config import EVENT_WEBHOOK, EVENT_WEBHOOK_SKIP_VERIFY_SSL
 from app.log import LOG
 from app.models import SyncEvent
@@ -38,9 +39,7 @@ class HttpEventSink(EventSink):
             headers={"Content-Type": "application/x-protobuf"},
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
         )
-        newrelic.agent.record_custom_event(
-            "EventSentToPartner", {"http_code": res.status_code}
-        )
+        metrics.record_event("EventSentToPartner", {"http_code": res.status_code})
         if res.status_code != 200:
             LOG.warning(
                 f"Failed to send event to webhook: {res.status_code} {res.text}"

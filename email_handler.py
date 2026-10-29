@@ -46,7 +46,6 @@ from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional, Set
 
-import newrelic.agent
 import sentry_sdk
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope, SMTP
@@ -56,7 +55,7 @@ from flanker.addresslib.address import EmailAddress
 from sl_pgp import PgpContext
 from sqlalchemy.exc import IntegrityError
 
-from app import pgp_utils, s3, config, contact_utils
+from app import pgp_utils, s3, config, contact_utils, metrics
 from app.alias_utils import (
     try_auto_create,
     change_alias_status,
@@ -1245,9 +1244,7 @@ def handle_reply(
                 contact_query.count(),
                 elapsed,
             )
-            newrelic.agent.record_custom_metric(
-                "Custom/reverse_alias_replacement_time", elapsed
-            )
+            metrics.record_metric("Custom/reverse_alias_replacement_time", elapsed)
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
@@ -2445,7 +2442,7 @@ class MailHandler:
             )
             return status.E404
 
-    @newrelic.agent.background_task()
+    @metrics.background_task
     def _handle(self, envelope: Envelope, msg: Message):
         start = time.time()
 
@@ -2459,9 +2456,7 @@ class MailHandler:
             envelope.mail_from,
             envelope.rcpt_tos,
         )
-        newrelic.agent.record_custom_metric(
-            "Custom/nb_rcpt_tos", len(envelope.rcpt_tos)
-        )
+        metrics.record_metric("Custom/nb_rcpt_tos", len(envelope.rcpt_tos))
 
         send_version_event("email_handler")
         with create_light_app().app_context():
@@ -2489,10 +2484,8 @@ class MailHandler:
                 )
 
                 SpamdResult.send_to_new_relic(msg)
-                newrelic.agent.record_custom_metric(
-                    "Custom/email_handler_time", elapsed
-                )
-                newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
+                metrics.record_metric("Custom/email_handler_time", elapsed)
+                metrics.record_metric("Custom/number_incoming_email", 1)
                 return return_status
 
 

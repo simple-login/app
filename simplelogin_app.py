@@ -5,7 +5,6 @@ import arrow
 import click
 import flask_limiter
 import flask_profiler
-import newrelic.agent
 import sentry_sdk
 import time
 from flask import (
@@ -25,7 +24,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app import build_info, config, constants
+from app import build_info, config, constants, metrics
 from app.admin import init_admin
 from app.api.base import api_bp
 from app.auth.base import auth_bp
@@ -261,9 +260,7 @@ def set_index_page(app):
                 res.status_code,
                 time.time() - start_time,
             )
-            newrelic.agent.record_custom_event(
-                "HttpResponseStatus", {"code": res.status_code}
-            )
+            metrics.record_event("HttpResponseStatus", {"code": res.status_code})
             send_version_event("app")
         return res
 
