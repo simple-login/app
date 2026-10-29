@@ -82,6 +82,9 @@ dependencies = [
   "strictyaml ~= 1.7.3",
 
   "sl-pgp",
+  # Prometheus exposition. Imported lazily, inside the backend, so nothing loads
+  # it unless "prometheus" is listed in METRICS_BACKENDS. See docs/metrics.md.
+  "prometheus-client ~= 0.26.0",
 ]
 
 [tool.black]
