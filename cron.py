@@ -25,6 +25,7 @@ from app.email_utils import (
 from app.email_validation import is_valid_email, normalize_reply_email
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
+from app.metrics_server import start_metrics_server_from_config
 from app.mail_sender import load_unsent_mails_from_fs_and_resend
 from app.models import (
     Subscription,
@@ -1278,6 +1279,7 @@ def clear_oauth_token_pending_to_be_deleted():
 
 if __name__ == "__main__":
     LOG.d("Start running cronjob")
+    start_metrics_server_from_config("cron")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-j",

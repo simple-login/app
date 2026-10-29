@@ -28,6 +28,7 @@ from app.jobs.send_unsent_email_job import SendUnsentEmailJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.jobs.sync_subscription_job import SyncSubscriptionJob
 from app.log import LOG
+from app.metrics_server import start_metrics_server_from_config
 from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import User, Job, BatchImport, Mailbox, JobState
 from app.monitor_utils import send_version_event
@@ -435,6 +436,7 @@ def execute():
 
 
 if __name__ == "__main__":
+    start_metrics_server_from_config("job_runner")
     send_version_event("job_runner")
     while True:
         try:

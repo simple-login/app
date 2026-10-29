@@ -133,6 +133,7 @@ from app.handler.spamd_result import (
 from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
+from app.metrics_server import start_metrics_server_from_config
 from app.mail_sender import sl_sendmail
 from app.mailbox_utils import (
     get_mailbox_for_reply_phase,
@@ -2520,5 +2521,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    start_metrics_server_from_config("email_handler")
     LOG.i("Listen for port %s", args.port)
     main(port=args.port)

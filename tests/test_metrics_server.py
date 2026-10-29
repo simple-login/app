@@ -20,6 +20,7 @@ def _get(port: int, path: str) -> tuple[int, str]:
 def test_serves_prometheus_metrics_in_background_thread():
     port = _free_port()
     server = start_metrics_server("127.0.0.1", port, service_name="unit_test")
+    assert server is not None
     try:
         assert server.thread.daemon  # never keeps the process alive
         assert server.thread is not threading.current_thread()
