@@ -8,6 +8,7 @@ import random
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from email.message import Message
+from io import BytesIO
 from functools import wraps
 from smtplib import SMTP, SMTPException
 from typing import Optional, Dict, List, Callable
@@ -16,7 +17,7 @@ import sentry_sdk
 import time
 from attr import dataclass
 
-from app import config, metrics
+from app import config, metrics, s3
 from app.email import headers
 from app.log import LOG
 from app.message_utils import message_to_bytes, message_format_base64_parts
@@ -36,9 +37,6 @@ class SendRequest:
     retries: int = 0
 
     def to_bytes(self) -> bytes:
-        if not config.SAVE_UNSENT_DIR:
-            LOG.d("Skipping saving unsent message because SAVE_UNSENT_DIR is not set")
-            return
         serialized_message = message_to_bytes(self.msg)
         data = {
             "envelope_from": self.envelope_from,
@@ -77,6 +75,24 @@ class SendRequest:
         )
         file_path = os.path.join(config.SAVE_UNSENT_DIR, file_name)
         self.save_request_to_file(file_path)
+
+    def save_request_to_s3_and_enqueue(self, prefix: str = "DeliveryFail") -> None:
+        # Imported here: the job module imports this one.
+        from app.jobs.send_unsent_email_job import SendUnsentEmailJob
+
+        key = (
+            f"{config.UNSENT_EMAIL_S3_PREFIX}{prefix}-{int(time.time())}-"
+            f"{uuid.uuid4()}.{SendRequest.SAVE_EXTENSION}"
+        )
+        try:
+            s3.upload_raw(key, BytesIO(self.to_bytes()))
+            SendUnsentEmailJob(key, 1).store_job_in_independent_session()
+            LOG.i(f"Stored unsent message {key} and enqueued its resend job")
+        except Exception:
+            LOG.e(
+                f"Could not store unsent message {key} in S3 and enqueue it, dropping it"
+            )
+            sentry_sdk.capture_exception()
 
     def save_request_to_failed_dir(self, prefix: str = "DeliveryRetryFail"):
         file_name = (
@@ -176,7 +192,9 @@ class MailSender:
             if send_request.ignore_smtp_errors:
                 LOG.w("Ignore smtp error and skip saving to fs email")
                 return False
-            if config.SAVE_UNSENT_DIR:
+            if config.UNSENT_EMAIL_STORAGE == "s3":
+                send_request.save_request_to_s3_and_enqueue()
+            elif config.SAVE_UNSENT_DIR:
                 send_request.save_request_to_unsent_dir()
             return False
 

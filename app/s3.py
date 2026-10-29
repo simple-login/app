@@ -67,7 +67,7 @@ def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
         )
 
 
-def download_email(path: str) -> Optional[str]:
+def download_from_s3(path: str) -> Optional[bytes]:
     if config.LOCAL_FILE_UPLOAD:
         file_path = os.path.join(config.UPLOAD_DIR, path)
         with open(file_path, "rb") as f:
@@ -78,7 +78,7 @@ def download_email(path: str) -> Optional[str]:
     )
     if not resp or "Body" not in resp:
         return None
-    return resp["Body"].read
+    return resp["Body"].read()
 
 
 def upload_from_url(url: str, upload_path):

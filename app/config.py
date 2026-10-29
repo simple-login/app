@@ -507,6 +507,24 @@ if SAVE_UNSENT_DIR and not os.path.isdir(SAVE_UNSENT_DIR):
     except FileExistsError:
         pass
 
+# Where emails that could not be handed to SMTP are kept: "fs" (default: written to SAVE_UNSENT_DIR,
+# resent by the cron job, until the Kubernetes cutover) or "s3" (opt-in via env: resent by a
+# SEND_UNSENT_EMAIL job). There is no fallback between them.
+UNSENT_EMAIL_STORAGE = os.environ.get("UNSENT_EMAIL_STORAGE", "fs")
+if UNSENT_EMAIL_STORAGE not in ("s3", "fs"):
+    raise ValueError(
+        f"UNSENT_EMAIL_STORAGE must be 's3' or 'fs': {UNSENT_EMAIL_STORAGE}"
+    )
+
+# In "s3" mode unsent emails are stored under this prefix and resent by a SEND_UNSENT_EMAIL job.
+# Attempt n is scheduled BASE * 2**n seconds after the previous failure. Emails that still
+# fail after MAX_ATTEMPTS are moved to <prefix>failed/.
+UNSENT_EMAIL_S3_PREFIX = os.environ.get("UNSENT_EMAIL_S3_PREFIX", "unsent/")
+UNSENT_EMAIL_BACKOFF_BASE_SECS = int(
+    os.environ.get("UNSENT_EMAIL_BACKOFF_BASE_SECS", 60)
+)
+UNSENT_EMAIL_MAX_ATTEMPTS = int(os.environ.get("UNSENT_EMAIL_MAX_ATTEMPTS", 8))
+
 # enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
 ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
 

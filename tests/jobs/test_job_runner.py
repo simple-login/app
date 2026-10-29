@@ -81,6 +81,21 @@ def test_get_jobs_to_run(flask_client):
         assert job.id in job_ids
 
 
+def test_get_jobs_to_run_honours_run_at_exactly(flask_client):
+    now = arrow.now()
+    for job in Job.all():
+        Job.delete(job.id)
+    due = Job.create(name="", payload="", run_at=now.shift(seconds=-1))
+    not_due = Job.create(name="", payload="", run_at=now.shift(minutes=1))
+    Session.commit()
+
+    taken_before_time = arrow.now().shift(minutes=-config.JOB_TAKEN_RETRY_WAIT_MINS)
+    job_ids = [job.id for job in get_jobs_to_run(taken_before_time)]
+
+    assert due.id in job_ids
+    assert not_due.id not in job_ids
+
+
 def test_get_jobs_to_run_respects_priority(flask_client):
     now = arrow.now()
     for job in Job.all():
