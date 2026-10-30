@@ -14,7 +14,7 @@ from email.header import decode_header, Header
 from email.message import Message, EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import make_msgid, formatdate, formataddr, parseaddr
+from email.utils import make_msgid, formatdate, formataddr, parseaddr, quote
 from smtplib import SMTP, SMTPException
 from typing import Tuple, List, Optional, Union
 
@@ -602,6 +602,49 @@ def sanitize_header(msg: Message, header: str):
                     msg._headers[i][0],
                     sanitize_header_value(msg._headers[i][1]),
                 )
+
+
+def sanitize_auto_submitted_header(msg: Message, alias_email: str):
+    """Keep the automation keyword without leaking ownership metadata on replies."""
+    values = msg.get_all(headers.AUTO_SUBMITTED, [])
+    delete_header(msg, headers.AUTO_SUBMITTED)
+    # RFC 3834 permits at most one Auto-Submitted field.
+    if len(values) != 1:
+        return
+
+    value = []
+    depth = 0
+    escaped = False
+    # Discard RFC 5322 comments (including nested comments and quoted pairs),
+    # and stop at the parameters. Do not expose the original ownership metadata.
+    for char in str(values[0]):
+        if depth:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+        elif char == "(":
+            depth = 1
+            value.append(" ")
+        elif char == ";":
+            break
+        else:
+            value.append(char)
+    if depth:
+        return
+
+    # RFC 3834 uses a single RFC 2045 token, surrounded by optional CFWS.
+    keyword = "".join(value).strip(" \t\r\n")
+    if not re.fullmatch(r"[!#$%&'*+\-.0-9A-Z^_`a-z{|}~]+", keyword):
+        return
+    if keyword.lower() == "auto-notified":
+        # RFC 5436 requires an owner identifier; expose only the alias address.
+        keyword += f'; owner-email="{quote(alias_email)}"'
+    msg[headers.AUTO_SUBMITTED] = keyword
 
 
 def delete_all_headers_except(msg: Message, headers: [str]):
