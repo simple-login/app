@@ -2,7 +2,9 @@ import socket
 import threading
 import urllib.request
 
-from app import config
+import pytest
+
+from app import config, metrics_server
 from app.log import LOG
 from app.metrics_server import start_metrics_server, start_metrics_server_from_config
 
@@ -69,3 +71,17 @@ def test_out_of_range_port_does_not_raise(monkeypatch):
     monkeypatch.setattr(config, "METRICS_SERVER_PORT", 70000)
     monkeypatch.setattr(config, "METRICS_SERVER_HOST", "127.0.0.1")
     assert start_metrics_server_from_config("unit_test") is None
+
+
+@pytest.mark.parametrize("port", [-1, 0, 65536, 65616, 70000])
+def test_out_of_range_port_never_reaches_the_socket_layer(monkeypatch, port):
+    # On Linux the kernel silently truncates the port to 16 bits
+    # (70000 -> 4464, 65616 -> 80), so the range must be checked before binding.
+    def fail_make_server(*args, **kwargs):
+        raise AssertionError("make_server must not be called for an invalid port")
+
+    monkeypatch.setattr(metrics_server, "make_server", fail_make_server)
+    warnings = []
+    monkeypatch.setattr(LOG, "w", lambda *a, **k: warnings.append(a))
+    assert start_metrics_server("127.0.0.1", port, service_name="unit_test") is None
+    assert len(warnings) == 1

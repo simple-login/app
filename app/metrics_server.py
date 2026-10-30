@@ -44,11 +44,16 @@ def start_metrics_server(
     Returns None (after logging) if the port cannot be bound: metrics must never
     prevent the real work of the process.
     """
+    if not 1 <= port <= 65535:
+        # Checked here because on Linux the kernel silently truncates the port to
+        # 16 bits (70000 -> 4464, 65616 -> 80) instead of raising.
+        LOG.w("Cannot start metrics server: port %s is outside 1-65535", port)
+        return None
+
     try:
         server = make_server(host, port, create_metrics_app(), threaded=True)
-    except (OSError, OverflowError) as e:
-        # OSError: port in use (expected, e.g. several processes on one host).
-        # OverflowError: port outside 0-65535.
+    except OSError as e:
+        # Port in use (expected, e.g. several processes on one host).
         LOG.w("Cannot start metrics server on %s:%s: %s", host, port, e)
         return None
 
