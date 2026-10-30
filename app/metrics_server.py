@@ -2,24 +2,33 @@ import threading
 from dataclasses import dataclass
 from typing import Optional
 
-from flask import Flask, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
+from flask import Flask, Response, request
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from werkzeug.serving import BaseWSGIServer, make_server
 
 from app import config
 from app.log import LOG
-
-_process_info = Gauge(
-    "sl_process_info", "Constant 1, labelled with the running service", ["service"]
-)
+from app.prometheus_export import is_auth_valid
 
 
 def create_metrics_app() -> Flask:
-    """Minimal Flask app serving the default Prometheus registry. No DB access."""
+    """Minimal Flask app serving the default Prometheus registry. No DB access.
+
+    Like the web app, /metrics is only registered when PROMETHEUS_METRICS_TOKEN is
+    set, and requires it as a bearer token.
+    """
     app = Flask(__name__)
+
+    if not config.PROMETHEUS_METRICS_TOKEN:
+        LOG.e("PROMETHEUS_METRICS_TOKEN is empty: the /metrics endpoint stays disabled")
+        return app
 
     @app.route("/metrics", methods=["GET"])
     def metrics():
+        if not is_auth_valid(request.headers.get("Authorization")):
+            return Response(
+                "", 401, headers={"WWW-Authenticate": 'Bearer realm="metrics"'}
+            )
         return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
     return app
@@ -57,7 +66,6 @@ def start_metrics_server(
         LOG.w("Cannot start metrics server on %s:%s: %s", host, port, e)
         return None
 
-    _process_info.labels(service=service_name).set(1)
     thread = threading.Thread(
         target=server.serve_forever, name="metrics-server", daemon=True
     )
@@ -67,8 +75,13 @@ def start_metrics_server(
 
 
 def start_metrics_server_from_config(service_name: str) -> Optional[MetricsServer]:
-    """Start the metrics server only if METRICS_SERVER_PORT is set."""
+    """Start the metrics server if METRICS_SERVER_PORT is set.
+
+    When it is not, log an error and return None: callers need no guard and the
+    process is never stopped by a missing metrics configuration.
+    """
     if config.METRICS_SERVER_PORT is None:
+        LOG.e("Prometheus metrics are not enabled: METRICS_SERVER_PORT is not set")
         return None
     return start_metrics_server(
         config.METRICS_SERVER_HOST, config.METRICS_SERVER_PORT, service_name

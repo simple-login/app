@@ -1,5 +1,6 @@
 import socket
 import threading
+import urllib.error
 import urllib.request
 
 import pytest
@@ -15,9 +16,23 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
-def _get(port: int, path: str) -> tuple[int, str]:
-    with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=5) as r:
-        return r.status, r.read().decode()
+TOKEN = "s3cret"
+
+
+@pytest.fixture(autouse=True)
+def metrics_token(monkeypatch):
+    monkeypatch.setattr(config, "PROMETHEUS_METRICS_TOKEN", TOKEN)
+
+
+def _get(port: int, path: str, token: str | None = TOKEN) -> tuple[int, str]:
+    request = urllib.request.Request(f"http://127.0.0.1:{port}{path}")
+    if token is not None:
+        request.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(request, timeout=5) as r:
+            return r.status, r.read().decode()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode()
 
 
 def test_serves_prometheus_metrics_in_background_thread():
@@ -29,14 +44,42 @@ def test_serves_prometheus_metrics_in_background_thread():
         assert server.thread is not threading.current_thread()
         status, body = _get(port, "/metrics")
         assert status == 200
-        assert 'sl_process_info{service="unit_test"} 1.0' in body
+        assert "sl_process_info" not in body
     finally:
         server.stop()
 
 
-def test_not_started_when_port_not_configured(monkeypatch):
+@pytest.mark.parametrize("token", [None, "wrong", ""])
+def test_rejects_missing_or_wrong_bearer_token(token):
+    port = _free_port()
+    server = start_metrics_server("127.0.0.1", port, service_name="unit_test")
+    assert server is not None
+    try:
+        assert _get(port, "/metrics", token=token)[0] == 401
+    finally:
+        server.stop()
+
+
+def test_metrics_route_not_registered_without_token(monkeypatch):
+    monkeypatch.setattr(config, "PROMETHEUS_METRICS_TOKEN", None)
+    errors = []
+    monkeypatch.setattr(LOG, "e", lambda *a, **k: errors.append(a))
+    port = _free_port()
+    server = start_metrics_server("127.0.0.1", port, service_name="unit_test")
+    assert server is not None
+    try:
+        assert _get(port, "/metrics")[0] == 404
+    finally:
+        server.stop()
+    assert len(errors) == 1
+
+
+def test_disabled_metrics_log_error_and_do_not_raise(monkeypatch):
     monkeypatch.setattr(config, "METRICS_SERVER_PORT", None)
+    errors = []
+    monkeypatch.setattr(LOG, "e", lambda *a, **k: errors.append(a))
     assert start_metrics_server_from_config("unit_test") is None
+    assert len(errors) == 1
 
 
 def test_started_from_config(monkeypatch):
