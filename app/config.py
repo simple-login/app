@@ -681,7 +681,8 @@ STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
 MAINTENANCE_MODE = "MAINTENANCE_MODE" in os.environ
 
 # Prometheus metrics server for the non-web processes (email handler, job runner,
-# event listener, cron). Not started unless METRICS_SERVER_PORT is set.
+# event listener, cron). Not started unless METRICS_SERVER_PORT is set (an error is
+# logged if the server is requested without it). /metrics needs PROMETHEUS_METRICS_TOKEN.
 METRICS_SERVER_PORT: Optional[int] = (
     int(os.environ["METRICS_SERVER_PORT"])
     if os.environ.get("METRICS_SERVER_PORT")
