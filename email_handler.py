@@ -44,7 +44,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional, Set
+from typing import Callable, List, Tuple, Optional, Set
 
 import sentry_sdk
 from aiosmtpd.controller import Controller
@@ -993,38 +993,13 @@ def forward_email_to_mailbox(
 
 
 def replace_sl_message_id_by_original_message_id(msg):
-    # Replace SL Message-ID by original one in In-Reply-To header
-    if msg[headers.IN_REPLY_TO]:
-        matching: MessageIDMatching = MessageIDMatching.get_by(
-            sl_message_id=str(msg[headers.IN_REPLY_TO])
-        )
-        if matching:
-            LOG.d(
-                "replace SL message id by original one in in-reply-to header, %s -> %s",
-                msg[headers.IN_REPLY_TO],
-                matching.original_message_id,
-            )
-            del msg[headers.IN_REPLY_TO]
-            msg[headers.IN_REPLY_TO] = matching.original_message_id
+    replace_message_ids_in_header(msg, headers.IN_REPLY_TO, get_original_message_id)
+    replace_message_ids_in_header(msg, headers.REFERENCES, get_original_message_id)
 
-    # Replace SL Message-ID by original Message-ID in References header
-    if msg[headers.REFERENCES]:
-        message_ids = str(msg[headers.REFERENCES]).split()
-        new_message_ids = []
-        for message_id in message_ids:
-            matching = MessageIDMatching.get_by(sl_message_id=message_id)
-            if matching:
-                LOG.d(
-                    "replace SL message id by original one in references header, %s -> %s",
-                    message_id,
-                    matching.original_message_id,
-                )
-                new_message_ids.append(matching.original_message_id)
-            else:
-                new_message_ids.append(message_id)
 
-        del msg[headers.REFERENCES]
-        msg[headers.REFERENCES] = " ".join(new_message_ids)
+def get_original_message_id(sl_message_id: str) -> Optional[str]:
+    matching = MessageIDMatching.get_by(sl_message_id=sl_message_id)
+    return matching.original_message_id if matching else None
 
 
 @sentry_sdk.trace
@@ -1406,7 +1381,7 @@ Email sent on behalf of alias {alias.email} using mailbox {mailbox.email}""",
 def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message):
     """
     Replace original Message-ID by SL-Message-ID during the reply phase
-    for "message-id" and "References" headers
+    for "message-id", "References" and "In-Reply-To" headers
     """
     original_message_id = msg[headers.MESSAGE_ID]
     if original_message_id:
@@ -1451,24 +1426,37 @@ def replace_original_message_id(alias: Alias, email_log: EmailLog, msg: Message)
     email_log.sl_message_id = sl_message_id
     Session.commit()
 
-    # Replace all original headers in References header by SL Message ID header if needed
-    if msg[headers.REFERENCES]:
-        message_ids = str(msg[headers.REFERENCES]).split()
-        new_message_ids = []
-        for message_id in message_ids:
-            matching = MessageIDMatching.get_by(original_message_id=message_id)
-            if matching:
-                LOG.d(
-                    "replace original message id by SL one, %s -> %s",
-                    message_id,
-                    matching.sl_message_id,
-                )
-                new_message_ids.append(matching.sl_message_id)
-            else:
-                new_message_ids.append(message_id)
+    replace_message_ids_in_header(msg, headers.REFERENCES, get_sl_message_id)
+    replace_message_ids_in_header(msg, headers.IN_REPLY_TO, get_sl_message_id)
 
-        del msg[headers.REFERENCES]
-        msg[headers.REFERENCES] = " ".join(new_message_ids)
+
+def get_sl_message_id(original_message_id: str) -> Optional[str]:
+    matching = MessageIDMatching.get_by(original_message_id=original_message_id)
+    return matching.sl_message_id if matching else None
+
+
+def replace_message_ids_in_header(
+    msg: Message, header: str, get_replacement: Callable[[str], Optional[str]]
+):
+    if not msg[header]:
+        return
+
+    new_message_ids = []
+    for message_id in str(msg[header]).split():
+        new_message_id = get_replacement(message_id)
+        if new_message_id:
+            LOG.d(
+                "replace message ID in %s header, %s -> %s",
+                header,
+                message_id,
+                new_message_id,
+            )
+            new_message_ids.append(new_message_id)
+        else:
+            new_message_ids.append(message_id)
+
+    del msg[header]
+    msg[header] = " ".join(new_message_ids)
 
 
 @sentry_sdk.trace
