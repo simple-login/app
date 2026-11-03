@@ -1,0 +1,34 @@
+# Configuración dinámica de Traefik para la demo local (file provider).
+# Renderizada por demo/demo.sh (sustituye __APP_HOST__ / __MAIL_HOST__).
+
+http:
+  routers:
+    slapp:
+      rule: "Host(`__APP_HOST__`)"
+      entrypoints: [websecure]
+      service: slapp
+      tls: {}
+    slmail:
+      rule: "Host(`__MAIL_HOST__`)"
+      entrypoints: [websecure]
+      service: slmail
+      tls: {}
+  services:
+    slapp:
+      loadBalancer:
+        servers:
+          - url: "http://app:7777"
+    slmail:
+      loadBalancer:
+        servers:
+          - url: "http://mailpit:8025"
+
+tls:
+  certificates:
+    - certFile: /certs/fullchain.pem
+      keyFile: /certs/privkey.pem
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/fullchain.pem
+        keyFile: /certs/privkey.pem

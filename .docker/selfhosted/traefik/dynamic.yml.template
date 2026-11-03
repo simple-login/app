@@ -1,0 +1,26 @@
+# Config dinámica de Traefik — renderizada por install.sh (sustituye __APP_HOSTNAME__).
+
+http:
+  routers:
+    app:
+      rule: "Host(`__APP_HOSTNAME__`)"
+      entryPoints: [websecure]
+      service: app
+      middlewares: [sec-headers]
+      tls:
+        certResolver: le
+
+  services:
+    app:
+      loadBalancer:
+        servers:
+          - url: "http://app:7777"
+
+  middlewares:
+    sec-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: "strict-origin-when-cross-origin"

@@ -1,0 +1,31 @@
+# Config estática de Traefik — renderizada por install.sh (sustituye __ACME_EMAIL__).
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  le:
+    acme:
+      email: __ACME_EMAIL__
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+# api:
+#   dashboard: true
+# log:
+#   level: INFO
