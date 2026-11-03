@@ -433,7 +433,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
 
     profile_picture_id = sa.Column(sa.ForeignKey(File.id), nullable=True)
 
-    otp_secret = sa.Column(sa.String(16), nullable=True)
+    otp_secret = sa.Column(sa.String(32), nullable=True)
     enable_otp = sa.Column(
         sa.Boolean, nullable=False, default=False, server_default="0"
     )

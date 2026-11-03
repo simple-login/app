@@ -20,6 +20,7 @@ from app.models import (
     PlanEnum,
     PADDLE_SUBSCRIPTION_GRACE_DAYS,
     SyncEvent,
+    User,
 )
 from tests.utils import login, create_new_user, random_token
 
@@ -435,3 +436,13 @@ def test_email_log_create_updates_alias_last_email_log_id(flask_client):
 
     Session.expire(alias)
     assert alias.last_email_log_id == el2.id
+
+
+def test_user_can_store_default_length_otp_secret(flask_client):
+    user = create_new_user()
+    otp_secret = "A" * 32
+
+    user.otp_secret = otp_secret
+    Session.commit()
+
+    assert User.get_by(id=user.id).otp_secret == otp_secret
