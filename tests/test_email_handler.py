@@ -420,6 +420,94 @@ def test_send_email_from_non_canonical_matches_already_existing_user(flask_clien
 
 
 @mail_sender.store_emails_test_decorator
+def test_reply_phase_replaces_original_message_ids_in_thread_headers(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = alias.mailbox.email
+    envelope.rcpt_tos = [contact.reply_email]
+
+    parent_message_id = f"<{random_string(10)}@mailbox.lan>"
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    msg[headers.MESSAGE_ID] = parent_message_id
+    assert email_handler.handle(envelope, msg) == status.E200
+    parent_sl_message_id = mail_sender.get_stored_emails()[0].msg[headers.MESSAGE_ID]
+    assert parent_sl_message_id != parent_message_id
+    mail_sender.purge_stored_emails()
+
+    contact_message_id = f"<{random_string(10)}@contact.lan>"
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    msg[headers.MESSAGE_ID] = f"<{random_string(10)}@mailbox.lan>"
+    msg[headers.IN_REPLY_TO] = parent_message_id
+    msg[headers.REFERENCES] = f"{contact_message_id} {parent_message_id}"
+    assert email_handler.handle(envelope, msg) == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    assert sent_mails[0].msg[headers.IN_REPLY_TO] == parent_sl_message_id
+    assert (
+        sent_mails[0].msg[headers.REFERENCES]
+        == f"{contact_message_id} {parent_sl_message_id}"
+    )
+
+
+@mail_sender.store_emails_test_decorator
+def test_forward_phase_restores_original_message_ids_in_thread_headers(flask_client):
+    user = create_new_user()
+    alias = Alias.create_new_random(user)
+    Session.commit()
+    contact = Contact.create(
+        user_id=user.id,
+        alias_id=alias.id,
+        website_email=random_email(),
+        reply_email=f"{random_string(10)}@{EMAIL_DOMAIN}",
+        commit=True,
+    )
+    envelope = Envelope()
+    envelope.mail_from = alias.mailbox.email
+    envelope.rcpt_tos = [contact.reply_email]
+
+    parent_message_id = f"<{random_string(10)}@mailbox.lan>"
+    msg = EmailMessage()
+    msg[headers.TO] = contact.reply_email
+    msg[headers.SUBJECT] = random_string()
+    msg[headers.MESSAGE_ID] = parent_message_id
+    assert email_handler.handle(envelope, msg) == status.E200
+    parent_sl_message_id = mail_sender.get_stored_emails()[0].msg[headers.MESSAGE_ID]
+    mail_sender.purge_stored_emails()
+
+    envelope = Envelope()
+    envelope.mail_from = contact.website_email
+    envelope.rcpt_tos = [alias.email]
+    msg = EmailMessage()
+    msg[headers.FROM] = contact.website_email
+    msg[headers.TO] = alias.email
+    msg[headers.SUBJECT] = random_string()
+    msg[headers.MESSAGE_ID] = f"<{random_string(10)}@contact.lan>"
+    msg[headers.IN_REPLY_TO] = f"{parent_sl_message_id} (sent by the alias)"
+    msg[headers.REFERENCES] = parent_sl_message_id
+    assert email_handler.handle(envelope, msg) == status.E200
+    sent_mails = mail_sender.get_stored_emails()
+    assert len(sent_mails) == 1
+    assert (
+        sent_mails[0].msg[headers.IN_REPLY_TO]
+        == f"{parent_message_id} (sent by the alias)"
+    )
+    assert sent_mails[0].msg[headers.REFERENCES] == parent_message_id
+
+
+@mail_sender.store_emails_test_decorator
 def test_break_loop_alias_as_mailbox(flask_client):
     user = create_new_user()
     alias = Alias.create_new_random(user)
