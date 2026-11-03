@@ -14,6 +14,7 @@ from app.custom_domain_validation import (
     DomainValidationResult,
     ExpectedValidationRecords,
 )
+from app.custom_domain_utils import delete_custom_domain as schedule_domain_deletion
 from app.db import Session
 from app.dns_utils import get_network_dns_client
 from app.models import (
@@ -306,6 +307,7 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
             action=AuditLogActionEnum.delete_custom_domain.value,
             data={"domain": domain_name, "deleted_by": current_user.email},
         )
+        schedule_domain_deletion(domain)
         Session.commit()
 
         LOG.warning(
