@@ -4,7 +4,8 @@ from flask import url_for
 
 from app.admin.custom_domain_search import CustomDomainSearchResult
 from app.db import Session
-from app.models import User, CustomDomain
+from app.constants import JobType
+from app.models import User, CustomDomain, Job
 from tests.utils import create_new_user, random_token
 
 
@@ -447,3 +448,41 @@ def test_search_no_match_returns_no_match(flask_client):
 
     assert result.no_match
     assert result.domains == []
+
+
+def test_admin_delete_domain_schedules_deletion(flask_client):
+    """Admin "Delete Domain" must mark the domain and enqueue the delete job."""
+    login_admin(flask_client)
+    user = create_new_user()
+    domain = create_custom_domain(user)
+    Session.commit()
+    domain_id, domain_name = domain.id, domain.domain
+
+    r = flask_client.post(
+        url_for("admin.custom_domain_search.delete_custom_domain"),
+        data={"domain_id": domain_id, "confirm_domain": domain_name},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+
+    assert CustomDomain.get(domain_id).pending_deletion is True
+    jobs = Job.filter_by(name=JobType.DELETE_DOMAIN.value).all()
+    assert any(j.payload["custom_domain_id"] == domain_id for j in jobs)
+
+
+def test_admin_delete_domain_wrong_confirmation_does_nothing(flask_client):
+    login_admin(flask_client)
+    domain = create_custom_domain(create_new_user())
+    Session.commit()
+    domain_id = domain.id
+
+    flask_client.post(
+        url_for("admin.custom_domain_search.delete_custom_domain"),
+        data={"domain_id": domain_id, "confirm_domain": "wrong.com"},
+        follow_redirects=True,
+    )
+    assert CustomDomain.get(domain_id).pending_deletion is False
+    assert not any(
+        j.payload["custom_domain_id"] == domain_id
+        for j in Job.filter_by(name=JobType.DELETE_DOMAIN.value).all()
+    )
