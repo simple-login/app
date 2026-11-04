@@ -3227,6 +3227,24 @@
           {% endfor %}
         {% endif %}
       {% endif %}
+      {% if data.equivalent_users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-warning">
+            <h5 class="mb-0">
+              <i class="fa fa-clone mr-2"></i>
+              {{ data.equivalent_users|length }} Users with an equivalent email to "{{ query }}"
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-warning mb-3">
+              These users have a different spelling of the same inbox (dots, +tag or equivalent domain).
+              They block this address from being used as another account's email.
+            </div>
+            {{ users_table(data.equivalent_users, false) }}
+          </div>
+        </div>
+      {% endif %}
       {% if data.partner_users %}
         {% if data.partner_users_found_by_regex %}
 
