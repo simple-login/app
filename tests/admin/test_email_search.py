@@ -93,6 +93,38 @@ def test_email_search_user_by_email(flask_client):
     assert b"Account Information" in r.data
 
 
+def test_email_search_shows_users_with_equivalent_email(flask_client):
+    """A user whose email only differs by dots/+tag is surfaced, since it blocks the address."""
+    login_admin(flask_client)
+
+    local = f"eqv{random_token(8).lower()}"
+    other = create_new_user(email=f"{local}@proton.me")
+    Session.commit()
+
+    searched = f"{local[:3]}.{local[3:]}@proton.me"
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": searched, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"Users with an equivalent email" in r.data
+    assert other.email.encode() in r.data
+
+
+def test_email_search_exact_user_not_listed_as_equivalent(flask_client):
+    login_admin(flask_client)
+
+    user = create_new_user(email=f"exact{random_token(8).lower()}@proton.me")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"Users with an equivalent email" not in r.data
+
+
 def test_email_search_user_by_id(flask_client):
     """Test searching for a user by their ID."""
     login_admin(flask_client)

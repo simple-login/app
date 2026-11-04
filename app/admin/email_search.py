@@ -12,6 +12,7 @@ from app.admin.base import CSRFProtectedAdminView
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
+from app.mailbox_email_match import users_matching_email
 from app.models import (
     User,
     AdminAuditLog,
@@ -70,6 +71,9 @@ class EmailSearchResult:
         self.mailbox_count: int = 0
         self.users: List[User] = []
         self.users_found_by_regex: bool = False
+        # Users whose email is not the searched one but delivers to the same
+        # inbox (dots / +tag / equivalent domains). They block email changes.
+        self.equivalent_users: List[User] = []
         self.user_audit_log: Optional[List[UserAuditLog]] = None
         self.abuser_audit_log: Optional[List[AbuserAuditLog]] = None
         self.admin_audit_log: Optional[List[AdminAuditLog]] = None
@@ -185,6 +189,19 @@ class EmailSearchResult:
                 .all()
             )
             output.no_match = False
+
+        # Users with an equivalent email (same inbox, different spelling)
+        if "@" in query:
+            equivalent_users = (
+                users_matching_email(query)
+                .filter(User.id != (user.id if user else None))
+                .order_by(User.id.desc())
+                .limit(10)
+                .all()
+            )
+            if equivalent_users:
+                output.equivalent_users = equivalent_users
+                output.no_match = False
 
         # Search partner users by exact match
         try:
