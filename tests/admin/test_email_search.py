@@ -3,6 +3,7 @@
 import arrow
 from flask import url_for
 
+from app.constants import JobType
 from app.db import Session
 from app.models import (
     User,
@@ -17,6 +18,7 @@ from app.models import (
     AuditLogActionEnum,
     Subscription,
     PlanEnum,
+    Job,
 )
 from app.admin.email_search import EmailSearchHelpers, find_related_users
 from app.proton.proton_partner import get_proton_partner
@@ -1295,3 +1297,74 @@ def test_disable_2fa_missing_user_id(flask_client):
     )
     assert r.status_code == 200
     assert b"Missing user_id" in r.data
+
+
+def _delete_mailbox_setup(flask_client):
+    login_admin(flask_client)
+    user = create_new_user()
+    other = Mailbox.create(
+        user_id=user.id, email=random_token(10) + "@mailbox.lan", verified=True
+    )
+    Session.commit()
+    return user, other
+
+
+def test_delete_mailbox_button_and_modal_displayed(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    r = flask_client.get(
+        url_for("admin.email_search.index", query=other.email, search_type="email")
+    )
+    assert f"deleteMailboxModal{other.id}" in r.get_data(as_text=True)
+
+
+def test_delete_mailbox_requires_matching_confirmation(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    before = Session.query(Job).count()
+    flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": other.id, "confirm_email": "nope@example.com"},
+        follow_redirects=True,
+    )
+    assert Session.query(Job).count() == before
+
+
+def test_delete_mailbox_schedules_job_and_audit_log(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    r = flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": other.id, "confirm_email": other.email},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    job = (
+        Session.query(Job)
+        .filter(Job.name == JobType.DELETE_MAILBOX.value)
+        .order_by(Job.id.desc())
+        .first()
+    )
+    assert job.payload["mailbox_id"] == other.id
+    assert job.payload["transfer_mailbox_id"] == user.default_mailbox_id
+    assert (
+        Session.query(AdminAuditLog)
+        .filter_by(model_id=user.id, action=AuditLogActionEnum.delete_mailbox.value)
+        .count()
+        == 1
+    )
+
+
+def test_delete_default_mailbox_with_aliases_without_other_mailbox_refused(
+    flask_client,
+):
+    login_admin(flask_client)
+    user = create_new_user()
+    Alias.create_new_random(user)
+    Session.commit()
+    default = Mailbox.get(user.default_mailbox_id)
+    before = Session.query(Job).count()
+    flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": default.id, "confirm_email": default.email},
+        follow_redirects=True,
+    )
+    assert Session.query(Job).count() == before
+    assert user.default_mailbox_id == default.id

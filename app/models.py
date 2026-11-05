@@ -249,6 +249,7 @@ class AuditLogActionEnum(EnumE):
     disable_mailbox = 17
     enable_mailbox = 18
     change_default_mailbox = 19
+    delete_mailbox = 20
 
 
 class Phase(EnumE):

@@ -1254,6 +1254,12 @@
                         <i class="fa fa-ban mr-1"></i>Disable
                       </button>
                     {% endif %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger btn-block mt-1"
+                            data-toggle="modal"
+                            data-target="#deleteMailboxModal{{ mailbox.id }}">
+                      <i class="fa fa-trash mr-1"></i>Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -1459,6 +1465,62 @@
                   </div>
                 </div>
               {% endif %}
+              {# Delete Mailbox Modal #}
+                <div class="modal fade"
+                     id="deleteMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="deleteMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-danger">
+                        <h5 class="modal-title" id="deleteMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-trash mr-2"></i>Delete Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.delete_mailbox') }}"
+                            method="POST">
+                        {{ csrf_form.csrf_token }}
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-danger">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            This will delete the mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small">
+                            Its aliases move to the user's default mailbox.
+                            {% if mailbox.user.default_mailbox_id == mailbox.id %}
+                              This is the default mailbox: the oldest other usable mailbox becomes the new default and receives the aliases.
+                            {% endif %}
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="deleteMailboxConfirm{{ mailbox.id }}" class="font-weight-bold">Type the mailbox email to confirm</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="deleteMailboxConfirm{{ mailbox.id }}"
+                                   name="confirm_email"
+                                   required
+                                   autocomplete="off"
+                                   placeholder="{{ mailbox.email }}">
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-danger-modern">
+                            <i class="fa fa-trash mr-1"></i>Delete Mailbox
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
             {% endfor %}
           </tbody>
         </table>
