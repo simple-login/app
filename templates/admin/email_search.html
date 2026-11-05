@@ -3111,6 +3111,55 @@
       {% endif %}
     {% else %}
       <!-- Email Search Results -->
+      {% if data.related_users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-warning">
+            <h5 class="mb-0">
+              <i class="fa fa-link mr-2"></i>
+              {{ data.related_users|length }} Related accounts
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="alert alert-warning m-3">
+              These accounts share an email, a mailbox or a Proton account with the user above. Check their status before concluding that this user has no restriction.
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Related because</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for related_user, reasons in data.related_users %}
+                    <tr>
+                      <td>
+                        <code>{{ related_user.id }}</code>
+                      </td>
+                      <td>
+                        <a href="?query={{ related_user.id }}&search_type=email">{{ related_user.email }}</a>
+                      </td>
+                      <td>
+                        {{ badge_status(not related_user.disabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+                        {% if related_user.delete_on %}<span class="badge badge-danger">Deletion scheduled {{ related_user.delete_on.strftime("%Y-%m-%d") }}</span>{% endif %}
+                      </td>
+                      <td>
+                        <ul class="mb-0 pl-3">
+                          {% for reason in reasons %}<li>{{ reason }}</li>{% endfor %}
+                        </ul>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      {% endif %}
       {% set ns = namespace(seen_user_ids=[]) %}
       {% if data.users %}
 

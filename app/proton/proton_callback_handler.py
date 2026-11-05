@@ -15,6 +15,7 @@ from app.events.auth_event import LoginEvent
 from app.log import LOG
 from app.models import User
 from app.partner_utils import PartnerData
+from app.user_audit_log_utils import emit_login_blocked_audit_log
 from app.proton.proton_client import ProtonClient, ProtonUser
 
 
@@ -65,6 +66,7 @@ class ProtonCallbackHandler:
             if res.user.disabled:
                 LOG.w(f"Disabled user {res.user.id} tried to login with Proton")
                 LoginEvent(LoginEvent.ActionType.disabled_login).send()
+                emit_login_blocked_audit_log(res.user, "account disabled", "proton")
                 return generate_account_disabled()
             if res.user.delete_on is not None:
                 LOG.i(f"Cancelling scheduled deletion of user {res.user.id}")
