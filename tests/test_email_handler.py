@@ -271,6 +271,24 @@ def test_avoid_add_to_header_already_present():
     assert msg[headers.TO] == alias.email
 
 
+@pytest.mark.parametrize(
+    "address, header_values, expected",
+    [
+        ("a@x.com", ["a@x.com"], True),
+        ("a@x.com", ["A@X.COM"], True),
+        ("a@x.com", ['"A@x.com" <A@x.com>'], True),
+        ("a@x.com", ["other@x.com", "a@x.com"], True),
+        ("A@x.com", ["a@x.com"], True),
+        ("a@x.com", ["extra@x.com"], False),
+        ("a@x.com", ['"a@x.com" <other@nowhere.no>'], False),
+        ("a@x.com", [None, ""], False),
+        ("a@x.com", [], False),
+    ],
+)
+def test_address_in_headers(address, header_values, expected):
+    assert email_handler.address_in_headers(address, header_values) is expected
+
+
 def test_avoid_add_to_header_already_present_in_cc():
     msg = EmailMessage()
     create_new_user()
