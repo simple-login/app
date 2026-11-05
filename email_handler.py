@@ -305,6 +305,19 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
+def address_in_headers(address: str, header_values: list[str | None]) -> bool:
+    """
+    Return True if `address` is one of the addresses listed in the given address headers
+    (e.g. To/Cc values). Headers are parsed, so display names and longer addresses
+    containing `address` don't match, and the comparison is case-insensitive.
+    """
+    present = {
+        addr.strip().lower()
+        for _, addr in getaddresses([h for h in header_values if h])
+    }
+    return address.strip().lower() in present
+
+
 @sentry_sdk.trace
 def add_alias_to_header_if_needed(msg, alias):
     """
@@ -316,11 +329,7 @@ def add_alias_to_header_if_needed(msg, alias):
     cc_header = str(msg[headers.CC]) if msg[headers.CC] else None
 
     # nothing to do
-    if to_header and alias.email in to_header:
-        return
-
-    # nothing to do
-    if cc_header and alias.email in cc_header:
+    if address_in_headers(alias.email, [to_header, cc_header]):
         return
 
     LOG.d(f"add {alias} to To: header {to_header}")
