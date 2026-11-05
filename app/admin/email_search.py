@@ -12,7 +12,7 @@ from app.admin.base import CSRFProtectedAdminView
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
-from app.mailbox_email_match import users_matching_email
+from app.mailbox_email_match import users_matching_email, matches_any_email
 from app.models import (
     User,
     AdminAuditLog,
@@ -45,6 +45,67 @@ from app.proton.proton_unlink import perform_proton_account_unlink
 from app.regex_utils import is_safe_regex_pattern
 
 
+RELATED_USERS_LIMIT = 20
+RELATED_USERS_MAILBOX_LIMIT = 20
+
+
+def find_related_users(user: User) -> List[tuple[User, List[str]]]:
+    """Other users sharing an email, a mailbox or a Proton account with `user`.
+
+    Emails considered are the user's email, its mailboxes and its linked Proton
+    emails; equivalent spellings (dots, +tag, equivalent domains) also match.
+    """
+    mailbox_emails = [
+        mailbox.email
+        for mailbox in Mailbox.filter_by(user_id=user.id)
+        .limit(RELATED_USERS_MAILBOX_LIMIT)
+        .all()
+    ]
+    partner_emails = [
+        partner_user.partner_email
+        for partner_user in PartnerUser.filter_by(user_id=user.id).all()
+        if partner_user.partner_email
+    ]
+    emails = list(dict.fromkeys([user.email] + mailbox_emails + partner_emails))
+
+    related: dict[int, tuple[User, List[str]]] = {}
+
+    def add(related_user: User, reason: str):
+        entry = related.setdefault(related_user.id, (related_user, []))
+        if reason not in entry[1]:
+            entry[1].append(reason)
+
+    for other in (
+        User.filter(matches_any_email(User.email, emails), User.id != user.id)
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(other, "Account email is equivalent to an email of this user")
+    for mailbox in (
+        Mailbox.filter(
+            matches_any_email(Mailbox.email, emails), Mailbox.user_id != user.id
+        )
+        .options(joinedload(Mailbox.user))
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(mailbox.user, f"Has mailbox {mailbox.email}")
+    for partner_user in (
+        PartnerUser.filter(
+            matches_any_email(PartnerUser.partner_email, emails),
+            PartnerUser.user_id != user.id,
+        )
+        .options(joinedload(PartnerUser.user))
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(partner_user.user, f"Linked to Proton account {partner_user.partner_email}")
+
+    return sorted(related.values(), key=lambda entry: entry[0].id, reverse=True)[
+        :RELATED_USERS_LIMIT
+    ]
+
+
 class EmailSearchResult:
     SEARCH_TYPE_ALIAS = "alias"
     SEARCH_TYPE_EMAIL = "email"
@@ -74,6 +135,9 @@ class EmailSearchResult:
         # Users whose email is not the searched one but delivers to the same
         # inbox (dots / +tag / equivalent domains). They block email changes.
         self.equivalent_users: List[User] = []
+        # Other accounts tied to the found user by email, mailbox or Proton
+        # account, with the reasons why they are related
+        self.related_users: List[tuple[User, List[str]]] = []
         self.user_audit_log: Optional[List[UserAuditLog]] = None
         self.abuser_audit_log: Optional[List[AbuserAuditLog]] = None
         self.admin_audit_log: Optional[List[AdminAuditLog]] = None
@@ -188,6 +252,7 @@ class EmailSearchResult:
                 .limit(20)
                 .all()
             )
+            output.related_users = find_related_users(user)
             output.no_match = False
 
         # Users with an equivalent email (same inbox, different spelling)
