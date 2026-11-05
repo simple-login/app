@@ -600,6 +600,10 @@ class EmailSearchHelpers:
             14: "clear_delete_on",
             15: "update_subdomain_quota",
             16: "update_directory_quota",
+            17: "disable_mailbox",
+            18: "enable_mailbox",
+            19: "change_default_mailbox",
+            20: "delete_mailbox",
         }
         return action_names.get(action_id, f"unknown_{action_id}")
 
@@ -1422,6 +1426,44 @@ class EmailSearchAdmin(CSRFProtectedAdminView):
                 "admin.email_search.index", query=mailbox.email, search_type="email"
             )
         )
+
+    @expose("/delete_mailbox", methods=["POST"])
+    def delete_mailbox(self):
+        from app.mailbox_utils import MailboxError, admin_delete_mailbox
+
+        try:
+            mailbox_id = int(request.form.get("mailbox_id", ""))
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        back = redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )
+        if request.form.get("confirm_email", "").strip() != mailbox.email:
+            flash("Confirmation email does not match the mailbox email", "error")
+            return back
+
+        email = mailbox.email
+        try:
+            target = admin_delete_mailbox(mailbox, User.get(current_user.id))
+        except MailboxError as e:
+            flash(f"Cannot delete mailbox {email}: {e}", "error")
+            return back
+
+        moved = f"aliases move to {target.email}" if target else "no aliases to move"
+        flash(f"Mailbox {email} scheduled for deletion, {moved}", "success")
+        LOG.warning(
+            f"Admin {current_user.email} scheduled deletion of mailbox {email} (id={mailbox_id}) transfer to {target.id if target else None}"
+        )
+        return back
 
     @expose("/admin_reenable_mailbox", methods=["POST"])
     def admin_reenable_mailbox(self):
