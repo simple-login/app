@@ -9,7 +9,10 @@ from app.account_linking import (
     process_link_case,
     PartnerLinkRequest,
 )
+from app.db import Session
 from app.errors import LinkException
+from app.events.auth_event import LoginEvent
+from app.log import LOG
 from app.models import User
 from app.partner_utils import PartnerData
 from app.proton.proton_client import ProtonClient, ProtonUser
@@ -39,6 +42,16 @@ def generate_account_not_allowed_to_log_in() -> ProtonCallbackResult:
     )
 
 
+def generate_account_disabled() -> ProtonCallbackResult:
+    return ProtonCallbackResult(
+        redirect_to_login=True,
+        flash_message="Your account is disabled. Please contact SimpleLogin team to re-enable your account.",
+        flash_category="error",
+        redirect=None,
+        user=None,
+    )
+
+
 class ProtonCallbackHandler:
     def __init__(self, proton_client: ProtonClient):
         self.proton_client = proton_client
@@ -49,6 +62,14 @@ class ProtonCallbackHandler:
             if user is None:
                 return generate_account_not_allowed_to_log_in()
             res = process_login_case(user, partner)
+            if res.user.disabled:
+                LOG.w(f"Disabled user {res.user.id} tried to login with Proton")
+                LoginEvent(LoginEvent.ActionType.disabled_login).send()
+                return generate_account_disabled()
+            if res.user.delete_on is not None:
+                LOG.i(f"Cancelling scheduled deletion of user {res.user.id}")
+                res.user.delete_on = None
+                Session.commit()
             return ProtonCallbackResult(
                 redirect_to_login=False,
                 flash_message=None,
