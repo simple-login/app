@@ -1,3 +1,4 @@
+import arrow
 from flask import url_for
 
 from app.db import Session
@@ -82,3 +83,20 @@ def test_get_cookie_does_not_inherit_the_sudo_mode_of_the_previous_session(
     r = flask_client.get(url_for("dashboard.delete_account"))
     assert r.status_code == 302
     assert "/dashboard/enter_sudo" in r.location
+
+
+def test_get_cookie_refused_for_user_scheduled_for_deletion(flask_client):
+    user = create_new_user()
+    api_key = ApiKey.create(user_id=user.id, commit=True)
+    token = ApiToCookieToken.create(user_id=user.id, api_key_id=api_key.id, commit=True)
+    token_id = token.id
+    user.delete_on = arrow.now()
+    Session.commit()
+
+    r = flask_client.get(url_for("auth.api_to_cookie", token=token.code))
+
+    assert r.status_code == 302
+    assert "/dashboard" not in r.headers["Location"]
+    assert ApiToCookieToken.get(token_id) is None
+    r = flask_client.get(url_for("dashboard.index"))
+    assert r.status_code == 302

@@ -16,6 +16,7 @@ from time import time
 from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum, Fido
+from app.utils import CSRFValidationForm
 
 
 def _has_valid_admin_time() -> bool:
@@ -92,6 +93,36 @@ class BaseAdminView(BaseView):
         return redirect_destination or redirect(url_for("dashboard.index"))
 
 
+class CSRFProtectedAdminView(BaseAdminView):
+    """Base view for the hand-written admin pages that mutate state.
+
+    Unlike a ``ModelView``, these views act straight on ``request.form``, so
+    nothing checks where the form came from. Every POST must carry a valid
+    Flask-WTF token: the validation form is built inside ``_handle_view``,
+    which flask-admin calls before the view method, so access control still
+    runs first and an unauthorized client never learns that a valid token would
+    have been accepted. The form is request-local by necessity: flask-admin
+    keeps one view instance per app, shared by every request, so storing it on
+    ``self`` would let concurrent requests overwrite each other's token. Views
+    deriving from this must render ``csrf_form`` in every POST form.
+    """
+
+    def _handle_view(self, name, **kwargs):
+        abort = super()._handle_view(name, **kwargs)
+        if abort is not None:
+            return abort
+
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            if not CSRFValidationForm().validate():
+                flash("Invalid request", "warning")
+                return redirect(url_for(f"{self.endpoint}.index"))
+        return None
+
+    def render(self, template, **kwargs):
+        kwargs.setdefault("csrf_form", CSRFValidationForm())
+        return super().render(template, **kwargs)
+
+
 class SLModelView(sqla.ModelView, BaseAdminView):
     column_default_sort = ("id", True)
     column_display_pk = True
@@ -153,6 +184,11 @@ class SLModelView(sqla.ModelView, BaseAdminView):
                     text_filter.append(cast(column, Unicode).ilike(stmt))
                     text_count_filter.append(cast(count_column, Unicode).ilike(stmt))
 
+            if term_as_int is None:
+                extra_filter = self._extra_text_search_filters(term)
+                text_filter.extend(extra_filter)
+                text_count_filter.extend(extra_filter)
+
             # Prefer the integer columns, and only fall back to the text ones
             # if the term produced no integer clause. If the term produced no
             # clause at all - a non-numeric term on a view that only has
@@ -168,6 +204,10 @@ class SLModelView(sqla.ModelView, BaseAdminView):
                 count_query = count_query.filter(or_(*count_filter_stmt))
 
         return query, count_query, joins, count_joins
+
+    def _extra_text_search_filters(self, term: str) -> list:
+        """Conditions on the view model OR-ed with the text column search of `term`."""
+        return []
 
     def on_model_change(self, form, model, is_created):
         changes = {}

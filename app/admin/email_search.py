@@ -8,10 +8,11 @@ from flask_admin import expose
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
-from app.admin.base import BaseAdminView
+from app.admin.base import CSRFProtectedAdminView
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
 from app.log import LOG
+from app.mailbox_email_match import users_matching_email, matches_any_email
 from app.models import (
     User,
     AdminAuditLog,
@@ -34,10 +35,75 @@ from app.models import (
 )
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.alias_delete import delete_alias as perform_alias_delete
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_user_deleted_audit_log,
+    UserAuditLogAction,
+)
 from app.proton.proton_partner import get_proton_partner
 from app.proton.proton_unlink import perform_proton_account_unlink
 from app.regex_utils import is_safe_regex_pattern
+
+
+RELATED_USERS_LIMIT = 20
+RELATED_USERS_MAILBOX_LIMIT = 20
+
+
+def find_related_users(user: User) -> List[tuple[User, List[str]]]:
+    """Other users sharing an email, a mailbox or a Proton account with `user`.
+
+    Emails considered are the user's email, its mailboxes and its linked Proton
+    emails; equivalent spellings (dots, +tag, equivalent domains) also match.
+    """
+    mailbox_emails = [
+        mailbox.email
+        for mailbox in Mailbox.filter_by(user_id=user.id)
+        .limit(RELATED_USERS_MAILBOX_LIMIT)
+        .all()
+    ]
+    partner_emails = [
+        partner_user.partner_email
+        for partner_user in PartnerUser.filter_by(user_id=user.id).all()
+        if partner_user.partner_email
+    ]
+    emails = list(dict.fromkeys([user.email] + mailbox_emails + partner_emails))
+
+    related: dict[int, tuple[User, List[str]]] = {}
+
+    def add(related_user: User, reason: str):
+        entry = related.setdefault(related_user.id, (related_user, []))
+        if reason not in entry[1]:
+            entry[1].append(reason)
+
+    for other in (
+        User.filter(matches_any_email(User.email, emails), User.id != user.id)
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(other, "Account email is equivalent to an email of this user")
+    for mailbox in (
+        Mailbox.filter(
+            matches_any_email(Mailbox.email, emails), Mailbox.user_id != user.id
+        )
+        .options(joinedload(Mailbox.user))
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(mailbox.user, f"Has mailbox {mailbox.email}")
+    for partner_user in (
+        PartnerUser.filter(
+            matches_any_email(PartnerUser.partner_email, emails),
+            PartnerUser.user_id != user.id,
+        )
+        .options(joinedload(PartnerUser.user))
+        .limit(RELATED_USERS_LIMIT)
+        .all()
+    ):
+        add(partner_user.user, f"Linked to Proton account {partner_user.partner_email}")
+
+    return sorted(related.values(), key=lambda entry: entry[0].id, reverse=True)[
+        :RELATED_USERS_LIMIT
+    ]
 
 
 class EmailSearchResult:
@@ -66,6 +132,12 @@ class EmailSearchResult:
         self.mailbox_count: int = 0
         self.users: List[User] = []
         self.users_found_by_regex: bool = False
+        # Users whose email is not the searched one but delivers to the same
+        # inbox (dots / +tag / equivalent domains). They block email changes.
+        self.equivalent_users: List[User] = []
+        # Other accounts tied to the found user by email, mailbox or Proton
+        # account, with the reasons why they are related
+        self.related_users: List[tuple[User, List[str]]] = []
         self.user_audit_log: Optional[List[UserAuditLog]] = None
         self.abuser_audit_log: Optional[List[AbuserAuditLog]] = None
         self.admin_audit_log: Optional[List[AdminAuditLog]] = None
@@ -148,6 +220,7 @@ class EmailSearchResult:
 
         # Search users by exact match (id or email)
         user = None
+        user_id = None
         try:
             user_id = int(query)
             user = User.get(user_id)
@@ -179,7 +252,21 @@ class EmailSearchResult:
                 .limit(20)
                 .all()
             )
+            output.related_users = find_related_users(user)
             output.no_match = False
+
+        # Users with an equivalent email (same inbox, different spelling)
+        if "@" in query:
+            equivalent_users = (
+                users_matching_email(query)
+                .filter(User.id != (user.id if user else None))
+                .order_by(User.id.desc())
+                .limit(10)
+                .all()
+            )
+            if equivalent_users:
+                output.equivalent_users = equivalent_users
+                output.no_match = False
 
         # Search partner users by exact match
         try:
@@ -195,11 +282,14 @@ class EmailSearchResult:
             # Proton partner not configured, skip this search
             pass
 
-        # Check user audit log by user_email if no users found
+        # Check user audit log if no users found (e.g. the user has been deleted)
         if not output.users:
+            if user_id is not None:
+                audit_log_query = UserAuditLog.filter_by(user_id=user_id)
+            else:
+                audit_log_query = UserAuditLog.filter_by(user_email=query)
             user_audit_log = (
-                UserAuditLog.filter_by(user_email=query)
-                .order_by(UserAuditLog.created_at.desc())
+                audit_log_query.order_by(UserAuditLog.created_at.desc())
                 .limit(EmailSearchHelpers.UNPAGINATED_QUERY_LIMIT)
                 .all()
             )
@@ -510,6 +600,10 @@ class EmailSearchHelpers:
             14: "clear_delete_on",
             15: "update_subdomain_quota",
             16: "update_directory_quota",
+            17: "disable_mailbox",
+            18: "enable_mailbox",
+            19: "change_default_mailbox",
+            20: "delete_mailbox",
         }
         return action_names.get(action_id, f"unknown_{action_id}")
 
@@ -693,7 +787,7 @@ class EmailSearchHelpers:
         return None
 
 
-class EmailSearchAdmin(BaseAdminView):
+class EmailSearchAdmin(CSRFProtectedAdminView):
     @expose("/", methods=["GET", "POST"])
     def index(self):
         search = EmailSearchResult()
@@ -1051,6 +1145,7 @@ class EmailSearchAdmin(BaseAdminView):
     def delete_user(self):
         user_id = request.form.get("user_id")
         confirm_email = request.form.get("confirm_email", "").strip()
+        reason = request.form.get("reason", "").strip()
 
         if not user_id:
             flash("Missing user_id", "error")
@@ -1066,6 +1161,10 @@ class EmailSearchAdmin(BaseAdminView):
         if user is None:
             flash("User not found", "error")
             return redirect(url_for("admin.email_search.index", query=user_id))
+
+        if not reason:
+            flash("A reason is required to delete a user", "error")
+            return redirect(url_for("admin.email_search.index", query=user.email))
 
         # Verify email confirmation matches
         if confirm_email != user.email:
@@ -1088,7 +1187,16 @@ class EmailSearchAdmin(BaseAdminView):
             model="User",
             model_id=user.id,
             action=AuditLogActionEnum.delete_object.value,
-            data={"email": user_email, "deleted_by": current_user.email},
+            data={
+                "email": user_email,
+                "deleted_by": current_user.email,
+                "reason": reason,
+            },
+        )
+        emit_user_deleted_audit_log(
+            user=user,
+            deleted_by=f"admin {current_user.id} ({current_user.email})",
+            reason=reason,
         )
         Session.commit()
 
@@ -1318,6 +1426,44 @@ class EmailSearchAdmin(BaseAdminView):
                 "admin.email_search.index", query=mailbox.email, search_type="email"
             )
         )
+
+    @expose("/delete_mailbox", methods=["POST"])
+    def delete_mailbox(self):
+        from app.mailbox_utils import MailboxError, admin_delete_mailbox
+
+        try:
+            mailbox_id = int(request.form.get("mailbox_id", ""))
+        except ValueError:
+            flash("Invalid mailbox_id", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        mailbox = Mailbox.get(mailbox_id)
+        if not mailbox:
+            flash("Mailbox not found", "error")
+            return redirect(url_for("admin.email_search.index"))
+
+        back = redirect(
+            url_for(
+                "admin.email_search.index", query=mailbox.email, search_type="email"
+            )
+        )
+        if request.form.get("confirm_email", "").strip() != mailbox.email:
+            flash("Confirmation email does not match the mailbox email", "error")
+            return back
+
+        email = mailbox.email
+        try:
+            target = admin_delete_mailbox(mailbox, User.get(current_user.id))
+        except MailboxError as e:
+            flash(f"Cannot delete mailbox {email}: {e}", "error")
+            return back
+
+        moved = f"aliases move to {target.email}" if target else "no aliases to move"
+        flash(f"Mailbox {email} scheduled for deletion, {moved}", "success")
+        LOG.warning(
+            f"Admin {current_user.email} scheduled deletion of mailbox {email} (id={mailbox_id}) transfer to {target.id if target else None}"
+        )
+        return back
 
     @expose("/admin_reenable_mailbox", methods=["POST"])
     def admin_reenable_mailbox(self):

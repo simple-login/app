@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% call text() %}
+    name: {{ client_name | e }}
+    <br />
+    created: {{ created_at | e }}
+    <br />
+    user: {{ user_email | e }}
+  {% endcall %}
+
+  {% call text() %}
+    {{ description | e }}
+  {% endcall %}
+
+{% endblock %}

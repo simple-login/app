@@ -2,8 +2,9 @@ import pytest
 
 from app import user_settings
 from app.db import Session
-from app.models import User, CustomDomain, SLDomain
-from tests.utils import random_token, create_new_user
+from app.models import AliasOptions, User, CustomDomain, SLDomain
+from app.proton.proton_partner import get_proton_partner
+from tests.utils import random_token, create_new_user, create_partner_linked_user
 
 user_id: int = 0
 custom_domain_name: str = ""
@@ -143,3 +144,53 @@ def test_set_invalid_custom_domain():
     user = User.get(user_id)
     with pytest.raises(user_settings.CannotSetAlias):
         user_settings.set_default_alias_domain(user, "invalid_nop" + random_token())
+
+
+def _create_partner_domain(premium_only: bool = False) -> SLDomain:
+    return SLDomain.create(
+        domain=random_token() + ".com",
+        premium_only=premium_only,
+        partner_id=get_proton_partner().id,
+        hidden=False,
+        order=5,
+        flush=True,
+    )
+
+
+def test_set_partner_domain_without_alias_options():
+    user, _ = create_partner_linked_user()
+    domain = _create_partner_domain()
+    with pytest.raises(user_settings.CannotSetAlias):
+        user_settings.set_default_alias_domain(user, domain.domain)
+
+
+def test_set_partner_domain_with_alias_options():
+    user, _ = create_partner_linked_user()
+    domain = _create_partner_domain()
+    options = AliasOptions(show_partner_domains=get_proton_partner())
+    user_settings.set_default_alias_domain(user, domain.domain, options)
+    assert user.default_alias_public_domain_id == domain.id
+    assert user.default_alias_custom_domain_id is None
+
+
+def test_set_premium_partner_domain_with_alias_options_non_premium():
+    user, _ = create_partner_linked_user()
+    domain = _create_partner_domain(premium_only=True)
+    options = AliasOptions(
+        show_partner_domains=get_proton_partner(), show_partner_premium=False
+    )
+    with pytest.raises(user_settings.CannotSetAlias):
+        user_settings.set_default_alias_domain(user, domain.domain, options)
+
+
+def test_set_sl_domain_with_alias_options_hiding_sl_domains():
+    user, _ = create_partner_linked_user()
+    domain = SLDomain.get_by(domain=sl_domain_name)
+    domain.hidden = False
+    domain.premium_only = False
+    Session.flush()
+    options = AliasOptions(
+        show_sl_domains=False, show_partner_domains=get_proton_partner()
+    )
+    with pytest.raises(user_settings.CannotSetAlias):
+        user_settings.set_default_alias_domain(user, sl_domain_name, options)

@@ -6,7 +6,10 @@ from app.constants import JobType
 from app.extensions import limiter
 from app.log import LOG
 from app.models import Job, ApiToCookieToken
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_marked_for_deletion_audit_log,
+    USER_REQUESTED_DELETION_REASON,
+)
 
 
 @api_bp.route("/user", methods=["DELETE"])
@@ -17,15 +20,18 @@ def delete_user():
 
     """
     # Schedule delete account job
-    emit_user_audit_log(
-        user=g.user,
-        action=UserAuditLogAction.UserMarkedForDeletion,
-        message=f"Marked user {g.user.id} ({g.user.email}) for deletion from API",
+    source = f"api key {g.api_key.id}" if g.api_key else "api (web session)"
+    emit_user_marked_for_deletion_audit_log(
+        user=g.user, source=source, reason=USER_REQUESTED_DELETION_REASON
     )
     LOG.w("schedule delete account job for %s", g.user)
     Job.create(
         name=JobType.DELETE_ACCOUNT.value,
-        payload={"user_id": g.user.id},
+        payload={
+            "user_id": g.user.id,
+            "source": source,
+            "reason": USER_REQUESTED_DELETION_REASON,
+        },
         run_at=arrow.now(),
         commit=True,
     )

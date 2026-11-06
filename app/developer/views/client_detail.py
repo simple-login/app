@@ -11,7 +11,7 @@ from app import s3
 from app.config import ADMIN_EMAIL
 from app.db import Session
 from app.developer.base import developer_bp
-from app.email_utils import send_email
+from app.email_utils import render, send_email
 from app.image_validation import detect_image_format, ImageFormat
 from app.log import LOG
 from app.models import Client, RedirectUri, File, Referral
@@ -84,17 +84,27 @@ def client_detail(client_id):
         client.description = approval_form.description.data
         Session.commit()
 
+        template_args = dict(
+            client_name=client.name,
+            created_at=str(client.created_at),
+            user_email=current_user.email,
+            description=client.description,
+        )
         send_email(
             ADMIN_EMAIL,
-            subject=f"{client.name} {client.id} submits for approval",
-            plaintext="",
-            html=f"""
-            name: {client.name} <br>
-            created: {client.created_at} <br>
-            user: {current_user.email} <br>
-            <br>
-            {client.description}
-            """,
+            subject=f"{client.name} {client.id} submits for approval".replace(
+                "\n", " "
+            ).replace("\r", " "),
+            plaintext=render(
+                "transactional/admin-client-approval-request.txt.jinja2",
+                user=current_user,
+                **template_args,
+            ),
+            html=render(
+                "transactional/admin-client-approval-request.html",
+                user=current_user,
+                **template_args,
+            ),
         )
 
         flash(

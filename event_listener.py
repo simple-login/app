@@ -4,6 +4,7 @@ from sys import argv, exit
 
 from app.config import EVENT_LISTENER_DB_URI
 from app.log import LOG
+from app.metrics_server import start_metrics_server_from_config
 from app.monitor_utils import send_version_event
 from events import event_debugger
 from events.runner import Runner
@@ -103,6 +104,7 @@ if __name__ == "__main__":
     args = args()
 
     if args.command in [Mode.LISTENER.value, Mode.DEAD_LETTER.value]:
+        start_metrics_server_from_config("event_listener")
         main(
             mode=Mode.from_str(args.command),
             dry_run=args.dry_run,

@@ -1,10 +1,20 @@
+from app.db import Session
 from app.models import (
     CustomDomain,
+    PartnerUser,
     AliasGeneratorEnum,
     SenderFormatEnum,
     AliasSuffixEnum,
 )
-from tests.utils import login, random_domain
+from tests.api.utils import get_new_user_and_api_key
+from tests.utils import (
+    create_partner_linked_user,
+    enter_sudo_mode,
+    exit_sudo_mode,
+    login,
+    random_domain,
+    random_token,
+)
 
 
 def test_get_setting(flask_client):
@@ -135,3 +145,56 @@ def test_update_settings_random_alias_suffix(flask_client):
     )
     assert r.status_code == 200
     assert user.random_alias_suffix == AliasSuffixEnum.random_string.value
+
+
+def _link_proton_account(user):
+    from app.proton.proton_partner import get_proton_partner
+
+    PartnerUser.create(
+        user_id=user.id,
+        partner_id=get_proton_partner().id,
+        external_user_id=random_token(10),
+        flush=True,
+    )
+
+
+def test_unlink_proton_account_requires_sudo(flask_client):
+    user = login(flask_client)
+    _link_proton_account(user)
+    # password login grants sudo; simulate a session whose sudo has expired
+    exit_sudo_mode(flask_client)
+
+    r = flask_client.delete("/api/setting/unlink_proton_account")
+    assert r.status_code == 440
+
+
+def test_unlink_proton_account_with_session_sudo(flask_client):
+    user = login(flask_client)
+    _link_proton_account(user)
+    enter_sudo_mode(flask_client, user)
+
+    r = flask_client.delete("/api/setting/unlink_proton_account")
+    assert r.status_code == 200
+    assert r.json == {"ok": True}
+
+
+def test_unlink_proton_account_with_api_key_no_sudo(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    _link_proton_account(user)
+
+    r = flask_client.delete(
+        "/api/setting/unlink_proton_account",
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 440
+
+
+def test_unlink_proton_account_created_from_partner_cannot_unlink(flask_client):
+    user, _ = create_partner_linked_user()
+    user.flags |= user.FLAG_CREATED_FROM_PARTNER
+    Session.commit()
+    login(flask_client, user)
+    enter_sudo_mode(flask_client, user)
+
+    r = flask_client.delete("/api/setting/unlink_proton_account")
+    assert r.status_code == 400

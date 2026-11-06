@@ -10,6 +10,7 @@ from app.events.auth_event import LoginEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User
+from app.user_audit_log_utils import emit_login_blocked_audit_log
 from app.pw_models import PasswordOracle
 from app.utils import sanitize_email, sanitize_next_url, canonicalize_email
 
@@ -62,12 +63,16 @@ def login():
                 "error",
             )
             LoginEvent(LoginEvent.ActionType.disabled_login).send()
+            emit_login_blocked_audit_log(user, "account disabled", "password")
         elif user.delete_on is not None:
             flash(
                 f"Your account is scheduled to be deleted on {user.delete_on}",
                 "error",
             )
             LoginEvent(LoginEvent.ActionType.scheduled_to_be_deleted).send()
+            emit_login_blocked_audit_log(
+                user, "account scheduled for deletion", "password"
+            )
         elif not user.activated:
             show_resend_activation = True
             flash(

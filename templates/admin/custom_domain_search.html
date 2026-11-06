@@ -435,7 +435,7 @@
 {# User summary card with link to email search #}
 {% macro user_summary_card(user) -%}
   <div class="card mb-3 border-0 shadow-sm">
-    <div class="card-header text-white" class="header-primary">
+    <div class="card-header header-primary">
       <h6 class="mb-0">
         <i class="fa fa-user mr-2"></i>Domain Owner
       </h6>
@@ -995,6 +995,7 @@
           <form action="{{ url_for('admin.custom_domain_search.delete_custom_domain') }}"
                 method="POST"
                 id="deleteDomainForm{{ domain.id }}">
+            {{ csrf_form.csrf_token }}
             <div class="modal-body">
               <input type="hidden" name="domain_id" value="{{ domain.id }}">
               <div class="alert alert-danger">

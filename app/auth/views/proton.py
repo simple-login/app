@@ -26,6 +26,7 @@ from app.proton.proton_callback_handler import (
 )
 from app.proton.proton_client import HttpProtonClient, convert_access_token
 from app.proton.proton_partner import get_proton_partner
+from app.session import SUDO_MODE_SECONDS_VALID, is_session_sudo_mode_active
 from app.utils import sanitize_next_url, sanitize_scheme
 
 _authorization_base_url = PROTON_BASE_URL + "/oauth/authorize"
@@ -37,6 +38,7 @@ _redirect_uri = URL + "/auth/proton/callback"
 
 SESSION_ACTION_KEY = "oauth_action"
 SESSION_STATE_KEY = "oauth_state"
+SESSION_LINK_USER_ID_KEY = "oauth_link_user_id"
 DEFAULT_SCHEME = "auth.simplelogin"
 
 
@@ -81,6 +83,18 @@ def proton_login():
         return redirect(url_for("auth.login"))
     if action == Action.Link and not current_user.is_authenticated:
         return redirect(url_for("auth.login"))
+    if action == Action.Link and not is_session_sudo_mode_active(
+        current_user.id, SUDO_MODE_SECONDS_VALID
+    ):
+        # Linking a Proton account is a sensitive action: it must not be
+        # reachable from a non-sudo session (e.g. one created via api_to_cookie).
+        # Keep action=link in next so that after enter_sudo the user resumes the
+        # link flow and not the login flow (mode/scheme are ignored by Link).
+        return redirect(
+            url_for(
+                "dashboard.enter_sudo", next=url_for("auth.proton_login", action="link")
+            )
+        )
 
     next_url = sanitize_next_url(request.args.get("next"))
     if next_url:
@@ -98,9 +112,10 @@ def proton_login():
         del session["oauth_scheme"]
 
     mode = request.args.get("mode", "session")
-    if mode == "apikey":
+    if mode == "apikey" and action != Action.Link:
         session["oauth_mode"] = "apikey"
     else:
+        # An api key must never be minted from the link flow
         session["oauth_mode"] = "session"
 
     proton = OAuth2Session(PROTON_CLIENT_ID, redirect_uri=_redirect_uri)
@@ -109,6 +124,12 @@ def proton_login():
     # State is used to prevent CSRF, keep this for later.
     session[SESSION_STATE_KEY] = state
     session[SESSION_ACTION_KEY] = action.value
+    if action == Action.Link:
+        # Bind the link to the sudo-authenticated user so that the callback
+        # cannot be used to link an identity to another account's session
+        session[SESSION_LINK_USER_ID_KEY] = current_user.id
+    elif SESSION_LINK_USER_ID_KEY in session:
+        del session[SESSION_LINK_USER_ID_KEY]
     return redirect(authorization_url)
 
 
@@ -174,6 +195,19 @@ def proton_callback():
         res = handler.handle_login(proton_partner)
     elif action == Action.Link:
         LOG.info("Handing link action after login with proton")
+        # The link must be performed by the same user that started it,
+        # verified in sudo mode on /proton/login. Do not re-check sudo here:
+        # a slow Proton login would expire the 120s gap for real users.
+        # Single-use binding: consume it so no failed path leaves it behind.
+        bound_user_id = session.pop(SESSION_LINK_USER_ID_KEY, None)
+        if (
+            not current_user.is_authenticated
+            or bound_user_id is None
+            or bound_user_id != current_user.id
+        ):
+            LOG.w("Proton link callback without matching bound user id")
+            flash("Invalid link request, please retry", "error")
+            return redirect(url_for("auth.login"))
         res = handler.handle_link(current_user, proton_partner)
     else:
         raise Exception(f"Unknown Action: {action.name}")
@@ -186,6 +220,14 @@ def proton_callback():
         return redirect(url_for("auth.login"))
 
     oauth_scheme = session.get("oauth_scheme")
+    if action == Action.Link:
+        # The user is already authenticated and has just proven control of a
+        # different (Proton) identity, not of this account: never grant sudo
+        # nor mint an API key here. Redirect with the result message instead.
+        link_redirect = next_url if next_url and next_url[0] == "/" else res.redirect
+        link_redirect = sanitize_next_url(link_redirect)
+        return redirect(link_redirect or url_for("dashboard.setting"))
+
     if session.get("oauth_mode", "session") == "apikey":
         apikey = get_api_key_for_user(res.user)
         scheme = oauth_scheme or DEFAULT_SCHEME

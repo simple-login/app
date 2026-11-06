@@ -7,6 +7,10 @@ from wtforms import StringField, validators
 
 from app import parallel_limiter
 from app.config import MAX_NB_SUBDOMAIN
+from app.custom_domain_utils import (
+    has_reached_unverified_custom_domains_limit,
+    UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE,
+)
 from app.dashboard.base import dashboard_bp
 from app.errors import SubdomainInTrashError
 from app.log import LOG
@@ -55,6 +59,10 @@ def subdomain_route():
                 flash(
                     f"You can't create more than {MAX_NB_SUBDOMAIN} subdomains", "error"
                 )
+                return redirect(request.url)
+
+            if has_reached_unverified_custom_domains_limit(current_user):
+                flash(UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE, "error")
                 return redirect(request.url)
 
             subdomain = new_subdomain_form.subdomain.data.lower().strip()

@@ -14,6 +14,7 @@ from app import config, constants
 from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.db import Session
 from app.log import LOG
+from app.mailbox_email_match import get_equivalent_domains
 from app.models import User, Alias, Mailbox, AbuserData, AbuserLookup
 
 
@@ -38,16 +39,22 @@ def _derive_key_for_identifier(master_key: bytes, identifier_address: str) -> by
 
 def check_if_abuser_email(new_address: str) -> Optional[AbuserLookup]:
     """
-    Returns AbuserLookup, if the given address (after hashing) is found in abuser_lookup.
+    Returns AbuserLookup, if the given address or an equivalent of it (after hashing)
+    is found in abuser_lookup.
     """
     mac_key_bytes = config.MAC_KEY
-    normalized_address = new_address.lower()
-    check_hmac = hmac.new(
-        mac_key_bytes, normalized_address.encode("utf-8"), sha256
-    ).hexdigest()
+    addresses = dict.fromkeys(
+        [new_address.lower(), *get_equivalent_domains(new_address)]
+    )
+    check_hmacs = [
+        hmac.new(mac_key_bytes, address.encode("utf-8"), sha256).hexdigest()
+        for address in addresses
+    ]
 
     return (
-        AbuserLookup.filter(AbuserLookup.hashed_address == check_hmac).limit(1).first()
+        AbuserLookup.filter(AbuserLookup.hashed_address.in_(check_hmacs))
+        .limit(1)
+        .first()
     )
 
 
@@ -109,11 +116,18 @@ def store_abuse_data(user: User) -> None:
         Session.flush()
 
         blob_id = abuser_data_entry.id
-        all_identifiers_raw = (
-            [primary_email]
-            + [a.email for a in aliases if a.email]
-            + [m.email for m in mailboxes if m.email]
-        )
+        all_identifiers_raw = [
+            identifier
+            for raw_identifier in (
+                [primary_email]
+                + [a.email for a in aliases if a.email]
+                + [m.email for m in mailboxes if m.email]
+            )
+            for identifier in (
+                raw_identifier,
+                *get_equivalent_domains(raw_identifier),
+            )
+        ]
         seen_normalized_identifiers = set()
         mac_key_bytes = config.MAC_KEY
         master_key_bytes = config.MASTER_ENC_KEY

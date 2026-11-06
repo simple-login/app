@@ -5,6 +5,7 @@ from email_validator import validate_email, EmailNotValidError
 
 from app import s3
 from app.db import Session
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import (
     Alias,
     AliasMailbox,
@@ -89,6 +90,12 @@ def import_from_csv(batch_import: BatchImport, user: User, lines: list[str]):
                 mailbox = Mailbox.get_by(email=mailbox_email)
 
                 if not mailbox or not mailbox.verified or mailbox.user_id != user.id:
+                    LOG.d("mailbox %s can't be used %s", mailbox, user)
+                    continue
+
+                try:
+                    ensure_mailbox_assignable(mailbox)
+                except MailboxError:
                     LOG.d("mailbox %s can't be used %s", mailbox, user)
                     continue
 

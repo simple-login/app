@@ -1,10 +1,15 @@
+import arrow
 from random import random
 
 from flask import url_for
 
 from app.constants import JobType
 from app.db import Session
-from app.models import Job, ApiToCookieToken
+from app.models import Job, ApiToCookieToken, UserAuditLog
+from app.user_audit_log_utils import (
+    UserAuditLogAction,
+    USER_REQUESTED_DELETION_REASON,
+)
 from tests.api.utils import get_new_user_and_api_key
 from tests.utils import login
 
@@ -50,7 +55,18 @@ def test_delete_with_sudo(flask_client):
     assert len(jobs) == 1
     job = jobs[0]
     assert job.name == JobType.DELETE_ACCOUNT.value
-    assert job.payload == {"user_id": user.id}
+    source = f"api key {api_key.id}"
+    assert job.payload == {
+        "user_id": user.id,
+        "source": source,
+        "reason": USER_REQUESTED_DELETION_REASON,
+    }
+    audit_log = UserAuditLog.get_by(
+        user_id=user.id, action=UserAuditLogAction.UserMarkedForDeletion.value
+    )
+    assert audit_log is not None
+    assert f"Source: {source}" in audit_log.message
+    assert f"Reason: {USER_REQUESTED_DELETION_REASON}" in audit_log.message
 
 
 def test_delete_with_another_user_session_sudo(flask_client):
@@ -85,3 +101,15 @@ def test_get_cookie_token(flask_client):
     token = ApiToCookieToken.get_by(code=code)
     assert token is not None
     assert token.user_id == user.id
+
+
+def test_cookie_token_refused_for_user_scheduled_for_deletion(flask_client):
+    user, api_key = get_new_user_and_api_key()
+    user.delete_on = arrow.now().shift(days=-1)
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("api.get_api_session_token"),
+        headers={"Authentication": api_key.code},
+    )
+    assert r.status_code == 401

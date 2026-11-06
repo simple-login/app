@@ -1,7 +1,6 @@
 import arrow
-import newrelic.agent
 
-from app import config, rate_limiter
+from app import config, metrics, rate_limiter
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.config import ALIAS_TRASH_DAYS
 from app.db import Session
@@ -184,8 +183,8 @@ def restore_alias(user: User, alias_id: int) -> None | Alias:
 
     check_user_can_restore_num_aliases(user, 1)
     __perform_alias_restore(user, alias)
-    newrelic.agent.record_custom_event("RestoreAlias", {"mode": "single"})
-    newrelic.agent.record_custom_metric("AliasRestored", 1)
+    metrics.record_event("RestoreAlias", {"mode": "single"})
+    metrics.record_metric("AliasRestored", 1)
     return alias
 
 
@@ -206,8 +205,8 @@ def restore_all_alias(user: User) -> int:
     for alias in query.all():
         __perform_alias_restore(user, alias)
         count += 1
-    newrelic.agent.record_custom_event("RestoreAlias", {"mode": "bulk"})
-    newrelic.agent.record_custom_metric("AliasRestored", count)
+    metrics.record_event("RestoreAlias", {"mode": "bulk"})
+    metrics.record_metric("AliasRestored", count)
     LOG.i(f"Untrashed {count} alias by user {user}")
     return count
 
@@ -224,6 +223,6 @@ def clear_trash(user: User) -> int:
     for alias in alias_query.all():
         count = count + 1
         delete_alias(alias, user, reason=alias.delete_reason, commit=False)
-    newrelic.agent.record_custom_event("ClearAliasTrash", {})
+    metrics.record_event("ClearAliasTrash", {})
     Session.commit()
     return count

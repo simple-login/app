@@ -8,6 +8,7 @@ from typing import Optional, Tuple
 
 import arrow
 from aiosmtpd.smtp import Envelope
+import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 
 from app import config, s3
@@ -25,11 +26,16 @@ from app.email_utils import (
 )
 from app.email_validation import is_valid_email
 from app.log import LOG
+from app.mailbox_email_match import (  # noqa: F401
+    is_email_admin_disabled,
+    mailboxes_matching_email,
+)
 from app.message_utils import message_to_bytes
 from app.models import (
     User,
     Mailbox,
     Job,
+    JobState,
     MailboxActivation,
     Alias,
     AliasMailbox,
@@ -114,6 +120,13 @@ def create_mailbox(
     return output
 
 
+def ensure_mailbox_assignable(mailbox: Mailbox) -> None:
+    """Single guard for attaching a mailbox to an alias, directory or as a transfer target."""
+    if mailbox.is_admin_disabled():
+        LOG.i(f"Mailbox {mailbox.id} is admin-disabled and cannot be assigned")
+        raise MailboxError("Invalid mailbox")
+
+
 def check_email_for_mailbox(email, user):
     if not is_valid_email(email):
         LOG.i(
@@ -173,6 +186,8 @@ def delete_mailbox(
             LOG.i(f"User {user} has tried to transfer to a non verified mailbox")
             raise MailboxError("Your new mailbox is not verified")
 
+        ensure_mailbox_assignable(transfer_mailbox)
+
     # Schedule delete mailbox job
     LOG.i(
         f"User {user} has scheduled delete mailbox job for {mailbox.id} with transfer to mailbox {transfer_mailbox_id}"
@@ -209,6 +224,11 @@ def verify_mailbox_code(user: User, mailbox_id: int, code: str) -> Mailbox:
     if mailbox.user_id != user.id:
         LOG.i(
             f"User {user} failed to verify mailbox {mailbox_id} because it's owned by another user"
+        )
+        raise MailboxError("Invalid mailbox")
+    if mailbox.is_admin_disabled():
+        LOG.i(
+            f"User {user} failed to verify mailbox {mailbox_id} because it's admin-disabled"
         )
         raise MailboxError("Invalid mailbox")
     if mailbox.verified and not mailbox.new_email:
@@ -427,6 +447,14 @@ def perform_mailbox_email_change(mailbox_id: int) -> MailboxEmailChangeResult:
     mailbox: Optional[Mailbox] = Mailbox.get(mailbox_id)
 
     # new_email can be None if user cancels change in the meantime
+    if mailbox and mailbox.is_admin_disabled():
+        LOG.i(f"Cannot change email of admin-disabled mailbox {mailbox_id}")
+        return MailboxEmailChangeResult(
+            error=MailboxEmailChangeError.InvalidId,
+            message="Invalid link",
+            message_category="error",
+        )
+
     if mailbox and mailbox.new_email:
         user = mailbox.user
         if Mailbox.get_by(email=mailbox.new_email, user_id=user.id):
@@ -545,13 +573,138 @@ def count_mailbox_aliases(mailbox: Mailbox) -> int:
     return len(alias_ids)
 
 
+def _reset_default_mailbox_if_needed(disabled_mailbox: Mailbox) -> None:
+    """Move the user's default mailbox off a newly disabled mailbox.
+
+    If the user has no other usable mailbox the default is left untouched: the
+    user then has no way to receive mail, which is what the ban intends.
+    """
+    user = disabled_mailbox.user
+    if user.default_mailbox_id != disabled_mailbox.id:
+        return
+    replacement = _find_replacement_default(user, {disabled_mailbox.id})
+    if replacement:
+        user.default_mailbox_id = replacement.id
+        return
+    LOG.w(f"User {user} has no usable mailbox to replace disabled default mailbox")
+
+
+def _find_replacement_default(user: User, excluded_ids: set[int]) -> Optional[Mailbox]:
+    """Oldest verified mailbox of the user that is not disabled nor excluded."""
+    for candidate in (
+        Mailbox.filter_by(user_id=user.id, verified=True, disabled=False)
+        .order_by(Mailbox.id.asc())
+        .all()
+    ):
+        if candidate.id not in excluded_ids and not candidate.is_admin_disabled():
+            return candidate
+    return None
+
+
+def _pending_mailbox_deletions(user: User) -> Tuple[set[int], set[int]]:
+    """Return (mailbox ids awaiting deletion, ids of their transfer targets)."""
+    mailbox_ids = [m.id for m in Mailbox.filter_by(user_id=user.id).all()]
+    jobs = Session.query(Job).filter(
+        Job.name == JobType.DELETE_MAILBOX.value,
+        Job.state.in_([JobState.ready.value, JobState.taken.value]),
+        Job.payload.op("->")("mailbox_id")
+        .cast(sqlalchemy.TEXT)
+        .in_([str(i) for i in mailbox_ids]),
+    )
+    pending: set[int] = set()
+    targets: set[int] = set()
+    for job in jobs:
+        pending.add(job.payload["mailbox_id"])
+        if job.payload.get("transfer_mailbox_id"):
+            targets.add(job.payload["transfer_mailbox_id"])
+    return pending, targets
+
+
+def admin_delete_mailbox(mailbox: Mailbox, admin_user: User) -> Optional[Mailbox]:
+    """Queue the deletion of a mailbox, moving its aliases to the default mailbox.
+
+    If the mailbox is the default, the oldest usable mailbox becomes the default
+    first. Mailboxes already awaiting deletion are never chosen as the target.
+    Returns the mailbox receiving the aliases, or None when the default mailbox
+    has no alias and no other usable mailbox exists (the user is left without
+    a default mailbox).
+    """
+    user = mailbox.user
+    pending, targets = _pending_mailbox_deletions(user)
+    if mailbox.id in pending:
+        raise MailboxError("Mailbox is already scheduled for deletion")
+    if mailbox.id in targets:
+        raise MailboxError(
+            "Mailbox is the transfer target of a pending deletion, retry once it completes"
+        )
+
+    old_default_id = user.default_mailbox_id
+    default_changes = mailbox.id == old_default_id
+    if default_changes:
+        target = _find_replacement_default(user, {mailbox.id} | pending)
+        if not target and mailbox.aliases:
+            raise MailboxError("No other usable mailbox to become the default")
+    else:
+        target = user.default_mailbox
+        if target is None:
+            if mailbox.aliases:
+                raise MailboxError("User has no default mailbox to receive the aliases")
+        elif target.id in pending:
+            raise MailboxError("Default mailbox is scheduled for deletion")
+    if target:
+        if not target.verified:
+            raise MailboxError("Your new mailbox is not verified")
+        ensure_mailbox_assignable(target)
+    target_id = target.id if target else None
+
+    if default_changes:
+        user.default_mailbox_id = target_id
+        emit_user_audit_log(
+            user=user,
+            action=UserAuditLogAction.UpdateMailbox,
+            message=f"Admin changed default mailbox from {mailbox.id} to {target_id} before deleting {mailbox.id}",
+        )
+        AdminAuditLog.create(
+            admin_user_id=admin_user.id,
+            model=Mailbox.__class__.__name__,
+            model_id=user.id,
+            action=AuditLogActionEnum.change_default_mailbox.value,
+            data={
+                "default_mailbox_id": target_id,
+                "old_default_mailbox_id": old_default_id,
+                "message": f"Changed default mailbox from {mailbox.email} (id={old_default_id}) to {target.email if target else None} (id={target_id}) before deleting it",
+            },
+        )
+    AdminAuditLog.create(
+        admin_user_id=admin_user.id,
+        model=Mailbox.__class__.__name__,
+        model_id=user.id,
+        action=AuditLogActionEnum.delete_mailbox.value,
+        data={
+            "mailbox_id": mailbox.id,
+            "email": mailbox.email,
+            "transfer_mailbox_id": target_id,
+        },
+    )
+    try:
+        delete_mailbox(user, mailbox.id, target_id, send_mail=False)
+    except MailboxError:
+        Session.rollback()
+        raise
+    return target
+
+
 def admin_disable_mailbox(
     mailbox: Mailbox, admin_user: Optional[User] = None, note: Optional[str] = None
 ) -> int:
     """Admin-disable a mailbox. User cannot re-enable."""
     disabled = 0
-    for mb in Mailbox.filter_by(email=mailbox.email).all():
+    for mb in mailboxes_matching_email(mailbox.email).all():
         mb.flags = mb.flags | Mailbox.FLAG_ADMIN_DISABLED
+        # a pending email change would move the ban to the new address
+        mb.new_email = None
+        MailboxActivation.filter_by(mailbox_id=mb.id).delete()
+        _reset_default_mailbox_if_needed(mb)
         message = f"Mailbox {mb.id} ({mb.email}) admin_disabled"
         if note:
             message += f". Note: {note}"
@@ -584,7 +737,7 @@ def admin_reenable_mailbox(
 ) -> int:
     """Re-enable an admin-disabled mailbox."""
     enabled = 0
-    for mb in Mailbox.filter_by(email=mailbox.email).all():
+    for mb in mailboxes_matching_email(mailbox.email).all():
         mb.flags = mb.flags & ~Mailbox.FLAG_ADMIN_DISABLED
         message = f"Mailbox {mb.id} ({mb.email}) admin_reenabled"
         if note:
