@@ -1,5 +1,7 @@
 from enum import Enum
 
+import arrow
+
 from app.models import User, UserAuditLog
 
 
@@ -39,6 +41,8 @@ class UserAuditLogAction(Enum):
     UserMarkedForDeletion = "user_marked_for_deletion"
     DeleteUser = "delete_user"
 
+    LoginBlocked = "login_blocked"
+
 
 USER_REQUESTED_DELETION_REASON = "Account deletion requested by the user"
 
@@ -68,4 +72,30 @@ def emit_user_deleted_audit_log(user: User, deleted_by: str, reason: str):
         user=user,
         action=UserAuditLogAction.DeleteUser,
         message=f"User {user.id} ({user.email}) deleted. Deleted by: {deleted_by}. Reason: {reason}",
+    )
+
+
+LOGIN_BLOCKED_THROTTLE_HOURS = 24
+
+
+def emit_login_blocked_audit_log(user: User, reason: str, source: str):
+    """Records a blocked login attempt, at most once per day for the same user, reason and source"""
+    message = f"Login blocked: {reason}. Source: {source}"
+    already_recorded = (
+        UserAuditLog.filter(
+            UserAuditLog.user_id == user.id,
+            UserAuditLog.action == UserAuditLogAction.LoginBlocked.value,
+            UserAuditLog.message == message,
+            UserAuditLog.created_at
+            > arrow.utcnow().shift(hours=-LOGIN_BLOCKED_THROTTLE_HOURS),
+        ).first()
+        is not None
+    )
+    if already_recorded:
+        return
+    emit_user_audit_log(
+        user=user,
+        action=UserAuditLogAction.LoginBlocked,
+        message=message,
+        commit=True,
     )

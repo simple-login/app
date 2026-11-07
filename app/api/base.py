@@ -35,6 +35,10 @@ def authorize_request() -> Optional[Tuple[str, int]]:
 
         g.user = api_key.user
 
+    # Session user without the allow-cookies header: no user was resolved
+    if not hasattr(g, "user"):
+        return jsonify(error="Wrong api key"), 401
+
     if g.user.disabled:
         return jsonify(error="Disabled account"), 403
 

@@ -1,5 +1,4 @@
-import newrelic.agent
-
+from app import metrics
 from app.models import EnumE
 
 
@@ -20,7 +19,7 @@ class LoginEvent:
         self.source = source
 
     def send(self):
-        newrelic.agent.record_custom_event(
+        metrics.record_event(
             "LoginEvent", {"action": self.action.name, "source": self.source.name}
         )
 
@@ -42,6 +41,6 @@ class RegisterEvent:
         self.source = source
 
     def send(self):
-        newrelic.agent.record_custom_event(
+        metrics.record_event(
             "RegisterEvent", {"action": self.action.name, "source": self.source.name}
         )

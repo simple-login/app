@@ -100,3 +100,18 @@ def test_exists_s3_reraises_other_client_errors(mock_s3_client):
     )
     with pytest.raises(botocore.exceptions.ClientError):
         s3.exists("denied/key")
+
+
+def test_download_from_s3_local(local_upload):
+    (local_upload / "mail.eml").write_bytes(b"hello")
+    assert s3.download_from_s3("mail.eml") == b"hello"
+
+
+def test_download_from_s3_remote_reads_body(mock_s3_client):
+    mock_s3_client.get_object.return_value = {"Body": BytesIO(b"hello")}
+    assert s3.download_from_s3("mail.eml") == b"hello"
+
+
+def test_download_from_s3_remote_without_body(mock_s3_client):
+    mock_s3_client.get_object.return_value = {}
+    assert s3.download_from_s3("mail.eml") is None

@@ -46,7 +46,6 @@ from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
 from typing import List, Tuple, Optional, Set
 
-import newrelic.agent
 import sentry_sdk
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import Envelope, SMTP
@@ -56,7 +55,7 @@ from flanker.addresslib.address import EmailAddress
 from sl_pgp import PgpContext
 from sqlalchemy.exc import IntegrityError
 
-from app import pgp_utils, s3, config, contact_utils
+from app import pgp_utils, s3, config, contact_utils, metrics
 from app.alias_utils import (
     try_auto_create,
     change_alias_status,
@@ -67,6 +66,13 @@ from app.email import status, headers
 from app.email.checks import check_recipient_limit
 from app.email.rate_limit import rate_limited
 from app.email.spam import get_spam_score
+from app.email_probe import (
+    HEALTH_OK,
+    READY_FAIL,
+    READY_OK,
+    ReadinessChecker,
+    database_check,
+)
 from app.email_utils import (
     send_email,
     add_dkim_signature,
@@ -128,6 +134,7 @@ from app.handler.unsubscribe_generator import UnsubscribeGenerator
 from app.handler.unsubscribe_handler import UnsubscribeHandler
 from app.log import LOG, set_message_id
 from app.sender_blacklist import is_sender_blocked_for_user
+from app.metrics_server import start_metrics_server_from_config
 from app.mail_sender import sl_sendmail
 from app.mailbox_utils import (
     get_mailbox_for_reply_phase,
@@ -328,6 +335,19 @@ def replace_header_when_forward(msg: Message, alias: Alias, header: str):
         delete_header(msg, header)
 
 
+def address_in_headers(address: str, header_values: list[str | None]) -> bool:
+    """
+    Return True if `address` is one of the addresses listed in the given address headers
+    (e.g. To/Cc values). Headers are parsed, so display names and longer addresses
+    containing `address` don't match, and the comparison is case-insensitive.
+    """
+    present = {
+        addr.strip().lower()
+        for _, addr in getaddresses([h for h in header_values if h])
+    }
+    return address.strip().lower() in present
+
+
 @sentry_sdk.trace
 def add_alias_to_header_if_needed(msg, alias):
     """
@@ -339,11 +359,7 @@ def add_alias_to_header_if_needed(msg, alias):
     cc_header = str(msg[headers.CC]) if msg[headers.CC] else None
 
     # nothing to do
-    if to_header and alias.email in to_header:
-        return
-
-    # nothing to do
-    if cc_header and alias.email in cc_header:
+    if address_in_headers(alias.email, [to_header, cc_header]):
         return
 
     LOG.d(f"add {alias} to To: header {to_header}")
@@ -1268,9 +1284,7 @@ def handle_reply(
                 contact_query.count(),
                 elapsed,
             )
-            newrelic.agent.record_custom_metric(
-                "Custom/reverse_alias_replacement_time", elapsed
-            )
+            metrics.record_metric("Custom/reverse_alias_replacement_time", elapsed)
 
     # create PGP email if needed
     if contact.pgp_finger_print and user.is_premium():
@@ -2406,6 +2420,23 @@ def handle_out_of_office_forward_phase(email_log, envelope, msg, rcpt_tos):
 
 
 class MailHandler:
+    def __init__(self, readiness: Optional[ReadinessChecker] = None) -> None:
+        self._readiness = readiness or ReadinessChecker(database_check)
+        self._health_address = config.EMAIL_HANDLER_HEALTH_ADDRESS.lower()
+        self._ready_address = config.EMAIL_HANDLER_READY_ADDRESS.lower()
+
+    async def handle_RCPT(
+        self, server, session, envelope: Envelope, address: str, rcpt_options
+    ) -> str:
+        # Probe addresses answer immediately and are never added to rcpt_tos
+        probe = address.lower()
+        if probe == self._health_address:
+            return HEALTH_OK
+        if probe == self._ready_address:
+            return READY_OK if await self._readiness.is_ready() else READY_FAIL
+        envelope.rcpt_tos.append(address)
+        return "250 OK"
+
     async def handle_DATA(self, server, session, envelope: Envelope):
         msg = email.message_from_bytes(envelope.original_content)
         try:
@@ -2451,7 +2482,7 @@ class MailHandler:
             )
             return status.E404
 
-    @newrelic.agent.background_task()
+    @metrics.background_task
     def _handle(self, envelope: Envelope, msg: Message):
         start = time.time()
 
@@ -2465,9 +2496,7 @@ class MailHandler:
             envelope.mail_from,
             envelope.rcpt_tos,
         )
-        newrelic.agent.record_custom_metric(
-            "Custom/nb_rcpt_tos", len(envelope.rcpt_tos)
-        )
+        metrics.record_metric("Custom/nb_rcpt_tos", len(envelope.rcpt_tos))
 
         send_version_event("email_handler")
         with create_light_app().app_context():
@@ -2495,10 +2524,8 @@ class MailHandler:
                 )
 
                 SpamdResult.send_to_new_relic(msg)
-                newrelic.agent.record_custom_metric(
-                    "Custom/email_handler_time", elapsed
-                )
-                newrelic.agent.record_custom_metric("Custom/number_incoming_email", 1)
+                metrics.record_metric("Custom/email_handler_time", elapsed)
+                metrics.record_metric("Custom/number_incoming_email", 1)
                 return return_status
 
 
@@ -2533,5 +2560,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    start_metrics_server_from_config("email_handler")
     LOG.i("Listen for port %s", args.port)
     main(port=args.port)

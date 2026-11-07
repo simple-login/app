@@ -96,10 +96,19 @@ def account_setting():
                 new_email = canonicalize_email(change_email_form.email.data)
                 if new_email != current_user.email and not pending_email:
                     # check if this email is not already used
-                    if personal_email_already_used(new_email) or Alias.get_by(
-                        email=new_email
-                    ):
-                        flash(f"Email {new_email} already used", "error")
+                    if personal_email_already_used(new_email):
+                        flash(
+                            f"Email {new_email} already used: it belongs to, or is "
+                            "equivalent to the address of (ignoring dots and +tags), "
+                            "another SimpleLogin account",
+                            "error",
+                        )
+                        new_email_valid = False
+                    elif Alias.get_by(email=new_email):
+                        flash(
+                            f"Email {new_email} already used as a SimpleLogin alias",
+                            "error",
+                        )
                         new_email_valid = False
                     elif not email_can_be_used_as_mailbox(new_email):
                         flash(

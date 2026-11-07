@@ -1,11 +1,11 @@
 from datetime import datetime, UTC
 from typing import Optional
 
-import newrelic.agent
 import redis.exceptions
 import werkzeug.exceptions
 from limits.storage import RedisStorage
 
+from app import metrics
 from app.log import LOG
 
 lock_redis: Optional[RedisStorage] = None
@@ -42,9 +42,14 @@ def check_bucket_limit(
             LOG.i(
                 f"Rate limit hit for {lock_name} (bucket id {bucket_id}) -> {value}/{max_hits}"
             )
-            newrelic.agent.record_custom_event(
+            metrics.record_event(
                 "BucketRateLimit",
-                {"lock_name": lock_name, "bucket_seconds": bucket_seconds},
+                # Keys look like "alias_create_7:<user id>": keep the limit name
+                # only, a per user value would create one metric series per user.
+                {
+                    "lock_name": (lock_name or "").split(":", 1)[0],
+                    "bucket_seconds": bucket_seconds,
+                },
             )
             raise werkzeug.exceptions.TooManyRequests()
     except (redis.exceptions.RedisError, AttributeError):

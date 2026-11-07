@@ -79,6 +79,11 @@ def _matches_email(column, email: str):
     return or_(*conditions)
 
 
+def matches_any_email(column, emails):
+    """Condition matching `column` against any of `emails` or their variants."""
+    return or_(*[_matches_email(column, email) for email in emails])
+
+
 def mailboxes_matching_email(email: str):
     """Query of all mailboxes whose address is `email` or a variant of it that
     delivers to the same inbox."""

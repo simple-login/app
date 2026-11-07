@@ -16,6 +16,7 @@ from time import time
 from app import config
 from app import models
 from app.models import AdminAuditLog, AuditLogActionEnum, Fido
+from app.utils import CSRFValidationForm
 
 
 def _has_valid_admin_time() -> bool:
@@ -90,6 +91,36 @@ class BaseAdminView(BaseView):
     def inaccessible_callback(self, name, **kwargs):
         redirect_destination = _redirect_if_user_is_not_allowed()
         return redirect_destination or redirect(url_for("dashboard.index"))
+
+
+class CSRFProtectedAdminView(BaseAdminView):
+    """Base view for the hand-written admin pages that mutate state.
+
+    Unlike a ``ModelView``, these views act straight on ``request.form``, so
+    nothing checks where the form came from. Every POST must carry a valid
+    Flask-WTF token: the validation form is built inside ``_handle_view``,
+    which flask-admin calls before the view method, so access control still
+    runs first and an unauthorized client never learns that a valid token would
+    have been accepted. The form is request-local by necessity: flask-admin
+    keeps one view instance per app, shared by every request, so storing it on
+    ``self`` would let concurrent requests overwrite each other's token. Views
+    deriving from this must render ``csrf_form`` in every POST form.
+    """
+
+    def _handle_view(self, name, **kwargs):
+        abort = super()._handle_view(name, **kwargs)
+        if abort is not None:
+            return abort
+
+        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            if not CSRFValidationForm().validate():
+                flash("Invalid request", "warning")
+                return redirect(url_for(f"{self.endpoint}.index"))
+        return None
+
+    def render(self, template, **kwargs):
+        kwargs.setdefault("csrf_form", CSRFValidationForm())
+        return super().render(template, **kwargs)
 
 
 class SLModelView(sqla.ModelView, BaseAdminView):

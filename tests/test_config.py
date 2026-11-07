@@ -30,3 +30,30 @@ def test_sl_getenv(monkeypatch):
 
     with pytest.raises(TypeError):
         sl_getenv("SL_KEY_3")
+
+
+def _reload_with_env(monkeypatch, value):
+    monkeypatch.setenv("METRICS_BACKENDS", value)
+    reloaded = importlib.reload(config)
+    # reload re-executes in the same module namespace, so read the value before
+    # reverting the environment.
+    backends = reloaded.METRICS_BACKENDS
+    monkeypatch.delenv("METRICS_BACKENDS", raising=False)
+    importlib.reload(config)
+    return backends
+
+
+def test_metrics_backends_defaults_to_newrelic(monkeypatch):
+    monkeypatch.delenv("METRICS_BACKENDS", raising=False)
+    assert config.METRICS_BACKENDS == ["newrelic"]
+
+
+def test_metrics_backends_parses_a_comma_separated_list(monkeypatch):
+    assert _reload_with_env(monkeypatch, "newrelic, prometheus") == [
+        "newrelic",
+        "prometheus",
+    ]
+
+
+def test_metrics_backends_can_be_empty_to_disable_metrics(monkeypatch):
+    assert _reload_with_env(monkeypatch, "") == []

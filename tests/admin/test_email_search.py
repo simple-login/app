@@ -3,6 +3,7 @@
 import arrow
 from flask import url_for
 
+from app.constants import JobType
 from app.db import Session
 from app.models import (
     User,
@@ -17,8 +18,9 @@ from app.models import (
     AuditLogActionEnum,
     Subscription,
     PlanEnum,
+    Job,
 )
-from app.admin.email_search import EmailSearchHelpers
+from app.admin.email_search import EmailSearchHelpers, find_related_users
 from app.proton.proton_partner import get_proton_partner
 from tests.utils import create_new_user, random_token
 
@@ -91,6 +93,91 @@ def test_email_search_user_by_email(flask_client):
     assert r.status_code == 200
     assert test_user.email.encode() in r.data
     assert b"Account Information" in r.data
+
+
+def test_email_search_shows_users_with_equivalent_email(flask_client):
+    """A user whose email only differs by dots/+tag is surfaced, since it blocks the address."""
+    login_admin(flask_client)
+
+    local = f"eqv{random_token(8).lower()}"
+    other = create_new_user(email=f"{local}@proton.me")
+    Session.commit()
+
+    searched = f"{local[:3]}.{local[3:]}@proton.me"
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": searched, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"Users with an equivalent email" in r.data
+    assert other.email.encode() in r.data
+
+
+def test_email_search_exact_user_not_listed_as_equivalent(flask_client):
+    login_admin(flask_client)
+
+    user = create_new_user(email=f"exact{random_token(8).lower()}@proton.me")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": user.email, "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"Users with an equivalent email" not in r.data
+
+
+def test_email_search_shows_related_accounts(flask_client):
+    """A sibling account linked through a mailbox email and a Proton link is surfaced with its status."""
+    login_admin(flask_client)
+
+    local = f"rel{random_token(8).lower()}"
+    main = create_new_user(email=f"{local}5@proton.me")
+    sibling = create_new_user(email=f"{local}ceo@proton.me")
+    sibling.disabled = True
+    PartnerUser.create(
+        user_id=sibling.id,
+        partner_id=get_proton_partner().id,
+        external_user_id=random_token(10),
+        partner_email=f"{local}.ceo@proton.me",
+    )
+    Mailbox.create(
+        user_id=main.id,
+        email=f"{local}.ceo@proton.me",
+        verified=True,
+        commit=True,
+    )
+    unrelated = create_new_user(email=f"unrelated{random_token(8).lower()}@proton.me")
+    Session.commit()
+
+    r = flask_client.get(
+        url_for("admin.email_search.index"),
+        query_string={"query": str(main.id), "search_type": "email"},
+    )
+    assert r.status_code == 200
+    assert b"Related accounts" in r.data
+    assert r.data.index(b"Related accounts") < r.data.index(b"Account Information")
+    assert sibling.email.encode() in r.data
+    assert b"Disabled" in r.data
+    assert unrelated.email.encode() not in r.data
+
+
+def test_find_related_users_reasons():
+    local = f"fr{random_token(8).lower()}"
+    main = create_new_user(email=f"{local}a@proton.me")
+    sibling = create_new_user(email=f"{local}b@proton.me")
+    Mailbox.create(
+        user_id=sibling.id, email=f"{local}.a@proton.me", verified=True, commit=True
+    )
+
+    related = find_related_users(main)
+
+    assert [user.id for user, _ in related] == [sibling.id]
+    assert related[0][1] == [f"Has mailbox {local}.a@proton.me"]
+
+
+def test_find_related_users_none():
+    assert find_related_users(create_new_user()) == []
 
 
 def test_email_search_user_by_id(flask_client):
@@ -1210,3 +1297,74 @@ def test_disable_2fa_missing_user_id(flask_client):
     )
     assert r.status_code == 200
     assert b"Missing user_id" in r.data
+
+
+def _delete_mailbox_setup(flask_client):
+    login_admin(flask_client)
+    user = create_new_user()
+    other = Mailbox.create(
+        user_id=user.id, email=random_token(10) + "@mailbox.lan", verified=True
+    )
+    Session.commit()
+    return user, other
+
+
+def test_delete_mailbox_button_and_modal_displayed(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    r = flask_client.get(
+        url_for("admin.email_search.index", query=other.email, search_type="email")
+    )
+    assert f"deleteMailboxModal{other.id}" in r.get_data(as_text=True)
+
+
+def test_delete_mailbox_requires_matching_confirmation(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    before = Session.query(Job).count()
+    flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": other.id, "confirm_email": "nope@example.com"},
+        follow_redirects=True,
+    )
+    assert Session.query(Job).count() == before
+
+
+def test_delete_mailbox_schedules_job_and_audit_log(flask_client):
+    user, other = _delete_mailbox_setup(flask_client)
+    r = flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": other.id, "confirm_email": other.email},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200
+    job = (
+        Session.query(Job)
+        .filter(Job.name == JobType.DELETE_MAILBOX.value)
+        .order_by(Job.id.desc())
+        .first()
+    )
+    assert job.payload["mailbox_id"] == other.id
+    assert job.payload["transfer_mailbox_id"] == user.default_mailbox_id
+    assert (
+        Session.query(AdminAuditLog)
+        .filter_by(model_id=user.id, action=AuditLogActionEnum.delete_mailbox.value)
+        .count()
+        == 1
+    )
+
+
+def test_delete_default_mailbox_with_aliases_without_other_mailbox_refused(
+    flask_client,
+):
+    login_admin(flask_client)
+    user = create_new_user()
+    Alias.create_new_random(user)
+    Session.commit()
+    default = Mailbox.get(user.default_mailbox_id)
+    before = Session.query(Job).count()
+    flask_client.post(
+        url_for("admin.email_search.delete_mailbox"),
+        data={"mailbox_id": default.id, "confirm_email": default.email},
+        follow_redirects=True,
+    )
+    assert Session.query(Job).count() == before
+    assert user.default_mailbox_id == default.id

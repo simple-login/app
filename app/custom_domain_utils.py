@@ -14,6 +14,8 @@ from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 _ALLOWED_DOMAIN_REGEX = re.compile(r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")
 _MAX_MAILBOXES_PER_DOMAIN = 20
+MAX_UNVERIFIED_CUSTOM_DOMAINS = 5
+UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE = f"You can't have more than {MAX_UNVERIFIED_CUSTOM_DOMAINS} domains pending verification. Verify or delete one first"
 
 
 @dataclass
@@ -89,10 +91,18 @@ def sanitize_domain(domain: str) -> str:
     return new_domain
 
 
+def _is_sl_domain_or_subdomain(domain: str) -> bool:
+    # Subdomains of SL domains must go through the quota-enforced subdomain flow
+    return any(
+        domain == sl_domain.domain or domain.endswith("." + sl_domain.domain)
+        for sl_domain in SLDomain.all()
+    )
+
+
 def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReason]:
     if not is_valid_domain(domain):
         return CannotUseDomainReason.InvalidDomain
-    elif SLDomain.get_by(domain=domain):
+    elif _is_sl_domain_or_subdomain(domain):
         return CannotUseDomainReason.BuiltinDomain
     elif CustomDomain.get_by(domain=domain):
         return CannotUseDomainReason.DomainAlreadyUsed
@@ -104,6 +114,13 @@ def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReaso
         return CannotUseDomainReason.DomainUserInMailbox
     else:
         return None
+
+
+def has_reached_unverified_custom_domains_limit(user: User) -> bool:
+    return (
+        CustomDomain.filter_by(user_id=user.id, ownership_verified=False).count()
+        >= MAX_UNVERIFIED_CUSTOM_DOMAINS
+    )
 
 
 def create_custom_domain(
@@ -122,17 +139,32 @@ def create_custom_domain(
             message=domain_forbidden_cause.message(new_domain), message_category="error"
         )
 
+    # new domain has ownership verified if its parent has the ownership verified
+    verified_root_cd = next(
+        (
+            root_cd
+            for root_cd in user.custom_domains
+            if new_domain.endswith("." + root_cd.domain)
+            and root_cd.ownership_verified
+            and not root_cd.is_sl_subdomain
+        ),
+        None,
+    )
+
+    if verified_root_cd is None and has_reached_unverified_custom_domains_limit(user):
+        return CreateCustomDomainResult(
+            message=UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE, message_category="error"
+        )
+
     new_custom_domain = CustomDomain.create(domain=new_domain, user_id=user.id)
 
-    # new domain has ownership verified if its parent has the ownership verified
-    for root_cd in user.custom_domains:
-        if new_domain.endswith("." + root_cd.domain) and root_cd.ownership_verified:
-            LOG.i(
-                "%s ownership verified thanks to %s",
-                new_custom_domain,
-                root_cd,
-            )
-            new_custom_domain.ownership_verified = True
+    if verified_root_cd is not None:
+        LOG.i(
+            "%s ownership verified thanks to %s",
+            new_custom_domain,
+            verified_root_cd,
+        )
+        new_custom_domain.ownership_verified = True
 
     # Add the partner_id in case it's passed
     if partner_id is not None:

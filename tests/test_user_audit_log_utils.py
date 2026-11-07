@@ -1,7 +1,11 @@
 from typing import List
 
 from app import config, mailbox_utils
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_login_blocked_audit_log,
+    UserAuditLogAction,
+)
 from app.models import UserAuditLog
 from app.utils import random_string
 from tests.utils import create_new_user, random_email
@@ -55,3 +59,19 @@ def test_emit_audit_log_on_mailbox_creation():
         logs_for_user[0].message
         == f"Create mailbox {output.mailbox.id} ({output.mailbox.email}). Verified=True"
     )
+
+
+def test_emit_login_blocked_audit_log_is_throttled():
+    user = create_new_user()
+
+    emit_login_blocked_audit_log(user, "account disabled", "proton")
+    emit_login_blocked_audit_log(user, "account disabled", "proton")
+    emit_login_blocked_audit_log(user, "account disabled", "password")
+
+    logs = UserAuditLog.filter_by(
+        user_id=user.id, action=UserAuditLogAction.LoginBlocked.value
+    ).all()
+    assert sorted(log.message for log in logs) == [
+        "Login blocked: account disabled. Source: password",
+        "Login blocked: account disabled. Source: proton",
+    ]
