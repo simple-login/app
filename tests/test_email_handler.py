@@ -54,7 +54,7 @@ def test_global_sender_blacklist_blocks(flask_client):
     alias = Alias.create_new_random(user)
 
     # Block all senders from spam.test
-    ForbiddenEnvelopeSender.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+    ForbiddenEnvelopeSender.create(pattern=r".*@spam\.test", enabled=True, commit=True)
 
     msg = EmailMessage()
     msg[headers.FROM] = "Bad Guy <bad@spam.test>"
@@ -95,7 +95,7 @@ def test_global_sender_blacklist_not_applied_when_contact_exists(flask_client):
     assert contact is not None
 
     # Now enable a global blacklist that would match this sender.
-    ForbiddenEnvelopeSender.create(pattern=r"@spam\\.test$", enabled=True, commit=True)
+    ForbiddenEnvelopeSender.create(pattern=r".*@spam\.test", enabled=True, commit=True)
 
     msg = EmailMessage()
     msg[headers.FROM] = "Bad Guy <bad@spam.test>"
