@@ -262,7 +262,7 @@
             <div class="mb-3">
               Automatically block new Contacts (and therefore forwarding) when the sender matches a blacklist pattern.
               <br />
-              Patterns are regular expressions (regex) and are checked with a <code>fullmatch()</code>-style match against the full sender address.
+              Patterns are regular expressions (regex) and are searched for anywhere in the sender address; use <code>^</code> and <code>$</code> to anchor them.
               <br />
               Examples: <code>@(spam|junk)-?domain\.com$</code>, <code>^no-?reply@.*</code>
             </div>

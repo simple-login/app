@@ -5,7 +5,7 @@ from cachetools import TTLCache, cached
 from app.db import Session
 from app.log import LOG
 from app.models import ForbiddenEnvelopeSender
-from app.regex_utils import regex_match
+from app.regex_utils import regex_search
 
 
 # Cache enabled patterns to avoid a DB query per inbound email.
@@ -73,8 +73,10 @@ def is_sender_blocked_for_user(user_id: int | None, candidates: list[str]) -> bo
 
         for pattern in patterns:
             try:
-                # Full-string match to avoid false positives (partial hits).
-                if regex_match(pattern, candidate):
+                # Search semantics (like re.search): patterns anchor themselves
+                # with ^/$ where needed, e.g. "@domain\.com$". The admin and
+                # user help texts document exactly this style.
+                if regex_search(pattern, candidate):
                     return True
             except Exception:
                 # Never crash the SMTP handler because of a bad regex.
