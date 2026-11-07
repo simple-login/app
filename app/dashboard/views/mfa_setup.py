@@ -8,7 +8,7 @@ from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
 from app.log import LOG
-from app.models import RecoveryCode
+from app.models import MfaBrowser, RecoveryCode
 from app.user_settings import regenerate_user_alternative_id
 
 
@@ -40,6 +40,8 @@ def mfa_setup():
             current_user.enable_otp = True
             current_user.last_otp = token
             regenerate_user_alternative_id(current_user)
+            # Revoke all trusted browser sessions to prevent MFA bypass
+            MfaBrowser.filter_by(user_id=current_user.id).delete()
             Session.commit()
             flash("MFA has been activated", "success")
             recovery_codes = RecoveryCode.generate(current_user)

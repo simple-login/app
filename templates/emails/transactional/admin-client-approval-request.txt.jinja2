@@ -1,0 +1,9 @@
+{% extends "base.txt.jinja2" %}
+
+{% block content %}
+name: {{ client_name }}
+created: {{ created_at }}
+user: {{ user_email }}
+
+{{ description }}
+{% endblock %}

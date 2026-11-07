@@ -78,10 +78,7 @@ def register():
         elif check_if_abuser_email(email):
             flash("The email address provided is banned from registration.", "error")
         else:
-            sanitized_email = sanitize_email(form.email.data)
-            if personal_email_already_used(email) or personal_email_already_used(
-                sanitized_email
-            ):
+            if personal_email_already_used(sanitize_email(form.email.data)):
                 flash(f"Email {email} already used", "error")
                 RegisterEvent(RegisterEvent.ActionType.email_in_use).send()
             else:

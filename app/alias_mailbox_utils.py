@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
 from app.db import Session
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import Alias, AliasMailbox, Mailbox
 
 _MAX_MAILBOXES_PER_ALIAS = 20
@@ -43,9 +44,11 @@ def set_mailboxes_for_alias(
         return CannotSetMailboxesForAliasCause.Forbidden
 
     # Check for admin-disabled mailboxes
-    for mailbox in mailboxes:
-        if mailbox.is_admin_disabled():
-            return CannotSetMailboxesForAliasCause.Forbidden
+    try:
+        for mailbox in mailboxes:
+            ensure_mailbox_assignable(mailbox)
+    except MailboxError:
+        return CannotSetMailboxesForAliasCause.Forbidden
 
     # first remove all existing alias-mailboxes links
     AliasMailbox.filter_by(alias_id=alias.id).delete()

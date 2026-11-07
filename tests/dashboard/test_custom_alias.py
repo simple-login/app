@@ -1,6 +1,7 @@
 from random import random
 
 from flask import url_for
+from sqlalchemy import func
 
 from app import config
 from app.alias_delete import delete_alias
@@ -225,13 +226,17 @@ def test_available_suffixes_domain_order(flask_client):
     user = login(flask_client)
 
     domain = random_domain()
-    # will be the last domain as other domains have order=0
-    sl_domain = SLDomain.create(domain=domain, order=1, commit=True)
+    # SLDomain rows committed by other tests can outlive their test, so derive
+    # the orders from the existing rows instead of assuming they are all 0.
+    max_order = Session.query(func.max(SLDomain.order)).scalar() or 0
+    min_order = Session.query(func.min(SLDomain.order)).scalar() or 0
+    # will be the last domain as it has the highest order
+    sl_domain = SLDomain.create(domain=domain, order=max_order + 1, commit=True)
     last_suffix_info = get_alias_suffixes(user)[-1]
     assert last_suffix_info.suffix.endswith(domain)
 
     # now will be the first domain
-    sl_domain.order = -1
+    sl_domain.order = min_order - 1
     Session.commit()
     first_suffix_info = get_alias_suffixes(user)[0]
     assert first_suffix_info.suffix.endswith(domain)

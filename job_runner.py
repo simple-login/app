@@ -1,19 +1,18 @@
 """
 Run scheduled jobs.
-Not meant for running job at precise time (+- 1h)
+A job runs once its run_at has passed, on the runner's next poll (never before run_at).
 """
 
 from typing import List, Optional
 
 import arrow
-import newrelic.agent
 import time
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
 
-from app import config
+from app import config, metrics
 from app.constants import JobType
 from app.db import Session
 from app.email_utils import (
@@ -25,12 +24,19 @@ from app.import_utils import handle_batch_import
 from app.jobs.event_jobs import send_alias_creation_events_for_user
 from app.jobs.export_user_data_job import ExportUserDataJob
 from app.jobs.mark_abuser_job import MarkAbuserJob
+from app.jobs.send_unsent_email_job import SendUnsentEmailJob
 from app.jobs.send_event_job import SendEventToWebhookJob
 from app.jobs.sync_subscription_job import SyncSubscriptionJob
 from app.log import LOG
+from app.metrics_server import start_metrics_server_from_config
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import User, Job, BatchImport, Mailbox, JobState
 from app.monitor_utils import send_version_event
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_user_deleted_audit_log,
+    UserAuditLogAction,
+)
 from events.event_sink import HttpEventSink
 from server import create_light_app
 from tasks.delete_custom_domain_job import DeleteCustomDomainJob
@@ -162,6 +168,13 @@ def delete_mailbox_job(job: Job):
     if transfer_mailbox_id:
         transfer_mailbox = Mailbox.get(transfer_mailbox_id)
         if transfer_mailbox:
+            try:
+                ensure_mailbox_assignable(transfer_mailbox)
+            except MailboxError:
+                LOG.w(
+                    f"Not deleting mailbox {mailbox.id}: transfer mailbox {transfer_mailbox.id} cannot be assigned"
+                )
+                return
             alias_transferred_to = transfer_mailbox.email
 
             for alias in mailbox.aliases:
@@ -268,6 +281,12 @@ def process_job(job: Job):
             render("transactional/account-delete.html", user=user),
             retries=3,
         )
+        source = job.payload.get("source", "unknown")
+        emit_user_deleted_audit_log(
+            user=user,
+            deleted_by=f"delete-account job (marked for deletion from {source})",
+            reason=job.payload.get("reason", "unknown"),
+        )
         User.delete(user.id)
         Session.commit()
     elif job.name == JobType.DELETE_MAILBOX.value:
@@ -308,6 +327,10 @@ def process_job(job: Job):
         mark_abuser_job = MarkAbuserJob.create_from_job(job)
         if mark_abuser_job:
             mark_abuser_job.run()
+    elif job.name == JobType.SEND_UNSENT_EMAIL.value:
+        unsent_email_job = SendUnsentEmailJob.create_from_job(job)
+        if unsent_email_job:
+            unsent_email_job.run()
     else:
         LOG.e("Unknown job name %s", job.name)
 
@@ -315,8 +338,8 @@ def process_job(job: Job):
 def get_jobs_to_run_query(taken_before_time: arrow.Arrow) -> Query:
     # Get jobs that match all conditions:
     #  - Job.state == ready OR (Job.state == taken AND Job.taken_at < now - 30 mins AND Job.attempts < 5)
-    #  - Job.run_at is Null OR Job.run_at < now + 10 mins
-    run_at_earliest = arrow.now().shift(minutes=+10)
+    #  - Job.run_at is Null OR Job.run_at <= now
+    run_at_earliest = arrow.now()
     return Job.filter(
         and_(
             or_(
@@ -368,7 +391,7 @@ def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
     return res.rowcount > 0
 
 
-@newrelic.agent.background_task()
+@metrics.background_task
 def execute():
     # wrap in an app context to benefit from app setup like database cleanup, sentry integration, etc
     with create_light_app().app_context():
@@ -381,7 +404,7 @@ def execute():
             LOG.d("Take job %s", job)
 
             try:
-                newrelic.agent.record_custom_event("ProcessJob", {"job": job.name})
+                metrics.record_event("ProcessJob", {"job": job.name})
                 process_job(job)
                 job_result = "success"
 
@@ -403,7 +426,7 @@ def execute():
                 else:
                     job_result = "retry"
 
-            newrelic.agent.record_custom_event(
+            metrics.record_event(
                 "JobProcessed", {"job": job.name, "result": job_result}
             )
             Session.commit()
@@ -413,6 +436,7 @@ def execute():
 
 
 if __name__ == "__main__":
+    start_metrics_server_from_config("job_runner")
     send_version_event("job_runner")
     while True:
         try:

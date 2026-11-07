@@ -7,6 +7,10 @@ from wtforms import StringField, validators
 
 from app import parallel_limiter
 from app.config import MAX_NB_SUBDOMAIN
+from app.custom_domain_utils import (
+    has_reached_unverified_custom_domains_limit,
+    UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE,
+)
 from app.dashboard.base import dashboard_bp
 from app.errors import SubdomainInTrashError
 from app.log import LOG
@@ -57,6 +61,10 @@ def subdomain_route():
                 )
                 return redirect(request.url)
 
+            if has_reached_unverified_custom_domains_limit(current_user):
+                flash(UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE, "error")
+                return redirect(request.url)
+
             subdomain = new_subdomain_form.subdomain.data.lower().strip()
             domain = new_subdomain_form.domain.data.lower().strip()
 
@@ -93,7 +101,7 @@ def subdomain_route():
                 try:
                     new_custom_domain = CustomDomain.create(
                         is_sl_subdomain=True,
-                        catch_all=True,  # by default catch-all is enabled
+                        catch_all=False,  # by default catch-all is disabled
                         domain=full_domain,
                         user_id=current_user.id,
                         verified=True,

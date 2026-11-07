@@ -8,13 +8,15 @@ from app.account_linking import (
     SLPlanType,
 )
 from app.constants import JobType
-from app.models import User, PartnerUser, Job, JobState
+from app.models import User, PartnerUser, Job, JobState, UserAuditLog
 from app.proton.proton_callback_handler import (
     ProtonCallbackHandler,
     generate_account_not_allowed_to_log_in,
+    generate_account_disabled,
 )
 from app.proton.proton_client import ProtonClient, UserInformation
 from app.proton.proton_partner import get_proton_partner
+from app.user_audit_log_utils import UserAuditLogAction
 from app.utils import random_string
 from tests.utils import random_email
 
@@ -146,6 +148,63 @@ def test_proton_callback_handler_linked_sl_user():
     assert sa is not None
     assert sa.partner_email == user.email
     check_initial_sync_job(res.user, False)
+
+
+def test_proton_callback_handler_linked_disabled_sl_user():
+    email = random_email()
+    external_id = random_string()
+    sl_user = User.create(email, commit=True)
+    sl_user.disabled = True
+    PartnerUser.create(
+        user_id=sl_user.id,
+        partner_id=get_proton_partner().id,
+        external_user_id=external_id,
+        partner_email=email,
+        commit=True,
+    )
+
+    user = UserInformation(
+        email=email,
+        name=random_string(),
+        id=external_id,
+        plan=SLPlan(type=SLPlanType.Premium, expiration=Arrow.utcnow().shift(hours=2)),
+    )
+    handler = ProtonCallbackHandler(MockProtonClient(user=user))
+    res = handler.handle_login(get_proton_partner())
+
+    assert res == generate_account_disabled()
+    logs = UserAuditLog.filter_by(
+        user_id=sl_user.id, action=UserAuditLogAction.LoginBlocked.value
+    ).all()
+    assert len(logs) == 1
+
+
+def test_proton_callback_handler_linked_user_scheduled_for_deletion():
+    email = random_email()
+    external_id = random_string()
+    sl_user = User.create(email, commit=True)
+    sl_user.delete_on = Arrow.utcnow().shift(days=1)
+    PartnerUser.create(
+        user_id=sl_user.id,
+        partner_id=get_proton_partner().id,
+        external_user_id=external_id,
+        partner_email=email,
+        commit=True,
+    )
+
+    user = UserInformation(
+        email=email,
+        name=random_string(),
+        id=external_id,
+        plan=SLPlan(type=SLPlanType.Premium, expiration=Arrow.utcnow().shift(hours=2)),
+    )
+    handler = ProtonCallbackHandler(MockProtonClient(user=user))
+    res = handler.handle_login(get_proton_partner())
+
+    assert res.user is not None
+    assert res.user.id == sl_user.id
+    assert res.user.delete_on is None
+    assert User.get(sl_user.id).delete_on is None
 
 
 def test_proton_callback_handler_none_user_login():

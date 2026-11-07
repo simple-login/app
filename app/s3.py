@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import Optional
 
 import boto3
+import botocore.exceptions
 import requests
 
 from app import config
@@ -66,7 +67,7 @@ def upload_email_from_bytesio(path: str, bs: BytesIO, filename):
         )
 
 
-def download_email(path: str) -> Optional[str]:
+def download_from_s3(path: str) -> Optional[bytes]:
     if config.LOCAL_FILE_UPLOAD:
         file_path = os.path.join(config.UPLOAD_DIR, path)
         with open(file_path, "rb") as f:
@@ -77,12 +78,57 @@ def download_email(path: str) -> Optional[str]:
     )
     if not resp or "Body" not in resp:
         return None
-    return resp["Body"].read
+    return resp["Body"].read()
 
 
 def upload_from_url(url: str, upload_path):
     r = requests.get(url)
     upload_from_bytesio(upload_path, BytesIO(r.content))
+
+
+def exists(key: str) -> bool:
+    if config.LOCAL_FILE_UPLOAD:
+        file_path = os.path.join(config.UPLOAD_DIR, key)
+        return os.path.exists(file_path)
+
+    try:
+        _get_s3client().head_object(Bucket=config.BUCKET, Key=key)
+        return True
+    except botocore.exceptions.ClientError as e:
+        error_code = str(e.response.get("Error", {}).get("Code", ""))
+        status_code = str(
+            e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", "")
+        )
+        if error_code in ("NoSuchKey", "NotFound", "404") or status_code == "404":
+            return False
+        raise
+
+
+def upload_raw(
+    key: str,
+    bs: BytesIO,
+    content_type: Optional[str] = None,
+    content_disposition: Optional[str] = None,
+):
+    bs.seek(0)
+
+    if config.LOCAL_FILE_UPLOAD:
+        file_path = os.path.join(config.UPLOAD_DIR, key)
+        file_dir = os.path.dirname(file_path)
+        os.makedirs(file_dir, exist_ok=True)
+        with open(file_path, "wb") as f:
+            f.write(bs.read())
+    else:
+        args = {
+            "Bucket": config.BUCKET,
+            "Key": key,
+            "Body": bs,
+        }
+        if content_type is not None:
+            args["ContentType"] = content_type
+        if content_disposition is not None:
+            args["ContentDisposition"] = content_disposition
+        _get_s3client().put_object(**args)
 
 
 def get_url(key: str, expires_in=3600) -> str:

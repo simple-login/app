@@ -17,6 +17,7 @@ from app.abuser_utils import (
 )
 from app.db import Session
 from app.models import AbuserLookup, AbuserData, Alias, Mailbox, User
+from app.utils import canonicalize_email
 from tests.utils import random_email, create_new_user
 
 MOCK_MASTER_ENC_KEY = secrets.token_bytes(32)
@@ -564,3 +565,33 @@ def test_archive_and_fetch_flow_end_to_end(flask_client, monkeypatch):
         mb["address"] == current_mailbox_email_normalized
         for mb in data.get("mailboxes", [])
     )
+
+
+def test_check_if_abuser_email_matches_equivalent_addresses():
+    local = f"abuser{secrets.token_hex(6)}"
+    AbuserLookup.create(
+        hashed_address=calculate_hmac(f"{local}@gmail.com"),
+        abuser_data_id=AbuserData.create(
+            user_id=create_new_user().id, encrypted_bundle=b"bundle", flush=True
+        ).id,
+        bundle_k=b"key",
+        flush=True,
+    )
+
+    assert check_if_abuser_email(f"{local}+x@googlemail.com") is not None
+    assert check_if_abuser_email(f"{local[:3]}.{local[3:]}@gmail.com") is not None
+    assert check_if_abuser_email(f"{local}@proton.me") is None
+
+
+def test_store_abuse_data_matches_equivalents_of_stored_addresses():
+    local = f"abuser{secrets.token_hex(6)}"
+    user = create_new_user()
+    Mailbox.create(
+        user_id=user.id, email=f"{local[:1]}.{local[1:]}@gmail.com", flush=True
+    )
+
+    store_abuse_data(user)
+
+    assert check_if_abuser_email(canonicalize_email(f"{local}@gmail.com")) is not None
+    assert check_if_abuser_email(f"{local}+x@googlemail.com") is not None
+    assert get_abuser_bundles_for_address(f"{local}@googlemail.com", user.id)

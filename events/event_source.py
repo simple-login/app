@@ -1,10 +1,10 @@
 import arrow
-import newrelic.agent
 import psycopg2
 import select
 
 from abc import ABC, abstractmethod
 
+from app import metrics
 from app.db import Session
 from app.log import LOG
 from app.models import SyncEvent
@@ -94,15 +94,13 @@ class DeadLetterEventSource(EventSource):
         )
         if events:
             LOG.info(f"Got {len(events)} dead letter events")
-            newrelic.agent.record_custom_metric(
-                "Custom/dead_letter_events_to_process", len(events)
-            )
+            metrics.record_metric("Custom/dead_letter_events_to_process", len(events))
             for event in events:
                 if event.mark_as_taken(allow_taken_older_than=threshold):
                     on_event(event)
         return events
 
-    @newrelic.agent.background_task()
+    @metrics.background_task
     def run(self, on_event: Callable[[SyncEvent], NoReturn]):
         while True:
             try:

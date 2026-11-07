@@ -1,10 +1,17 @@
 from typing import List, Optional
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, parse_qsl
 
 import pytest
+from werkzeug.datastructures import MultiDict
 
 from app.config import ALLOWED_REDIRECT_DOMAINS
-from app.utils import random_string, random_words, sanitize_next_url, canonicalize_email
+from app.utils import (
+    random_string,
+    random_words,
+    redact_query_args,
+    sanitize_next_url,
+    canonicalize_email,
+)
 
 
 def test_random_words():
@@ -77,3 +84,18 @@ def canonicalize_email_cases():
 @pytest.mark.parametrize("dirty,clean", canonicalize_email_cases())
 def test_canonicalize_email(dirty: str, clean: str):
     assert canonicalize_email(dirty) == clean
+
+
+@pytest.mark.parametrize(
+    "query,expected",
+    [
+        ("a=b", {"a": ["b"]}),
+        ("access_token=secret", {"access_token": ["[redacted]"]}),
+        ("Access_Token=secret", {"Access_Token": ["[redacted]"]}),
+        ("code=secret&state=xyz", {"code": ["[redacted]"], "state": ["xyz"]}),
+        ("token=a&token=b", {"token": ["[redacted]", "[redacted]"]}),
+        ("", {}),
+    ],
+)
+def test_redact_query_args(query: str, expected: dict):
+    assert redact_query_args(MultiDict(parse_qsl(query))) == expected

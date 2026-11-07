@@ -21,6 +21,7 @@ from app.config import (
 from app.dashboard.base import dashboard_bp
 from app.db import Session
 from app.errors import DirectoryInTrashError
+from app.mailbox_utils import MailboxError, ensure_mailbox_assignable
 from app.models import Directory, Mailbox, DirectoryMailbox
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -149,6 +150,15 @@ def directory():
                     or not mailbox.verified
                 ):
                     flash("Something went wrong, please retry", "warning")
+                    return redirect(url_for("dashboard.directory"))
+                # defense in depth: form choices already exclude disabled mailboxes
+                try:
+                    ensure_mailbox_assignable(mailbox)
+                except MailboxError:
+                    flash(
+                        "Cannot assign admin-disabled mailbox. Please contact support.",
+                        "error",
+                    )
                     return redirect(url_for("dashboard.directory"))
                 mailboxes.append(mailbox)
 

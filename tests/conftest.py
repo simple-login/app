@@ -10,7 +10,13 @@ os.environ["CONFIG"] = os.path.abspath(
 )
 import sqlalchemy
 
-from app.db import Session, engine, connection
+from app.db import Session, engine
+
+# Tests share one connection so flask_client can wrap each test in an outer
+# transaction and roll back everything it committed.
+connection = engine.connect()
+Session.configure(bind=connection)
+
 from app.rate_limiter import set_rate_limit_enabled
 
 from psycopg2 import errors

@@ -1,3 +1,8 @@
+import html
+import re
+
+from markupsafe import escape
+
 from flask import url_for
 
 from app import config
@@ -6,7 +11,7 @@ from app.models import (
     Alias,
     Mailbox,
 )
-from tests.utils import fix_rate_limit_after_request, login
+from tests.utils import fix_rate_limit_after_request, login, random_token
 
 
 def test_create_random_alias_success(flask_client):
@@ -20,6 +25,35 @@ def test_create_random_alias_success(flask_client):
     )
     assert r.status_code == 200
     assert Alias.filter(Alias.user_id == user.id).count() == 2
+
+
+def test_alias_email_is_never_injected_into_an_event_handler(flask_client):
+    """
+    An alias local part can be chosen by an outsider (directory / catch-all
+    auto-creation) and RFC 5322 atext allows ' and `. Interpolating alias.email
+    into an inline on*= handler is exploitable even with Jinja autoescape,
+    because the HTML parser entity-decodes attribute values *before* the
+    handler body is parsed as JS. Assert the email never reaches a JS context.
+    """
+    user = login(flask_client)
+
+    marker = f"alert`{random_token()}`"
+    alias = Alias.create_new_random(user)
+    # a valid address as far as email-validator is concerned
+    alias.email = f"poc+x'-{marker}-'@{config.EMAIL_DOMAIN}"
+    Session.commit()
+
+    r = flask_client.get(url_for("dashboard.index"))
+    assert r.status_code == 200
+    body = r.data.decode()
+
+    # the alias is rendered on the page, as escaped data
+    assert f'data-alias-email="{escape(alias.email)}"' in body
+
+    # ...and its local part appears in no inline event handler, even after the
+    # entity decoding the browser applies to attribute values
+    for handler_body in re.findall(r'\son\w+="([^"]*)"', body):
+        assert marker not in html.unescape(handler_body)
 
 
 def test_too_many_requests(flask_client):

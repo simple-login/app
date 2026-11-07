@@ -57,7 +57,11 @@ from app.models import (
 )
 from app.pgp_utils import load_public_key_and_check, PGPException, create_pgp_context
 from app.proton.proton_partner import get_proton_partner
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_user_deleted_audit_log,
+    UserAuditLogAction,
+)
 from app.utils import sanitize_email
 from server import create_light_app
 from tasks.check_custom_domains import check_all_custom_domains
@@ -153,6 +157,11 @@ def delete_refused_emails():
     LOG.d("Finish delete_refused_emails")
 
 
+def _has_active_partner_subscription(user: User) -> bool:
+    partner_sub = PartnerSubscription.find_by_user_id(user.id)
+    return partner_sub is not None and partner_sub.is_active()
+
+
 def notify_premium_end():
     """sent to user who has canceled their subscription and who has their subscription ending soon"""
     for sub in Subscription.filter_by(cancelled=True).all():
@@ -164,6 +173,10 @@ def notify_premium_end():
             user = sub.user
 
             if user.lifetime:
+                continue
+
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
                 continue
 
             LOG.d(f"Send subscription ending soon email to user {user}")
@@ -225,6 +238,10 @@ def notify_manual_sub_end():
                     LOG.d("%s has a active Apple subscription", user)
                     continue
 
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
+                continue
+
             LOG.d("Remind user %s that their manual sub is ending soon", user)
             if user.can_send_or_receive():
                 send_email(
@@ -261,6 +278,10 @@ def notify_manual_sub_end():
         if need_reminder:
             user = coinbase_subscription.user
             if user.lifetime:
+                continue
+
+            if _has_active_partner_subscription(user):
+                LOG.d("%s has an active partner subscription", user)
                 continue
 
             LOG.d(
@@ -806,7 +827,12 @@ def check_mailbox_valid_domain():
     """detect if there's mailbox that's using an invalid domain"""
     mailbox_ids = (
         Session.query(Mailbox.id)
-        .filter(Mailbox.verified.is_(True), Mailbox.disabled.is_(False))
+        .filter(
+            Mailbox.verified.is_(True),
+            Mailbox.disabled.is_(False),
+            # admin-disabled mailboxes are already blocked and would fail the check
+            Mailbox.flags.op("&")(Mailbox.FLAG_ADMIN_DISABLED) == 0,
+        )
         .all()
     )
     mailbox_ids = [e[0] for e in mailbox_ids]
@@ -1214,10 +1240,10 @@ def clear_users_scheduled_to_be_deleted(dry_run=False):
         )
         if dry_run:
             continue
-        emit_user_audit_log(
+        emit_user_deleted_audit_log(
             user=user,
-            action=UserAuditLogAction.DeleteUser,
-            message=f"Delete user {user.id} ({user.email})",
+            deleted_by="scheduled deletion cron",
+            reason=f"User marked for deletion on {user.delete_on} and the {DELETE_GRACE_DAYS} days grace period has expired",
         )
         User.delete(user.id)
         Session.commit()

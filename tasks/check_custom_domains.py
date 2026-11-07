@@ -9,13 +9,16 @@ from app.email_utils import send_email_with_rate_control, render
 from app.log import LOG
 from app.models import CustomDomain, Alias
 
+UNVERIFIED_DOMAIN_EXPIRY_DAYS = 5
+
 
 def check_all_custom_domains():
-    # Delete custom domains that haven't been verified in a month
+    # Delete custom domains that haven't been verified in a few days
     for custom_domain in (
         CustomDomain.filter(
             CustomDomain.verified == False,  # noqa: E712
-            CustomDomain.created_at < arrow.now().shift(months=-1),
+            CustomDomain.created_at
+            < arrow.now().shift(days=-UNVERIFIED_DOMAIN_EXPIRY_DAYS),
         )
         .enable_eagerloads(False)
         .yield_per(100)

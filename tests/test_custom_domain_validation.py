@@ -22,8 +22,13 @@ def setup_module():
     Session.commit()
 
 
-def create_custom_domain(domain: str) -> CustomDomain:
-    return CustomDomain.create(user_id=user.id, domain=domain, commit=True)
+def create_custom_domain(domain: str, ownership_verified: bool = False) -> CustomDomain:
+    return CustomDomain.create(
+        user_id=user.id,
+        domain=domain,
+        ownership_verified=ownership_verified,
+        commit=True,
+    )
 
 
 def test_custom_domain_validation_get_dkim_records():
@@ -479,7 +484,7 @@ def test_custom_domain_validation_validate_mx_records_success():
     dns_client = InMemoryDNSClient()
     validator = CustomDomainValidation(random_domain(), dns_client)
 
-    domain = create_custom_domain(random_domain())
+    domain = create_custom_domain(random_domain(), ownership_verified=True)
 
     mx_records_by_prio = validator.get_expected_mx_records(domain)
     dns_records = {
@@ -496,6 +501,26 @@ def test_custom_domain_validation_validate_mx_records_success():
     assert db_domain.verified is True
 
 
+def test_custom_domain_validation_validate_mx_records_without_ownership_failure():
+    dns_client = InMemoryDNSClient()
+    validator = CustomDomainValidation(random_domain(), dns_client)
+
+    domain = create_custom_domain(random_domain(), ownership_verified=False)
+
+    mx_records_by_prio = validator.get_expected_mx_records(domain)
+    dns_records = {
+        priority: mx_records_by_prio[priority].allowed
+        for priority in mx_records_by_prio
+    }
+    dns_client.set_mx_records(domain.domain, dns_records)
+    res = validator.validate_mx_records(domain)
+
+    assert res.success is False
+
+    db_domain = CustomDomain.get_by(id=domain.id)
+    assert db_domain.verified is False
+
+
 def test_custom_domain_validation_validate_mx_records_partner_domain_success():
     """Test MX validation for partner domains with custom MX configuration."""
     dns_client = InMemoryDNSClient()
@@ -506,7 +531,7 @@ def test_custom_domain_validation_validate_mx_records_partner_domain_success():
         random_domain(), dns_client, partner_domains={partner_id: partner_mx_domain}
     )
 
-    domain = create_custom_domain(random_domain())
+    domain = create_custom_domain(random_domain(), ownership_verified=True)
     domain.partner_id = partner_id
     Session.commit()
 

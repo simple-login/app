@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 
 from app import config
 from app.alias_audit_log_utils import emit_alias_audit_log, AliasAuditLogAction
-from app.alias_utils import transfer_alias
+from app.alias_utils import transfer_alias, alias_used_for_sign_in
 from app.dashboard.base import dashboard_bp
 from app.dashboard.views.enter_sudo import sudo_required
 from app.db import Session
@@ -82,6 +82,7 @@ def alias_transfer_send_route(alias_id):
     return render_template(
         "dashboard/alias_transfer_send.html",
         alias=alias,
+        alias_used_for_sign_in=alias_used_for_sign_in(alias),
         alias_transfer_url=alias_transfer_url,
         link_active=alias.transfer_token_expiration is not None
         and alias.transfer_token_expiration > arrow.utcnow(),

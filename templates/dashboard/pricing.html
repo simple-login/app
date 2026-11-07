@@ -701,7 +701,7 @@
       Paddle.Checkout.open({
         product: productId,
         success: "{{ success_url }}",
-        passthrough: "{\"user_id\": {{current_user.id}} }"
+        passthrough: {{ paddle_passthrough|tojson }}
       });
     }
 

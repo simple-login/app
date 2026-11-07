@@ -8,12 +8,13 @@ from flask_admin import expose
 from flask_login import current_user
 
 from app import config
-from app.admin.base import BaseAdminView
+from app.admin.base import CSRFProtectedAdminView
 from app.custom_domain_validation import (
     CustomDomainValidation,
     DomainValidationResult,
     ExpectedValidationRecords,
 )
+from app.custom_domain_utils import delete_custom_domain as schedule_domain_deletion
 from app.db import Session
 from app.dns_utils import get_network_dns_client
 from app.models import (
@@ -239,7 +240,7 @@ class CustomDomainSearchHelpers:
         )
 
 
-class CustomDomainSearchAdmin(BaseAdminView):
+class CustomDomainSearchAdmin(CSRFProtectedAdminView):
     @expose("/", methods=["GET"])
     def index(self):
         search = CustomDomainSearchResult()
@@ -306,6 +307,7 @@ class CustomDomainSearchAdmin(BaseAdminView):
             action=AuditLogActionEnum.delete_custom_domain.value,
             data={"domain": domain_name, "deleted_by": current_user.email},
         )
+        schedule_domain_deletion(domain)
         Session.commit()
 
         LOG.warning(

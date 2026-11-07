@@ -28,7 +28,12 @@ from app.events.auth_event import LoginEvent, RegisterEvent
 from app.extensions import limiter
 from app.log import LOG
 from app.models import User, ApiKey, SocialAuth, AccountActivation, PasswordOracle
-from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
+from app.user_audit_log_utils import (
+    emit_user_audit_log,
+    emit_login_blocked_audit_log,
+    UserAuditLogAction,
+)
+from app.session import rotate_session
 from app.utils import sanitize_email, canonicalize_email
 
 
@@ -79,11 +84,13 @@ def auth_login():
         return jsonify(error="Email or password incorrect"), 400
     elif user.disabled:
         LoginEvent(LoginEvent.ActionType.disabled_login, LoginEvent.Source.api).send()
+        emit_login_blocked_audit_log(user, "account disabled", "api")
         return jsonify(error="Account disabled"), 400
     elif user.delete_on is not None:
         LoginEvent(
             LoginEvent.ActionType.scheduled_to_be_deleted, LoginEvent.Source.api
         ).send()
+        emit_login_blocked_audit_log(user, "account scheduled for deletion", "api")
         return jsonify(error="Account scheduled for deletion"), 400
     elif not user.activated:
         LoginEvent(LoginEvent.ActionType.not_activated, LoginEvent.Source.api).send()
@@ -395,6 +402,7 @@ def auth_payload(user, device) -> dict:
         ret["api_key"] = api_key.code
 
         # so user is automatically logged in on the web
+        rotate_session()
         login_user(user)
 
     return ret

@@ -348,7 +348,8 @@
                     style="font-size: 12px"
                     rows="2"
                     placeholder="e.g. where the alias is used or why is it created"
-                    onchange="handleNoteChange({{ alias.id }}, '{{ alias.email }}')"
+                    data-alias-email="{{ alias.email }}"
+                    onchange="handleNoteChange({{ alias.id }})"
                     onfocus="handleNoteFocus({{ alias.id }})"
                     onblur="handleNoteBlur({{ alias.id }})">{{ alias.note or "" }}</textarea>
         </div>
@@ -426,7 +427,8 @@
                     class="mailbox-select"
                     multiple
                     name="mailbox"
-                    onchange="handleMailboxChange({{ alias.id }}, '{{ alias.email }}')">
+                    data-alias-email="{{ alias.email }}"
+                    onchange="handleMailboxChange({{ alias.id }})">
               {% for mailbox in mailboxes %}
 
                 <option value="{{ mailbox.id }}" {% if alias_info.contain_mailbox(mailbox.id) %}selected{% endif %}>{{ mailbox.email }}</option>
@@ -453,7 +455,8 @@
                  value="{{ alias.name or '' }}"
                  class="form-control"
                  placeholder="{{ alias.custom_domain.name or "Alias name" }}"
-                 onchange="handleDisplayNameChange({{ alias.id }}, '{{ alias.email }}')"
+                 data-alias-email="{{ alias.email }}"
+                 onchange="handleDisplayNameChange({{ alias.id }})"
                  onfocus="handleDisplayNameFocus({{ alias.id }})"
                  onblur="handleDisplayNameBlur({{ alias.id }})">
         </div>

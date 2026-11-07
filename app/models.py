@@ -19,7 +19,6 @@ from flanker.addresslib import address
 from flask import url_for
 from flask_login import UserMixin
 from jinja2 import FileSystemLoader, Environment, select_autoescape
-from newrelic import agent
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -29,7 +28,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
 
-from app import config, rate_limiter
+from app import config, metrics, rate_limiter
 from app import s3
 from app.constants import JobType
 from app.db import Session
@@ -250,6 +249,7 @@ class AuditLogActionEnum(EnumE):
     disable_mailbox = 17
     enable_mailbox = 18
     change_default_mailbox = 19
+    delete_mailbox = 20
 
 
 class Phase(EnumE):
@@ -411,6 +411,7 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
     FLAG_CREATED_FROM_PARTNER = 1 << 1
     FLAG_FREE_OLD_ALIAS_LIMIT = 1 << 2
     FLAG_CREATED_ALIAS_FROM_PARTNER = 1 << 3
+    FLAG_REFERRAL_PROGRAM_PARTICIPANT = 1 << 4
 
     email = sa.Column(sa.String(256), unique=True, nullable=False)
 
@@ -654,6 +655,14 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             postgresql_ops={"email": "gin_trgm_ops"},
             postgresql_using="gin",
         ),
+        # canonical email lookups in app.mailbox_email_match
+        sa.Index(
+            "ix_users_email_canonical",
+            sa.text(
+                "replace(split_part(split_part(lower(email), '@', 1), '+', 1), '.', '')"
+            ),
+            sa.text("split_part(lower(email), '@', 2)"),
+        ),
     )
 
     @property
@@ -775,11 +784,13 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         user: User = cls.get(obj_id)
         EventDispatcher.send_event(user, EventContent(user_deleted=UserDeleted()))
 
-        # Manually delete all aliases for the user that is about to be deleted
-        from app.alias_delete import delete_alias
+        # Manually delete all aliases for the user that is about to be deleted.
+        # Never move them to the trash: the user row is about to be deleted and
+        # would cascade-delete the trashed aliases without a DeletedAlias entry
+        from app.alias_delete import perform_alias_deletion
 
         for alias in Alias.filter_by(user_id=user.id):
-            delete_alias(alias, user, AliasDeleteReason.UserHasBeenDeleted)
+            perform_alias_deletion(alias, user, AliasDeleteReason.UserHasBeenDeleted)
 
         res = super(User, cls).delete(obj_id)
         if commit:
@@ -863,9 +874,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         return True
 
     def is_active(self) -> bool:
-        if self.delete_on is None:
-            return True
-        return self.delete_on < arrow.now()
+        # delete_on is the time deletion was requested: any value means the
+        # account is in its grace period and must not be usable
+        return self.delete_on is None
 
     def in_trial(self):
         """return True if user does not have lifetime licence or an active subscription AND is in trial period"""
@@ -1041,19 +1052,11 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
         """
         sub = Subscription.get_by(user_id=self.id)
 
-        if sub:
-            # grace period is 14 days
-            # sub is active until the next billing_date + PADDLE_SUBSCRIPTION_GRACE_DAYS
-            if (
-                sub.next_bill_date
-                >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
-            ):
-                return sub
-            # past subscription, user is considered not having a subscription = free plan
-            else:
-                return None
-        else:
-            return sub
+        # past subscription, user is considered not having a subscription = free plan
+        if sub and not sub.is_active():
+            return None
+
+        return sub
 
     def verified_custom_domains(self) -> List["CustomDomain"]:
         return (
@@ -1097,6 +1100,9 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             res.append((True, domain.domain))
 
         for custom_domain in self.verified_custom_domains():
+            # Request domains to also be MX verified
+            if not custom_domain.verified:
+                continue
             res.append((False, custom_domain.domain))
 
         return res
@@ -1256,6 +1262,23 @@ class User(Base, ModelMixin, UserMixin, PasswordOracle):
             + Client.filter(Client.user_id == self.id).count()
             > 0
         )
+
+    def can_use_referral_program(self) -> bool:
+        """The referral program is closed to new participants. Only users who already
+        have a referral code, or were paid out before, keep access."""
+        if self.flags & User.FLAG_REFERRAL_PROGRAM_PARTICIPANT > 0:
+            return True
+
+        if (
+            Session.query(Referral.id).filter_by(user_id=self.id).first() is None
+            and Session.query(Payout.id).filter_by(user_id=self.id).first() is None
+        ):
+            return False
+
+        # remember it so deleting all their codes later doesn't lock them out
+        self.flags = self.flags | User.FLAG_REFERRAL_PROGRAM_PARTICIPANT
+        Session.commit()
+        return True
 
     def get_random_alias_suffix(self, custom_domain: Optional["CustomDomain"] = None):
         """Get random suffix for an alias based on user's preference.
@@ -1862,7 +1885,7 @@ class Alias(Base, ModelMixin):
         emit_alias_audit_log(
             new_alias, AliasAuditLogAction.CreateAlias, "New alias created"
         )
-        agent.record_custom_event(
+        metrics.record_event(
             "AliasCreated",
             {
                 "custom_domain": "custom domain"
@@ -2148,7 +2171,7 @@ class Contact(Base, ModelMixin):
         if flush:
             Session.flush()
 
-        agent.record_custom_event(
+        metrics.record_event(
             "ContactCreated",
             {
                 "is_cc": "cc" if new_contact.is_cc else "to",
@@ -2391,6 +2414,16 @@ class Subscription(Base, ModelMixin):
     )
 
     user = orm.relationship(User)
+
+    def is_active(self) -> bool:
+        """whether the subscription still entitles the user to the paid plan.
+        A subscription stays active until its next billing date plus the grace
+        period, whether or not it has been cancelled in the meantime.
+        """
+        return (
+            self.next_bill_date
+            >= arrow.now().shift(days=-PADDLE_SUBSCRIPTION_GRACE_DAYS).date()
+        )
 
     def plan_name(self):
         if self.plan == PlanEnum.monthly:
@@ -2994,6 +3027,14 @@ class Mailbox(Base, ModelMixin):
             "email",
             postgresql_ops={"email": "gin_trgm_ops"},
             postgresql_using="gin",
+        ),
+        # canonical email lookups in app.mailbox_email_match
+        sa.Index(
+            "ix_mailbox_email_canonical",
+            sa.text(
+                "replace(split_part(split_part(lower(email), '@', 1), '+', 1), '.', '')"
+            ),
+            sa.text("split_part(lower(email), '@', 2)"),
         ),
     )
 
@@ -4013,6 +4054,13 @@ class PartnerUser(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint(
             "partner_id", "external_user_id", name="uq_partner_id_external_user_id"
+        ),
+        sa.Index("ix_partner_user_external_user_id", "external_user_id"),
+        sa.Index(
+            "ix_partner_user_partner_email_trgm",
+            "partner_email",
+            postgresql_ops={"partner_email": "gin_trgm_ops"},
+            postgresql_using="gin",
         ),
     )
 

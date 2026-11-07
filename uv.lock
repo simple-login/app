@@ -817,6 +817,7 @@ dependencies = [
     { name = "google-auth" },
     { name = "httplib2" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/d4/74/0c8177b73734dfbd89420c162ac8754257fa0f9007fb49569493d83a17db/google_auth_httplib2-0.4.2.tar.gz", hash = "sha256:916225a6367e613c9af44d83f41688a599d3f687777846b8b91bec65085ed1f1", size = 11211, upload-time = "2026-08-25T19:18:24.611Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/33/e697a69f13bfd448d33a374231b89cbbb203dedfb4aae9d26126be6f6c72/google_auth_httplib2-0.4.2-py3-none-any.whl", hash = "sha256:4298dd6b1415972d0c464b7177e6a69a595e7aec5b972222ecdca342f6009647", size = 9529, upload-time = "2026-08-24T21:55:05.843Z" },
 ]
@@ -1286,6 +1287,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2a/13/b62d075317d8686071eb843f0bb1f195eb332f48869d3c31a4c6f1e063ac/pre_commit-4.1.0.tar.gz", hash = "sha256:ae3f018575a588e30dfddfab9a05448bfbd6b73d78709617b5a2b853549716d4", size = 193330, upload-time = "2025-01-20T18:31:48.681Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/43/b3/df14c580d82b9627d173ceea305ba898dca135feb360b6d84019d0803d3b/pre_commit-4.1.0-py2.py3-none-any.whl", hash = "sha256:d29e7cb346295bcc1cc75fc3e92e343495e3ea0196c9ec6ba53f49f10ab6ae7b", size = 220560, upload-time = "2025-01-20T18:31:47.319Z" },
+]
+
+[[package]]
+name = "prometheus-client"
+version = "0.26.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/73/f1334c29c2af4cd9dba6c7817e61b611bd0215e2eb5565c6064a4de18802/prometheus_client-0.26.0.tar.gz", hash = "sha256:04a91bcf94e2cf74a44a1a874d651a2e853ed354b6e822f3b7487751465d5c2b", size = 92910, upload-time = "2026-07-24T19:36:41.893Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/a3/b69efbf4143b5b9859b977770bbbabcc2796b702fa69dc40271e45cd5a56/prometheus_client-0.26.0-py3-none-any.whl", hash = "sha256:fa93d06737aa02bacd05794768508bb97d2fbee28cb3bca04eaae92f0ca953d6", size = 64494, upload-time = "2026-07-24T19:36:40.854Z" },
 ]
 
 [[package]]
@@ -1823,6 +1833,7 @@ dependencies = [
     { name = "newrelic-telemetry-sdk" },
     { name = "pgpy" },
     { name = "phpserialize" },
+    { name = "prometheus-client" },
     { name = "protobuf" },
     { name = "psycopg2-binary" },
     { name = "pycryptodome" },
@@ -1904,6 +1915,7 @@ requires-dist = [
     { name = "newrelic-telemetry-sdk", specifier = "~=0.5.0" },
     { name = "pgpy", specifier = "==0.5.4" },
     { name = "phpserialize", specifier = "~=1.3" },
+    { name = "prometheus-client", specifier = "~=0.26.0" },
     { name = "protobuf", specifier = ">=4.25,<6" },
     { name = "psycopg2-binary", specifier = "~=2.9.10" },
     { name = "pycryptodome", specifier = "~=3.9.8" },

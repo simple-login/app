@@ -80,7 +80,10 @@
           type="text/css"
           href="/static/style.css?v={{ VERSION }}" />
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script>toastr.options.closeButton = true;</script>
+    <script>
+      toastr.options.closeButton = true;
+      toastr.options.escapeHtml = true;
+    </script>
     <!-- For additional head -->
     {% block head %}{% endblock %}
   </head>
@@ -99,7 +102,7 @@
           <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
           {% if messages %}
 
-            {% for category, message in messages %}<script>toastr.{{category }}("{{ message }}");</script>{% endfor %}
+            {% for category, message in messages %}<script>toastr.{{category }}({{ message | tojson }});</script>{% endfor %}
           {% endif %}
         {% endwith %}
       </div>

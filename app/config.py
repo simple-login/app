@@ -225,6 +225,7 @@ SESSION_COOKIE_NAME = "slapp"
 MAILBOX_SECRET = FLASK_SECRET + "mailbox"
 CUSTOM_ALIAS_SECRET = FLASK_SECRET + "custom_alias"
 UNSUBSCRIBE_SECRET = FLASK_SECRET + "unsub"
+PADDLE_PASSTHROUGH_SECRET = FLASK_SECRET + "paddle_passthrough"
 
 # AWS
 AWS_REGION = os.environ.get("AWS_REGION") or "eu-west-3"
@@ -256,6 +257,9 @@ PADDLE_PUBLIC_KEY_PATH = get_abs_path(
 )
 
 PADDLE_AUTH_CODE = os.environ.get("PADDLE_AUTH_CODE")
+
+# Transition flag:
+PADDLE_ALLOW_UNSIGNED_PASSTHROUGH = "PADDLE_ALLOW_UNSIGNED_PASSTHROUGH" in os.environ
 
 PADDLE_COUPON_ID = os.environ.get("PADDLE_COUPON_ID")
 
@@ -310,7 +314,7 @@ CONNECT_WITH_OIDC_ICON = os.environ.get("CONNECT_WITH_OIDC_ICON")
 OIDC_WELL_KNOWN_URL = os.environ.get("OIDC_WELL_KNOWN_URL")
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
-OIDC_SCOPES = os.environ.get("OIDC_SCOPES")
+OIDC_SCOPES = os.environ.get("OIDC_SCOPES", "openid email profile").split()
 OIDC_NAME_FIELD = os.environ.get("OIDC_NAME_FIELD", "name")
 
 PROTON_CLIENT_ID = os.environ.get("PROTON_CLIENT_ID")
@@ -458,6 +462,14 @@ if PGP_SENDER_PRIVATE_KEY_PATH:
 # the signer address that signs outgoing encrypted emails
 PGP_SIGNER = os.environ.get("PGP_SIGNER")
 
+# SMTP probe recipients answered directly by the email handler (see app/email_probe.py)
+EMAIL_HANDLER_HEALTH_ADDRESS = os.environ.get(
+    "EMAIL_HANDLER_HEALTH_ADDRESS", "health@probe.invalid"
+)
+EMAIL_HANDLER_READY_ADDRESS = os.environ.get(
+    "EMAIL_HANDLER_READY_ADDRESS", "ready@probe.invalid"
+)
+
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f'"SimpleLogin (noreply)" <noreply@{EMAIL_DOMAIN}>')
 PARTNER_NOREPLY = os.environ.get("PARTNER_NOREPLY", NOREPLY)
@@ -473,6 +485,9 @@ NOREPLIES = sl_getenv("NOREPLIES", list) or list({NOREPLY_EMAIL, PARTNER_NOREPLY
 ALIAS_LIMIT = os.environ.get("ALIAS_LIMIT") or "100/day;50/hour;5/minute"
 
 ENABLE_SPAM_ASSASSIN = "ENABLE_SPAM_ASSASSIN" in os.environ
+
+# Creating new "Sign in with SimpleLogin" clients is disabled unless this is set
+ALLOW_NEW_OAUTH_CLIENTS = "ALLOW_NEW_OAUTH_CLIENTS" in os.environ
 
 ALIAS_RANDOM_SUFFIX_LENGTH = int(os.environ.get("ALIAS_RAND_SUFFIX_LENGTH", 5))
 
@@ -500,6 +515,24 @@ if SAVE_UNSENT_DIR and not os.path.isdir(SAVE_UNSENT_DIR):
     except FileExistsError:
         pass
 
+# Where emails that could not be handed to SMTP are kept: "fs" (default: written to SAVE_UNSENT_DIR,
+# resent by the cron job, until the Kubernetes cutover) or "s3" (opt-in via env: resent by a
+# SEND_UNSENT_EMAIL job). There is no fallback between them.
+UNSENT_EMAIL_STORAGE = os.environ.get("UNSENT_EMAIL_STORAGE", "fs")
+if UNSENT_EMAIL_STORAGE not in ("s3", "fs"):
+    raise ValueError(
+        f"UNSENT_EMAIL_STORAGE must be 's3' or 'fs': {UNSENT_EMAIL_STORAGE}"
+    )
+
+# In "s3" mode unsent emails are stored under this prefix and resent by a SEND_UNSENT_EMAIL job.
+# Attempt n is scheduled BASE * 2**n seconds after the previous failure. Emails that still
+# fail after MAX_ATTEMPTS are moved to <prefix>failed/.
+UNSENT_EMAIL_S3_PREFIX = os.environ.get("UNSENT_EMAIL_S3_PREFIX", "unsent/")
+UNSENT_EMAIL_BACKOFF_BASE_SECS = int(
+    os.environ.get("UNSENT_EMAIL_BACKOFF_BASE_SECS", 60)
+)
+UNSENT_EMAIL_MAX_ATTEMPTS = int(os.environ.get("UNSENT_EMAIL_MAX_ATTEMPTS", 8))
+
 # enable the alias automation disable: an alias can be automatically disabled if it has too many bounces
 ALIAS_AUTOMATIC_DISABLE = "ALIAS_AUTOMATIC_DISABLE" in os.environ
 
@@ -520,8 +553,10 @@ ZENDESK_ENABLED = "ZENDESK_ENABLED" in os.environ
 
 DMARC_CHECK_ENABLED = "DMARC_CHECK_ENABLED" in os.environ
 
-# Bounces can happen after 5 days
-VERP_MESSAGE_LIFETIME = 5 * 86400
+# How long a VERP address stays valid. Bounces can happen after 5 days, as mail
+# servers retry for days before giving up, so leave some margin: 7 days also
+# matches how long the transactional_email rows a VERP can point at are kept.
+VERP_MESSAGE_LIFETIME = 7 * 86400
 VERP_PREFIX = os.environ.get("VERP_PREFIX") or "sl"
 # Generate with python3 -c 'import secrets; print(secrets.token_hex(28))'
 VERP_EMAIL_SECRET = os.environ.get("VERP_EMAIL_SECRET") or (
@@ -645,6 +680,16 @@ STORE_TRANSACTIONAL_EMAILS = "STORE_TRANSACTIONAL_EMAILS" in os.environ
 
 MAINTENANCE_MODE = "MAINTENANCE_MODE" in os.environ
 
+# Prometheus metrics server for the non-web processes (email handler, job runner,
+# event listener, cron). Not started unless METRICS_SERVER_PORT is set (an error is
+# logged if the server is requested without it). /metrics needs PROMETHEUS_METRICS_TOKEN.
+METRICS_SERVER_PORT: Optional[int] = (
+    int(os.environ["METRICS_SERVER_PORT"])
+    if os.environ.get("METRICS_SERVER_PORT")
+    else None
+)
+METRICS_SERVER_HOST = os.environ.get("METRICS_SERVER_HOST", "0.0.0.0")
+
 EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
 
 # We want it disabled by default, so only skip if defined
@@ -674,6 +719,10 @@ EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
 
 MAX_BOUNCES_1D = int(os.environ.get("MAX_BOUNCES_1D", 12))
 MAX_BOUNCES_1W = int(os.environ.get("MAX_BOUNCES_1W", 10))
+
+# How many provider complaints we store per user and per day. Complaints are
+# only identified by the envelope sender, so anybody can have us store one
+MAX_PROVIDER_COMPLAINTS_1D = int(os.environ.get("MAX_PROVIDER_COMPLAINTS_1D", 10))
 
 
 def read_partner_dict(var: str) -> dict[int, str]:
@@ -706,6 +755,17 @@ AUDIT_LOG_MAX_DAYS = int(os.environ.get("AUDIT_LOG_MAX_DAYS", 30))
 ALIAS_TRASH_DAYS = int(os.environ.get("ALIAS_TRASH_DAYS", 30))
 ALLOWED_OAUTH_SCHEMES = get_env_csv("ALLOWED_OAUTH_SCHEMES", "auth.simplelogin,https")
 MAX_EMAIL_FORWARD_RECIPIENTS = int(os.environ.get("MAX_EMAIL_FORWARD_RECIPIENTS", 30))
+
+# Sessions are stored in Redis serialized with JSON.
+# Sessions written before the switch are stored with pickle.
+# Unpickling is still tried as a fallback so logged in users are not logged out,
+# set SESSION_PICKLE_FALLBACK=false to stop accepting pickled sessions.
+SESSION_PICKLE_FALLBACK = (
+    os.environ.get("SESSION_PICKLE_FALLBACK", "true").lower() != "false"
+)
+SESSION_JSON_SERIALIZATION = (
+    os.environ.get("SESSION_JSON_SERIALIZATION", "false").lower() != "false"
+)
 
 
 def read_hex_data(key: string, default: bytes) -> bytes:
@@ -740,3 +800,24 @@ DROP_PGP_KEY_ATTACHMENTS_ON_REPLY = "DROP_PGP_KEY_ATTACHMENTS_ON_REPLY" in os.en
 ENFORCE_OAUTH_CLIENT_APPROVED = "ENFORCE_OAUTH_CLIENT_APPROVED" in os.environ
 
 MAX_DOMAIN_CHECKS = max(int(os.environ.get("MAX_DOMAIN_CHECKS", 4)), 1)
+
+# Comma separated list of the metrics backends to emit to, see app/metrics/.
+# Also selects which backends may trace @metrics.background_task functions.
+# Known values: newrelic, prometheus, noop, combinable as "newrelic,prometheus".
+# Defaults to New Relic to preserve the historical behaviour; set it to an empty
+# value to disable metrics entirely. Unknown names make the process fail at
+# startup.
+METRICS_BACKENDS = get_env_csv("METRICS_BACKENDS", "newrelic")
+
+# Directory shared by the gunicorn workers when running in multiprocess mode.
+# When set, the exposition uses MultiProcessCollector() instead of the default
+# registry so /metrics aggregates every worker, and the master empties it at boot
+# (see prepare_multiproc_dir()). Under gunicorn a temporary directory is used when
+# unset, see gunicorn.conf.py.
+PROMETHEUS_MULTIPROC_DIR = os.environ.get("PROMETHEUS_MULTIPROC_DIR") or None
+
+# Bearer token required by the /metrics blueprint. Compared in constant time.
+PROMETHEUS_METRICS_TOKEN = os.environ.get("PROMETHEUS_METRICS_TOKEN") or None
+
+# Prefix prepended to every metric name created by the Prometheus backend
+PROMETHEUS_METRIC_PREFIX = os.environ.get("PROMETHEUS_METRIC_PREFIX", "simplelogin")

@@ -19,7 +19,7 @@
            class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'oauth_endpoint' }}">
           <span class="icon mr-3"><i class="fe fe-shield"></i></span>OAuth Endpoints
         </a>
-        {% if current_user.referrals|count > 0 %}
+        {% if current_user.can_use_referral_program() %}
 
           <a href="{{ url_for('developer.client_detail_referral', client_id=client.id) }}"
              class="list-group-item list-group-item-action {{ 'active' if client_details_page == 'referral' }}">

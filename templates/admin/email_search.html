@@ -28,6 +28,7 @@
   {% set pu = helper.partner_user(user) %}
   {% set active_sub = user.get_active_subscription() %}
   {% set sub_end = user.get_active_subscription_end() %}
+  {% set paddle_sub = helper.paddle_subscription(user) %}
   <div class="row mb-4 user-info-row">
     {# Account Information - 3/4 width #}
     <div class="col-lg-9 mb-3 mb-lg-0">
@@ -147,6 +148,30 @@
                     <td class="py-1">
                       <span class="{% if user.trial_end < now %}
                        text-danger{% else %}text-info{% endif %}">{{ user.trial_end.format("YYYY-MM-DD") }}</span> <small class="text-muted">{{ user.trial_end.humanize() }}</small>
+                    </td>
+                  </tr>
+                {% endif %}
+                {% if paddle_sub %}
+
+                  <tr>
+                    <td class="text-muted text-nowrap py-1">Paddle:</td>
+                    <td class="py-1">
+                      <a href="{{ helper.paddle_subscription_url(paddle_sub) }}"
+                         target="_blank"
+                         rel="noopener noreferrer">{{ paddle_sub.subscription_id }}</a>
+                      {{ copy_btn(paddle_sub.subscription_id) }}
+                      {% if paddle_sub.cancelled %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+                      <br>
+                      <small class="text-muted">
+                        {{ paddle_sub.plan_name() }},
+                        {% if paddle_sub.cancelled or paddle_sub.next_bill_date < now.date() %}
+
+                          last bill
+                        {% else %}
+                          next bill
+                        {% endif %}
+                        {{ paddle_sub.next_bill_date }}
+                      </small>
                     </td>
                   </tr>
                 {% endif %}
@@ -274,6 +299,7 @@
               <form action="{{ url_for('admin.email_search.disable_2fa') }}"
                     method="POST"
                     class="mb-2">
+                {{ csrf_form.csrf_token }}
                 <input type="hidden" name="user_id" value="{{ user.id }}">
                 <button type="submit"
                         class="btn btn-sm btn-block btn-caution-modern"
@@ -295,6 +321,7 @@
               <form action="{{ url_for('admin.email_search.stop_user_deletion') }}"
                     method="POST"
                     class="mb-2">
+                {{ csrf_form.csrf_token }}
                 <input type="hidden" name="user_id" value="{{ user.id }}">
                 <button type="submit"
                         class="btn btn-sm btn-block btn-danger-modern"
@@ -389,6 +416,7 @@
         </div>
         <form action="{{ url_for('admin.email_search.mark_abuser') }}"
               method="POST">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <div class="alert alert-warning">
@@ -437,6 +465,7 @@
         </div>
         <form action="{{ url_for('admin.email_search.unmark_abuser') }}"
               method="POST">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <p class="text-muted">
@@ -487,6 +516,7 @@
           <form action="{{ url_for('admin.email_search.delete_partner_link') }}"
                 method="POST"
                 id="unlinkProtonForm{{ user.id }}">
+            {{ csrf_form.csrf_token }}
             <div class="modal-body">
               <input type="hidden" name="user_id" value="{{ user.id }}">
               <div class="alert alert-warning">
@@ -557,6 +587,7 @@
         <form action="{{ url_for('admin.email_search.delete_user') }}"
               method="POST"
               id="deleteUserForm{{ user.id }}">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <div class="alert alert-danger">
@@ -580,6 +611,15 @@
                      name="confirm_email"
                      required
                      autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="deleteUserReason{{ user.id }}" class="font-weight-bold">Reason (required)</label>
+              <textarea class="form-control"
+                        id="deleteUserReason{{ user.id }}"
+                        name="reason"
+                        rows="3"
+                        required
+                        placeholder="Enter the reason for deleting this user..."></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -625,6 +665,7 @@
         <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
               method="POST"
               id="subdomainQuotaForm{{ user.id }}">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <input type="hidden"
@@ -661,6 +702,7 @@
         <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
               method="POST"
               id="directoryQuotaForm{{ user.id }}">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <input type="hidden"
@@ -691,6 +733,7 @@
     <div class="card-body py-3 d-flex flex-column">
       {# Toggle Status Button #}
       {% if alias.enabled %}
+
         <button type="button"
                 class="btn btn-sm btn-block mb-2 btn-caution-modern"
                 data-toggle="modal"
@@ -717,9 +760,9 @@
       </div>
     </div>
   </div>
-
   {# Disable Alias Modal #}
   {% if alias.enabled %}
+
     <div class="modal fade"
          id="disableAliasModal{{ alias.id }}"
          tabindex="-1"
@@ -742,9 +785,12 @@
           <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
                 method="POST"
                 id="disableAliasForm{{ alias.id }}">
+            {{ csrf_form.csrf_token }}
             <div class="modal-body">
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
-              <p>This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.</p>
+              <p>
+                This will disable the alias <strong>{{ alias.email }}</strong>. Emails sent to this alias will be rejected.
+              </p>
               <div class="form-group">
                 <label for="disableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
                 <textarea class="form-control"
@@ -780,9 +826,9 @@
       })();
     </script>
   {% endif %}
-
   {# Enable Alias Modal #}
   {% if not alias.enabled %}
+
     <div class="modal fade"
          id="enableAliasModal{{ alias.id }}"
          tabindex="-1"
@@ -805,9 +851,12 @@
           <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
                 method="POST"
                 id="enableAliasForm{{ alias.id }}">
+            {{ csrf_form.csrf_token }}
             <div class="modal-body">
               <input type="hidden" name="alias_id" value="{{ alias.id }}">
-              <p>This will enable the alias <strong>{{ alias.email }}</strong>.</p>
+              <p>
+                This will enable the alias <strong>{{ alias.email }}</strong>.
+              </p>
               <div class="form-group">
                 <label for="enableAliasNote{{ alias.id }}" class="font-weight-bold">Reason (required):</label>
                 <textarea class="form-control"
@@ -843,7 +892,6 @@
       })();
     </script>
   {% endif %}
-
   {# Delete Alias Modal #}
   <div class="modal fade"
        id="deleteAliasModal{{ alias.id }}"
@@ -867,6 +915,7 @@
         <form action="{{ url_for('admin.email_search.delete_alias') }}"
               method="POST"
               id="deleteAliasForm{{ alias.id }}">
+          {{ csrf_form.csrf_token }}
           <div class="modal-body">
             <input type="hidden" name="alias_id" value="{{ alias.id }}">
             <div class="alert alert-danger">
@@ -934,13 +983,16 @@
           <table class="table table-sm table-borderless mb-0">
             <tr>
               <td class="text-muted text-nowrap py-1" style="width: 80px;">ID:</td>
-              <td class="py-1"><code>{{ alias.id }}</code></td>
+              <td class="py-1">
+                <code>{{ alias.id }}</code>
+              </td>
             </tr>
             <tr>
               <td class="text-muted text-nowrap py-1">Email:</td>
               <td class="py-1">{{ alias.email }}{{ copy_btn(alias.email) }}</td>
             </tr>
             {% if alias.name %}
+
               <tr>
                 <td class="text-muted text-nowrap py-1">Name:</td>
                 <td class="py-1">{{ alias.name }}</td>
@@ -951,6 +1003,7 @@
               <td class="py-1">
                 {{ badge_status(alias.enabled, 'Enabled', 'Disabled', 'success', 'danger') }}
                 {% if alias.is_trashed() %}
+
                   <span class="badge badge-warning ml-1"><i class="fa fa-trash mr-1"></i>Trashed</span>
                 {% endif %}
               </td>
@@ -962,21 +1015,26 @@
               </td>
             </tr>
             {% if alias.custom_domain %}
+
               <tr>
                 <td class="text-muted text-nowrap py-1">Domain:</td>
                 <td class="py-1">{{ alias.custom_domain.domain }}</td>
               </tr>
             {% endif %}
             {% if alias.directory %}
+
               <tr>
                 <td class="text-muted text-nowrap py-1">Directory:</td>
                 <td class="py-1">{{ alias.directory.name }}</td>
               </tr>
             {% endif %}
             {% if alias.note %}
+
               <tr>
                 <td class="text-muted text-nowrap py-1">Note:</td>
-                <td class="py-1"><small>{{ alias.note }}</small></td>
+                <td class="py-1">
+                  <small>{{ alias.note }}</small>
+                </td>
               </tr>
             {% endif %}
           </table>
@@ -998,7 +1056,7 @@
             </tr>
             <tr>
               <td class="text-muted text-nowrap py-1">PGP:</td>
-              <td class="py-1">{{ badge_status(alias.pgp_enabled(), 'Yes', 'No', 'success', 'secondary') }}</td>
+              <td class="py-1">{{ badge_status(alias.pgp_enabled() , 'Yes', 'No', 'success', 'secondary') }}</td>
             </tr>
             <tr>
               <td class="text-muted text-nowrap py-1">Flags:</td>
@@ -1016,9 +1074,12 @@
               <td class="py-1 text-nowrap">{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
             </tr>
             {% if alias.delete_on %}
+
               <tr>
                 <td class="text-muted text-nowrap py-1">Deletion:</td>
-                <td class="py-1"><span class="badge badge-danger">{{ alias.delete_on.format("YYYY-MM-DD") }}</span></td>
+                <td class="py-1">
+                  <span class="badge badge-danger">{{ alias.delete_on.format("YYYY-MM-DD") }}</span>
+                </td>
               </tr>
             {% endif %}
           </table>
@@ -1039,6 +1100,7 @@
         <div class="col-md-6 mb-3">
           <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
                 method="POST">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <label class="font-weight-bold">Subdomain Quota</label>
             <div class="input-group">
@@ -1062,6 +1124,7 @@
         <div class="col-md-6 mb-3">
           <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
                 method="POST">
+            {{ csrf_form.csrf_token }}
             <input type="hidden" name="user_id" value="{{ user.id }}">
             <label class="font-weight-bold">Directory Quota</label>
             <div class="input-group">
@@ -1191,6 +1254,12 @@
                         <i class="fa fa-ban mr-1"></i>Disable
                       </button>
                     {% endif %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger btn-block mt-1"
+                            data-toggle="modal"
+                            data-target="#deleteMailboxModal{{ mailbox.id }}">
+                      <i class="fa fa-trash mr-1"></i>Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -1218,6 +1287,7 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.set_default_mailbox') }}"
                             method="POST">
+                        {{ csrf_form.csrf_token }}
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <p>
@@ -1262,6 +1332,7 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.admin_reenable_mailbox') }}"
                             method="POST">
+                        {{ csrf_form.csrf_token }}
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <p>
@@ -1313,6 +1384,7 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.send_mailbox_disable_warning') }}"
                             method="POST">
+                        {{ csrf_form.csrf_token }}
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <div class="alert alert-warning">
@@ -1362,6 +1434,7 @@
                       </div>
                       <form action="{{ url_for('admin.email_search.admin_disable_mailbox') }}"
                             method="POST">
+                        {{ csrf_form.csrf_token }}
                         <div class="modal-body">
                           <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
                           <div class="alert alert-danger">
@@ -1392,6 +1465,62 @@
                   </div>
                 </div>
               {% endif %}
+              {# Delete Mailbox Modal #}
+                <div class="modal fade"
+                     id="deleteMailboxModal{{ mailbox.id }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="deleteMailboxModalLabel{{ mailbox.id }}"
+                     aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header modal-danger">
+                        <h5 class="modal-title" id="deleteMailboxModalLabel{{ mailbox.id }}">
+                          <i class="fa fa-trash mr-2"></i>Delete Mailbox
+                        </h5>
+                        <button type="button"
+                                class="close text-white"
+                                data-dismiss="modal"
+                                aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <form action="{{ url_for('admin.email_search.delete_mailbox') }}"
+                            method="POST">
+                        {{ csrf_form.csrf_token }}
+                        <div class="modal-body">
+                          <input type="hidden" name="mailbox_id" value="{{ mailbox.id }}">
+                          <div class="alert alert-danger">
+                            <i class="fa fa-exclamation-circle mr-1"></i>
+                            This will delete the mailbox <strong>{{ mailbox.email }}</strong>.
+                          </div>
+                          <p class="text-muted small">
+                            Its aliases move to the user's default mailbox.
+                            {% if mailbox.user.default_mailbox_id == mailbox.id %}
+                              This is the default mailbox: the oldest other usable mailbox becomes the new default and receives the aliases.
+                            {% endif %}
+                          </p>
+                          <div class="form-group mb-0">
+                            <label for="deleteMailboxConfirm{{ mailbox.id }}" class="font-weight-bold">Type the mailbox email to confirm</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="deleteMailboxConfirm{{ mailbox.id }}"
+                                   name="confirm_email"
+                                   required
+                                   autocomplete="off"
+                                   placeholder="{{ mailbox.email }}">
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-danger-modern">
+                            <i class="fa fa-trash mr-1"></i>Delete Mailbox
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
             {% endfor %}
           </tbody>
         </table>
@@ -1462,6 +1591,7 @@
       <h6 class="mb-0">
         <i class="fa fa-at mr-2"></i>Aliases
         {% if alias_count > helper.ALIAS_DISPLAY_LIMIT %}
+
           <span class="badge badge-danger ml-2" title="Unusually high alias count">{{ alias_count }} total</span>
           <small class="text-danger ml-1"><i class="fa fa-exclamation-triangle mr-1"></i>High alias count</small>
         {% else %}
@@ -1537,7 +1667,8 @@
                 <td>{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
                 <td>{{ alias.updated_at.strftime("%Y-%m-%d %H:%M") if alias.updated_at else "Never" }}</td>
                 <td>
-                  <a href="?query={{ alias.email }}&search_type=alias" title="Alias actions">
+                  <a href="?query={{ alias.email }}&search_type=alias"
+                     title="Alias actions">
                     <i class="fa fa-sign-in-alt mr-1"></i>Actions
                   </a>
                 </td>
@@ -2972,12 +3103,8 @@
             {% if not data.aliases_found_by_regex and data.aliases|length == 1 %}
 
               <div class="row mb-4 user-info-row">
-                <div class="col-lg-9 mb-3 mb-lg-0">
-                  {{ alias_info_card(data.aliases[0]) }}
-                </div>
-                <div class="col-lg-3">
-                  {{ alias_actions_card(data.aliases[0]) }}
-                </div>
+                <div class="col-lg-9 mb-3 mb-lg-0">{{ alias_info_card(data.aliases[0]) }}</div>
+                <div class="col-lg-3">{{ alias_actions_card(data.aliases[0]) }}</div>
               </div>
               {{ alias_audit_log_table(data.alias_audit_log) }}
               {{ mailboxes_table("Mailboxes for alias", helper.alias_mailbox_count(data.aliases[0]) , helper.alias_mailboxes(data.aliases[0]), false) }}
@@ -3010,7 +3137,10 @@
           </div>
           <div class="card-body">
             {{ deleted_aliases_table(data.deleted_aliases, data.deleted_aliases_found_by_regex) }}
-            {% if data.deleted_alias_audit_log %}{{ alias_audit_log_table(data.deleted_alias_audit_log) }}{% endif %}
+            {% if data.deleted_alias_audit_log %}
+
+              {{ alias_audit_log_table(data.deleted_alias_audit_log) }}
+            {% endif %}
           </div>
         </div>
       {% endif %}
@@ -3043,6 +3173,55 @@
       {% endif %}
     {% else %}
       <!-- Email Search Results -->
+      {% if data.related_users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-warning">
+            <h5 class="mb-0">
+              <i class="fa fa-link mr-2"></i>
+              {{ data.related_users|length }} Related accounts
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="alert alert-warning m-3">
+              These accounts share an email, a mailbox or a Proton account with the user above. Check their status before concluding that this user has no restriction.
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Related because</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for related_user, reasons in data.related_users %}
+                    <tr>
+                      <td>
+                        <code>{{ related_user.id }}</code>
+                      </td>
+                      <td>
+                        <a href="?query={{ related_user.id }}&search_type=email">{{ related_user.email }}</a>
+                      </td>
+                      <td>
+                        {{ badge_status(not related_user.disabled, 'Enabled', 'Disabled', 'success', 'danger') }}
+                        {% if related_user.delete_on %}<span class="badge badge-danger">Deletion scheduled {{ related_user.delete_on.strftime("%Y-%m-%d") }}</span>{% endif %}
+                      </td>
+                      <td>
+                        <ul class="mb-0 pl-3">
+                          {% for reason in reasons %}<li>{{ reason }}</li>{% endfor %}
+                        </ul>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      {% endif %}
       {% set ns = namespace(seen_user_ids=[]) %}
       {% if data.users %}
 
@@ -3158,6 +3337,24 @@
             {% endif %}
           {% endfor %}
         {% endif %}
+      {% endif %}
+      {% if data.equivalent_users %}
+
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header header-warning">
+            <h5 class="mb-0">
+              <i class="fa fa-clone mr-2"></i>
+              {{ data.equivalent_users|length }} Users with an equivalent email to "{{ query }}"
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-warning mb-3">
+              These users have a different spelling of the same inbox (dots, +tag or equivalent domain).
+              They block this address from being used as another account's email.
+            </div>
+            {{ users_table(data.equivalent_users, false) }}
+          </div>
+        </div>
       {% endif %}
       {% if data.partner_users %}
         {% if data.partner_users_found_by_regex %}

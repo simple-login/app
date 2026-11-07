@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators
 
+from app import config
 from app.db import Session
 from app.developer.base import developer_bp
 from app.models import Client
@@ -18,6 +19,14 @@ class NewClientForm(FlaskForm):
 @developer_bp.route("/new_client", methods=["GET", "POST"])
 @login_required
 def new_client():
+    if not config.ALLOW_NEW_OAUTH_CLIENTS:
+        flash(
+            "It is no longer possible to create new websites for Sign in with SimpleLogin. "
+            "Your existing websites keep working as usual.",
+            "warning",
+        )
+        return redirect(url_for("developer.index"))
+
     form = NewClientForm()
 
     if form.validate_on_submit():
