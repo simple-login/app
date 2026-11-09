@@ -96,6 +96,33 @@ def test_can_domain_be_used_domain_of_existing_mailbox():
     assert res is CannotUseDomainReason.DomainUserInMailbox
 
 
+def test_can_domain_be_used_domain_of_existing_mailbox_ignores_case():
+    domain = random_domain()
+    Mailbox.create(
+        user_id=user.id, email=f"email@{domain.upper()}", verified=True, commit=True
+    )
+    res = can_domain_be_used(user, domain)
+    assert res is CannotUseDomainReason.DomainUserInMailbox
+
+
+def test_can_domain_be_used_domain_of_unverified_mailbox():
+    domain = random_domain()
+    Mailbox.create(
+        user_id=user.id, email=f"email@{domain}", verified=False, commit=True
+    )
+    res = can_domain_be_used(user, domain)
+    assert res is None
+
+
+def test_can_domain_be_used_domain_of_mailbox_subdomain():
+    domain = random_domain()
+    Mailbox.create(
+        user_id=user.id, email=f"email@sub.{domain}", verified=True, commit=True
+    )
+    res = can_domain_be_used(user, domain)
+    assert res is None
+
+
 def test_can_domain_be_used_invalid_domain():
     domain = f"{random_string(10)}@lol.com"
     res = can_domain_be_used(user, domain)
