@@ -43,6 +43,10 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Generate flanker's PLY parser tables (*_parsetab.py) at build time. Otherwise flanker
+# tries to write them into site-packages on every start.
+RUN /code/.venv/bin/python -c "import compileall, os, flanker.addresslib._parser.parser as p; compileall.compile_dir(os.path.dirname(p.__file__), quiet=1)"
+
 # Copy code
 COPY . .
 
