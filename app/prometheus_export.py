@@ -29,7 +29,7 @@ from app import config
 from app.log import LOG
 
 from flask import Blueprint, Flask, Response
-from prometheus_client import CollectorRegistry
+from prometheus_client import CollectorRegistry, multiprocess
 
 METRICS_PATH = "/metrics"
 
@@ -146,12 +146,9 @@ def mark_worker_dead(pid: int) -> None:
     if not directory:
         return
 
-    try:
-        from prometheus_client import multiprocess
-    except ImportError as e:
-        LOG.e(f"prometheus_client is not importable, cannot drop the pid {pid}: {e}")
-        return
-
+    # multiprocess is imported at module level on purpose: this runs from gunicorn's
+    # SIGCHLD handler, which can re-enter while a lazy import is still running when
+    # several workers exit at once, leaving a partially initialized module.
     multiprocess.mark_process_dead(pid, path=directory)
 
 
