@@ -154,6 +154,18 @@
               <i class="fa fa-info-circle mr-1"></i>Enter a domain name to check whether it can be used as a mailbox domain.
             </small>
           </div>
+          <div class="mb-3">
+            <label for="user" class="font-weight-bold">User (optional)</label>
+            <input type="text"
+                   class="form-control"
+                   name="user"
+                   id="user"
+                   value="{{ user_query or '' }}"
+                   placeholder="User ID (1234 or uid:1234), email, or partner external user id">
+            <small class="form-text text-muted">
+              <i class="fa fa-info-circle mr-1"></i>If set, also checks whether this user can add the domain as a custom domain (same checks as the dashboard and the Partner API).
+            </small>
+          </div>
         </form>
       </div>
     </div>
@@ -219,6 +231,142 @@
           </div>
         </div>
       {% endif %}
+    {% endif %}
+
+    {# Custom domain creation #}
+    {% if domain and user_not_found %}
+      <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle mr-1"></i>No user found for <code>{{ user_query }}</code>
+      </div>
+    {% endif %}
+    {% if diagnosis is not none %}
+      {% set check = diagnosis.check %}
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header {{ 'header-success' if check.can_create else 'header-danger' }}">
+          <h5 class="mb-0">
+            {% if check.can_create %}
+              <i class="fa fa-check-circle mr-2"></i>User can add this custom domain
+            {% else %}
+              <i class="fa fa-times-circle mr-2"></i>User cannot add this custom domain
+            {% endif %}
+          </h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm table-borderless mb-0 info-table">
+            <tr>
+              <td>User:</td>
+              <td>
+                <a href="{{ url_for('admin.email_search.index', query=diagnosis.user.email, search_type='email') }}">{{ diagnosis.user.email }}</a>
+                <span class="text-muted">(id {{ diagnosis.user.id }})</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Domain:</td>
+              <td><code>{{ check.domain }}</code></td>
+            </tr>
+            <tr>
+              <td>Status:</td>
+              <td>
+                {% if check.can_create %}
+                  <span class="badge badge-success">Allowed</span>
+                {% else %}
+                  <span class="badge badge-danger">Blocked</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>Explanation:</td>
+              <td><strong>{{ diagnosis.explanation }}</strong></td>
+            </tr>
+            {% if check.error %}
+              <tr>
+                <td>Error shown to user:</td>
+                <td><span class="result-detail">{{ check.error }}</span></td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td>Premium:</td>
+              <td>
+                {% if diagnosis.is_premium %}
+                  <span class="badge badge-success">Yes</span>
+                {% else %}
+                  <span class="badge badge-danger">No</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% if check.forbidden_cause %}
+              <tr>
+                <td>Domain rejected:</td>
+                <td><span class="badge badge-warning">{{ check.forbidden_cause.name }}</span></td>
+              </tr>
+            {% endif %}
+            {% if diagnosis.existing_domain %}
+              <tr>
+                <td>Already registered:</td>
+                <td>
+                  <a href="{{ url_for('admin.custom_domain_search.index', query=diagnosis.existing_domain.id) }}">#{{ diagnosis.existing_domain.id }}</a>
+                  owned by
+                  <a href="{{ url_for('admin.email_search.index', query=diagnosis.existing_domain.user.email, search_type='email') }}">{{ diagnosis.existing_domain.user.email }}</a>
+                  {% if diagnosis.existing_domain.pending_deletion %}<span class="badge badge-secondary">pending deletion</span>{% endif %}
+                </td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td>Verified parent domain:</td>
+              <td>
+                {% if check.verified_root_cd %}
+                  <code>{{ check.verified_root_cd.domain }}</code>
+                  <span class="text-muted">(ownership inherited, pending-verification limit skipped)</span>
+                {% else %}
+                  <span class="text-muted">None owned by this user</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% if diagnosis.parent_domains %}
+              <tr>
+                <td>Parent domains in SL:</td>
+                <td>
+                  {% for parent in diagnosis.parent_domains %}
+                    <div>
+                      <a href="{{ url_for('admin.custom_domain_search.index', query=parent.id) }}"><code>{{ parent.domain }}</code></a>
+                      &mdash;
+                      {% if parent.user_id == diagnosis.user.id %}
+                        this user
+                      {% else %}
+                        <span class="badge badge-warning">other user</span>
+                        <a href="{{ url_for('admin.email_search.index', query=parent.user.email, search_type='email') }}">{{ parent.user.email }}</a>
+                      {% endif %}
+                      {% if parent.ownership_verified %}
+                        <span class="badge badge-success">ownership verified</span>
+                      {% else %}
+                        <span class="badge badge-secondary">ownership not verified</span>
+                      {% endif %}
+                      {% if parent.is_sl_subdomain %}<span class="badge badge-info">SL subdomain</span>{% endif %}
+                      {% if parent.pending_deletion %}<span class="badge badge-secondary">pending deletion</span>{% endif %}
+                    </div>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endif %}
+            <tr>
+              <td>Pending verification:</td>
+              <td>
+                <span class="badge {{ 'badge-danger' if diagnosis.pending_domains|length >= diagnosis.max_unverified_domains else 'badge-secondary' }}">
+                  {{ diagnosis.pending_domains|length }} / {{ diagnosis.max_unverified_domains }}
+                </span>
+                {% for d in diagnosis.pending_domains %}
+                  <div>
+                    <a href="{{ url_for('admin.custom_domain_search.index', query=d.id) }}"><code>{{ d.domain }}</code></a>
+                    <span class="text-muted">created {{ d.created_at.humanize() }}</span>
+                    {% if d.partner_id %}<span class="badge badge-info">partner</span>{% endif %}
+                    {% if d.pending_deletion %}<span class="badge badge-secondary">pending deletion</span>{% endif %}
+                  </div>
+                {% endfor %}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
     {% endif %}
 
   </div>

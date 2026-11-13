@@ -123,24 +123,45 @@ def has_reached_unverified_custom_domains_limit(user: User) -> bool:
     )
 
 
-def create_custom_domain(
-    user: User, domain: str, partner_id: Optional[int] = None
-) -> CreateCustomDomainResult:
-    if not user.is_premium():
-        return CreateCustomDomainResult(
-            message="Only premium plan can add custom domain",
-            message_category="warning",
-        )
+@dataclass
+class CustomDomainCreationCheck:
+    """Outcome of the checks performed before creating a custom domain.
 
+    `error` is None when the domain can be created. `verified_root_cd` is the
+    user's ownership-verified parent domain (if any), which lets the new domain
+    inherit ownership verification and bypass the unverified-domains limit.
+    """
+
+    domain: str
+    error: Optional[str] = None
+    not_premium: bool = False
+    forbidden_cause: Optional[CannotUseDomainReason] = None
+    unverified_limit_reached: bool = False
+    verified_root_cd: Optional[CustomDomain] = None
+
+    @property
+    def can_create(self) -> bool:
+        return self.error is None
+
+
+def check_custom_domain_creation(user: User, domain: str) -> CustomDomainCreationCheck:
+    """Run every check that create_custom_domain performs, without creating anything."""
     new_domain = sanitize_domain(domain)
+    check = CustomDomainCreationCheck(domain=new_domain)
+
+    if not user.is_premium():
+        check.not_premium = True
+        check.error = "Only premium plan can add custom domain"
+        return check
+
     domain_forbidden_cause = can_domain_be_used(user, new_domain)
     if domain_forbidden_cause:
-        return CreateCustomDomainResult(
-            message=domain_forbidden_cause.message(new_domain), message_category="error"
-        )
+        check.forbidden_cause = domain_forbidden_cause
+        check.error = domain_forbidden_cause.message(new_domain)
+        return check
 
     # new domain has ownership verified if its parent has the ownership verified
-    verified_root_cd = next(
+    check.verified_root_cd = next(
         (
             root_cd
             for root_cd in user.custom_domains
@@ -151,10 +172,27 @@ def create_custom_domain(
         None,
     )
 
-    if verified_root_cd is None and has_reached_unverified_custom_domains_limit(user):
+    if check.verified_root_cd is None and has_reached_unverified_custom_domains_limit(
+        user
+    ):
+        check.unverified_limit_reached = True
+        check.error = UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE
+
+    return check
+
+
+def create_custom_domain(
+    user: User, domain: str, partner_id: Optional[int] = None
+) -> CreateCustomDomainResult:
+    check = check_custom_domain_creation(user, domain)
+    if not check.can_create:
         return CreateCustomDomainResult(
-            message=UNVERIFIED_CUSTOM_DOMAINS_LIMIT_MESSAGE, message_category="error"
+            message=check.error,
+            message_category="warning" if check.not_premium else "error",
         )
+
+    new_domain = check.domain
+    verified_root_cd = check.verified_root_cd
 
     new_custom_domain = CustomDomain.create(domain=new_domain, user_id=user.id)
 

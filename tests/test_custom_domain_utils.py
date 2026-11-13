@@ -5,6 +5,7 @@ from app.alias_delete import move_alias_to_trash
 from app.config import ALIAS_DOMAINS
 from app.custom_domain_utils import (
     can_domain_be_used,
+    check_custom_domain_creation,
     create_custom_domain,
     is_valid_domain,
     MAX_UNVERIFIED_CUSTOM_DOMAINS,
@@ -227,6 +228,59 @@ def test_creates_custom_domain_with_partner_id():
     assert res.instance.domain == domain
     assert res.instance.user_id == user.id
     assert res.instance.partner_id == proton_partner.id
+
+
+# check_custom_domain_creation
+def test_check_custom_domain_creation_ok():
+    check = check_custom_domain_creation(_premium_user(), random_domain())
+    assert check.can_create
+    assert check.error is None
+
+
+def test_check_custom_domain_creation_not_premium():
+    new_user = create_new_user()
+    new_user.trial_end = None
+    Session.flush()
+
+    check = check_custom_domain_creation(new_user, random_domain())
+    assert not check.can_create
+    assert check.not_premium
+    assert create_custom_domain(new_user, random_domain()).message_category == "warning"
+
+
+def test_check_custom_domain_creation_forbidden_cause():
+    existing = random_domain()
+    CustomDomain.create(user_id=user.id, domain=existing, commit=True)
+
+    check = check_custom_domain_creation(_premium_user(), existing)
+    assert not check.can_create
+    assert check.forbidden_cause == CannotUseDomainReason.DomainAlreadyUsed
+
+
+def test_check_custom_domain_creation_unverified_limit():
+    new_user = _premium_user()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS):
+        CustomDomain.create(user_id=new_user.id, domain=random_domain(), commit=True)
+
+    check = check_custom_domain_creation(new_user, random_domain())
+    assert not check.can_create
+    assert check.unverified_limit_reached
+
+
+def test_check_custom_domain_creation_verified_parent_bypasses_limit():
+    new_user = _premium_user()
+    for _ in range(MAX_UNVERIFIED_CUSTOM_DOMAINS):
+        CustomDomain.create(user_id=new_user.id, domain=random_domain(), commit=True)
+    parent = CustomDomain.create(
+        user_id=new_user.id,
+        domain=random_domain(),
+        ownership_verified=True,
+        commit=True,
+    )
+
+    check = check_custom_domain_creation(new_user, f"sub.{parent.domain}")
+    assert check.can_create
+    assert check.verified_root_cd.id == parent.id
 
 
 # set_custom_domain_mailboxes
