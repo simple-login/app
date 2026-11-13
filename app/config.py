@@ -691,6 +691,8 @@ METRICS_SERVER_PORT: Optional[int] = (
 METRICS_SERVER_HOST = os.environ.get("METRICS_SERVER_HOST", "0.0.0.0")
 
 EVENT_WEBHOOK = os.environ.get("EVENT_WEBHOOK", None)
+# If set, sent as "authorization: Bearer <token>" on every event webhook request
+EVENT_WEBHOOK_TOKEN = os.environ.get("EVENT_WEBHOOK_TOKEN", None)
 
 # We want it disabled by default, so only skip if defined
 EVENT_WEBHOOK_SKIP_VERIFY_SSL = "EVENT_WEBHOOK_SKIP_VERIFY_SSL" in os.environ
