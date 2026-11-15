@@ -2083,6 +2083,7 @@ class Contact(Base, ModelMixin):
     __table_args__ = (
         sa.UniqueConstraint("alias_id", "website_email", name="uq_contact"),
         sa.Index("ix_contact_user_id_id", "user_id", "id"),
+        sa.Index("ix_contact_alias_id_user_id", "alias_id", "user_id"),
     )
 
     user_id = sa.Column(
@@ -2816,6 +2817,7 @@ class DomainDeletedAlias(Base, ModelMixin):
         sa.UniqueConstraint("domain_id", "email", name="uq_domain_trash"),
         sa.Index("ix_domain_deleted_alias_user_id", "user_id"),
         sa.Index("ix_domain_deleted_alias_alias_id", "alias_id"),
+        sa.Index("ix_domain_deleted_alias_email", "email"),
     )
 
     email = sa.Column(sa.String(256), nullable=False)
