@@ -9,6 +9,7 @@ from app.constants import JobType
 from app.db import Session
 from app.email_utils import get_email_domain_part
 from app.log import LOG
+from app.mailbox_email_match import has_verified_mailbox_on_domain
 from app.models import User, CustomDomain, SLDomain, Mailbox, Job, DomainMailbox, Alias
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
@@ -108,9 +109,7 @@ def can_domain_be_used(user: User, domain: str) -> Optional[CannotUseDomainReaso
         return CannotUseDomainReason.DomainAlreadyUsed
     elif get_email_domain_part(user.email) == domain:
         return CannotUseDomainReason.DomainPartOfUserEmail
-    elif Mailbox.filter(
-        Mailbox.verified.is_(True), Mailbox.email.endswith(f"@{domain}")
-    ).first():
+    elif has_verified_mailbox_on_domain(domain):
         return CannotUseDomainReason.DomainUserInMailbox
     else:
         return None

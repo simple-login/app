@@ -14,7 +14,8 @@ from app.custom_domain_utils import (
 from app.dashboard.base import dashboard_bp
 from app.errors import SubdomainInTrashError
 from app.log import LOG
-from app.models import CustomDomain, Mailbox, SLDomain
+from app.mailbox_email_match import has_verified_mailbox_on_domain
+from app.models import CustomDomain, SLDomain
 from app.user_audit_log_utils import emit_user_audit_log, UserAuditLogAction
 
 # Only lowercase letters, numbers, dashes (-)  are currently supported
@@ -92,10 +93,7 @@ def subdomain_route():
 
             if CustomDomain.get_by(domain=full_domain):
                 flash(f"{full_domain} already used", "error")
-            elif Mailbox.filter(
-                Mailbox.verified.is_(True),
-                Mailbox.email.endswith(f"@{full_domain}"),
-            ).first():
+            elif has_verified_mailbox_on_domain(full_domain):
                 flash(f"{full_domain} already used in a SimpleLogin mailbox", "error")
             else:
                 try:

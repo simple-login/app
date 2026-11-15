@@ -3036,6 +3036,12 @@ class Mailbox(Base, ModelMixin):
             ),
             sa.text("split_part(lower(email), '@', 2)"),
         ),
+        # domain ownership checks in app.mailbox_email_match
+        sa.Index(
+            "ix_mailbox_verified_email_domain",
+            sa.text("split_part(lower(email), '@', 2)"),
+            postgresql_where=sa.text("verified"),
+        ),
     )
 
     user = orm.relationship(User, foreign_keys=[user_id])
