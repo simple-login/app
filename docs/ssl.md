@@ -39,6 +39,7 @@ Make sure to replace app.mydomain.com with your own domain.
 ### Updating `simplelogin.env`
 
 Make sure to change the `URL` in `simplelogin.env` to `https://app.mydomain.com`, otherwise not all page assets will load securely, and some functionality (e.g. Webauthn) will break.
+If you set `LANDING_PAGE_URL`, update it to `https://mydomain.com` as well.
 You will need to reload the docker containers for this to take effect.
 
 ## HTTP Strict Transport Security (HSTS)
