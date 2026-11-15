@@ -2,11 +2,12 @@ import base64
 import json
 from urllib.parse import urlparse, parse_qs
 
+import arrow
 from flask import url_for
 
 from app.db import Session
 from app.jose_utils import verify_id_token, decode_id_token
-from app.models import Alias, Client, User, ClientUser, RedirectUri
+from app.models import Alias, Client, User, ClientUser, RedirectUri, AuthorizationCode
 
 from app.oauth.views.authorize import (
     get_host_name_and_scheme,
@@ -1173,3 +1174,54 @@ def test_oauth_custom_prefix_at_limit_does_not_error(flask_client):
     assert r.status_code == 200
     assert "You have reached the alias limit of your plan" in r.get_data(as_text=True)
     assert ClientUser.get_by(client_id=client.id, user_id=user.id) is None
+
+
+def test_token_endpoint_invalid_authorization_code(flask_client):
+    """Ensure invalid authorization code returns 400 without echoing the code."""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+    Session.commit()
+
+    basic_auth_headers = base64.b64encode(
+        f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
+    ).decode("utf-8")
+
+    r = flask_client.post(
+        url_for("oauth.token"),
+        headers={"Authorization": "Basic " + basic_auth_headers},
+        data={"grant_type": "authorization_code", "code": "non_existent_code_123"},
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "no such authorization code"}
+    assert "non_existent_code_123" not in r.get_data(as_text=True)
+
+
+def test_token_endpoint_expired_authorization_code(flask_client):
+    """Ensure expired authorization code returns 400 without echoing the code."""
+    user = login(flask_client)
+    client = Client.create_new("test client", user.id)
+    Session.commit()
+
+    code_str = "expired_code_123"
+    AuthorizationCode.create(
+        client_id=client.id,
+        user_id=user.id,
+        code=code_str,
+        expired=arrow.now().shift(days=-1),
+        commit=True,
+    )
+
+    basic_auth_headers = base64.b64encode(
+        f"{client.oauth_client_id}:{client.oauth_client_secret}".encode()
+    ).decode("utf-8")
+
+    r = flask_client.post(
+        url_for("oauth.token"),
+        headers={"Authorization": "Basic " + basic_auth_headers},
+        data={"grant_type": "authorization_code", "code": code_str},
+    )
+
+    assert r.status_code == 400
+    assert r.json == {"error": "authorization code already expired"}
+    assert code_str not in r.get_data(as_text=True)
