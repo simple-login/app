@@ -1,6 +1,6 @@
 import os
 
-from flask import testing
+from flask import testing, g, has_app_context
 
 # use the tests/test.env config fle
 # flake8: noqa: E402
@@ -15,12 +15,11 @@ from app.db import Session, engine
 # Tests share one connection so flask_client can wrap each test in an outer
 # transaction and roll back everything it committed.
 connection = engine.connect()
-Session.configure(bind=connection)
+Session.configure(bind=connection, join_transaction_mode="create_savepoint")
 
 from app.rate_limiter import set_rate_limit_enabled
 
-from psycopg2 import errors
-from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST
+from psycopg import errors
 
 import pytest
 
@@ -38,12 +37,13 @@ app.config["SERVER_NAME"] = "sl.lan"
 # enable pg_trgm extension
 with engine.connect() as conn:
     try:
-        conn.execute("DROP EXTENSION if exists pg_trgm")
-        conn.execute("CREATE EXTENSION pg_trgm")
+        conn.execute(sqlalchemy.text("DROP EXTENSION if exists pg_trgm"))
+        conn.execute(sqlalchemy.text("CREATE EXTENSION pg_trgm"))
+        conn.commit()
     except sqlalchemy.exc.InternalError as e:
-        if isinstance(e.orig, errors.lookup(DEPENDENT_OBJECTS_STILL_EXIST)):
+        if isinstance(e.orig, errors.DependentObjectsStillExist):
             print(">>> pg_trgm can't be dropped, ignore")
-        conn.execute("Rollback")
+        conn.rollback()
 
 add_sl_domains()
 add_proton_partner()
@@ -59,6 +59,11 @@ from app import config, constants
 
 class CustomTestClient(testing.FlaskClient):
     def open(self, *args, **kwargs):
+        # flask_client keeps one app context for the whole test, and requests
+        # reuse it. Flask-Login >= 0.6 caches the user in `g`, so drop it to
+        # avoid leaking the logged-in user between requests/clients.
+        if has_app_context():
+            g.pop("_login_user", None)
         if isinstance(args[0], str):
             headers = kwargs.pop("headers", {})
             headers.update({constants.HEADER_ALLOW_API_COOKIES: "allow"})
@@ -68,6 +73,11 @@ class CustomTestClient(testing.FlaskClient):
 
 @pytest.fixture
 def flask_client():
+    # Release whatever transaction the shared connection was left in (e.g. by a
+    # Session autobegin in a previous test) so we can start a clean outer one.
+    Session.close()
+    if connection.in_transaction():
+        connection.rollback()
     transaction = connection.begin()
 
     with app.app_context():
@@ -82,6 +92,6 @@ def flask_client():
             # disable rate limit again as some tests might enable rate limit
             config.DISABLE_RATE_LIMIT = True
             # roll back all commits made during a test
-            transaction.rollback()
             Session.rollback()
             Session.close()
+            transaction.rollback()

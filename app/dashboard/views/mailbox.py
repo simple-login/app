@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from itsdangerous import TimestampSigner
 from wtforms import validators, IntegerField
-from wtforms.fields.html5 import EmailField
+from wtforms.fields import EmailField
 
 from app import parallel_limiter, mailbox_utils, user_settings
 from app.config import MAILBOX_SECRET

@@ -1,6 +1,5 @@
 import arrow
-import psycopg2
-import select
+import psycopg
 
 from abc import ABC, abstractmethod
 
@@ -39,41 +38,42 @@ class PostgresEventSource(EventSource):
                 self.__connect()
 
     def __listen(self, on_event: Callable[[SyncEvent], NoReturn]):
-        self.__connection.set_isolation_level(
-            psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT
-        )
-
-        cursor = self.__connection.cursor()
-        cursor.execute(f"LISTEN {NOTIFICATION_CHANNEL};")
+        self.__connection.execute(f"LISTEN {NOTIFICATION_CHANNEL};")
 
         LOG.info("Starting to listen to events")
         while True:
-            if select.select([self.__connection], [], [], 5) != ([], [], []):
-                self.__connection.poll()
-                while self.__connection.notifies:
-                    notify = self.__connection.notifies.pop(0)
-                    LOG.debug(
-                        f"Got NOTIFY: pid={notify.pid} channel={notify.channel} payload={notify.payload}"
-                    )
-                    try:
-                        webhook_id = int(notify.payload)
-                        event = SyncEvent.get_by(id=webhook_id)
-                        if event is not None:
-                            if event.mark_as_taken():
-                                on_event(event)
-                            else:
-                                LOG.info(
-                                    f"Event {event.id} was handled by another runner"
-                                )
+            # Yields notifications as they arrive, and returns after 5 seconds
+            # without any so the loop keeps cycling
+            for notify in self.__connection.notifies(timeout=5):
+                LOG.debug(
+                    f"Got NOTIFY: pid={notify.pid} channel={notify.channel} payload={notify.payload}"
+                )
+                try:
+                    webhook_id = int(notify.payload)
+                    event = SyncEvent.get_by(id=webhook_id)
+                    if event is not None:
+                        if event.mark_as_taken():
+                            on_event(event)
                         else:
-                            LOG.info(f"Could not find event with id={notify.payload}")
-                    except Exception as e:
-                        LOG.warning(f"Error getting event: {e}")
-                    Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
+                            LOG.info(f"Event {event.id} was handled by another runner")
+                    else:
+                        LOG.info(f"Could not find event with id={notify.payload}")
+                except Exception as e:
+                    LOG.warning(f"Error getting event: {e}")
+                Session.close()  # Ensure we get a new connection and we don't leave a dangling tx
 
     def __connect(self):
-        self.__connection = psycopg2.connect(
-            self.__connection_string, application_name="sl-event-listen"
+        previous = getattr(self, "_PostgresEventSource__connection", None)
+        if previous is not None:
+            try:
+                previous.close()
+            except Exception:
+                pass
+        # LISTEN only receives notifications outside of a transaction
+        self.__connection = psycopg.connect(
+            self.__connection_string,
+            application_name="sl-event-listen",
+            autocommit=True,
         )
 
         from app.db import Session

@@ -2,6 +2,7 @@
 import argparse
 import time
 
+from sqlalchemy import text
 
 from app.email_utils import generate_reply_email, get_noreply_email
 from app.email_validation import is_valid_email
@@ -25,7 +26,8 @@ last_id = 0
 print(f"Replacing contacts with reply_email={_noreply_email}")
 while True:
     rows = Session.execute(
-        el_query, {"last_id": last_id, "reply_email": _noreply_email, "step": step}
+        text(el_query),
+        {"last_id": last_id, "reply_email": _noreply_email, "step": step},
     )
     loop_updated = 0
     for row in rows:
@@ -42,7 +44,7 @@ while True:
             f"Replacing contact {contact_id} with {website_email} reply_email for {reply_email}"
         )
         Session.execute(
-            update_query, {"contact_id": row[0], "reply_email": reply_email}
+            text(update_query), {"contact_id": row[0], "reply_email": reply_email}
         )
         Session.commit()
         updated += 1

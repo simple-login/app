@@ -91,7 +91,8 @@ def test_rate_limit_limits_by_user_id_ignoring_ip(flask_client):
     assert res.status_code == HTTPStatus.TOO_MANY_REQUESTS
 
     # Log out
-    flask_client.cookie_jar.clear()
+    # werkzeug >= 2.3 has no public API to clear every cookie
+    flask_client._cookies.clear()
 
     # Log in with another user
     login(flask_client)

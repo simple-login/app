@@ -55,7 +55,9 @@ class ManualSubscriptionAdmin(SLModelView):
             EventDispatcher.send_event(
                 user=sub.user,
                 content=EventContent(
-                    user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.timestamp)
+                    user_plan_change=UserPlanChanged(
+                        plan_end_time=sub.end_at.int_timestamp
+                    )
                 ),
             )
 

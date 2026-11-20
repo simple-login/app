@@ -1,4 +1,4 @@
-import arrow
+from datetime import datetime, timezone
 
 from app.db import Session
 from app.email_utils import send_email, render
@@ -28,6 +28,6 @@ def failed_payment(sub: Subscription, subscription_id: str):
         render(
             "transactional/subscription-cancel.txt",
             user=user,
-            end_date=arrow.arrow.datetime.utcnow(),
+            end_date=datetime.now(timezone.utc).replace(tzinfo=None),
         ),
     )

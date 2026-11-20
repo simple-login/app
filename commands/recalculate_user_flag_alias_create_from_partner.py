@@ -2,7 +2,7 @@
 import argparse
 import time
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app.models import Alias, User
 from app.db import Session
 
@@ -28,7 +28,7 @@ updated = 0
 start_time = time.time()
 for batch_start in range(user_id_start, max_user_id, step):
     rows = Session.execute(
-        el_query,
+        text(el_query),
         {
             "start": batch_start,
             "end": batch_start + step,
@@ -38,7 +38,7 @@ for batch_start in range(user_id_start, max_user_id, step):
     for row in rows:
         if row[1] > 0:
             Session.execute(
-                user_update_query,
+                text(user_update_query),
                 {"user_id": row[0], "user_flag": User.FLAG_CREATED_ALIAS_FROM_PARTNER},
             )
             Session.commit()

@@ -25,10 +25,10 @@ def upgrade():
     bind = op.get_bind()
     session = Session(bind=bind)
 
-    session.execute("""
+    session.execute(sa.text("""
     ALTER TABLE alias ADD COLUMN ts_vector tsvector GENERATED ALWAYS
     AS (to_tsvector('english', note)) STORED;
-    """)
+    """))
 
     op.create_index('ix_video___ts_vector__', 'alias', ['ts_vector'], unique=False, postgresql_using='gin')
     # ### end Alembic commands ###
