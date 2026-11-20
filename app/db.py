@@ -8,13 +8,9 @@ from app import config
 
 engine = create_engine(
     config.DB_URI,
-    connect_args={
-        "application_name": config.DB_CONN_NAME,
-        # psycopg 3 prepares a statement server-side once it ran 5 times on a
-        # connection. Prepared statements don't survive pgbouncer transaction
-        # pooling, so keep psycopg2's behaviour of never preparing them.
-        "prepare_threshold": None,
-    },
+    # psycopg2-compatible connection settings (client-side binding, no prepared
+    # statements) are set by the dialect: see app/pg_dialect.py
+    connect_args={"application_name": config.DB_CONN_NAME},
     # Test pooled connections on checkout so a connection dropped while idle
     # (DB restart, failover, pgbouncer) is replaced instead of failing a request.
     pool_pre_ping=True,

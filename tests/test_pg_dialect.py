@@ -1,6 +1,8 @@
 """The DB dialect must keep psycopg2's parameter typing (see app/pg_dialect.py)."""
 
-from sqlalchemy import text
+from psycopg import ClientCursor
+from sqlalchemy import select, text
+from sqlalchemy.engine.default import CACHE_HIT
 
 from app.db import Session, engine
 from app.models import EmailLog, User
@@ -11,6 +13,14 @@ from tests.utils import create_new_user
 def test_engine_uses_psycopg3_dialect():
     assert isinstance(engine.dialect, SLPGDialect_psycopg)
     assert engine.dialect.driver == "psycopg"
+    assert engine.dialect.supports_statement_cache
+
+
+def test_connection_is_psycopg2_compatible(flask_client):
+    dbapi_conn = Session.connection().connection.dbapi_connection
+    # client-side binding, simple query protocol
+    assert dbapi_conn.cursor_factory is ClientCursor
+    assert dbapi_conn.prepare_threshold is None
 
 
 def test_no_cast_rendered_on_integer_binds():
@@ -32,13 +42,21 @@ def test_integer_column_compared_with_out_of_range_number(flask_client):
 
 
 def test_cached_statement_uses_each_call_values(flask_client):
-    # the compiled statement is cached: make sure values are not mixed up
+    # The compiled statement is cached: the cache must be hit, and each
+    # execution must still use its own values
     u1, u2 = create_new_user(), create_new_user()
-    for _ in range(3):
-        for u in (u1, u2):
-            assert User.filter(User.id == str(u.id)).first().id == u.id
-            assert User.filter(User.id.in_([str(u.id)])).one().id == u.id
-            assert User.filter(User.id == u.id).first().id == u.id
+    for stmt in (
+        lambda u: select(User.id).where(User.id == str(u.id)),
+        lambda u: select(User.id).where(User.id.in_([str(u.id)])),
+        lambda u: select(User.id).where(User.id == u.id),
+    ):
+        hits = []
+        for _ in range(3):
+            for u in (u1, u2):
+                result = Session.connection().execute(stmt(u))
+                hits.append(result.context.cache_hit == CACHE_HIT)
+                assert result.scalars().all() == [u.id]
+        assert hits[1:] == [True] * (len(hits) - 1)
 
 
 def test_untyped_text_parameters(flask_client):
