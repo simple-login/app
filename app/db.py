@@ -8,8 +8,8 @@ from app import config
 
 engine = create_engine(
     config.DB_URI,
-    # psycopg2-compatible connection settings (client-side binding, no prepared
-    # statements) are set by the dialect: see app/pg_dialect.py
+    # Connection settings (no prepared statements) are set by the dialect:
+    # see app/pg_dialect.py
     connect_args={"application_name": config.DB_CONN_NAME},
     # Test pooled connections on checkout so a connection dropped while idle
     # (DB restart, failover, pgbouncer) is replaced instead of failing a request.
