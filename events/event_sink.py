@@ -11,6 +11,9 @@ from app.config import (
 from app.log import LOG
 from app.models import SyncEvent
 
+# (connect, read). The read timeout applies to each socket read, not the whole request.
+_WEBHOOK_TIMEOUT_SECONDS = (5, 15)
+
 
 class EventSink(ABC):
     @abstractmethod
@@ -46,6 +49,7 @@ class HttpEventSink(EventSink):
             data=data,
             headers=headers,
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
+            timeout=_WEBHOOK_TIMEOUT_SECONDS,
         )
         metrics.record_event("EventSentToPartner", {"http_code": res.status_code})
         if res.status_code != 200:
