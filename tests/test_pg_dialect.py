@@ -1,6 +1,5 @@
 """The DB dialect must keep psycopg2's parameter typing (see app/pg_dialect.py)."""
 
-from psycopg import ClientCursor
 from sqlalchemy import select, text
 from sqlalchemy.engine.default import CACHE_HIT
 
@@ -16,10 +15,8 @@ def test_engine_uses_psycopg3_dialect():
     assert engine.dialect.supports_statement_cache
 
 
-def test_connection_is_psycopg2_compatible(flask_client):
+def test_connection_never_prepares_statements(flask_client):
     dbapi_conn = Session.connection().connection.dbapi_connection
-    # client-side binding, simple query protocol
-    assert dbapi_conn.cursor_factory is ClientCursor
     assert dbapi_conn.prepare_threshold is None
 
 

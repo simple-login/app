@@ -1,10 +1,7 @@
-"""PostgreSQL + psycopg 3 dialect behaving like psycopg2 did.
+"""PostgreSQL + psycopg 3 dialect.
 
-Connections use psycopg's ClientCursor: parameters are bound client side and
-queries are sent with the simple query protocol, as psycopg2 did. With the
-default server-side binding, queries use the extended protocol, which changes
-how connection poolers (e.g. in transaction mode) see the traffic. Statements
-are never prepared server side either (prepare_threshold=None).
+Statements are never prepared server side (prepare_threshold=None): prepared
+statements don't work with poolers in transaction mode (pgdog).
 
 SQLAlchemy's psycopg dialect renders an explicit cast on string and integer bound
 parameters (e.g. ``id = %(id)s::VARCHAR``), which psycopg2 never did. With
@@ -24,7 +21,6 @@ Registered as ``postgresql+slpsycopg``; see ``config.DB_URI``.
 
 from typing import Optional
 
-from psycopg import ClientCursor
 from sqlalchemy import BigInteger, Integer, SmallInteger, String
 from sqlalchemy.dialects import registry
 from sqlalchemy.dialects.postgresql.psycopg import (
@@ -77,10 +73,7 @@ class SLPGDialect_psycopg(PGDialect_psycopg):
 
     def create_connect_args(self, url):
         args, kwargs = super().create_connect_args(url)
-        # psycopg2 behaviour: client-side binding with the simple query protocol
-        kwargs.setdefault("cursor_factory", ClientCursor)
-        # psycopg2 never prepared statements server side; they also break
-        # poolers in transaction mode
+        # Prepared statements don't work with poolers in transaction mode
         kwargs.setdefault("prepare_threshold", None)
         return args, kwargs
 
