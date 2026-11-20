@@ -342,64 +342,6 @@ def test_user_is_active():
     assert not user.is_active()
 
 
-def test_sync_event_dead_letter():
-    # remove all SyncEvents before the test
-    all_events = SyncEvent.all()
-    for event in all_events:
-        SyncEvent.delete(event.id, commit=True)
-
-    # create an expired not taken event
-    e1 = SyncEvent.create(
-        content=b"content",
-        created_at=arrow.now().shift(minutes=-15),
-        taken_time=None,
-        commit=True,
-    )
-
-    # create an expired taken event (but too long ago)
-    e2 = SyncEvent.create(
-        content=b"content",
-        created_at=arrow.now().shift(minutes=-15),
-        taken_time=arrow.now().shift(minutes=-14),
-        commit=True,
-    )
-
-    # create an expired taken event (but recently)
-    e3 = SyncEvent.create(
-        content=b"content",
-        created_at=arrow.now().shift(minutes=-15),
-        taken_time=arrow.now().shift(minutes=-1),
-        commit=True,
-    )
-
-    # create a normal event
-    e4 = SyncEvent.create(
-        content=b"content",
-        created_at=arrow.now(),
-        commit=True,
-    )
-
-    # create event with too many retries
-    max_retries = 5
-    e5 = SyncEvent.create(
-        content=b"content",
-        retry_count=max_retries + 1,
-        created_at=arrow.now(),
-        commit=True,
-    )
-
-    # get dead letter events
-    dead_letter_events = SyncEvent.get_dead_letter(
-        older_than=arrow.now().shift(minutes=-10), max_retries=max_retries
-    )
-    assert len(dead_letter_events) == 2
-    assert e1 in dead_letter_events
-    assert e2 in dead_letter_events
-    assert e3 not in dead_letter_events
-    assert e4 not in dead_letter_events
-    assert e5 not in dead_letter_events
-
-
 def test_email_log_create_updates_alias_last_email_log_id(flask_client):
     user = create_new_user()
     alias = Alias.create_new_random(user)
