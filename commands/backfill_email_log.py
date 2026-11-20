@@ -2,7 +2,7 @@
 import argparse
 import time
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app.models import Alias
 from app.db import Session
 
@@ -27,9 +27,11 @@ alias_query = "UPDATE alias set last_email_log_id = :el_id where id = :alias_id"
 updated = 0
 start_time = time.time()
 for batch_start in range(alias_id_start, max_alias_id, step):
-    rows = Session.execute(el_query, {"start": batch_start, "end": batch_start + step})
+    rows = Session.execute(
+        text(el_query), {"start": batch_start, "end": batch_start + step}
+    )
     for row in rows:
-        Session.execute(alias_query, {"alias_id": row[0], "el_id": row[1]})
+        Session.execute(text(alias_query), {"alias_id": row[0], "el_id": row[1]})
         Session.commit()
         updated += 1
     elapsed = time.time() - start_time

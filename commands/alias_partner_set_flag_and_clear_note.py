@@ -2,7 +2,7 @@
 import argparse
 import time
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app.models import Alias
 from app.db import Session
 
@@ -28,7 +28,7 @@ updated = 0
 start_time = time.time()
 for batch_start in range(alias_id_start, max_alias_id, step):
     rows_done = Session.execute(
-        alias_query,
+        text(alias_query),
         {
             "start": batch_start,
             "end": batch_start + step,

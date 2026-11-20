@@ -8,8 +8,7 @@ Create Date: 2021-08-20 12:11:57.901994
 import sqlalchemy_utils
 from alembic import op
 import sqlalchemy as sa
-from psycopg2 import errors
-from psycopg2.errorcodes import DUPLICATE_OBJECT
+from psycopg import errors
 
 # revision identifiers, used by Alembic.
 revision = '424808e1fe49'
@@ -24,7 +23,7 @@ def upgrade():
         op.execute('CREATE EXTENSION pg_trgm')
     # thanks to https://stackoverflow.com/a/58743364/1428034 !
     except sa.exc.ProgrammingError as e:
-        if isinstance(e.orig, errors.lookup(DUPLICATE_OBJECT)):
+        if isinstance(e.orig, errors.DuplicateObject):
             print(">>> pg_trgm already loaded, ignore")
             op.execute("Rollback")
 

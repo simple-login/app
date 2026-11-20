@@ -390,7 +390,7 @@ def auth_payload(user, device) -> dict:
     # do not give api_key, user can only obtain api_key after OTP verification
     if user.enable_otp:
         s = Signer(FLASK_SECRET)
-        ret["mfa_key"] = s.sign(str(user.id))
+        ret["mfa_key"] = s.sign(str(user.id)).decode()
         ret["api_key"] = None
     else:
         api_key = ApiKey.get_by(user_id=user.id, name=device)

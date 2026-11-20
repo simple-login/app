@@ -1,5 +1,7 @@
 {% extends 'admin/master.html' %}
 
+{# This page renders its own header card: hide flask-admin's page title #}
+{% block page_title %}{% endblock %}
 {% macro highlight_email(email, query, is_regex) -%}
   {% if is_regex %}
 
@@ -296,7 +298,7 @@
             {% endif %}
             {% if user.enable_otp or user.fido_uuid %}
 
-              <form action="{{ url_for('admin.email_search.disable_2fa') }}"
+              <form action="{{ url_for('admin_email_search.disable_2fa') }}"
                     method="POST"
                     class="mb-2">
                 {{ csrf_form.csrf_token }}
@@ -318,7 +320,7 @@
             {% endif %}
             {% if user.delete_on %}
 
-              <form action="{{ url_for('admin.email_search.stop_user_deletion') }}"
+              <form action="{{ url_for('admin_email_search.stop_user_deletion') }}"
                     method="POST"
                     class="mb-2">
                 {{ csrf_form.csrf_token }}
@@ -414,7 +416,7 @@
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.mark_abuser') }}"
+        <form action="{{ url_for('admin_email_search.mark_abuser') }}"
               method="POST">
           {{ csrf_form.csrf_token }}
           <div class="modal-body">
@@ -463,7 +465,7 @@
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.unmark_abuser') }}"
+        <form action="{{ url_for('admin_email_search.unmark_abuser') }}"
               method="POST">
           {{ csrf_form.csrf_token }}
           <div class="modal-body">
@@ -513,7 +515,7 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <form action="{{ url_for('admin.email_search.delete_partner_link') }}"
+          <form action="{{ url_for('admin_email_search.delete_partner_link') }}"
                 method="POST"
                 id="unlinkProtonForm{{ user.id }}">
             {{ csrf_form.csrf_token }}
@@ -584,7 +586,7 @@
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.delete_user') }}"
+        <form action="{{ url_for('admin_email_search.delete_user') }}"
               method="POST"
               id="deleteUserForm{{ user.id }}">
           {{ csrf_form.csrf_token }}
@@ -662,7 +664,7 @@
             <span>&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
+        <form action="{{ url_for('admin_email_search.update_subdomain_quota') }}"
               method="POST"
               id="subdomainQuotaForm{{ user.id }}">
           {{ csrf_form.csrf_token }}
@@ -699,7 +701,7 @@
             <span>&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
+        <form action="{{ url_for('admin_email_search.update_directory_quota') }}"
               method="POST"
               id="directoryQuotaForm{{ user.id }}">
           {{ csrf_form.csrf_token }}
@@ -782,7 +784,7 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+          <form action="{{ url_for('admin_email_search.toggle_alias_status') }}"
                 method="POST"
                 id="disableAliasForm{{ alias.id }}">
             {{ csrf_form.csrf_token }}
@@ -848,7 +850,7 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <form action="{{ url_for('admin.email_search.toggle_alias_status') }}"
+          <form action="{{ url_for('admin_email_search.toggle_alias_status') }}"
                 method="POST"
                 id="enableAliasForm{{ alias.id }}">
             {{ csrf_form.csrf_token }}
@@ -912,7 +914,7 @@
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <form action="{{ url_for('admin.email_search.delete_alias') }}"
+        <form action="{{ url_for('admin_email_search.delete_alias') }}"
               method="POST"
               id="deleteAliasForm{{ alias.id }}">
           {{ csrf_form.csrf_token }}
@@ -1098,7 +1100,7 @@
     <div class="card-body">
       <div class="row">
         <div class="col-md-6 mb-3">
-          <form action="{{ url_for('admin.email_search.update_subdomain_quota') }}"
+          <form action="{{ url_for('admin_email_search.update_subdomain_quota') }}"
                 method="POST">
             {{ csrf_form.csrf_token }}
             <input type="hidden" name="user_id" value="{{ user.id }}">
@@ -1122,7 +1124,7 @@
           </form>
         </div>
         <div class="col-md-6 mb-3">
-          <form action="{{ url_for('admin.email_search.update_directory_quota') }}"
+          <form action="{{ url_for('admin_email_search.update_directory_quota') }}"
                 method="POST">
             {{ csrf_form.csrf_token }}
             <input type="hidden" name="user_id" value="{{ user.id }}">
@@ -1285,7 +1287,7 @@
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
-                      <form action="{{ url_for('admin.email_search.set_default_mailbox') }}"
+                      <form action="{{ url_for('admin_email_search.set_default_mailbox') }}"
                             method="POST">
                         {{ csrf_form.csrf_token }}
                         <div class="modal-body">
@@ -1330,7 +1332,7 @@
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
-                      <form action="{{ url_for('admin.email_search.admin_reenable_mailbox') }}"
+                      <form action="{{ url_for('admin_email_search.admin_reenable_mailbox') }}"
                             method="POST">
                         {{ csrf_form.csrf_token }}
                         <div class="modal-body">
@@ -1382,7 +1384,7 @@
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
-                      <form action="{{ url_for('admin.email_search.send_mailbox_disable_warning') }}"
+                      <form action="{{ url_for('admin_email_search.send_mailbox_disable_warning') }}"
                             method="POST">
                         {{ csrf_form.csrf_token }}
                         <div class="modal-body">
@@ -1432,7 +1434,7 @@
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
-                      <form action="{{ url_for('admin.email_search.admin_disable_mailbox') }}"
+                      <form action="{{ url_for('admin_email_search.admin_disable_mailbox') }}"
                             method="POST">
                         {{ csrf_form.csrf_token }}
                         <div class="modal-body">
@@ -1485,7 +1487,7 @@
                           <span aria-hidden="true">&times;</span>
                         </button>
                       </div>
-                      <form action="{{ url_for('admin.email_search.delete_mailbox') }}"
+                      <form action="{{ url_for('admin_email_search.delete_mailbox') }}"
                             method="POST">
                         {{ csrf_form.csrf_token }}
                         <div class="modal-body">
@@ -1925,7 +1927,7 @@
                     <code>{{ domain.id }}</code>
                   </td>
                   <td>
-                    <a href="{{ url_for('admin.custom_domain_search.index', query=domain.domain) }}">{{ domain.domain }}</a>{{ copy_btn(domain.domain) }}
+                    <a href="{{ url_for('admin_custom_domain_search.index', query=domain.domain) }}">{{ domain.domain }}</a>{{ copy_btn(domain.domain) }}
                   </td>
                   <td>
                     {% if domain.verified and domain.ownership_verified %}

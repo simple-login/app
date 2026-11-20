@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_admin import Admin
+from flask_admin.theme import Bootstrap4Theme
 
 from app.db import Session
 from app.models import (
@@ -38,19 +39,35 @@ from app.admin.domain_check import DomainCheckAdmin
 
 
 def init_admin(app: Flask):
-    admin = Admin(name="SimpleLogin", template_mode="bootstrap4")
+    admin = Admin(name="SimpleLogin", theme=Bootstrap4Theme(fluid=True))
 
     admin.init_app(app, index_view=SLAdminIndexView())
-    admin.add_view(EmailSearchAdmin(name="Email Search", endpoint="admin.email_search"))
+    # Blueprint names can't contain dots since Flask 2: the endpoints use "_" but
+    # `url` keeps the historical /admin/admin.<name> paths.
     admin.add_view(
-        CustomDomainSearchAdmin(
-            name="Custom domain search", endpoint="admin.custom_domain_search"
+        EmailSearchAdmin(
+            name="Email Search", endpoint="admin_email_search", url="admin.email_search"
         )
     )
     admin.add_view(
-        AbuserLookupAdmin(name="Abuser Lookup", endpoint="admin.abuser_lookup")
+        CustomDomainSearchAdmin(
+            name="Custom domain search",
+            endpoint="admin_custom_domain_search",
+            url="admin.custom_domain_search",
+        )
     )
-    admin.add_view(DomainCheckAdmin(name="Domain Check", endpoint="admin.domain_check"))
+    admin.add_view(
+        AbuserLookupAdmin(
+            name="Abuser Lookup",
+            endpoint="admin_abuser_lookup",
+            url="admin.abuser_lookup",
+        )
+    )
+    admin.add_view(
+        DomainCheckAdmin(
+            name="Domain Check", endpoint="admin_domain_check", url="admin.domain_check"
+        )
+    )
     admin.add_view(UserAdmin(User, Session))
     admin.add_view(AliasAdmin(Alias, Session))
     admin.add_view(MailboxAdmin(Mailbox, Session))

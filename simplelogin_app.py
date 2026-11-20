@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import arrow
 import click
-import flask_limiter
+import flask_limiter.constants
 import flask_profiler
 import sentry_sdk
 import time
@@ -34,6 +34,7 @@ from app.developer.base import developer_bp
 from app.discover.base import discover_bp
 from app.extensions import login_manager, limiter
 from app.fake_data import fake_data
+from app.flask_compat import apply_flask_compat
 from app.internal.base import internal_bp
 from app.jose_utils import get_jwk_key
 from app.log import LOG
@@ -208,7 +209,9 @@ def register_blueprints(app: Flask):
     app.register_blueprint(phone_bp)
 
     app.register_blueprint(oauth_bp, url_prefix="/oauth")
-    app.register_blueprint(oauth_bp, url_prefix="/oauth2")
+    # Same views also served under /oauth2; Flask >= 2 requires a distinct name.
+    # url_for("oauth.*") keeps resolving to /oauth.
+    app.register_blueprint(oauth_bp, url_prefix="/oauth2", name="oauth2")
     app.register_blueprint(onboarding_bp)
 
     app.register_blueprint(discover_bp)
@@ -415,6 +418,7 @@ def init_extensions(app: Flask):
 
 def create_simplelogin_app():
     app = Flask(__name__)
+    apply_flask_compat(app)
     # SimpleLogin is deployed behind NGINX
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1)
 
@@ -429,24 +433,23 @@ def create_simplelogin_app():
 
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-    # to have a "fluid" layout for admin
-    app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
-
     # to avoid conflict with other cookie
     app.config["SESSION_COOKIE_NAME"] = config.SESSION_COOKIE_NAME
     if config.URL.startswith("https"):
         app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     if config.MEM_STORE_URI:
-        app.config[flask_limiter.extension.C.STORAGE_URL] = config.MEM_STORE_URI
-        app.config[flask_limiter.extension.C.STORAGE_OPTIONS] = redis_storage_options(
-            config.MEM_STORE_URI
-        )
+        app.config[
+            flask_limiter.constants.ConfigVars.STORAGE_URI
+        ] = config.MEM_STORE_URI
+        app.config[
+            flask_limiter.constants.ConfigVars.STORAGE_OPTIONS
+        ] = redis_storage_options(config.MEM_STORE_URI)
         initialize_redis_services(app, config.MEM_STORE_URI)
 
     # Fail open: if Redis is unavailable, serve the request without rate limiting
     # instead of returning a 500.
-    app.config[flask_limiter.extension.C.SWALLOW_ERRORS] = True
+    app.config[flask_limiter.constants.ConfigVars.SWALLOW_ERRORS] = True
     limiter.init_app(app)
 
     setup_error_page(app)

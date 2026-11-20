@@ -5,7 +5,7 @@ from typing import Optional
 
 import sqlalchemy.exc
 from arrow import Arrow
-from psycopg2.errors import UniqueViolation
+from psycopg.errors import UniqueViolation
 from sqlalchemy import or_
 
 from app import config, metrics
@@ -69,7 +69,7 @@ def send_user_plan_changed_event(
     if partner_user.user.lifetime:
         event = UserPlanChanged(lifetime=True)
     elif subscription_end:
-        event = UserPlanChanged(plan_end_time=subscription_end.timestamp)
+        event = UserPlanChanged(plan_end_time=subscription_end.int_timestamp)
     else:
         event = UserPlanChanged(plan_end_time=None)
     EventDispatcher.send_event(partner_user.user, EventContent(user_plan_change=event))

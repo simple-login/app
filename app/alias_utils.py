@@ -559,7 +559,7 @@ def transfer_alias(alias: Alias, new_user: User, new_mailboxes: [Mailbox]):
                 email=alias.email,
                 note=alias.note,
                 enabled=alias.enabled,
-                created_at=int(alias.created_at.timestamp),
+                created_at=int(alias.created_at.int_timestamp),
             )
         ),
     )
@@ -577,7 +577,7 @@ def change_alias_status(
         id=alias.id,
         email=alias.email,
         enabled=enabled,
-        created_at=int(alias.created_at.timestamp),
+        created_at=int(alias.created_at.int_timestamp),
     )
     EventDispatcher.send_event(alias.user, EventContent(alias_status_change=event))
     audit_log_message = f"Set alias status to {enabled}"

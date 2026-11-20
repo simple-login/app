@@ -112,7 +112,7 @@ def delete_logs():
 
     total_deleted = 0
     batch_size = 500
-    Session.execute("set session statement_timeout=30000").rowcount
+    Session.execute(text("set session statement_timeout=30000"))
     queries_done = 0
     cutoff_time = arrow.now().shift(days=-14)
     rows_to_delete = EmailLog.filter(EmailLog.created_at < cutoff_time).count()
@@ -1129,7 +1129,9 @@ async def check_hibp():
     LOG.d("Updated list of known breaches")
 
     LOG.d("Getting the list of users to skip")
-    query = "select u.id, count(a.id) from users u, alias a where a.user_id=u.id group by u.id having count(a.id) > :max_alias"
+    query = text(
+        "select u.id, count(a.id) from users u, alias a where a.user_id=u.id group by u.id having count(a.id) > :max_alias"
+    )
     rows = Session.execute(query, {"max_alias": config.HIBP_MAX_ALIAS_CHECK})
     user_ids = [row[0] for row in rows]
     LOG.d("Got %d users to skip" % len(user_ids))

@@ -104,18 +104,16 @@ def get_contact_infos(
     sub = (
         Session.query(
             Contact.id,
-            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
+            func.sum(case((EmailLog.is_reply, 1), else_=0)).label("nb_reply"),
             func.sum(
                 case(
-                    [
-                        (
-                            and_(
-                                EmailLog.is_reply.is_(False),
-                                EmailLog.blocked.is_(False),
-                            ),
-                            1,
-                        )
-                    ],
+                    (
+                        and_(
+                            EmailLog.is_reply.is_(False),
+                            EmailLog.blocked.is_(False),
+                        ),
+                        1,
+                    ),
                     else_=0,
                 )
             ).label("nb_forward"),
@@ -166,10 +164,8 @@ def get_contact_infos(
         q = q.filter(Contact.id == contact_id)
 
     latest_activity = case(
-        [
-            (EmailLog.created_at > Contact.created_at, EmailLog.created_at),
-            (EmailLog.created_at < Contact.created_at, Contact.created_at),
-        ],
+        (EmailLog.created_at > Contact.created_at, EmailLog.created_at),
+        (EmailLog.created_at < Contact.created_at, Contact.created_at),
         else_=Contact.created_at,
     )
     q = (

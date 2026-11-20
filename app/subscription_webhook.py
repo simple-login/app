@@ -10,7 +10,7 @@ def execute_subscription_webhook(user: User):
     )
     sl_subscription_end = None
     if subscription_end:
-        sl_subscription_end = subscription_end.timestamp
+        sl_subscription_end = subscription_end.int_timestamp
     event = UserPlanChanged(plan_end_time=sl_subscription_end)
     EventDispatcher.send_event(user, EventContent(user_plan_change=event))
     Session.commit()

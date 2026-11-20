@@ -251,4 +251,4 @@ class SLAdminIndexView(AdminIndexView):
     @expose("/")
     def index(self):
         redirect_destination = _redirect_if_user_is_not_allowed()
-        return redirect_destination or redirect(url_for("admin.email_search.index"))
+        return redirect_destination or redirect(url_for("admin_email_search.index"))
