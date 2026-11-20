@@ -924,7 +924,7 @@ def forward_email_to_mailbox(
         LOG.w("missing date header, create one")
         msg[headers.DATE] = formatdate()
 
-    replace_sl_message_id_by_original_message_id(msg)
+    replace_sl_message_id_by_original_message_id(msg, user)
 
     # change the from_header so the email comes from a reverse-alias
     # replace the email part in from: header
@@ -1001,17 +1001,30 @@ def forward_email_to_mailbox(
         return True, status.E200
 
 
-def replace_sl_message_id_by_original_message_id(msg):
+def _get_message_id_matching_for_user(
+    sl_message_id: str, user_id: int
+) -> Optional[MessageIDMatching]:
+    """Only return a matching created by an email log of this user"""
+    return (
+        Session.query(MessageIDMatching)
+        .join(EmailLog, MessageIDMatching.email_log_id == EmailLog.id)
+        .filter(
+            MessageIDMatching.sl_message_id == sl_message_id,
+            EmailLog.user_id == user_id,
+        )
+        .first()
+    )
+
+
+def replace_sl_message_id_by_original_message_id(msg, user: User) -> None:
     # Replace SL Message-ID by original one in In-Reply-To header
     if msg[headers.IN_REPLY_TO]:
-        matching: MessageIDMatching = MessageIDMatching.get_by(
-            sl_message_id=str(msg[headers.IN_REPLY_TO])
-        )
+        sl_message_id = str(msg[headers.IN_REPLY_TO]).strip()
+        matching = _get_message_id_matching_for_user(sl_message_id, user.id)
         if matching:
             LOG.d(
-                "replace SL message id by original one in in-reply-to header, %s -> %s",
-                msg[headers.IN_REPLY_TO],
-                matching.original_message_id,
+                "replace SL message id by original one in in-reply-to header, %s",
+                sl_message_id,
             )
             del msg[headers.IN_REPLY_TO]
             msg[headers.IN_REPLY_TO] = matching.original_message_id
@@ -1021,12 +1034,11 @@ def replace_sl_message_id_by_original_message_id(msg):
         message_ids = str(msg[headers.REFERENCES]).split()
         new_message_ids = []
         for message_id in message_ids:
-            matching = MessageIDMatching.get_by(sl_message_id=message_id)
+            matching = _get_message_id_matching_for_user(message_id.strip(), user.id)
             if matching:
                 LOG.d(
-                    "replace SL message id by original one in references header, %s -> %s",
+                    "replace SL message id by original one in references header, %s",
                     message_id,
-                    matching.original_message_id,
                 )
                 new_message_ids.append(matching.original_message_id)
             else:
