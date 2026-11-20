@@ -29,6 +29,7 @@ from app.models import (
     VerpType,
     Contact,
     SentAlert,
+    MessageIDMatching,
 )
 from app.utils import random_string, canonicalize_email
 from email_handler import (
@@ -804,3 +805,88 @@ def test_encoded_word_linebreak_in_to_cc_contact_is_sanitized(flask_client, head
     assert contact is not None
     assert contact.name == "BobX Y"
     assert contact.is_cc == (header == headers.CC)
+
+
+def _create_matching(user, sl_id: str, original_id: str, with_log: bool = True):
+    alias = Alias.create_new_random(user)
+    Session.flush()
+    email_log_id = None
+    if with_log:
+        contact = Contact.create(
+            user_id=user.id,
+            alias_id=alias.id,
+            website_email=random_email(),
+            reply_email=f"{random_string()}@{EMAIL_DOMAIN}",
+            flush=True,
+        )
+        email_log_id = EmailLog.create(
+            user_id=user.id, contact_id=contact.id, alias_id=alias.id, flush=True
+        ).id
+    MessageIDMatching.create(
+        sl_message_id=sl_id,
+        original_message_id=original_id,
+        email_log_id=email_log_id,
+        commit=True,
+    )
+    return alias
+
+
+def _msg_with_ids(sl_id: str, other_id: str) -> EmailMessage:
+    msg = EmailMessage()
+    msg[headers.IN_REPLY_TO] = sl_id
+    msg[headers.REFERENCES] = f"<before@x.com> {sl_id} {other_id}"
+    return msg
+
+
+def test_replace_sl_message_id_only_for_owner(flask_client):
+    user_a = create_new_user()
+    user_b = create_new_user()
+    sl_id = f"<{random_string()}@{EMAIL_DOMAIN}>"
+    original_id = f"<{random_string()}@victim.example>"
+    other_id = "<other@x.com>"
+    _create_matching(user_a, sl_id, original_id)
+    # legacy row without email log is never mapped
+    null_sl_id = f"<{random_string()}@{EMAIL_DOMAIN}>"
+    null_original = f"<{random_string()}@legacy.example>"
+    _create_matching(user_a, null_sl_id, null_original, with_log=False)
+
+    msg_a = _msg_with_ids(sl_id, other_id)
+    email_handler.replace_sl_message_id_by_original_message_id(msg_a, user_a)
+    assert msg_a[headers.IN_REPLY_TO] == original_id
+    assert msg_a[headers.REFERENCES] == f"<before@x.com> {original_id} {other_id}"
+
+    msg_b = _msg_with_ids(sl_id, other_id)
+    email_handler.replace_sl_message_id_by_original_message_id(msg_b, user_b)
+    assert msg_b[headers.IN_REPLY_TO] == sl_id
+    assert msg_b[headers.REFERENCES] == f"<before@x.com> {sl_id} {other_id}"
+
+    msg_null = _msg_with_ids(null_sl_id, other_id)
+    email_handler.replace_sl_message_id_by_original_message_id(msg_null, user_a)
+    assert msg_null[headers.IN_REPLY_TO] == null_sl_id
+    assert null_original not in str(msg_null[headers.REFERENCES])
+
+
+@mail_sender.store_emails_test_decorator
+def test_forward_does_not_unmask_other_user_message_id(flask_client):
+    user_a = create_new_user()
+    user_b = create_new_user()
+    alias_b = Alias.create_new_random(user_b)
+    sl_id = f"<{random_string()}@{EMAIL_DOMAIN}>"
+    original_id = f"<{random_string()}@victim.example>"
+    _create_matching(user_a, sl_id, original_id)
+
+    msg = load_eml_file("reference_encoded.eml", {"alias_email": alias_b.email})
+    del msg[headers.IN_REPLY_TO]
+    del msg[headers.REFERENCES]
+    msg[headers.IN_REPLY_TO] = sl_id
+    msg[headers.REFERENCES] = sl_id
+    envelope = Envelope()
+    envelope.mail_from = "somewhere@rainbow.com"
+    envelope.rcpt_tos = [alias_b.email]
+    assert email_handler.handle(envelope, msg) == status.E200
+
+    sent = mail_sender.get_stored_emails()
+    assert len(sent) == 1
+    assert sent[0].msg[headers.IN_REPLY_TO] == sl_id
+    assert sl_id in str(sent[0].msg[headers.REFERENCES])
+    assert original_id not in sent[0].msg.as_string()
