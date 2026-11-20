@@ -1,46 +1,47 @@
 name: Build PR image
 
-# Manually build and push a Docker image for a pull request, tagged with the
-# short SHA of the PR head commit: simplelogin/app-ci:<short-sha>
+# On-demand job that builds and pushes a Docker image for a pull request, tagged
+# with the short SHA of the PR head commit: simplelogin/app-ci:<short-sha>
 #
-# Run it from the Actions tab ("Build PR image" > "Run workflow") on master, and
-# enter the PR number.
+# It never runs on push. To build an image, add the `build-image` label to the
+# PR. When the job finishes, it removes the label, so adding it again builds the
+# current head commit again. It is not a required check: it never blocks merging.
 #
-# Who can run it: GitHub only lets users with write access dispatch a workflow,
-# and the `authorize` job below enforces it again, so only project developers
-# (admin, maintain or write permission) can build and push an image.
+# Who can run it: adding a label needs triage access or more, and the job also
+# checks that whoever added the label has write, maintain or admin permission.
+#
+# PRs from forks are skipped: GitHub does not expose secrets to them.
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "Pull request number"
-        required: true
-        type: number
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: read
-  pull-requests: read
+  # to remove the label once done
+  pull-requests: write
 
 concurrency:
-  group: pr-image-${{ inputs.pr_number }}
+  group: pr-image-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  authorize:
+  build:
+    if: >-
+      github.event.label.name == 'build-image' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    outputs:
-      head_sha: ${{ steps.pr.outputs.head_sha }}
-      short_sha: ${{ steps.pr.outputs.short_sha }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      SENDER: ${{ github.event.sender.login }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - name: Check that the actor is a project developer
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.triggering_actor }}
+      - name: Check that the label was added by a project developer
         run: |
-          permission=$(gh api "repos/${REPO}/collaborators/${ACTOR}/permission" --jq .permission)
-          echo "${ACTOR} has '${permission}' permission on ${REPO}"
+          permission=$(gh api "repos/${REPO}/collaborators/${SENDER}/permission" --jq .permission)
+          echo "${SENDER} has '${permission}' permission on ${REPO}"
           case "${permission}" in
             admin|maintain|write) ;;
             *)
@@ -49,36 +50,17 @@ jobs:
               ;;
           esac
 
-      - name: Resolve PR head commit
-        id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-        run: |
-          read -r state head_sha < <(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '"\(.state) \(.head.sha)"')
-          if [ "${state}" != "open" ]; then
-            echo "::error::PR #${PR_NUMBER} is ${state}, not open"
-            exit 1
-          fi
-          echo "head_sha=${head_sha}" >> "$GITHUB_OUTPUT"
-          echo "short_sha=${head_sha:0:7}" >> "$GITHUB_OUTPUT"
-          echo "PR #${PR_NUMBER} head: ${head_sha}"
+      - name: Compute image tag
+        id: tag
+        run: echo "short_sha=${HEAD_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
-  build:
-    needs: authorize
-    runs-on: ubuntu-latest
-    steps:
-      # Build exactly the commit resolved above, even if the PR gets new pushes
+      # The PR head commit, not the merge commit GitHub creates for pull_request
       - name: Checkout PR head commit
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.authorize.outputs.head_sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Prepare version file
-        env:
-          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
-          PR_NUMBER: ${{ inputs.pr_number }}
         run: |
           scripts/generate-build-info.sh "${HEAD_SHA}" "pr-${PR_NUMBER}"
           cat app/build_info.py
@@ -98,14 +80,17 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: simplelogin/app-ci:${{ needs.authorize.outputs.short_sha }}
+          tags: simplelogin/app-ci:${{ steps.tag.outputs.short_sha }}
 
       - name: Summary
         env:
-          PR_NUMBER: ${{ inputs.pr_number }}
-          IMAGE: simplelogin/app-ci:${{ needs.authorize.outputs.short_sha }}
-          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          IMAGE: simplelogin/app-ci:${{ steps.tag.outputs.short_sha }}
         run: |
           echo "### Image for PR #${PR_NUMBER}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${IMAGE}\` (commit ${HEAD_SHA})" >> "$GITHUB_STEP_SUMMARY"
+
+      # Remove the label (even if the build failed) so adding it again re-runs
+      - name: Remove build-image label
+        if: always()
+        run: gh api -X DELETE "repos/${REPO}/issues/${PR_NUMBER}/labels/build-image" || true
