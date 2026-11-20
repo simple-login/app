@@ -4220,7 +4220,8 @@ class SyncEvent(Base, ModelMixin):
         Rows locked by other workers are skipped, so concurrent workers never claim the same event
         nor wait for each other. Returns the claimed events ordered by id.
         """
-        sql = """
+        sql = text(
+            """
             UPDATE sync_event SET taken_time = :now
             WHERE id IN (
                 SELECT id FROM sync_event
@@ -4233,6 +4234,7 @@ class SyncEvent(Base, ModelMixin):
             )
             RETURNING id
         """
+        )
         res = Session.execute(
             sql,
             {
