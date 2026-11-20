@@ -3095,7 +3095,6 @@ class Mailbox(Base, ModelMixin):
                 alias._mailboxes.remove(first_mb)
             else:
                 from app.alias_delete import perform_alias_deletion, move_alias_to_trash
-
                 # If the user setting is DeleteImmediately, perform alias deletion
                 # Otherwise, if the user setting is MoveToTrash, assign the default mailbox and move them to trash
 
@@ -4225,27 +4224,6 @@ class SyncEvent(Base, ModelMixin):
         if not ids:
             return []
         return SyncEvent.filter(SyncEvent.id.in_(ids)).order_by(SyncEvent.id).all()
-
-    @classmethod
-    def get_dead_letter(cls, older_than: Arrow, max_retries: int) -> [SyncEvent]:
-        return (
-            SyncEvent.filter(
-                (
-                    (
-                        SyncEvent.taken_time.isnot(None)
-                        & (SyncEvent.taken_time < older_than)
-                    )
-                    | (
-                        SyncEvent.taken_time.is_(None)
-                        & (SyncEvent.created_at < older_than)
-                    )
-                )
-                & (SyncEvent.retry_count < max_retries)
-            )
-            .order_by(SyncEvent.id)
-            .limit(100)
-            .all()
-        )
 
 
 class AliasAuditLog(Base, ModelMixin):
