@@ -1,0 +1,111 @@
+name: Build PR image
+
+# Manually build and push a Docker image for a pull request, tagged with the
+# short SHA of the PR head commit: simplelogin/app-ci:<short-sha>
+#
+# Run it from the Actions tab ("Build PR image" > "Run workflow") on master, and
+# enter the PR number.
+#
+# Who can run it: GitHub only lets users with write access dispatch a workflow,
+# and the `authorize` job below enforces it again, so only project developers
+# (admin, maintain or write permission) can build and push an image.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-image-${{ inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    outputs:
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      short_sha: ${{ steps.pr.outputs.short_sha }}
+    steps:
+      - name: Check that the actor is a project developer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.triggering_actor }}
+        run: |
+          permission=$(gh api "repos/${REPO}/collaborators/${ACTOR}/permission" --jq .permission)
+          echo "${ACTOR} has '${permission}' permission on ${REPO}"
+          case "${permission}" in
+            admin|maintain|write) ;;
+            *)
+              echo "::error::Only project developers can build PR images"
+              exit 1
+              ;;
+          esac
+
+      - name: Resolve PR head commit
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          read -r state head_sha < <(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '"\(.state) \(.head.sha)"')
+          if [ "${state}" != "open" ]; then
+            echo "::error::PR #${PR_NUMBER} is ${state}, not open"
+            exit 1
+          fi
+          echo "head_sha=${head_sha}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${head_sha:0:7}" >> "$GITHUB_OUTPUT"
+          echo "PR #${PR_NUMBER} head: ${head_sha}"
+
+  build:
+    needs: authorize
+    runs-on: ubuntu-latest
+    steps:
+      # Build exactly the commit resolved above, even if the PR gets new pushes
+      - name: Checkout PR head commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.authorize.outputs.head_sha }}
+
+      - name: Prepare version file
+        env:
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          scripts/generate-build-info.sh "${HEAD_SHA}" "pr-${PR_NUMBER}"
+          cat app/build_info.py
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PAT_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image and publish to Docker Registry
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: simplelogin/app-ci:${{ needs.authorize.outputs.short_sha }}
+
+      - name: Summary
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+          IMAGE: simplelogin/app-ci:${{ needs.authorize.outputs.short_sha }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+        run: |
+          echo "### Image for PR #${PR_NUMBER}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${IMAGE}\` (commit ${HEAD_SHA})" >> "$GITHUB_STEP_SUMMARY"
