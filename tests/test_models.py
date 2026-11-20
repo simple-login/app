@@ -435,3 +435,76 @@ def test_email_log_create_updates_alias_last_email_log_id(flask_client):
 
     Session.expire(alias)
     assert alias.last_email_log_id == el2.id
+
+
+def _clear_sync_events():
+    for event in SyncEvent.all():
+        SyncEvent.delete(event.id, commit=True)
+
+
+def test_sync_event_claim_dead_letter():
+    _clear_sync_events()
+    old = arrow.now().shift(minutes=-15)
+    e1 = SyncEvent.create(content=b"c", created_at=old, commit=True)
+    e2 = SyncEvent.create(
+        content=b"c",
+        created_at=old,
+        taken_time=arrow.now().shift(minutes=-14),
+        commit=True,
+    )
+    e3 = SyncEvent.create(
+        content=b"c",
+        created_at=old,
+        taken_time=arrow.now().shift(minutes=-1),
+        commit=True,
+    )
+    e4 = SyncEvent.create(content=b"c", created_at=arrow.now(), commit=True)
+    e5 = SyncEvent.create(content=b"c", retry_count=6, created_at=old, commit=True)
+    e1_id, e2_id = e1.id, e2.id
+    older_than = arrow.utcnow().shift(minutes=-10)
+
+    claimed = SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=10)
+
+    assert [e.id for e in claimed] == [e1_id, e2_id]
+    for e in claimed:
+        assert abs((arrow.now() - e.taken_time).total_seconds()) < 60
+    # Already claimed, nothing else to claim
+    assert SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=10) == []
+    assert e3 and e4 and e5
+
+
+def test_sync_event_claim_dead_letter_respects_limit_oldest_first():
+    _clear_sync_events()
+    old = arrow.now().shift(minutes=-15)
+    ids = [
+        SyncEvent.create(content=b"c", created_at=old, commit=True).id for _ in range(4)
+    ]
+    older_than = arrow.utcnow().shift(minutes=-10)
+
+    first = SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=2)
+    second = SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=2)
+
+    assert [e.id for e in first] == ids[:2]
+    assert [e.id for e in second] == ids[2:]
+
+
+def test_sync_event_claim_dead_letter_skips_locked_rows():
+    from app.db import engine
+
+    _clear_sync_events()
+    old = arrow.now().shift(minutes=-15)
+    ids = [
+        SyncEvent.create(content=b"c", created_at=old, commit=True).id for _ in range(3)
+    ]
+    older_than = arrow.utcnow().shift(minutes=-10)
+
+    conn = engine.connect()
+    try:
+        conn.execute("SET lock_timeout = '2s'")
+        trans = conn.begin()
+        conn.execute("SELECT id FROM sync_event WHERE id = %s FOR UPDATE", (ids[0],))
+        claimed = SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=2)
+        assert [e.id for e in claimed] == ids[1:]
+        trans.rollback()
+    finally:
+        conn.close()

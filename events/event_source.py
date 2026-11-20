@@ -14,6 +14,7 @@ from typing import Callable, NoReturn
 
 _DEAD_LETTER_THRESHOLD_MINUTES = 10
 _DEAD_LETTER_INTERVAL_SECONDS = 30
+_DEAD_LETTER_BATCH_SIZE = 10
 
 _POSTGRES_RECONNECT_INTERVAL_SECONDS = 5
 
@@ -89,15 +90,16 @@ class DeadLetterEventSource(EventSource):
         self, on_event: Callable[[SyncEvent], NoReturn]
     ) -> list[SyncEvent]:
         threshold = arrow.utcnow().shift(minutes=-_DEAD_LETTER_THRESHOLD_MINUTES)
-        events = SyncEvent.get_dead_letter(
-            older_than=threshold, max_retries=self.__max_retries
+        events = SyncEvent.claim_dead_letter(
+            older_than=threshold,
+            max_retries=self.__max_retries,
+            limit=_DEAD_LETTER_BATCH_SIZE,
         )
         if events:
             LOG.info(f"Got {len(events)} dead letter events")
             metrics.record_metric("Custom/dead_letter_events_to_process", len(events))
             for event in events:
-                if event.mark_as_taken(allow_taken_older_than=threshold):
-                    on_event(event)
+                on_event(event)
         return events
 
     @metrics.background_task
