@@ -63,3 +63,40 @@ For 3), you can check in the `sl-email` log by running `docker logs sl-email` an
 ### B.4
 For 4), please refer to the A.1 section to make sure Postfix can send emails to your mailbox.
 
+## C. You can't confirm the registration email (fake / local address, or mail not flowing yet)
+
+The first account you register needs to confirm its email address. If you used a
+mailbox you don't control, or Postfix isn't delivering mail yet, the activation
+email never arrives. You can activate the account manually.
+
+Connect to the database (`docker exec -it sl-db psql -U myuser simplelogin`) and
+either activate the user directly:
+
+```sql
+UPDATE users SET activated = TRUE WHERE email = 'you@example.com';
+```
+
+or read the pending activation code and open `<URL>/auth/activate?code=<code>` in
+your browser (the code is valid for 1 hour):
+
+```sql
+SELECT ac.code
+FROM activation_code ac
+JOIN users u ON u.id = ac.user_id
+WHERE u.email = 'you@example.com'
+ORDER BY ac.id DESC
+LIMIT 1;
+```
+
+Notes:
+
+- SimpleLogin **rejects domains without a real MX record at registration time**
+  (e.g. `@something.test`, `@admin.admin`). Use a real domain even if the local
+  part is made up (`whatever@gmail.com`).
+- For the account you actually intend to use, register a **mailbox you control**:
+  SimpleLogin also sends password resets, security alerts and the mailbox
+  verification email (needed before an alias can forward to that mailbox) there.
+- The fully-dockerized deployment ships helpers for this:
+  `./manage.sh activate <email>` and `./manage.sh activation-link <email>`
+  (see [`.docker/selfhosted/`](../.docker/selfhosted/README.md)).
+

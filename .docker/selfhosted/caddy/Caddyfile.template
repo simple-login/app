@@ -1,0 +1,16 @@
+# Renderizado por install.sh -> caddy/Caddyfile
+# (o cópialo a caddy/Caddyfile y sustituye __APP_HOSTNAME__ / __ACME_EMAIL__)
+
+{
+	email __ACME_EMAIL__
+}
+
+__APP_HOSTNAME__ {
+	reverse_proxy app:7777
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+}

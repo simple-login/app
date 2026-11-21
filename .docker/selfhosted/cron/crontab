@@ -1,0 +1,20 @@
+# Tareas periódicas de mantenimiento de SimpleLogin (equivalente a ../../crontab.yml).
+# Formato cron estándar de 5 campos, ejecutado por supercronic.
+
+0 0 * * *      cd /code && python cron.py -j stats
+15 1 * * *     cd /code && python cron.py -j delete_old_monitoring
+15 */4 * * *   cd /code && python cron.py -j check_custom_domain
+13 */4 * * *   cd /code && python cron.py -j check_hibp
+15 4 * * *     cd /code && python cron.py -j notify_hibp
+15 5 * * *     cd /code && python cron.py -j delete_logs
+30 5 * * *     cd /code && python cron.py -j delete_old_data
+15 6 * * *     cd /code && python cron.py -j poll_apple_subscription
+15 8 * * *     cd /code && python cron.py -j notify_trial_end
+15 9 * * *     cd /code && python cron.py -j notify_manual_subscription_end
+15 10 * * *    cd /code && python cron.py -j notify_premium_end
+15 11 * * *    cd /code && python cron.py -j delete_scheduled_users
+*/5 * * * *    cd /code && python cron.py -j send_undelivered_mails
+0 * * * *      cd /code && python cron.py -j clear_alias_audit_log
+0 * * * *      cd /code && python cron.py -j clear_user_audit_log
+0 * * * *      cd /code && python cron.py -j clear_alias_delete_on
+0 * * * *      cd /code && python cron.py -j clear_expired_oauth_token
