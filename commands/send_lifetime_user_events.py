@@ -77,7 +77,7 @@ for batch_start in range(pu_id_start, max_pu_id, step):
                 include_partner_subscription=False
             )
             if plan_end:
-                event = UserPlanChanged(plan_end_time=plan_end.timestamp)
+                event = UserPlanChanged(plan_end_time=plan_end.int_timestamp)
                 with_plan += 1
             else:
                 event = UserPlanChanged()

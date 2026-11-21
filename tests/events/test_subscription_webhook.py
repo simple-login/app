@@ -68,7 +68,7 @@ def test_webhook_with_subscription():
         flush=True,
     )
     execute_subscription_webhook(user)
-    assert check_event(user, pu).plan_end_time == end_at.timestamp
+    assert check_event(user, pu).plan_end_time == end_at.int_timestamp
 
 
 def test_webhook_with_apple_subscription():
@@ -84,7 +84,7 @@ def test_webhook_with_apple_subscription():
         flush=True,
     )
     execute_subscription_webhook(user)
-    assert check_event(user, pu).plan_end_time == end_at.timestamp
+    assert check_event(user, pu).plan_end_time == end_at.int_timestamp
 
 
 def test_webhook_with_coinbase_subscription():
@@ -95,7 +95,7 @@ def test_webhook_with_coinbase_subscription():
     )
 
     execute_subscription_webhook(user)
-    assert check_event(user, pu).plan_end_time == end_at.timestamp
+    assert check_event(user, pu).plan_end_time == end_at.int_timestamp
 
 
 def test_webhook_with_manual_subscription():
@@ -106,4 +106,4 @@ def test_webhook_with_manual_subscription():
     )
 
     execute_subscription_webhook(user)
-    assert check_event(user, pu).plan_end_time == end_at.timestamp
+    assert check_event(user, pu).plan_end_time == end_at.int_timestamp

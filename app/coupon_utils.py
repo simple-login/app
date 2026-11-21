@@ -91,7 +91,7 @@ def redeem_coupon(coupon_code: str, user: User) -> Optional[Coupon]:
     EventDispatcher.send_event(
         user=user,
         content=EventContent(
-            user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.timestamp)
+            user_plan_change=UserPlanChanged(plan_end_time=sub.end_at.int_timestamp)
         ),
     )
     Session.commit()

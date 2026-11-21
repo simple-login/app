@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from sqlalchemy import text
+
 from app import config, metrics
 from app.db import Session
 from app.errors import ProtonPartnerNotSetUp
@@ -21,7 +23,7 @@ class Dispatcher(ABC):
 class PostgresDispatcher(Dispatcher):
     def send(self, event: bytes):
         instance = SyncEvent.create(content=event, flush=True)
-        Session.execute(f"NOTIFY {NOTIFICATION_CHANNEL}, '{instance.id}';")
+        Session.execute(text(f"NOTIFY {NOTIFICATION_CHANNEL}, '{instance.id}';"))
 
     @staticmethod
     def get():

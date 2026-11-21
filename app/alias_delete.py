@@ -159,7 +159,7 @@ def __perform_alias_restore(user: User, alias: Alias) -> None:
                 email=alias.email,
                 note=alias.note,
                 enabled=alias.enabled,
-                created_at=int(alias.created_at.timestamp),
+                created_at=int(alias.created_at.int_timestamp),
             )
         ),
     )

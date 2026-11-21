@@ -44,8 +44,10 @@ class ToggleDirForm(FlaskForm):
 
 class UpdateDirForm(FlaskForm):
     directory_id = IntegerField(validators=[validators.DataRequired()])
+    # Choices are validated: only the user's assignable mailboxes are accepted.
+    # (WTForms 2.x ignored validate_choice=False on SelectMultipleField.)
     mailbox_ids = SelectMultipleField(
-        validators=[validators.DataRequired()], validate_choice=False, choices=[]
+        validators=[validators.DataRequired()], choices=[]
     )
 
 

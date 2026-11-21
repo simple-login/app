@@ -18,7 +18,7 @@ def mailbox_to_dict(mailbox: Mailbox):
         "email": mailbox.email,
         "verified": mailbox.verified,
         "default": mailbox.user.default_mailbox_id == mailbox.id,
-        "creation_timestamp": mailbox.created_at.timestamp,
+        "creation_timestamp": mailbox.created_at.int_timestamp,
         "nb_alias": mailbox.nb_alias(),
     }
 

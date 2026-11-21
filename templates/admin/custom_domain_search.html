@@ -1,5 +1,7 @@
 {% extends 'admin/master.html' %}
 
+{# This page renders its own header card: hide flask-admin's page title #}
+{% block page_title %}{% endblock %}
 {% block head_css %}
 
   {{ super() }}
@@ -445,7 +447,7 @@
         <div class="col-lg-3 col-md-6 col-sm-12 mb-2 mb-lg-0">
           <small class="text-muted">User</small>
           <div>
-            <a href="{{ url_for('admin.email_search.index', query=user.email, search_type='email') }}">
+            <a href="{{ url_for('admin_email_search.index', query=user.email, search_type='email') }}">
               <strong>{{ user.email }}</strong>
             </a>
           </div>
@@ -818,7 +820,7 @@
                             <code>{{ alias.id }}</code>
                           </td>
                           <td>
-                            <a href="{{ url_for('admin.email_search.index', query=alias.email, search_type='alias') }}">{{ alias.email }}</a>
+                            <a href="{{ url_for('admin_email_search.index', query=alias.email, search_type='alias') }}">{{ alias.email }}</a>
                           </td>
                           <td>{{ badge_status(alias.enabled, 'Yes', 'No', 'success', 'danger') }}</td>
                           <td class="text-nowrap">{{ alias.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
@@ -834,7 +836,7 @@
                     <ul class="pagination mb-0 justify-content-end small">
                       {% if alias_page > 1 %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
                           <i class="fa fa-chevron-left"></i> Previous
                         </a>
                       </li>
@@ -848,7 +850,7 @@
                       {% set end_page = (alias_page + 3) if alias_page + 3 < total_pages else total_pages %}
                       {% for page_num in range(start_page, end_page) %}
                       <li class="page-item {% if page_num == alias_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
                           {{ page_num }}
                         </a>
                       </li>
@@ -856,7 +858,7 @@
 
                       {% if alias_page < total_pages %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
                           Next <i class="fa fa-chevron-right"></i>
                         </a>
                       </li>
@@ -924,7 +926,7 @@
                     <ul class="pagination mb-0 justify-content-end small">
                       {% if deleted_alias_page > 1 %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
                           <i class="fa fa-chevron-left"></i> Previous
                         </a>
                       </li>
@@ -938,7 +940,7 @@
                       {% set end_deleted_page = (deleted_alias_page + 3) if deleted_alias_page + 3 < total_deleted_pages else total_deleted_pages %}
                       {% for page_num in range(start_deleted_page, end_deleted_page) %}
                       <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
                           {{ page_num }}
                         </a>
                       </li>
@@ -946,7 +948,7 @@
 
                       {% if deleted_alias_page < total_deleted_pages %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
+                        <a class="page-link" href="{{ url_for('admin_custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
                           Next <i class="fa fa-chevron-right"></i>
                         </a>
                       </li>
@@ -992,7 +994,7 @@
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
-          <form action="{{ url_for('admin.custom_domain_search.delete_custom_domain') }}"
+          <form action="{{ url_for('admin_custom_domain_search.delete_custom_domain') }}"
                 method="POST"
                 id="deleteDomainForm{{ domain.id }}">
             {{ csrf_form.csrf_token }}

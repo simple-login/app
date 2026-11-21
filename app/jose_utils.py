@@ -35,9 +35,9 @@ def make_id_token(
         "iss": URL,
         "sub": str(client_user.id),
         "aud": client_user.client.oauth_client_id,
-        "exp": arrow.now().shift(hours=1).timestamp,
-        "iat": arrow.now().timestamp,
-        "auth_time": arrow.now().timestamp,
+        "exp": arrow.now().shift(hours=1).int_timestamp,
+        "iat": arrow.now().int_timestamp,
+        "auth_time": arrow.now().int_timestamp,
     }
 
     if nonce:

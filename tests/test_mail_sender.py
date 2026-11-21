@@ -10,6 +10,7 @@ from unittest import mock
 import arrow
 import pytest
 from aiosmtpd.controller import Controller
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
 from app import config, s3
@@ -45,7 +46,10 @@ def clean_unsent_emails():
         if s3.exists(job.payload["s3_key"]):
             s3.delete(job.payload["s3_key"])
     with engine.begin() as conn:
-        conn.execute("DELETE FROM job WHERE name = %s", JobType.SEND_UNSENT_EMAIL.value)
+        conn.execute(
+            text("DELETE FROM job WHERE name = :name"),
+            {"name": JobType.SEND_UNSENT_EMAIL.value},
+        )
 
 
 def create_dummy_send_request() -> SendRequest:

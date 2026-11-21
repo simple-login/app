@@ -68,7 +68,7 @@ def test_fire_event_on_alias_creation():
     assert alias.email == alias_created.email
     assert "" == alias_created.note
     assert alias.enabled == alias_created.enabled
-    assert int(alias.created_at.timestamp) == alias_created.created_at
+    assert int(alias.created_at.int_timestamp) == alias_created.created_at
 
 
 def test_fire_event_on_alias_creation_with_note():
@@ -116,5 +116,5 @@ def test_fire_event_on_alias_status_change():
     event = event_content.alias_status_change
     assert alias.id == event.id
     assert alias.email == event.email
-    assert int(alias.created_at.timestamp) == event.created_at
+    assert int(alias.created_at.int_timestamp) == event.created_at
     assert event.enabled
