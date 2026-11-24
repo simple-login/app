@@ -75,6 +75,62 @@
         "refresh": 2,
         "sort": 1,
         "hide": 0
+      },
+      {
+        "name": "pg_database",
+        "label": "PG database",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\"}, database)",
+          "refId": "pg_database"
+        },
+        "definition": "label_values(simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\"}, database)",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "pg_role",
+        "label": "PG role",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\"}, role)",
+          "refId": "pg_role"
+        },
+        "definition": "label_values(simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\"}, role)",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0
       }
     ]
   },
@@ -3630,13 +3686,13 @@
     },
     {
       "type": "timeseries",
-      "title": "Server connections",
+      "title": "Server connections by host, database & role",
       "id": 60,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "Per host, database and role. sv_idle_xact is a subset of sv_active.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3683,30 +3739,30 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (instance, role) (simplelogin_pgdog_sv_active{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\"})",
+          "expr": "sum by (instance, database, role) (simplelogin_pgdog_sv_active{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
           "refId": "A",
           "range": true,
-          "legendFormat": "active {{instance}} {{role}}"
+          "legendFormat": "active {{instance}} {{database}} {{role}}"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (instance, role) (simplelogin_pgdog_sv_idle{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\"})",
+          "expr": "sum by (instance, database, role) (simplelogin_pgdog_sv_idle{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
           "refId": "B",
           "range": true,
-          "legendFormat": "idle {{instance}} {{role}}"
+          "legendFormat": "idle {{instance}} {{database}} {{role}}"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (instance, role) (simplelogin_pgdog_sv_idle_xact{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\"})",
+          "expr": "sum by (instance, database, role) (simplelogin_pgdog_sv_idle_xact{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
           "refId": "C",
           "range": true,
-          "legendFormat": "idle in xact {{instance}} {{role}}"
+          "legendFormat": "idle in xact {{instance}} {{database}} {{role}}"
         }
       ]
     },
@@ -4029,6 +4085,519 @@
       ]
     },
     {
+      "type": "timeseries",
+      "title": "Open server connections by database & role",
+      "id": 75,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Server connections pgdog holds open to each Postgres database and role (primary/replica), summed over the selected hosts. open = sv_active + sv_idle (sv_idle_xact is a subset of sv_active). Dashed line: the sum of the pools' max_connections, i.e. the most connections pgdog can open to that database/role.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 141
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^max .*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (simplelogin_pgdog_sv_active{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "active {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (simplelogin_pgdog_sv_idle{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "idle {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (simplelogin_pgdog_sv_idle_xact{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "C",
+          "range": true,
+          "legendFormat": "idle in xact {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "D",
+          "range": true,
+          "legendFormat": "max {{database}} {{role}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Pool usage % by database & role (worst host)",
+      "id": 76,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Per database and role, the highest pool usage across the selected hosts. open = (sv_active + sv_idle) / max_connections; active = sv_active / max_connections. When open sits at 100%, the pool cannot grow and new transactions queue (see waiting clients).",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 141
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            },
+            "axisSoftMax": 1
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.95
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (database, role) ((simplelogin_pgdog_sv_active{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"} + simplelogin_pgdog_sv_idle{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"}) / simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "open {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (database, role) (simplelogin_pgdog_sv_active{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"} / simplelogin_pgdog_max_connections{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "active {{database}} {{role}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Waiting clients & max wait by database & role",
+      "id": 77,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Clients queued for a server connection (cl_waiting, summed over hosts) and the longest wait (maxwait, worst host, right axis) per database and role.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 141
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^max wait .*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (simplelogin_pgdog_cl_waiting{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "waiting {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (database, role) (simplelogin_pgdog_maxwait{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "max wait {{database}} {{role}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Queries & transactions /s by database & role",
+      "id": 78,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Queries and transactions per second routed to each database and role, summed over the selected hosts.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 149
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (rate(simplelogin_pgdog_total_query_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "queries {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (database, role) (rate(simplelogin_pgdog_total_xact_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"}[$__rate_interval]))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "xacts {{database}} {{role}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Avg query & wait time by database & role (worst host)",
+      "id": 79,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "pgdog avg_query_time and avg_wait_time (ms), highest value across the selected hosts.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 149
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (database, role) (simplelogin_pgdog_avg_query_time{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "query {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (database, role) (simplelogin_pgdog_avg_wait_time{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"})",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "wait {{database}} {{role}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Server errors & checkout timeouts /min by database & role",
+      "id": 80,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Summed over the selected hosts.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 149
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "60 * sum by (database, role) (rate(simplelogin_pgdog_total_server_errors{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "server errors {{database}} {{role}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "60 * sum by (database, role) (rate(simplelogin_pgdog_total_checkout_timeouts{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-pgdog\", database=~\"$pg_database\", role=~\"$pg_role\"}[$__rate_interval]))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "checkout timeouts {{database}} {{role}}"
+        }
+      ]
+    },
+    {
       "type": "row",
       "title": "Hosts",
       "id": 65,
@@ -4037,7 +4606,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 141
+        "y": 157
       },
       "panels": []
     },
@@ -4054,7 +4623,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 142
+        "y": 158
       },
       "fieldConfig": {
         "defaults": {
@@ -4126,7 +4695,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 142
+        "y": 158
       },
       "fieldConfig": {
         "defaults": {
@@ -4198,7 +4767,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 142
+        "y": 158
       },
       "fieldConfig": {
         "defaults": {
@@ -4260,7 +4829,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 150
+        "y": 166
       },
       "fieldConfig": {
         "defaults": {
@@ -4322,7 +4891,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 150
+        "y": 166
       },
       "fieldConfig": {
         "defaults": {
@@ -4384,7 +4953,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 150
+        "y": 166
       },
       "fieldConfig": {
         "defaults": {
@@ -4446,7 +5015,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 158
+        "y": 174
       },
       "fieldConfig": {
         "defaults": {
@@ -4508,7 +5077,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 158
+        "y": 174
       },
       "fieldConfig": {
         "defaults": {
@@ -4570,7 +5139,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 158
+        "y": 174
       },
       "fieldConfig": {
         "defaults": {
