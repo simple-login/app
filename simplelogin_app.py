@@ -444,6 +444,9 @@ def create_simplelogin_app():
         )
         initialize_redis_services(app, config.MEM_STORE_URI)
 
+    # Fail open: if Redis is unavailable, serve the request without rate limiting
+    # instead of returning a 500.
+    app.config[flask_limiter.extension.C.SWALLOW_ERRORS] = True
     limiter.init_app(app)
 
     setup_error_page(app)
