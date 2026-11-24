@@ -160,6 +160,8 @@ if POSTFIX_SUBMISSION_TLS:
 else:
     default_postfix_port = 25
 POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
+# Port used for the POSTFIX_BACKUP_SERVERS. Defaults to POSTFIX_PORT if not set
+POSTFIX_BACKUP_PORT = int(os.environ.get("POSTFIX_BACKUP_PORT", POSTFIX_PORT))
 POSTFIX_TIMEOUT = int(os.environ.get("POSTFIX_TIMEOUT", 3))
 POSTFIX_CONNECT_TIMEOUT = float(os.environ.get("POSTFIX_CONNECT_TIMEOUT", 1))
 
