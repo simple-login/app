@@ -1062,16 +1062,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/75/93/3fc1cc28f71dd10b8
 
 [[package]]
 name = "limits"
-version = "4.0.1"
+version = "4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecated" },
     { name = "packaging" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/03/91618859fc967fd727a3ecce5f7d9b0322152fa81c4a1bdd1f8afcfc5185/limits-4.0.1.tar.gz", hash = "sha256:a54f5c058dfc965319ae3ee78faf222294659e371b46d22cd7456761f7e46d5a", size = 70787, upload-time = "2025-01-16T19:58:41.11Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/c7/0a6cf433f6f43167db8e4f935b581b1393b6b89b0f00238767b9db0d4ba7/limits-4.1.tar.gz", hash = "sha256:37cc10697b33b8015964c0d0ef558889cd8752b457ad6f402bf72e4eef0578a9", size = 82993, upload-time = "2025-03-07T20:45:53.256Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/7a/6d84edd5a6bf666cdb14f8aaa3363c341271e0fa19e645e575ac0afd26d1/limits-4.0.1-py3-none-any.whl", hash = "sha256:67667e669f570cf7be4e2c2bc52f763b3f93bdf66ea945584360bc1a3f251901", size = 45753, upload-time = "2025-01-16T19:58:39.077Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/fa/21600ffb4ef773bb6c895062698722fd9a590dbe72fdc72793d7569de997/limits-4.1-py3-none-any.whl", hash = "sha256:d788de746799942df43f3023fba3883a55fdcdfacad43411752628a4f77b22c3", size = 55872, upload-time = "2025-03-07T20:45:51.456Z" },
 ]
 
 [[package]]
@@ -1901,7 +1901,7 @@ requires-dist = [
     { name = "ipython", specifier = "~=7.31.1" },
     { name = "itsdangerous", specifier = "~=1.1.0" },
     { name = "jwcrypto", specifier = "~=0.8" },
-    { name = "limits", specifier = "~=4.0.1" },
+    { name = "limits", specifier = "~=4.1.0" },
     { name = "markupsafe", specifier = "~=1.1.1" },
     { name = "memory-profiler", specifier = "~=0.57.0" },
     { name = "newrelic", specifier = "~=8.8.0" },

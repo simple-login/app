@@ -78,7 +78,7 @@ dependencies = [
   "itsdangerous ~= 1.1.0",
   "werkzeug ~= 1.0.1",
   "alembic ~= 1.4.3",
-  "limits ~= 4.0.1",
+  "limits ~= 4.1.0",
   "strictyaml ~= 1.7.3",
 
   "sl-pgp",
