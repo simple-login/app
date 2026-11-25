@@ -254,6 +254,46 @@ def test_mail_sender_try_several_servers():
         config.NOT_SEND_EMAIL = True
 
 
+@pytest.mark.parametrize(
+    "error",
+    [ConnectionResetError(), BrokenPipeError(), socket.gaierror(), OSError()],
+)
+def test_mail_sender_fails_over_on_socket_errors(error):
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = ["first", "second"]
+    config.NOT_SEND_EMAIL = False
+    mail_sender._randomize_smtp_hosts = False
+    try:
+        with mock.patch.object(
+            mail_sender, "_MailSender__send_to_server", side_effect=[error, True]
+        ) as send_to_server:
+            assert mail_sender.send(create_dummy_send_request(), 0)
+        assert [c.args[0] for c in send_to_server.call_args_list] == [
+            "first",
+            "second",
+        ]
+    finally:
+        config.POSTFIX_SERVERS = original_postfix_server
+        config.NOT_SEND_EMAIL = True
+
+
+def test_mail_sender_stores_unsent_on_socket_errors(s3_storage):
+    original_postfix_server = config.POSTFIX_SERVERS
+    config.POSTFIX_SERVERS = ["first"]
+    config.NOT_SEND_EMAIL = False
+    try:
+        with mock.patch.object(
+            mail_sender,
+            "_MailSender__send_to_server",
+            side_effect=ConnectionResetError(),
+        ):
+            assert not mail_sender.send(create_dummy_send_request(), 0)
+        assert len(get_unsent_email_jobs()) == 1
+    finally:
+        config.POSTFIX_SERVERS = original_postfix_server
+        config.NOT_SEND_EMAIL = True
+
+
 def test_mail_sender_try_backup_postfix():
     port_closed = closed_dummy_server()
     port_ok = smtp_response_server("250 Ok")()

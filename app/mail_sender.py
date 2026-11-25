@@ -157,7 +157,7 @@ class MailSender:
         if not self._pool:
             return self._send_to_smtp(send_request, retries)
         else:
-            self._pool.submit(self._send_to_smtp, (send_request, retries))
+            self._pool.submit(self._send_to_smtp, send_request, retries)
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
@@ -179,11 +179,11 @@ class MailSender:
                 return self.__send_to_server(
                     server_hostname, default_port, send_request
                 )
-            except (
-                SMTPException,
-                ConnectionRefusedError,
-                TimeoutError,
-            ) as e:
+            # OSError covers TimeoutError, ConnectionRefusedError and also
+            # ConnectionResetError, BrokenPipeError, ssl.SSLError or DNS errors.
+            # Any of them must fail over to the next server instead of bubbling
+            # up to the caller and losing the email.
+            except (SMTPException, OSError) as e:
                 LOG.w(f"Got error {e} while sending email to {server_hostname}")
                 metrics.record_event("SmtpError", {"error": e.__class__})
             finally:
