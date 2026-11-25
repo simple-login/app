@@ -160,6 +160,8 @@ if POSTFIX_SUBMISSION_TLS:
 else:
     default_postfix_port = 25
 POSTFIX_PORT = int(os.environ.get("POSTFIX_PORT", default_postfix_port))
+# Port used for the POSTFIX_BACKUP_SERVERS. Defaults to POSTFIX_PORT if not set
+POSTFIX_BACKUP_PORT = int(os.environ.get("POSTFIX_BACKUP_PORT", POSTFIX_PORT))
 POSTFIX_TIMEOUT = int(os.environ.get("POSTFIX_TIMEOUT", 3))
 POSTFIX_CONNECT_TIMEOUT = float(os.environ.get("POSTFIX_CONNECT_TIMEOUT", 1))
 
@@ -635,6 +637,9 @@ JOB_TAKEN_RETRY_WAIT_MINS = 30
 
 # MEM_STORE
 MEM_STORE_URI = os.environ.get("MEM_STORE_URI", None)
+# Seconds to wait on a Redis connect or reply before failing. A request makes several
+# Redis calls in sequence, so this must stay well below the gunicorn worker timeout.
+MEM_STORE_SOCKET_TIMEOUT = float(os.environ.get("MEM_STORE_SOCKET_TIMEOUT", "5"))
 
 # Recovery codes hash salt
 RECOVERY_CODE_HMAC_SECRET = os.environ.get("RECOVERY_CODE_HMAC_SECRET") or (

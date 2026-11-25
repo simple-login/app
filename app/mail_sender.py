@@ -161,17 +161,24 @@ class MailSender:
             return True
 
     def _send_to_smtp(self, send_request: SendRequest, retries: int) -> bool:
-        servers_to_try = config.POSTFIX_SERVERS.copy()
+        servers_to_try = [
+            (server, config.POSTFIX_PORT) for server in config.POSTFIX_SERVERS
+        ]
         if self._randomize_smtp_hosts:
             random.shuffle(servers_to_try)
         if config.POSTFIX_BACKUP_SERVERS:
-            servers_to_try.extend(config.POSTFIX_BACKUP_SERVERS)
+            servers_to_try.extend(
+                (server, config.POSTFIX_BACKUP_PORT)
+                for server in config.POSTFIX_BACKUP_SERVERS
+            )
         servers_tried = 0
-        for server_hostname in servers_to_try:
+        for server_hostname, default_port in servers_to_try:
             servers_tried += 1
             start = time.time()
             try:
-                return self.__send_to_server(server_hostname, send_request)
+                return self.__send_to_server(
+                    server_hostname, default_port, send_request
+                )
             except (
                 SMTPException,
                 ConnectionRefusedError,
@@ -198,12 +205,14 @@ class MailSender:
                 send_request.save_request_to_unsent_dir()
             return False
 
-    def __send_to_server(self, server_host: str, send_request: SendRequest):
+    def __send_to_server(
+        self, server_host: str, default_port: int, send_request: SendRequest
+    ):
         start = time.time()
         server_split = server_host.split(":")
         if len(server_split) == 1:
             server_host = server_split[0]
-            server_port = config.POSTFIX_PORT
+            server_port = default_port
         else:
             server_host = server_split[0]
             server_port = server_split[1]

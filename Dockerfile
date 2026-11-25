@@ -26,7 +26,7 @@ COPY pyproject.toml uv.lock .python-version ./
 
 # Install deps
 RUN apt-get update \
-    && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
+    && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang swaks \
     && curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
     && echo "${UV_HASH}  uv.tar.gz" | sha256sum -c - \
     && tar xf uv.tar.gz -C /tmp/ \

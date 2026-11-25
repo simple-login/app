@@ -4189,25 +4189,41 @@ class SyncEvent(Base, ModelMixin):
         return res.rowcount > 0
 
     @classmethod
-    def get_dead_letter(cls, older_than: Arrow, max_retries: int) -> [SyncEvent]:
-        return (
-            SyncEvent.filter(
-                (
-                    (
-                        SyncEvent.taken_time.isnot(None)
-                        & (SyncEvent.taken_time < older_than)
-                    )
-                    | (
-                        SyncEvent.taken_time.is_(None)
-                        & (SyncEvent.created_at < older_than)
-                    )
-                )
-                & (SyncEvent.retry_count < max_retries)
+    def claim_dead_letter(
+        cls, older_than: Arrow, max_retries: int, limit: int
+    ) -> list[SyncEvent]:
+        """
+        Atomically claim the oldest eligible dead letter events by setting their taken_time.
+        Rows locked by other workers are skipped, so concurrent workers never claim the same event
+        nor wait for each other. Returns the claimed events ordered by id.
+        """
+        sql = """
+            UPDATE sync_event SET taken_time = :now
+            WHERE id IN (
+                SELECT id FROM sync_event
+                WHERE retry_count < :max_retries
+                  AND ((taken_time IS NULL AND created_at < :older_than)
+                    OR (taken_time IS NOT NULL AND taken_time < :older_than))
+                ORDER BY id
+                LIMIT :limit
+                FOR UPDATE SKIP LOCKED
             )
-            .order_by(SyncEvent.id)
-            .limit(100)
-            .all()
+            RETURNING id
+        """
+        res = Session.execute(
+            sql,
+            {
+                "now": arrow.now().datetime,
+                "max_retries": max_retries,
+                "older_than": older_than.datetime,
+                "limit": limit,
+            },
         )
+        ids = [row[0] for row in res.fetchall()]
+        Session.commit()
+        if not ids:
+            return []
+        return SyncEvent.filter(SyncEvent.id.in_(ids)).order_by(SyncEvent.id).all()
 
 
 class AliasAuditLog(Base, ModelMixin):
