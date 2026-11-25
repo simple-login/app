@@ -20,7 +20,7 @@
   {{ render_button("Upgrade your account", URL + "/dashboard/pricing") }}
   {{ render_text("If you're not ready to upgrade to a paying account, you have a few other options available to you:") }}
   {{ grey_section([
-    "<b>Continue with the Free Plan</b> - In the free plan you are limited to " + MAX_NB_EMAIL_FREE_PLAN + " aliases but there's no cap on bandwidth or
+    "<b>Continue with the Free Plan</b> - In the free plan you are limited to " ~ MAX_NB_EMAIL_FREE_PLAN ~ " aliases but there's no cap on bandwidth or
     number of emails forwarded/sent.",
     "<b>Share feedback</b> - If SimpleLogin isn't right for you, let us know what you were looking for and we might be able to suggest some alternatives that might be a better fit.",
     "<b>Export your data</b> - If SimpleLogin wasn't a good fit, you can export your data for use elsewhere. ",
