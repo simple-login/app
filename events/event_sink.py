@@ -3,9 +3,16 @@ import requests
 from abc import ABC, abstractmethod
 
 from app import metrics
-from app.config import EVENT_WEBHOOK, EVENT_WEBHOOK_SKIP_VERIFY_SSL
+from app.config import (
+    EVENT_WEBHOOK,
+    EVENT_WEBHOOK_SKIP_VERIFY_SSL,
+    EVENT_WEBHOOK_TOKEN,
+)
 from app.log import LOG
 from app.models import SyncEvent
+
+# (connect, read). The read timeout applies to each socket read, not the whole request.
+_WEBHOOK_TIMEOUT_SECONDS = (5, 15)
 
 
 class EventSink(ABC):
@@ -33,11 +40,16 @@ class HttpEventSink(EventSink):
         return False
 
     def send_data_to_webhook(self, data: bytes) -> bool:
+        headers = {"Content-Type": "application/x-protobuf"}
+        if EVENT_WEBHOOK_TOKEN:
+            headers["authorization"] = f"Bearer {EVENT_WEBHOOK_TOKEN}"
+
         res = requests.post(
             url=EVENT_WEBHOOK,
             data=data,
-            headers={"Content-Type": "application/x-protobuf"},
+            headers=headers,
             verify=not EVENT_WEBHOOK_SKIP_VERIFY_SSL,
+            timeout=_WEBHOOK_TIMEOUT_SECONDS,
         )
         metrics.record_event("EventSentToPartner", {"http_code": res.status_code})
         if res.status_code != 200:

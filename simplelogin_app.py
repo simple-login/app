@@ -52,7 +52,7 @@ from app.onboarding.base import onboarding_bp
 from app.payments.paddle import setup_paddle_callback
 from app.phone.base import phone_bp
 from app.prometheus_export import METRICS_PATH, setup_prometheus
-from app.redis_services import initialize_redis_services
+from app.redis_services import initialize_redis_services, redis_storage_options
 from app.request_utils import generate_request_id
 from app.sentry_utils import sentry_before_send
 from app.utils import redact_query_args
@@ -439,8 +439,14 @@ def create_simplelogin_app():
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     if config.MEM_STORE_URI:
         app.config[flask_limiter.extension.C.STORAGE_URL] = config.MEM_STORE_URI
+        app.config[flask_limiter.extension.C.STORAGE_OPTIONS] = redis_storage_options(
+            config.MEM_STORE_URI
+        )
         initialize_redis_services(app, config.MEM_STORE_URI)
 
+    # Fail open: if Redis is unavailable, serve the request without rate limiting
+    # instead of returning a 500.
+    app.config[flask_limiter.extension.C.SWALLOW_ERRORS] = True
     limiter.init_app(app)
 
     setup_error_page(app)

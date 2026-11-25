@@ -15,6 +15,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 # Precompile installed dependencies to .pyc so containers don't compile them on every start
 ENV UV_COMPILE_BYTECODE=1
+# Install the managed Python outside /root so a non-root SL_UID can execute it
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python
 
 
 WORKDIR /code
@@ -24,7 +26,7 @@ COPY pyproject.toml uv.lock .python-version ./
 
 # Install deps
 RUN apt-get update \
-    && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang \
+    && apt-get install -y curl netcat-traditional gcc python3-dev gnupg git libre2-dev build-essential pkg-config cmake ninja-build bash clang swaks \
     && curl -sSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" > uv.tar.gz \
     && echo "${UV_HASH}  uv.tar.gz" | sha256sum -c - \
     && tar xf uv.tar.gz -C /tmp/ \
@@ -41,6 +43,10 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Generate flanker's PLY parser tables (*_parsetab.py) at build time. Otherwise flanker
+# tries to write them into site-packages on every start.
+RUN /code/.venv/bin/python -c "import compileall, os, flanker.addresslib._parser.parser as p; compileall.compile_dir(os.path.dirname(p.__file__), quiet=1)"
+
 # Copy code
 COPY . .
 
@@ -53,6 +59,10 @@ ENV PATH="/code/.venv/bin:$PATH"
 RUN python -m compileall -q -j 0 -x '/code/(\.venv|static)/' /code
 
 EXPOSE 7777
+
+# Runs as root unless SL_UID (and optionally SL_GID) is set, in which case the
+# command is executed as that UID/GID
+ENTRYPOINT ["/code/scripts/docker-entrypoint.sh"]
 
 #gunicorn wsgi:app -b 0.0.0.0:7777 -w 2 --timeout 15 --log-level DEBUG
 CMD ["gunicorn","wsgi:app","-b","0.0.0.0:7777","-w","2","--timeout","15"]

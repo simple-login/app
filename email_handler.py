@@ -44,7 +44,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid, formatdate, getaddresses
 from io import BytesIO
 from smtplib import SMTPRecipientsRefused, SMTPServerDisconnected
-from typing import List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional, Set
 
 import sentry_sdk
 from aiosmtpd.controller import Controller
@@ -954,7 +954,7 @@ def forward_email_to_mailbox(
         LOG.w("missing date header, create one")
         msg[headers.DATE] = formatdate()
 
-    replace_sl_message_id_by_original_message_id(msg)
+    replace_sl_message_id_by_original_message_id(msg, user)
 
     # change the from_header so the email comes from a reverse-alias
     # replace the email part in from: header
@@ -1031,39 +1031,52 @@ def forward_email_to_mailbox(
         return True, status.E200
 
 
-def replace_sl_message_id_by_original_message_id(msg):
-    # Replace SL Message-ID by original one in In-Reply-To header
-    if msg[headers.IN_REPLY_TO]:
-        matching: MessageIDMatching = MessageIDMatching.get_by(
-            sl_message_id=str(msg[headers.IN_REPLY_TO])
+def _get_message_id_matchings_for_user(
+    sl_message_ids: List[str], user_id: int
+) -> Dict[str, str]:
+    """
+    Return {sl_message_id: original_message_id} for the matchings created by
+    an email log of this user, using a single query.
+    """
+    if not sl_message_ids:
+        return {}
+    rows = (
+        Session.query(
+            MessageIDMatching.sl_message_id, MessageIDMatching.original_message_id
         )
-        if matching:
-            LOG.d(
-                "replace SL message id by original one in in-reply-to header, %s -> %s",
-                msg[headers.IN_REPLY_TO],
-                matching.original_message_id,
-            )
-            del msg[headers.IN_REPLY_TO]
-            msg[headers.IN_REPLY_TO] = matching.original_message_id
+        .join(EmailLog, MessageIDMatching.email_log_id == EmailLog.id)
+        .filter(
+            MessageIDMatching.sl_message_id.in_(sl_message_ids),
+            EmailLog.user_id == user_id,
+        )
+        .all()
+    )
+    return {sl_id: original_id for sl_id, original_id in rows}
+
+
+def replace_sl_message_id_by_original_message_id(msg, user: User) -> None:
+    in_reply_to = (
+        str(msg[headers.IN_REPLY_TO]).strip() if msg[headers.IN_REPLY_TO] else None
+    )
+    references = str(msg[headers.REFERENCES]).split() if msg[headers.REFERENCES] else []
+
+    candidates = list(set(references + ([in_reply_to] if in_reply_to else [])))
+    originals = _get_message_id_matchings_for_user(candidates, user.id)
+
+    # Replace SL Message-ID by original one in In-Reply-To header
+    if in_reply_to in originals:
+        LOG.d("replace SL message id by original one in in-reply-to header")
+        del msg[headers.IN_REPLY_TO]
+        msg[headers.IN_REPLY_TO] = originals[in_reply_to]
 
     # Replace SL Message-ID by original Message-ID in References header
     if msg[headers.REFERENCES]:
-        message_ids = str(msg[headers.REFERENCES]).split()
-        new_message_ids = []
-        for message_id in message_ids:
-            matching = MessageIDMatching.get_by(sl_message_id=message_id)
-            if matching:
-                LOG.d(
-                    "replace SL message id by original one in references header, %s -> %s",
-                    message_id,
-                    matching.original_message_id,
-                )
-                new_message_ids.append(matching.original_message_id)
-            else:
-                new_message_ids.append(message_id)
-
+        if any(message_id in originals for message_id in references):
+            LOG.d("replace SL message id by original one in references header")
         del msg[headers.REFERENCES]
-        msg[headers.REFERENCES] = " ".join(new_message_ids)
+        msg[headers.REFERENCES] = " ".join(
+            originals.get(message_id, message_id) for message_id in references
+        )
 
 
 @sentry_sdk.trace
