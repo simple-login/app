@@ -832,7 +832,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "60 * sum (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "(60 * sum (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))) or vector(0)",
           "refId": "A",
           "instant": false,
           "range": true,
@@ -3155,7 +3155,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "60 * sum by (container) (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "(60 * sum by (container) (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))) or (0 * sum by (container) (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])))",
           "refId": "B",
           "range": true,
           "legendFormat": "failed {{container}}"
