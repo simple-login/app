@@ -1,5 +1,6 @@
 import base64
 import hashlib
+from functools import cache
 from typing import Optional
 
 import arrow
@@ -9,12 +10,17 @@ from app.config import OPENID_PRIVATE_KEY_PATH, URL
 from app.log import LOG
 from app.models import ClientUser
 
-with open(OPENID_PRIVATE_KEY_PATH, "rb") as f:
-    _key = jwk.JWK.from_pem(f.read())
+
+@cache
+def _get_key() -> jwk.JWK:
+    # Loaded lazily: parsing the RSA key validates it, which takes ~250ms
+    # and would otherwise slow down every process startup.
+    with open(OPENID_PRIVATE_KEY_PATH, "rb") as f:
+        return jwk.JWK.from_pem(f.read())
 
 
 def get_jwk_key() -> dict:
-    return _key._public_params()
+    return _get_key()._public_params()
 
 
 def make_id_token(
@@ -52,15 +58,16 @@ def make_id_token(
     claims = {**claims, **client_user.get_user_info()}
 
     jwt_token = jwt.JWT(
-        header={"alg": "RS256", "kid": _key._public_params()["kid"]}, claims=claims
+        header={"alg": "RS256", "kid": _get_key()._public_params()["kid"]},
+        claims=claims,
     )
-    jwt_token.make_signed_token(_key)
+    jwt_token.make_signed_token(_get_key())
     return jwt_token.serialize()
 
 
 def verify_id_token(id_token) -> bool:
     try:
-        jwt.JWT(key=_key, jwt=id_token)
+        jwt.JWT(key=_get_key(), jwt=id_token)
     except Exception:
         LOG.e("id token not verified")
         return False
@@ -69,7 +76,7 @@ def verify_id_token(id_token) -> bool:
 
 
 def decode_id_token(id_token) -> jwt.JWT:
-    return jwt.JWT(key=_key, jwt=id_token)
+    return jwt.JWT(key=_get_key(), jwt=id_token)
 
 
 def id_token_hash(value, hashfunc=hashlib.sha256):
