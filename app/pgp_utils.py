@@ -5,7 +5,6 @@ from typing import Union
 
 import gnupg
 import pgpy
-from memory_profiler import memory_usage
 from pgpy import PGPMessage
 from sl_pgp import PgpContext, PgpException
 
@@ -146,6 +145,9 @@ def encrypt_file(
             success = True
             return result
         else:
+            # imported lazily: memory_profiler pulls in IPython (~90ms at import)
+            from memory_profiler import memory_usage
+
             mem_usage = memory_usage(-1, interval=1, timeout=1)[0]
             LOG.d("mem_usage %s", mem_usage)
 
