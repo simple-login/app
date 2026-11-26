@@ -2971,13 +2971,13 @@
     },
     {
       "type": "timeseries",
-      "title": "Events stored to DB /s by type",
+      "title": "Events processed /min per node (listener, without dead letter)",
       "id": 48,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "Events the real-time listener (`sl-event-listener-*`, Postgres LISTEN/NOTIFY) delivered to the partner with HTTP 200 and deleted. Events re-sent by the dead-letter worker are excluded (see the dead-letter panel). Stacked: the top of the stack is the total.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -2986,7 +2986,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -3023,22 +3023,22 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (type) (rate(simplelogin_custom_event_eventstoredtodb_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "60 * sum by (node) (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval]))",
           "refId": "A",
           "range": true,
-          "legendFormat": "{{type}}"
+          "legendFormat": "{{node}}"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Events sent to partner /min by HTTP code",
+      "title": "Events failed /min per node",
       "id": 49,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "Two ways a delivery attempt fails (the event stays in `sync_event` and is retried by the dead-letter worker after 10 min, up to 10 retries):\n- **rejected by partner**: the webhook answered something other than 200 (`retry_count` is incremented).\n- **exception**: the attempt raised (connection error, timeout, DB error...).\nShows 0 while the worker is processing and nothing failed.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3057,9 +3057,25 @@
             "stacking": {
               "mode": "none",
               "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
             }
           },
-          "min": 0
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -3084,22 +3100,32 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "60 * sum by (container, http_code) (rate(simplelogin_custom_event_eventsenttopartner_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "(60 * sum by (node, source) (label_replace(rate(simplelogin_custom_event_eventsenttopartner_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\", http_code!=\"200\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\"))) or (0 * sum by (node, source) (label_replace(rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\")))",
           "refId": "A",
           "range": true,
-          "legendFormat": "{{container}} {{http_code}}"
+          "legendFormat": "rejected by partner {{node}} {{source}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(60 * sum by (node, source) (label_replace(rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\"))) or (0 * sum by (node, source) (label_replace(rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\")))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "exception {{node}} {{source}}"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Sync events processed / failed /min",
+      "title": "Events sent from dead letter /min per node",
       "id": 50,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "Events the dead-letter worker (`sl-dead-letter`) delivered successfully. These are events the listener missed or failed: still in `sync_event` 10 min after creation (or taken more than 10 min ago and not finished). A sustained rate here means the listener is losing NOTIFYs or failing.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3112,11 +3138,11 @@
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 10,
+            "fillOpacity": 40,
             "showPoints": "never",
             "spanNulls": true,
             "stacking": {
-              "mode": "none",
+              "mode": "normal",
               "group": "A"
             }
           },
@@ -3145,32 +3171,22 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "60 * sum by (container) (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "60 * sum by (node) (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
           "refId": "A",
           "range": true,
-          "legendFormat": "processed {{container}}"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "(60 * sum by (container) (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))) or (0 * sum by (container) (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])))",
-          "refId": "B",
-          "range": true,
-          "legendFormat": "failed {{container}}"
+          "legendFormat": "{{node}}"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Sync event process time",
-      "id": 51,
+      "title": "Event flow /min: stored vs delivered vs failed",
+      "id": 81,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "Whole-fleet balance. Delivered (listener + dead letter) should track *stored*. Note: *stored* only counts processes promext scrapes (sl-app, email handlers, partner API, job runner); events created by `cron.py` jobs are delivered but never counted as stored, so delivered > stored during cron batches is expected.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3179,7 +3195,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "short",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -3193,7 +3209,48 @@
           },
           "min": 0
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed attempts"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stored to DB"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -3216,32 +3273,52 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (container) (rate(simplelogin_custom_sync_event_process_time_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])) / sum by (container) (rate(simplelogin_custom_sync_event_process_time_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "60 * sum (rate(simplelogin_custom_event_eventstoredtodb_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
           "refId": "A",
           "range": true,
-          "legendFormat": "avg {{container}}"
+          "legendFormat": "stored to DB"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, container) (rate(simplelogin_custom_sync_event_process_time_bucket{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])))",
+          "expr": "60 * sum (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval]))",
           "refId": "B",
           "range": true,
-          "legendFormat": "p95 {{container}}"
+          "legendFormat": "delivered by listener"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "60 * sum (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
+          "refId": "C",
+          "range": true,
+          "legendFormat": "delivered by dead letter"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(60 * (sum (rate(simplelogin_custom_event_eventsenttopartner_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\", http_code!=\"200\"}[$__rate_interval])) or vector(0)) + 60 * (sum (rate(simplelogin_custom_sync_event_failed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval])) or vector(0)))",
+          "refId": "D",
+          "range": true,
+          "legendFormat": "failed attempts"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Sync event end-to-end lag (elapsed since creation)",
-      "id": 52,
+      "title": "Events stored to DB /min by type",
+      "id": 51,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Buckets stop at 10s: a growing backlog shows as a flat 10s p95, use the avg for the real value.",
+      "description": "`EventStoredToDb`: sync events created by the app processes, by event type. Excludes `cron.py` jobs (not scraped).",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3250,15 +3327,15 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "short",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
-            "fillOpacity": 10,
+            "fillOpacity": 40,
             "showPoints": "never",
             "spanNulls": true,
             "stacking": {
-              "mode": "none",
+              "mode": "normal",
               "group": "A"
             }
           },
@@ -3287,32 +3364,22 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (container) (rate(simplelogin_custom_sync_event_elapsed_time_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])) / sum by (container) (rate(simplelogin_custom_sync_event_elapsed_time_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
+          "expr": "60 * sum by (type) (rate(simplelogin_custom_event_eventstoredtodb_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval]))",
           "refId": "A",
           "range": true,
-          "legendFormat": "avg {{container}}"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, container) (rate(simplelogin_custom_sync_event_elapsed_time_bucket{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\"}[$__rate_interval])))",
-          "refId": "B",
-          "range": true,
-          "legendFormat": "p95 {{container}}"
+          "legendFormat": "{{type}}"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Dead letter events to process (avg batch)",
-      "id": 53,
+      "title": "Partner webhook responses /min by node & HTTP code",
+      "id": 52,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "",
+      "description": "`EventSentToPartner` by HTTP status returned by the partner webhook. Only 200 counts as success.",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -3358,10 +3425,609 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum (rate(simplelogin_custom_dead_letter_events_to_process_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval])) / sum (rate(simplelogin_custom_dead_letter_events_to_process_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
+          "expr": "60 * sum by (node, source, http_code) (label_replace(rate(simplelogin_custom_event_eventsenttopartner_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\"))",
           "refId": "A",
           "range": true,
-          "legendFormat": "dead letter"
+          "legendFormat": "{{node}} {{source}} {{http_code}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Avg process time per node",
+      "id": 53,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Time to deliver one event to the partner webhook and delete it (`sync_event_process_time`), successful events only. Exact average from _sum/_count.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 115
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node, source) (label_replace(rate(simplelogin_custom_sync_event_process_time_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\")) / sum by (node, source) (label_replace(rate(simplelogin_custom_sync_event_process_time_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]), \"source\", \"$1\", \"container\", \"sl-(event-listener|dead-letter).*\"))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{node}} {{source}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 / p99 process time (listener)",
+      "id": 82,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Percentiles from the default histogram buckets (5 ms to 10 s): values above 10 s are capped at 10 s.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 115
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, node) (rate(simplelogin_custom_sync_event_process_time_bucket{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval])))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "p95 {{node}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(simplelogin_custom_sync_event_process_time_bucket{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval])))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "p99 all nodes"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Listener lag: event created → delivery started",
+      "id": 83,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "`sync_event_elapsed_time` for the real-time listener: time from `created_at` to the start of delivery. Normally ~0.1 s. p95 is capped at 10 s by the buckets.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 115
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node) (rate(simplelogin_custom_sync_event_elapsed_time_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval])) / sum by (node) (rate(simplelogin_custom_sync_event_elapsed_time_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "avg {{node}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(simplelogin_custom_sync_event_elapsed_time_bucket{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-event-listener.*\"}[$__rate_interval])))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "p95 all nodes"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dead letter: avg event age when re-sent",
+      "id": 84,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "How old events are when the dead-letter worker finally delivers them (created → delivery). At least 600 s by design (10-minute threshold); higher means events waited several retry rounds.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 123
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node) (rate(simplelogin_custom_sync_event_elapsed_time_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval])) / sum by (node) (rate(simplelogin_custom_sync_event_elapsed_time_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{node}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Dead letter: events picked per run (avg batch) per node",
+      "id": 85,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "`dead_letter_events_to_process`: how many stuck events each dead-letter loop found (only recorded when it found at least one). The worker polls every 30 s.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 123
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node) (rate(simplelogin_custom_dead_letter_events_to_process_sum{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval])) / sum by (node) (rate(simplelogin_custom_dead_letter_events_to_process_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "avg batch {{node}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "60 * sum by (node) (rate(simplelogin_custom_dead_letter_events_to_process_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval]))",
+          "refId": "B",
+          "range": true,
+          "legendFormat": "runs with events /min {{node}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Share of events delivered via dead letter",
+      "id": 86,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Dead-letter deliveries / all deliveries. Should be close to 0: a high share means the real-time listener is missing or failing events.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 123
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.05
+              },
+              {
+                "color": "red",
+                "value": 0.2
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-dead-letter.*\"}[$__rate_interval])) / sum (rate(simplelogin_custom_sync_event_processed_count{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "dead letter share"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Event worker restarts per node",
+      "id": 87,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Process restarts of each listener / dead-letter worker (changes of process start time). A worker that disappears from the CPU and memory panels has stopped being scraped.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 131
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node, container) (changes(process_start_time_seconds{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{node}} {{container}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Event workers CPU per node",
+      "id": 88,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "CPU seconds/s (1 = one core).",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 131
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node, container) (rate(process_cpu_seconds_total{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"}[$__rate_interval]))",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{node}} {{container}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Event workers memory (RSS) per node",
+      "id": 89,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Resident memory of each listener / dead-letter process. Steady growth suggests a leak.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 131
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (node, container) (process_resident_memory_bytes{job=\"simplelogin-upcloud\", env=\"$env\", instance=~\"$instance\", container=~\"sl-(event-listener|dead-letter).*\"})",
+          "refId": "A",
+          "range": true,
+          "legendFormat": "{{node}} {{container}}"
         }
       ]
     },
@@ -3374,7 +4040,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 115
+        "y": 139
       },
       "panels": []
     },
@@ -3391,7 +4057,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 116
+        "y": 140
       },
       "fieldConfig": {
         "defaults": {
@@ -3452,7 +4118,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 116
+        "y": 140
       },
       "fieldConfig": {
         "defaults": {
@@ -3513,7 +4179,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 116
+        "y": 140
       },
       "fieldConfig": {
         "defaults": {
@@ -3570,7 +4236,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 124
+        "y": 148
       },
       "panels": []
     },
@@ -3587,7 +4253,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 125
+        "y": 149
       },
       "fieldConfig": {
         "defaults": {
@@ -3658,7 +4324,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 125
+        "y": 149
       },
       "fieldConfig": {
         "defaults": {
@@ -3739,7 +4405,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 125
+        "y": 149
       },
       "fieldConfig": {
         "defaults": {
@@ -3810,7 +4476,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 133
+        "y": 157
       },
       "fieldConfig": {
         "defaults": {
@@ -3891,7 +4557,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 133
+        "y": 157
       },
       "fieldConfig": {
         "defaults": {
@@ -3972,7 +4638,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 133
+        "y": 157
       },
       "fieldConfig": {
         "defaults": {
@@ -4053,7 +4719,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 141
+        "y": 165
       },
       "fieldConfig": {
         "defaults": {
@@ -4167,7 +4833,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 141
+        "y": 165
       },
       "fieldConfig": {
         "defaults": {
@@ -4259,7 +4925,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 141
+        "y": 165
       },
       "fieldConfig": {
         "defaults": {
@@ -4347,7 +5013,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 149
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -4418,7 +5084,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 149
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -4489,7 +5155,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 149
+        "y": 173
       },
       "fieldConfig": {
         "defaults": {
@@ -4556,7 +5222,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 157
+        "y": 181
       },
       "panels": []
     },
@@ -4573,7 +5239,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 158
+        "y": 182
       },
       "fieldConfig": {
         "defaults": {
@@ -4644,7 +5310,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 158
+        "y": 182
       },
       "fieldConfig": {
         "defaults": {
@@ -4715,7 +5381,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 158
+        "y": 182
       },
       "fieldConfig": {
         "defaults": {
@@ -4776,7 +5442,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 166
+        "y": 190
       },
       "fieldConfig": {
         "defaults": {
@@ -4837,7 +5503,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 166
+        "y": 190
       },
       "fieldConfig": {
         "defaults": {
@@ -4898,7 +5564,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 166
+        "y": 190
       },
       "fieldConfig": {
         "defaults": {
@@ -4959,7 +5625,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 174
+        "y": 198
       },
       "fieldConfig": {
         "defaults": {
@@ -5020,7 +5686,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 174
+        "y": 198
       },
       "fieldConfig": {
         "defaults": {
@@ -5081,7 +5747,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 174
+        "y": 198
       },
       "fieldConfig": {
         "defaults": {
