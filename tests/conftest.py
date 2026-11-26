@@ -18,6 +18,11 @@ connection = engine.connect()
 Session.configure(bind=connection)
 
 from app.rate_limiter import set_rate_limit_enabled
+from app import pw_models
+
+# Use the minimum bcrypt cost: hashing at the production cost (12) takes ~200ms
+# per call and accounted for most of the suite's runtime.
+pw_models.BCRYPT_ROUNDS = 4
 
 from psycopg2 import errors
 from psycopg2.errorcodes import DEPENDENT_OBJECTS_STILL_EXIST

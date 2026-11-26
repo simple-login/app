@@ -380,8 +380,8 @@ def test_email_log_create_updates_alias_last_email_log_id(flask_client):
 
 
 def _clear_sync_events():
-    for event in SyncEvent.all():
-        SyncEvent.delete(event.id, commit=True)
+    SyncEvent.filter().delete()
+    Session.commit()
 
 
 def test_sync_event_claim_dead_letter():

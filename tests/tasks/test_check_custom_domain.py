@@ -75,7 +75,7 @@ def test_check_single_custom_domain_resets_on_success(flask_client):
     assert custom_domain.verified is True
 
 
-def test_check_custom_domain_deletes_old_domains():
+def test_check_custom_domain_deletes_old_domains(flask_client):
     user = create_new_user()
     now = arrow.utcnow()
     cd_to_delete = CustomDomain.create(
@@ -90,12 +90,15 @@ def test_check_custom_domain_deletes_old_domains():
         verified=True,
         created_at=now.shift(months=-3),
     ).id
-    check_all_custom_domains()
+    # The DNS check of verified domains is covered by the tests above. Stub it
+    # so this test doesn't do a real DNS lookup per verified domain in the DB.
+    with patch("tasks.check_custom_domains.check_single_custom_domain"):
+        check_all_custom_domains()
     assert CustomDomain.get(cd_to_delete) is None
     assert CustomDomain.get(cd_to_keep) is not None
 
 
-def test_check_custom_domain_deletes_unverified_domains_after_five_days():
+def test_check_custom_domain_deletes_unverified_domains_after_five_days(flask_client):
     user = create_new_user()
     now = arrow.utcnow()
     stale = CustomDomain.create(
@@ -110,7 +113,8 @@ def test_check_custom_domain_deletes_unverified_domains_after_five_days():
         verified=False,
         created_at=now.shift(days=-4),
     ).id
-    check_all_custom_domains()
+    with patch("tasks.check_custom_domains.check_single_custom_domain"):
+        check_all_custom_domains()
     assert CustomDomain.get(stale) is None
     assert CustomDomain.get(recent) is not None
 

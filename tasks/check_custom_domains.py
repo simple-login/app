@@ -31,6 +31,9 @@ def check_all_custom_domains():
         else:
             LOG.i(f"Deleting unverified old custom domain {custom_domain}")
             CustomDomain.delete(custom_domain.id)
+    # Commit the deletions now: the loop below calls Session.close() which would
+    # otherwise roll them back unless a domain check happened to commit first.
+    Session.commit()
 
     LOG.d("Check verified domain for DNS issues")
 
