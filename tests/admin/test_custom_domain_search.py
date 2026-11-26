@@ -5,7 +5,15 @@ from flask import url_for
 from app.admin.custom_domain_search import CustomDomainSearchResult
 from app.db import Session
 from app.constants import JobType
-from app.models import User, CustomDomain, Job
+from app.constants import DMARC_RECORD
+from app.dns_utils import InMemoryDNSClient, set_global_dns_client
+from app.models import (
+    User,
+    CustomDomain,
+    Job,
+    AdminAuditLog,
+    AuditLogActionEnum,
+)
 from tests.utils import create_new_user, random_token
 
 
@@ -486,3 +494,148 @@ def test_admin_delete_domain_wrong_confirmation_does_nothing(flask_client):
         j.payload["custom_domain_id"] == domain_id
         for j in Job.filter_by(name=JobType.DELETE_DOMAIN.value).all()
     )
+
+
+# ============================================================================
+# DNS verification
+# ============================================================================
+
+
+def _unverified_domain(user: User) -> CustomDomain:
+    domain = CustomDomain.create(
+        user_id=user.id,
+        domain=f"dns-{random_token(8)}.com",
+        ownership_verified=True,
+        ownership_txt_token=random_token(30),
+        verified=False,
+        spf_verified=False,
+        dkim_verified=False,
+        dmarc_verified=False,
+        commit=True,
+    )
+    return domain
+
+
+def _correct_dns(domain: CustomDomain) -> InMemoryDNSClient:
+    from app import config
+
+    dns_client = InMemoryDNSClient()
+    dns_client.set_mx_records(
+        domain.domain,
+        {prio: [mx] for prio, mx in config.EMAIL_SERVERS_WITH_PRIORITY},
+    )
+    dns_client.set_txt_record(
+        domain.domain,
+        [
+            f"sl-verification={domain.ownership_txt_token}",
+            f"v=spf1 include:{config.EMAIL_DOMAIN} ~all",
+        ],
+    )
+    dns_client.set_txt_record("_dmarc." + domain.domain, [DMARC_RECORD])
+    for key in ("dkim", "dkim02", "dkim03"):
+        dns_client.set_cname_record(
+            f"{key}._domainkey.{domain.domain}",
+            f"{key}._domainkey.{config.EMAIL_DOMAIN}",
+        )
+    return dns_client
+
+
+def test_search_does_not_query_dns_nor_modify_domain(flask_client):
+    login_admin(flask_client)
+    domain = _unverified_domain(create_new_user())
+    set_global_dns_client(_correct_dns(domain))
+    try:
+        r = flask_client.get(
+            url_for("admin.custom_domain_search.index"),
+            query_string={"query": str(domain.id)},
+        )
+    finally:
+        set_global_dns_client(None)
+    assert r.status_code == 200
+    assert b"Try record verification" in r.data
+
+    Session.expire_all()
+    domain = CustomDomain.get(domain.id)
+    assert domain.verified is False
+    assert domain.spf_verified is False
+    assert domain.dkim_verified is False
+    assert domain.dmarc_verified is False
+
+
+def test_verify_dns_marks_records_verified(flask_client):
+    login_admin(flask_client)
+    domain = _unverified_domain(create_new_user())
+    domain_id = domain.id
+    set_global_dns_client(_correct_dns(domain))
+    try:
+        r = flask_client.post(
+            url_for("admin.custom_domain_search.verify_dns"),
+            data={"domain_id": domain_id},
+        )
+    finally:
+        set_global_dns_client(None)
+    assert r.status_code == 200
+    assert b"Live check OK" in r.data
+
+    Session.expire_all()
+    domain = CustomDomain.get(domain_id)
+    assert domain.verified is True
+    assert domain.spf_verified is True
+    assert domain.dkim_verified is True
+    assert domain.dmarc_verified is True
+    log = (
+        Session.query(AdminAuditLog)
+        .filter_by(model="CustomDomain", model_id=domain_id)
+        .order_by(AdminAuditLog.id.desc())
+        .first()
+    )
+    assert log.action == AuditLogActionEnum.verify_custom_domain_dns.value
+    assert log.data["after"]["mx"] is True
+
+
+def test_verify_dns_reports_lookup_errors_without_changing_state(flask_client):
+    login_admin(flask_client)
+    domain = CustomDomain.create(
+        user_id=create_new_user().id,
+        domain=f"dns-{random_token(8)}.com",
+        ownership_verified=True,
+        verified=True,
+        spf_verified=True,
+        dkim_verified=False,
+        dmarc_verified=False,
+        commit=True,
+    )
+    domain_id = domain.id
+    dns_client = _correct_dns(domain)
+    dns_client.set_lookup_error(domain.domain, "TXT", "SERVFAIL")
+    dns_client.set_lookup_error(domain.domain, "MX", "SERVFAIL")
+    set_global_dns_client(dns_client)
+    try:
+        r = flask_client.post(
+            url_for("admin.custom_domain_search.verify_dns"),
+            data={"domain_id": domain_id},
+        )
+    finally:
+        set_global_dns_client(None)
+    assert r.status_code == 200
+    assert b"DNS lookup failed" in r.data
+
+    Session.expire_all()
+    domain = CustomDomain.get(domain_id)
+    # Records whose lookup failed are untouched
+    assert domain.ownership_verified is True
+    assert domain.verified is True
+    assert domain.spf_verified is True
+    # Records that could be checked are verified
+    assert domain.dkim_verified is True
+    assert domain.dmarc_verified is True
+
+
+def test_verify_dns_unknown_domain(flask_client):
+    login_admin(flask_client)
+    r = flask_client.post(
+        url_for("admin.custom_domain_search.verify_dns"),
+        data={"domain_id": 999999999},
+        follow_redirects=True,
+    )
+    assert r.status_code == 200

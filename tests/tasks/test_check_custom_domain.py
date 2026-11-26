@@ -2,6 +2,7 @@ import arrow
 from unittest.mock import patch
 
 from app.db import Session
+from app.dns_utils import DNSLookupError
 from app.models import CustomDomain
 from tasks.check_custom_domains import (
     check_all_custom_domains,
@@ -112,3 +113,27 @@ def test_check_custom_domain_deletes_unverified_domains_after_five_days():
     check_all_custom_domains()
     assert CustomDomain.get(stale) is None
     assert CustomDomain.get(recent) is not None
+
+
+def test_check_single_custom_domain_ignores_dns_lookup_errors(flask_client):
+    user = create_new_user()
+    custom_domain = CustomDomain.create(
+        user_id=user.id,
+        domain=random_string(),
+        verified=True,
+        spf_verified=True,
+        nb_failed_checks=4,
+        commit=True,
+    )
+    custom_domain.updated_at = arrow.now().shift(days=-2)
+    Session.commit()
+
+    with patch(
+        "tasks.check_custom_domains.get_mx_domains",
+        side_effect=DNSLookupError(custom_domain.domain, "MX", "Timeout"),
+    ), patch("tasks.check_custom_domains.send_email_with_rate_control") as send_mock:
+        check_single_custom_domain(custom_domain)
+    send_mock.assert_not_called()
+    assert custom_domain.verified is True
+    assert custom_domain.spf_verified is True
+    assert custom_domain.nb_failed_checks == 4

@@ -8,6 +8,7 @@ from flask_admin import expose
 from flask_login import current_user
 
 from app import config
+from app.constants import DMARC_RECORD
 from app.admin.base import CSRFProtectedAdminView
 from app.custom_domain_validation import (
     CustomDomainValidation,
@@ -16,7 +17,8 @@ from app.custom_domain_validation import (
 )
 from app.custom_domain_utils import delete_custom_domain as schedule_domain_deletion
 from app.db import Session
-from app.dns_utils import get_network_dns_client
+from app.dns_utils import get_network_dns_client, DNSLookupError
+from app.log import LOG
 from app.models import (
     User,
     CustomDomain,
@@ -31,14 +33,21 @@ from app.regex_utils import is_safe_regex_pattern
 class CustomDomainWithValidationData:
     def __init__(self, domain: CustomDomain):
         self.domain: CustomDomain = domain
+        # Expected records. Only filled for the records that are not verified
         self.ownership_expected: Optional[ExpectedValidationRecords] = None
-        self.ownership_validation: Optional[DomainValidationResult] = None
         self.mx_expected: Optional[dict[int, ExpectedValidationRecords]] = None
-        self.mx_validation: Optional[DomainValidationResult] = None
         self.spf_expected: Optional[ExpectedValidationRecords] = None
-        self.spf_validation: Optional[DomainValidationResult] = None
         self.dkim_expected: dict[str, ExpectedValidationRecords] = {}
+        self.dmarc_expected: Optional[str] = None
+        # Live DNS check results. Only filled when an admin triggers a verification
+        self.checked: bool = False
+        self.ownership_validation: Optional[DomainValidationResult] = None
+        self.mx_validation: Optional[DomainValidationResult] = None
+        self.spf_validation: Optional[DomainValidationResult] = None
         self.dkim_validation: dict[str, str] = {}
+        self.dmarc_validation: Optional[DomainValidationResult] = None
+        # record type (ownership, mx, spf, dkim, dmarc) -> DNS lookup error message
+        self.dns_errors: dict[str, str] = {}
 
 
 class CustomDomainSearchResult:
@@ -130,68 +139,98 @@ class CustomDomainSearchResult:
 
 
 class CustomDomainSearchHelpers:
-    _validator: Optional[CustomDomainValidation] = None
-
-    @classmethod
-    def get_validator(cls) -> CustomDomainValidation:
-        """Get or create a domain validator instance."""
-        if cls._validator is None:
-            dns_client = get_network_dns_client()
-            cls._validator = CustomDomainValidation(
-                dkim_domain=config.EMAIL_DOMAIN,
-                partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
-                partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
-                dns_client=dns_client,
-            )
-        return cls._validator
+    @staticmethod
+    def get_validator(raise_on_dns_error: bool = False) -> CustomDomainValidation:
+        return CustomDomainValidation(
+            dkim_domain=config.EMAIL_DOMAIN,
+            partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,
+            partner_domains_validation_prefixes=config.PARTNER_CUSTOM_DOMAIN_VALIDATION_PREFIXES,
+            dns_client=get_network_dns_client(),
+            raise_on_dns_error=raise_on_dns_error,
+        )
 
     @classmethod
     def get_validation_data(
         cls, domain: CustomDomain
     ) -> CustomDomainWithValidationData:
-        """Get validation data for a custom domain.
+        """Get the expected records for the non-verified parts of a custom domain.
 
-        Uses a nested transaction (savepoint) to avoid persisting any changes
-        made by the validation methods, since this is a read-only admin view.
+        This does NOT perform any DNS query nor modify the domain, so the search stays fast.
+        Live checks are done on demand with verify_dns_records.
         """
         validator = cls.get_validator()
         validation_data = CustomDomainWithValidationData(domain)
 
-        # Use a nested transaction so we can rollback any changes made by validators
-        # The validation methods modify domain state and commit, which we don't want
-        # to persist in the admin view
-        try:
-            Session.begin_nested()
-
-            if not domain.ownership_verified:
-                validation_data.ownership_expected = (
-                    validator.get_ownership_verification_record(domain)
-                )
-                validation_data.ownership_validation = (
-                    validator.validate_domain_ownership(domain)
-                )
-
-            if not domain.verified:
-                validation_data.mx_expected = validator.get_expected_mx_records(domain)
-                validation_data.mx_validation = validator.validate_mx_records(domain)
-
-            if not domain.spf_verified:
-                validation_data.spf_expected = validator.get_expected_spf_domain(domain)
-                validation_data.spf_validation = validator.validate_spf_records(domain)
-
-            if not domain.dkim_verified:
-                validation_data.dkim_expected = validator.get_dkim_records(domain)
-                validation_data.dkim_validation = validator.validate_dkim_records(
-                    domain
-                )
-
-        finally:
-            # Always rollback to discard any changes made by the validators
-            Session.rollback()
-            # Refresh the domain object to get its original state
-            Session.refresh(domain)
+        if not domain.ownership_verified and domain.ownership_txt_token:
+            validation_data.ownership_expected = (
+                validator.get_ownership_verification_record(domain)
+            )
+        if not domain.verified:
+            validation_data.mx_expected = validator.get_expected_mx_records(domain)
+        if not domain.spf_verified:
+            validation_data.spf_expected = validator.get_expected_spf_domain(domain)
+        if not domain.dkim_verified:
+            validation_data.dkim_expected = validator.get_dkim_records(domain)
+        if not domain.dmarc_verified:
+            validation_data.dmarc_expected = DMARC_RECORD
 
         return validation_data
+
+    @classmethod
+    def verify_dns_records(cls, domain: CustomDomain) -> CustomDomainWithValidationData:
+        """Run a live verification of all the DNS records of the domain.
+
+        Works the same way as the user clicking "Verify" in the dashboard: records that are
+        correct are marked as verified (and SPF/DMARC/DKIM that are wrong are un-verified).
+        Records whose DNS query fails (timeout, SERVFAIL...) are reported in dns_errors
+        and their state is left untouched.
+        """
+        validator = cls.get_validator(raise_on_dns_error=True)
+
+        def run(record_type: str, fn):
+            try:
+                return fn(domain)
+            except DNSLookupError as e:
+                LOG.w(
+                    f"DNS lookup error verifying {record_type} for custom domain {domain.id}: {e}"
+                )
+                # Lookups happen before any state change, so there is nothing to undo
+                validation_data.dns_errors[record_type] = e.reason
+                return None
+
+        validation_data = CustomDomainWithValidationData(domain)
+        validation_data.checked = True
+        # Ownership has to go first, as MX verification depends on it
+        validation_data.ownership_validation = run(
+            "ownership", validator.validate_domain_ownership
+        )
+        validation_data.mx_validation = run("mx", validator.validate_mx_records)
+        validation_data.spf_validation = run("spf", validator.validate_spf_records)
+        dkim = run("dkim", validator.validate_dkim_records)
+        validation_data.dkim_validation = dkim or {}
+        validation_data.dmarc_validation = run(
+            "dmarc", validator.validate_dmarc_records
+        )
+
+        Session.refresh(domain)
+        # Fill the expected records with the state after the verification
+        expected = cls.get_validation_data(domain)
+        validation_data.ownership_expected = expected.ownership_expected
+        validation_data.mx_expected = expected.mx_expected
+        validation_data.spf_expected = expected.spf_expected
+        validation_data.dkim_expected = expected.dkim_expected
+        validation_data.dmarc_expected = expected.dmarc_expected
+        return validation_data
+
+    @staticmethod
+    def verification_flags(domain: CustomDomain) -> dict[str, bool]:
+        return {
+            "ownership": bool(domain.ownership_verified),
+            "mx": bool(domain.verified),
+            "spf": bool(domain.spf_verified),
+            "dkim": bool(domain.dkim_verified),
+            "dmarc": bool(domain.dmarc_verified),
+        }
 
     @staticmethod
     def alias_count(domain: CustomDomain) -> int:
@@ -254,6 +293,67 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
             "admin/custom_domain_search.html",
             data=search,
             query=query,
+            helper=CustomDomainSearchHelpers,
+            now=arrow.now(),
+        )
+
+    @expose("/verify_dns", methods=["POST"])
+    def verify_dns(self):
+        try:
+            domain_id = int(request.form.get("domain_id", ""))
+        except ValueError:
+            flash("Invalid domain_id", "error")
+            return redirect(url_for("admin.custom_domain_search.index"))
+
+        domain: Optional[CustomDomain] = CustomDomain.get(domain_id)
+        if domain is None:
+            flash("Domain not found", "error")
+            return redirect(url_for("admin.custom_domain_search.index"))
+
+        before = CustomDomainSearchHelpers.verification_flags(domain)
+        validation_data = CustomDomainSearchHelpers.verify_dns_records(domain)
+        after = CustomDomainSearchHelpers.verification_flags(domain)
+
+        AdminAuditLog.create(
+            admin_user_id=current_user.id,
+            model="CustomDomain",
+            model_id=domain.id,
+            action=AuditLogActionEnum.verify_custom_domain_dns.value,
+            data={
+                "domain": domain.domain,
+                "before": before,
+                "after": after,
+                "dns_errors": validation_data.dns_errors,
+            },
+        )
+        Session.commit()
+
+        if validation_data.dns_errors:
+            flash(
+                "Some DNS lookups failed, their verification status was not changed: "
+                + ", ".join(
+                    f"{k.upper()} ({v})" for k, v in validation_data.dns_errors.items()
+                ),
+                "warning",
+            )
+        changed = [k for k in after if after[k] != before[k]]
+        if changed:
+            flash(
+                "Verification status changed: "
+                + ", ".join(f"{k} {before[k]} -> {after[k]}" for k in changed),
+                "success",
+            )
+        else:
+            flash("DNS check finished. Verification status unchanged", "info")
+
+        search = CustomDomainSearchResult()
+        search.query = str(domain.id)
+        search.no_match = False
+        search.domains = [validation_data]
+        return self.render(
+            "admin/custom_domain_search.html",
+            data=search,
+            query=str(domain.id),
             helper=CustomDomainSearchHelpers,
             now=arrow.now(),
         )

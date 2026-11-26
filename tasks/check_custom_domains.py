@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 from app import config
 from app.custom_domain_validation import CustomDomainValidation, is_mx_equivalent
 from app.db import Session
-from app.dns_utils import get_mx_domains
+from app.dns_utils import get_mx_domains, DNSLookupError
 from app.email_utils import send_email_with_rate_control, render
 from app.log import LOG
 from app.models import CustomDomain, Alias
@@ -60,7 +60,15 @@ def check_all_custom_domains():
 def check_single_custom_domain(custom_domain: CustomDomain):
     if custom_domain.user.disabled:
         return
-    mx_domains = get_mx_domains(custom_domain.domain)
+    try:
+        mx_domains = get_mx_domains(custom_domain.domain, raise_on_error=True)
+    except DNSLookupError as e:
+        # The DNS query itself failed (timeout, SERVFAIL, broken nameserver...). That doesn't
+        # mean the records are wrong, so don't count it as a failed check
+        LOG.w(
+            f"Could not check MX records for domain {custom_domain} of user {custom_domain.user}: {e}. Skipping"
+        )
+        return
     validator = CustomDomainValidation(
         dkim_domain=config.EMAIL_DOMAIN,
         partner_domains=config.PARTNER_DNS_CUSTOM_DOMAINS,

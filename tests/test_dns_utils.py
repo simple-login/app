@@ -88,3 +88,70 @@ def test_get_spf_record():
     client.set_txt_record(domain, [spf_record, "another record"])
     res = client.get_spf_domain(domain)
     assert res == [sl_domain]
+
+
+# DNS lookup error detection
+
+
+def _network_client_raising(exc):
+    from unittest.mock import MagicMock
+    from app.dns_utils import NetworkDNSClient
+
+    client = NetworkDNSClient(["127.0.0.1"])
+    client._resolver = MagicMock()
+    client._resolver.resolve.side_effect = exc
+    return client
+
+
+def test_network_client_lookup_error_is_swallowed_by_default():
+    import dns.resolver
+
+    client = _network_client_raising(
+        dns.resolver.LifetimeTimeout(timeout=5.0, errors=[])
+    )
+    assert client.get_mx_domains("example.com") == {}
+    assert client.get_txt_record("example.com") == []
+    assert client.get_cname_record("example.com") is None
+    assert client.get_spf_domain("example.com") == []
+
+
+def test_network_client_lookup_error_raises_when_asked():
+    import dns.resolver
+    import pytest
+    from app.dns_utils import DNSLookupError
+
+    for exc in (
+        dns.resolver.LifetimeTimeout(timeout=5.0, errors=[]),
+        dns.resolver.NoNameservers(),
+    ):
+        client = _network_client_raising(exc)
+        with pytest.raises(DNSLookupError):
+            client.get_mx_domains("example.com", raise_on_error=True)
+        with pytest.raises(DNSLookupError):
+            client.get_txt_record("example.com", raise_on_error=True)
+        with pytest.raises(DNSLookupError):
+            client.get_cname_record("example.com", raise_on_error=True)
+        with pytest.raises(DNSLookupError):
+            client.get_spf_domain("example.com", raise_on_error=True)
+
+
+def test_network_client_missing_record_is_not_an_error():
+    import dns.resolver
+
+    for exc in (dns.resolver.NXDOMAIN(), dns.resolver.NoAnswer()):
+        client = _network_client_raising(exc)
+        assert client.get_mx_domains("example.com", raise_on_error=True) == {}
+        assert client.get_txt_record("example.com", raise_on_error=True) == []
+        assert client.get_cname_record("example.com", raise_on_error=True) is None
+
+
+def test_in_memory_client_lookup_error():
+    import pytest
+    from app.dns_utils import DNSLookupError
+
+    client = InMemoryDNSClient()
+    client.set_mx_records("example.com", {10: ["mx.example.com."]})
+    client.set_lookup_error("example.com", "MX")
+    assert client.get_mx_domains("example.com") == {}
+    with pytest.raises(DNSLookupError):
+        client.get_mx_domains("example.com", raise_on_error=True)

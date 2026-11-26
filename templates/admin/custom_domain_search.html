@@ -489,25 +489,63 @@
     </span>
   {% endif %}
 {%- endmacro %}
+{# DNS record status badge (based on the stored verification state) #}
+{% macro dns_status_badge(verified) -%}
+  {% if verified %}
+
+    <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
+  {% else %}
+    <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
+  {% endif %}
+{%- endmacro %}
+{# Live check result (only shown after "Try record verification") #}
+{% macro live_check_result(checked, dns_error, validation, current_values) -%}
+  {% if checked %}
+    {% if dns_error %}
+
+      <div class="alert alert-danger py-1 px-2 mb-2 small">
+        <i class="fa fa-exclamation-triangle mr-1"></i><strong>DNS lookup failed:</strong> {{ dns_error }}
+        <br>
+        <span class="text-muted">The record could not be checked. This is a DNS server problem, not necessarily a wrong record.</span>
+      </div>
+    {% elif validation is not none and validation.success %}
+      <div class="small text-success mb-2">
+        <i class="fa fa-check-circle mr-1"></i>Live check OK
+      </div>
+    {% else %}
+      <div>
+        <small class="text-muted d-block mb-1">Current DNS Response:</small>
+        {% for value in current_values %}
+
+          <div class="dns-record dns-record-current">{{ value or 'No record found' }}</div>
+        {% else %}
+          <div class="dns-record dns-record-current">No record found</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+{%- endmacro %}
 {# DNS record display #}
-{% macro dns_record_display(label, expected, validation_errors) -%}
+{% macro dns_record_display(label, verified, expected, checked, dns_error, validation) -%}
   <div class="mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <strong>{{ label }}</strong>
-      {% if not expected %}
-
-        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
-      {% else %}
-        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
-      {% endif %}
+      {{ dns_status_badge(verified) }}
     </div>
-    {% if expected %}
+    {% if not verified %}
 
       <div class="mb-2">
         <small class="text-muted d-block mb-1">Expected Record:</small>
-        <div class="dns-record dns-record-expected">{{ expected.recommended }}</div>
+        {% if expected is none %}
+
+          <div class="dns-record dns-record-expected text-muted">No verification token generated yet</div>
+        {% elif expected is string %}
+          <div class="dns-record dns-record-expected">{{ expected }}</div>
+        {% else %}
+          <div class="dns-record dns-record-expected">{{ expected.recommended }}</div>
+        {% endif %}
       </div>
-      {% if expected.allowed and expected.allowed|length > 1 %}
+      {% if expected is not none and expected is not string and expected.allowed|length > 1 %}
 
         <details class="mb-2">
           <summary class="text-muted" style="cursor: pointer; font-size: 0.85em;">
@@ -518,30 +556,16 @@
           </ul>
         </details>
       {% endif %}
-      {% if validation_errors %}
-
-        <div>
-          <small class="text-muted d-block mb-1">Current DNS Response:</small>
-          {% for error in validation_errors %}
-
-            <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
     {% endif %}
+    {{ live_check_result(checked, dns_error, validation, validation.errors if validation is not none else []) }}
   </div>
 {%- endmacro %}
 {# MX record display (special handling for priorities) #}
-{% macro mx_record_display(expected, validation_errors) -%}
+{% macro mx_record_display(verified, expected, checked, dns_error, validation) -%}
   <div class="mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <strong>MX Records</strong>
-      {% if not expected %}
-
-        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
-      {% else %}
-        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
-      {% endif %}
+      {{ dns_status_badge(verified) }}
     </div>
     {% if expected %}
 
@@ -555,45 +579,44 @@
           </div>
         {% endfor %}
       </div>
-      {% if validation_errors %}
-
-        <div>
-          <small class="text-muted d-block mb-1">Current DNS Response:</small>
-          {% for error in validation_errors %}
-
-            <div class="dns-record dns-record-current">{{ error or 'No record found' }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
     {% endif %}
+    {{ live_check_result(checked, dns_error, validation, validation.errors if validation is not none else []) }}
   </div>
 {%- endmacro %}
 {# DKIM records display #}
-{% macro dkim_records_display(domain, dkim_expected, dkim_validation) -%}
+{% macro dkim_records_display(domain, dkim_expected, checked, dns_error, dkim_validation) -%}
   <div class="mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <strong>DKIM Records</strong>
-      {% if not dkim_expected %}
-
-        <span class="badge badge-success"><i class="fa fa-check mr-1"></i>Verified</span>
-      {% else %}
-        <span class="badge badge-warning"><i class="fa fa-clock mr-1"></i>Pending</span>
-      {% endif %}
+      {{ dns_status_badge(domain.dkim_verified) }}
     </div>
-    {% if dkim_expected %}
+    {% if checked and dns_error %}
 
-      {% for dkim_selector in dkim_expected %}
+      {{ live_check_result(checked, dns_error, none, []) }}
+    {% elif checked and not dkim_validation %}
+      {{ live_check_result(checked, none, {'success': true}, []) }}
+    {% endif %}
+    {% if dkim_expected or (checked and dkim_validation) %}
+
+      {% for dkim_selector, record in helper.get_validator().get_dkim_records(domain).items() %}
 
         {% set full_domain = dkim_selector + "." + domain.domain %}
-        <div class="mb-2 p-2 dns-record">
-          <small class="text-muted d-block">Selector: <code>{{ full_domain }}</code></small>
-          <div class="dns-record dns-record-expected mt-1">{{ dkim_expected[dkim_selector].recommended }}</div>
-          {% if dkim_validation.get(full_domain) %}
+        {% if dkim_expected or full_domain in dkim_validation %}
 
-            <small class="text-muted d-block mt-1">Current:</small>
-            <div class="dns-record dns-record-current">{{ dkim_validation.get(full_domain) or 'No record found' }}</div>
-          {% endif %}
-        </div>
+          <div class="mb-2 p-2 dns-record">
+            <small class="text-muted d-block">Selector: <code>{{ full_domain }}</code></small>
+            <div class="dns-record dns-record-expected mt-1">{{ record.recommended }}</div>
+            {% if checked and not dns_error and full_domain in dkim_validation %}
+
+              <small class="text-muted d-block mt-1">Current:</small>
+              <div class="dns-record dns-record-current">
+                {{ dkim_validation.get(full_domain) if dkim_validation.get(full_domain) != 'empty' else 'No record found' }}
+              </div>
+            {% elif checked and not dns_error %}
+              <small class="text-success d-block mt-1"><i class="fa fa-check-circle mr-1"></i>OK</small>
+            {% endif %}
+          </div>
+        {% endif %}
       {% endfor %}
     {% endif %}
   </div>
@@ -614,6 +637,7 @@
 {# Domain card #}
 {% macro domain_card(domain_data) -%}
   {% set domain = domain_data.domain %}
+  {% set alias_count = helper.alias_count(domain) %}
   <div class="card mb-4 border-0 shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center {% if domain.pending_deletion %}
        header-danger{% else %}header-success{% endif %}">
@@ -668,7 +692,7 @@
                     <tr>
                       <td class="text-muted text-nowrap py-1">Aliases:</td>
                       <td class="py-1">
-                        <strong>{{ helper.alias_count(domain) }}</strong>
+                        <strong>{{ alias_count }}</strong>
                       </td>
                     </tr>
                   </table>
@@ -730,6 +754,17 @@
               </h6>
             </div>
             <div class="card-body py-3 d-flex flex-column">
+              <form action="{{ url_for('admin.custom_domain_search.verify_dns') }}"
+                    method="post"
+                    class="mb-2">
+                {{ csrf_form.csrf_token }}
+                <input type="hidden" name="domain_id" value="{{ domain.id }}">
+                <button type="submit"
+                        class="btn btn-sm btn-block btn-outline-primary"
+                        title="Query DNS now and update the verification status, like the user clicking Verify in the dashboard">
+                  <i class="fa fa-sync mr-1"></i>Try record verification
+                </button>
+              </form>
               {% if not domain.pending_deletion %}
 
                 {# Spacer to push delete to bottom #}
@@ -758,23 +793,27 @@
         <div class="card-header header-neutral">
           <h6 class="mb-0">
             <i class="fa fa-server mr-2"></i>DNS Records
+            {% if not domain_data.checked %}
+
+              <small class="text-muted ml-2">(stored status, use "Try record verification" for a live check)</small>
+            {% endif %}
           </h6>
         </div>
         <div class="card-body">
           <div class="row info-section">
             <div class="col-md-6 mb-3 mb-md-0">
-              {{ dns_record_display('Ownership (TXT)', domain_data.ownership_expected, domain_data.ownership_validation.errors if domain_data.ownership_validation else []) }}
-              {{ dns_record_display('SPF (TXT)', domain_data.spf_expected, domain_data.spf_validation.errors if domain_data.spf_validation else []) }}
+              {{ dns_record_display('Ownership (TXT)', domain.ownership_verified, domain_data.ownership_expected, domain_data.checked, domain_data.dns_errors.get('ownership') , domain_data.ownership_validation) }}
+              {{ dns_record_display('SPF (TXT)', domain.spf_verified, domain_data.spf_expected, domain_data.checked, domain_data.dns_errors.get('spf') , domain_data.spf_validation) }}
+              {{ dns_record_display('DMARC (TXT on _dmarc.' ~ domain.domain ~ ')', domain.dmarc_verified, domain_data.dmarc_expected, domain_data.checked, domain_data.dns_errors.get('dmarc') , domain_data.dmarc_validation) }}
             </div>
             <div class="col-md-6">
-              {{ mx_record_display(domain_data.mx_expected, domain_data.mx_validation.errors if domain_data.mx_validation else []) }}
-              {{ dkim_records_display(domain, domain_data.dkim_expected, domain_data.dkim_validation) }}
+              {{ mx_record_display(domain.verified, domain_data.mx_expected, domain_data.checked, domain_data.dns_errors.get('mx') , domain_data.mx_validation) }}
+              {{ dkim_records_display(domain, domain_data.dkim_expected, domain_data.checked, domain_data.dns_errors.get('dkim') , domain_data.dkim_validation) }}
             </div>
           </div>
         </div>
       </div>
       {# Aliases Section #}
-      {% set alias_count = helper.alias_count(domain) %}
       {% set total_pages = ((alias_count - 1) // 10 + 1) if alias_count > 0 else 1 %}
       {% set alias_page_raw = request.args.get('alias_page_' ~ domain.id, 1) %}
       {% set alias_page = alias_page_raw | int if alias_page_raw | int > 0 else 1 %}
@@ -793,9 +832,7 @@
                 <i class="fa fa-at mr-2"></i>Aliases
                 <span class="badge badge-secondary ml-2">{{ alias_count }} total</span>
               </h6>
-              {% if alias_count > 25 %}
-              <small class="text-muted">Page {{ alias_page }} of {{ total_pages }}</small>
-              {% endif %}
+              {% if alias_count > 25 %}<small class="text-muted">Page {{ alias_page }} of {{ total_pages }}</small>{% endif %}
             </div>
             <div class="card-body p-0">
               {% if aliases %}
@@ -829,45 +866,50 @@
                 </div>
                 {# Pagination Controls #}
                 {% if alias_count > 25 %}
-                <div class="pagination-container p-2 border-top">
-                  <nav aria-label="Alias pagination">
-                    <ul class="pagination mb-0 justify-content-end small">
-                      {% if alias_page > 1 %}
-                      <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
-                          <i class="fa fa-chevron-left"></i> Previous
-                        </a>
-                      </li>
-                      {% else %}
-                      <li class="page-item disabled">
-                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
-                      </li>
-                      {% endif %}
 
-                      {% set start_page = (alias_page - 2) if alias_page - 2 > 1 else 1 %}
-                      {% set end_page = (alias_page + 3) if alias_page + 3 < total_pages else total_pages %}
-                      {% for page_num in range(start_page, end_page) %}
-                      <li class="page-item {% if page_num == alias_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
-                          {{ page_num }}
-                        </a>
-                      </li>
-                      {% endfor %}
+                  <div class="pagination-container p-2 border-top">
+                    <nav aria-label="Alias pagination">
+                      <ul class="pagination mb-0 justify-content-end small">
+                        {% if alias_page > 1 %}
 
-                      {% if alias_page < total_pages %}
-                      <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
-                          Next <i class="fa fa-chevron-right"></i>
-                        </a>
-                      </li>
-                      {% else %}
-                      <li class="page-item disabled">
-                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
-                      </li>
-                      {% endif %}
-                    </ul>
-                  </nav>
-                </div>
+                          <li class="page-item">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page - 1}) }}">
+                              <i class="fa fa-chevron-left"></i> Previous
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                          </li>
+                        {% endif %}
+                        {% set start_page = (alias_page - 2) if alias_page - 2 > 1 else 1 %}
+                        {% set end_page = (alias_page + 3) if alias_page + 3 < total_pages else total_pages %}
+                        {% for page_num in range(start_page, end_page) %}
+
+                          <li class="page-item {% if page_num == alias_page %}active{% endif %}">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: page_num}) }}">
+                              {{ page_num }}
+                            </a>
+                          </li>
+                        {% endfor %}
+                        {% if alias_page < total_pages %}
+
+                          <li class="page-item">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'alias_page_' ~ domain.id: alias_page + 1}) }}">
+                              Next <i class="fa fa-chevron-right"></i>
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                          </li>
+                        {% endif %}
+                      </ul>
+                    </nav>
+                  </div>
                 {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
@@ -886,7 +928,8 @@
                 <span class="badge badge-secondary ml-2">{{ deleted_alias_count }} total</span>
               </h6>
               {% if deleted_alias_count > 25 %}
-              <small class="text-muted">Page {{ deleted_alias_page }} of {{ total_deleted_pages }}</small>
+
+                <small class="text-muted">Page {{ deleted_alias_page }} of {{ total_deleted_pages }}</small>
               {% endif %}
             </div>
             <div class="card-body p-0">
@@ -919,45 +962,50 @@
                 </div>
                 {# Pagination Controls #}
                 {% if deleted_alias_count > 25 %}
-                <div class="pagination-container p-2 border-top">
-                  <nav aria-label="Deleted alias pagination">
-                    <ul class="pagination mb-0 justify-content-end small">
-                      {% if deleted_alias_page > 1 %}
-                      <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
-                          <i class="fa fa-chevron-left"></i> Previous
-                        </a>
-                      </li>
-                      {% else %}
-                      <li class="page-item disabled">
-                        <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
-                      </li>
-                      {% endif %}
 
-                      {% set start_deleted_page = (deleted_alias_page - 2) if deleted_alias_page - 2 > 1 else 1 %}
-                      {% set end_deleted_page = (deleted_alias_page + 3) if deleted_alias_page + 3 < total_deleted_pages else total_deleted_pages %}
-                      {% for page_num in range(start_deleted_page, end_deleted_page) %}
-                      <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
-                          {{ page_num }}
-                        </a>
-                      </li>
-                      {% endfor %}
+                  <div class="pagination-container p-2 border-top">
+                    <nav aria-label="Deleted alias pagination">
+                      <ul class="pagination mb-0 justify-content-end small">
+                        {% if deleted_alias_page > 1 %}
 
-                      {% if deleted_alias_page < total_deleted_pages %}
-                      <li class="page-item">
-                        <a class="page-link" href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
-                          Next <i class="fa fa-chevron-right"></i>
-                        </a>
-                      </li>
-                      {% else %}
-                      <li class="page-item disabled">
-                        <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
-                      </li>
-                      {% endif %}
-                    </ul>
-                  </nav>
-                </div>
+                          <li class="page-item">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page - 1}) }}">
+                              <i class="fa fa-chevron-left"></i> Previous
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link"><i class="fa fa-chevron-left"></i> Previous</span>
+                          </li>
+                        {% endif %}
+                        {% set start_deleted_page = (deleted_alias_page - 2) if deleted_alias_page - 2 > 1 else 1 %}
+                        {% set end_deleted_page = (deleted_alias_page + 3) if deleted_alias_page + 3 < total_deleted_pages else total_deleted_pages %}
+                        {% for page_num in range(start_deleted_page, end_deleted_page) %}
+
+                          <li class="page-item {% if page_num == deleted_alias_page %}active{% endif %}">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: page_num}) }}">
+                              {{ page_num }}
+                            </a>
+                          </li>
+                        {% endfor %}
+                        {% if deleted_alias_page < total_deleted_pages %}
+
+                          <li class="page-item">
+                            <a class="page-link"
+                               href="{{ url_for('admin.custom_domain_search.index', query=query, **{'deleted_alias_page_' ~ domain.id: deleted_alias_page + 1}) }}">
+                              Next <i class="fa fa-chevron-right"></i>
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fa fa-chevron-right"></i></span>
+                          </li>
+                        {% endif %}
+                      </ul>
+                    </nav>
+                  </div>
                 {% endif %}
               {% else %}
                 <div class="p-3 text-muted text-center">
