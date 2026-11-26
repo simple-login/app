@@ -7,8 +7,7 @@ import arrow
 
 def test_get_jobs_to_run(flask_client):
     now = arrow.now()
-    for job in Job.all():
-        Job.delete(job.id)
+    Job.filter().delete()
     expected_jobs_to_run = [
         # Jobs in ready state
         Job.create(name="", payload=""),
@@ -83,8 +82,7 @@ def test_get_jobs_to_run(flask_client):
 
 def test_get_jobs_to_run_honours_run_at_exactly(flask_client):
     now = arrow.now()
-    for job in Job.all():
-        Job.delete(job.id)
+    Job.filter().delete()
     due = Job.create(name="", payload="", run_at=now.shift(seconds=-1))
     not_due = Job.create(name="", payload="", run_at=now.shift(minutes=1))
     Session.commit()
@@ -98,8 +96,7 @@ def test_get_jobs_to_run_honours_run_at_exactly(flask_client):
 
 def test_get_jobs_to_run_respects_priority(flask_client):
     now = arrow.now()
-    for job in Job.all():
-        Job.delete(job.id)
+    Job.filter().delete()
 
     j1 = Job.create(
         name="", payload="", run_at=now.shift(minutes=-1), priority=JobPriority.High

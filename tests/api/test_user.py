@@ -16,8 +16,7 @@ from tests.utils import login
 
 def test_delete_without_sudo(flask_client):
     user, api_key = get_new_user_and_api_key()
-    for job in Job.all():
-        job.delete(job.id)
+    Job.filter().delete()
     Session.commit()
 
     r = flask_client.delete(
@@ -33,8 +32,7 @@ def test_delete_with_sudo(flask_client):
     user, api_key = get_new_user_and_api_key()
     password = f"passwd-{random()}"
     user.set_password(password)
-    for job in Job.all():
-        job.delete(job.id)
+    Job.filter().delete()
     Session.commit()
 
     r = flask_client.patch(
@@ -74,8 +72,7 @@ def test_delete_with_another_user_session_sudo(flask_client):
     login(flask_client)
     # user B only has an api key, it never entered sudo mode
     user, api_key = get_new_user_and_api_key()
-    for job in Job.all():
-        job.delete(job.id)
+    Job.filter().delete()
     Session.commit()
 
     r = flask_client.delete(
