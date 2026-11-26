@@ -60,9 +60,16 @@ class CustomDomainValidation:
         dns_client: DNSClient = get_network_dns_client(),
         partner_domains: Optional[dict[int, str]] = None,
         partner_domains_validation_prefixes: Optional[dict[int, str]] = None,
+        raise_on_dns_error: bool = False,
     ):
+        """
+        If raise_on_dns_error is set, the validate_* methods raise DNSLookupError when a DNS query fails
+        (timeout, SERVFAIL...) instead of treating it as if the record was missing. In that case the
+        domain state is not modified for the record type being validated.
+        """
         self.dkim_domain = dkim_domain
         self._dns_client = dns_client
+        self._raise_on_dns_error = raise_on_dns_error
         self._partner_domains = partner_domains or config.PARTNER_DNS_CUSTOM_DOMAINS
         self._partner_domain_validation_prefixes = (
             partner_domains_validation_prefixes
@@ -162,7 +169,9 @@ class CustomDomainValidation:
         expected_records = self.get_dkim_records(custom_domain)
         for prefix, expected_record in expected_records.items():
             custom_record = f"{prefix}.{custom_domain.domain}"
-            dkim_record = self._dns_client.get_cname_record(custom_record)
+            dkim_record = self._dns_client.get_cname_record(
+                custom_record, raise_on_error=self._raise_on_dns_error
+            )
             if dkim_record in expected_record.allowed:
                 correct_records[prefix] = custom_record
             else:
@@ -198,7 +207,9 @@ class CustomDomainValidation:
         """
         Check if the custom_domain has added the ownership verification records
         """
-        txt_records = self._dns_client.get_txt_record(custom_domain.domain)
+        txt_records = self._dns_client.get_txt_record(
+            custom_domain.domain, raise_on_error=self._raise_on_dns_error
+        )
         expected_verification_records = self.get_ownership_verification_record(
             custom_domain
         )
@@ -222,7 +233,9 @@ class CustomDomainValidation:
     def validate_mx_records(
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
-        mx_domains = self._dns_client.get_mx_domains(custom_domain.domain)
+        mx_domains = self._dns_client.get_mx_domains(
+            custom_domain.domain, raise_on_error=self._raise_on_dns_error
+        )
         expected_mx_records = self.get_expected_mx_records(custom_domain)
 
         if not is_mx_equivalent(mx_domains, expected_mx_records):
@@ -252,7 +265,9 @@ class CustomDomainValidation:
     def validate_spf_records(
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
-        spf_domains = self._dns_client.get_spf_domain(custom_domain.domain)
+        spf_domains = self._dns_client.get_spf_domain(
+            custom_domain.domain, raise_on_error=self._raise_on_dns_error
+        )
         expected_spf_domain = self.get_expected_spf_domain(custom_domain)
         if len(set(expected_spf_domain.allowed).intersection(set(spf_domains))) > 0:
             custom_domain.spf_verified = True
@@ -264,9 +279,11 @@ class CustomDomainValidation:
             Session.commit()
             return DomainValidationResult(success=True, errors=[])
         else:
+            txt_records = self._dns_client.get_txt_record(
+                custom_domain.domain, raise_on_error=self._raise_on_dns_error
+            )
             custom_domain.spf_verified = False
             Session.commit()
-            txt_records = self._dns_client.get_txt_record(custom_domain.domain)
             cleaned_records = self.__clean_spf_records(txt_records, custom_domain)
             return DomainValidationResult(
                 success=False,
@@ -276,7 +293,9 @@ class CustomDomainValidation:
     def validate_dmarc_records(
         self, custom_domain: CustomDomain
     ) -> DomainValidationResult:
-        txt_records = self._dns_client.get_txt_record("_dmarc." + custom_domain.domain)
+        txt_records = self._dns_client.get_txt_record(
+            "_dmarc." + custom_domain.domain, raise_on_error=self._raise_on_dns_error
+        )
         if DMARC_RECORD in txt_records:
             custom_domain.dmarc_verified = True
             emit_user_audit_log(
