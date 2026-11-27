@@ -1,0 +1,51 @@
+name: simplelogin-devcontainer
+
+services:
+  app:
+    build: { context: ., dockerfile: Dockerfile }
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/simple-login-app:cached
+      - uv-cache:/home/vscode/.cache/uv
+      - uv-python:/home/vscode/.local/share/uv/python
+      - gnupg:/home/vscode/.gnupg
+      - npm-cache:/home/vscode/.npm
+      - venv:/workspaces/simple-login-app/.venv
+    environment:
+      UV_PROJECT_ENVIRONMENT: /workspaces/simple-login-app/.venv
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: simplelogin
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:8
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mailcatcher:                 # only needed for email-handler work
+    image: sj26/mailcatcher
+    network_mode: "service:app"
+
+volumes:
+  uv-cache: {}
+  uv-python: {}
+  gnupg: {}
+  npm-cache: {}
+  pgdata: {}
+  venv: {}
