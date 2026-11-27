@@ -130,6 +130,8 @@ TRANSACTIONAL_BOUNCE_SUFFIX = (
     os.environ.get("TRANSACTIONAL_BOUNCE_SUFFIX") or f"+@{EMAIL_DOMAIN}"
 )
 
+DISABLE_PRICING = bool(os.environ.get("DISABLE_PRICING", "false"))
+
 try:
     MAX_NB_EMAIL_FREE_PLAN = int(os.environ["MAX_NB_EMAIL_FREE_PLAN"])
 except Exception:
