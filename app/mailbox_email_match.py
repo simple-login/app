@@ -96,6 +96,19 @@ def users_matching_email(email: str):
     return User.filter(_matches_email(User.email, email))
 
 
+def has_verified_mailbox_on_domain(domain: str) -> bool:
+    """Whether a verified mailbox has an address on `domain`. Both conditions
+    must match ix_mailbox_verified_email_domain exactly to use it: Postgres
+    does not prove `verified IS TRUE` implies the index's `WHERE verified`."""
+    return (
+        Mailbox.filter(
+            Mailbox.verified,
+            func.split_part(func.lower(Mailbox.email), "@", 2) == domain.lower(),
+        ).first()
+        is not None
+    )
+
+
 def is_email_admin_disabled(email: str) -> bool:
     """Whether `email` (or a canonical variant of it) belongs to an admin-disabled mailbox."""
     return (
