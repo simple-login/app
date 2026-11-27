@@ -1,3 +1,4 @@
+import os
 import asyncio
 import smtplib
 import socket
@@ -22,7 +23,7 @@ from app.email_probe import (
     database_check,
 )
 from email_handler import MailHandler
-from scripts.smtp_probe import probe
+from scripts.smtp_probe import load_config, probe
 
 HEALTH_ADDRESS = config.EMAIL_HANDLER_HEALTH_ADDRESS
 READY_ADDRESS = config.EMAIL_HANDLER_READY_ADDRESS
@@ -313,3 +314,15 @@ def test_probe_addresses_are_configurable(monkeypatch):
             assert smtp.rcpt(HEALTH_ADDRESS)[0] == 250
             smtp.data("Subject: x\r\n\r\nbody\r\n")
         assert handler.delivered == [[HEALTH_ADDRESS]]
+
+
+def test_probe_script_reads_addresses_from_config_file(tmp_path, monkeypatch):
+    env_file = tmp_path / "probe.env"
+    env_file.write_text("EMAIL_HANDLER_READY_ADDRESS=r@custom.test\n")
+    monkeypatch.setenv("CONFIG", str(env_file))
+    monkeypatch.setenv("EMAIL_HANDLER_READY_ADDRESS", "placeholder")
+    monkeypatch.delenv("EMAIL_HANDLER_READY_ADDRESS")
+
+    load_config()
+
+    assert os.environ["EMAIL_HANDLER_READY_ADDRESS"] == "r@custom.test"

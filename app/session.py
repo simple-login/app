@@ -21,6 +21,9 @@ from werkzeug.datastructures import CallbackDict
 
 SESSION_PREFIX = "session"
 
+# Probes must not depend on Redis nor create a session on every call
+SESSIONLESS_PATH_PREFIX = "/health"
+
 SUDO_TIME_KEY = "sudo_time"
 # Id of the user the sudo mode was granted to. Sudo mode is only valid for that
 # user, so a session cannot be used to approve a sensitive action performed as
@@ -123,6 +126,10 @@ class RedisSessionStore(SessionInterface):
     def save_session(
         self, app: flask.Flask, session: ServerSession, response: flask.Response
     ):
+        if flask.has_request_context() and flask.request.path.startswith(
+            SESSIONLESS_PATH_PREFIX
+        ):
+            return
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         httponly = self.get_cookie_httponly(app)

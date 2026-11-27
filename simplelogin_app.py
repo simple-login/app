@@ -52,6 +52,7 @@ from app.onboarding.base import onboarding_bp
 from app.payments.paddle import setup_paddle_callback
 from app.phone.base import phone_bp
 from app.prometheus_export import METRICS_PATH, setup_prometheus
+from app.readiness import setup_readiness
 from app.redis_services import initialize_redis_services, redis_storage_options
 from app.request_utils import generate_request_id
 from app.sentry_utils import sentry_before_send
@@ -495,6 +496,8 @@ def create_simplelogin_app():
     @app.route("/health", methods=["GET"])
     def healthcheck():
         return "success", 200
+
+    setup_readiness(app)
 
     # Registers /metrics when Prometheus is enabled
     setup_prometheus(app)

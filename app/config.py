@@ -472,6 +472,8 @@ EMAIL_HANDLER_READY_ADDRESS = os.environ.get(
     "EMAIL_HANDLER_READY_ADDRESS", "ready@probe.invalid"
 )
 
+READINESS_TOKEN = os.environ.get("READINESS_TOKEN") or None
+
 # emails that have empty From address is sent from this special reverse-alias
 NOREPLY = os.environ.get("NOREPLY", f'"SimpleLogin (noreply)" <noreply@{EMAIL_DOMAIN}>')
 PARTNER_NOREPLY = os.environ.get("PARTNER_NOREPLY", NOREPLY)
