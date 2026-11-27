@@ -5,6 +5,7 @@
 Exits 0 only if the server replies with the expected code *and* marker text, so
 a plain SMTP server answering ``250 OK`` to everything is reported as failing.
 Only EHLO/MAIL/RCPT are sent, never DATA.
+Probe addresses are read from the env and the ``CONFIG``/``.env`` file, like app/config.py.
 """
 
 import argparse
@@ -13,23 +14,42 @@ import smtplib
 import sys
 from typing import Tuple
 
-# Keep in sync with app/email_probe.py; duplicated so the script needs only the stdlib.
+ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+# Keep in sync with app/email_probe.py
 EXPECTED = {
     "health": (
-        os.environ.get("EMAIL_HANDLER_HEALTH_ADDRESS", "health@probe.invalid"),
+        "EMAIL_HANDLER_HEALTH_ADDRESS",
+        "health@probe.invalid",
         250,
         b"2.0.0 SL-PROBE HEALTH OK",
     ),
     "ready": (
-        os.environ.get("EMAIL_HANDLER_READY_ADDRESS", "ready@probe.invalid"),
+        "EMAIL_HANDLER_READY_ADDRESS",
+        "ready@probe.invalid",
         250,
         b"2.0.0 SL-PROBE READY OK",
     ),
 }
 
 
+def load_config() -> None:
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    config_file = os.environ.get("CONFIG")
+    if config_file:
+        if not config_file.startswith("/"):
+            config_file = os.path.join(ROOT_DIR, config_file)
+        load_dotenv(config_file)
+    else:
+        load_dotenv(os.path.join(ROOT_DIR, ".env"))
+
+
 def probe(mode: str, host: str, port: int, timeout: float) -> int:
-    address, code, marker = EXPECTED[mode]
+    env_var, default, code, marker = EXPECTED[mode]
+    address = os.environ.get(env_var, default)
     try:
         with smtplib.SMTP(host, port, timeout=timeout) as smtp:
             smtp.ehlo()
@@ -51,6 +71,7 @@ def main() -> int:
     parser.add_argument("--port", type=int, default=20381)
     parser.add_argument("--timeout", type=float, default=5.0)
     args = parser.parse_args()
+    load_config()
     return probe(args.mode, args.host, args.port, args.timeout)
 
 

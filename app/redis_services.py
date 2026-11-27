@@ -6,6 +6,8 @@ from app.parallel_limiter import set_redis_concurrent_lock
 from app.rate_limiter import set_redis_concurrent_lock as rate_limit_set_redis
 from app.session import RedisSessionStore
 
+REDIS_STORAGE_EXTENSION = "sl_redis_storage"
+
 
 def redis_storage_options(redis_url: str) -> dict:
     timeouts = {
@@ -36,3 +38,4 @@ def initialize_redis_services(app: flask.Flask, redis_url: str):
         raise RuntimeError(
             f"Tried to set_redis_session with an invalid redis url: ${redis_url}"
         )
+    app.extensions[REDIS_STORAGE_EXTENSION] = storage
