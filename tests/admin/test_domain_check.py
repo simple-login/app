@@ -87,7 +87,7 @@ def test_diagnose_explains_domain_used_by_other_user():
 
 def test_domain_check_page_without_user(flask_client):
     login_admin(flask_client)
-    r = flask_client.get(url_for("admin.domain_check.index", domain=random_domain()))
+    r = flask_client.get(url_for("admin_domain_check.index", domain=random_domain()))
     assert r.status_code == 200
     assert b"add this custom domain" not in r.data
     assert b"No user found" not in r.data
@@ -97,7 +97,7 @@ def test_domain_check_page_user_not_found(flask_client):
     login_admin(flask_client)
     r = flask_client.get(
         url_for(
-            "admin.domain_check.index",
+            "admin_domain_check.index",
             domain=random_domain(),
             user="missing@nowhere.lan",
         )
@@ -110,7 +110,7 @@ def test_domain_check_page_can_add(flask_client):
     login_admin(flask_client)
     user = _premium_user()
     r = flask_client.get(
-        url_for("admin.domain_check.index", domain=random_domain(), user=user.email)
+        url_for("admin_domain_check.index", domain=random_domain(), user=user.email)
     )
     assert r.status_code == 200
     assert b"User can add this custom domain" in r.data
@@ -123,7 +123,7 @@ def test_domain_check_page_cannot_add(flask_client):
         CustomDomain.create(user_id=user.id, domain=random_domain(), flush=True)
 
     r = flask_client.get(
-        url_for("admin.domain_check.index", domain=random_domain(), user=user.id)
+        url_for("admin_domain_check.index", domain=random_domain(), user=user.id)
     )
     assert r.status_code == 200
     assert b"User cannot add this custom domain" in r.data

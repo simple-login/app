@@ -42,7 +42,7 @@ def serialize_alias_info(alias_info: AliasInfo) -> dict:
         "id": alias_info.alias.id,
         "email": alias_info.alias.email,
         "creation_date": alias_info.alias.created_at.format(),
-        "creation_timestamp": alias_info.alias.created_at.timestamp,
+        "creation_timestamp": alias_info.alias.created_at.int_timestamp,
         "enabled": alias_info.alias.enabled,
         "note": alias_info.alias.note,
         # activity
@@ -58,7 +58,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         "id": alias_info.alias.id,
         "email": alias_info.alias.email,
         "creation_date": alias_info.alias.created_at.format(),
-        "creation_timestamp": alias_info.alias.created_at.timestamp,
+        "creation_timestamp": alias_info.alias.created_at.int_timestamp,
         "enabled": alias_info.alias.enabled,
         "note": alias_info.alias.note,
         "name": alias_info.alias.name,
@@ -82,7 +82,7 @@ def serialize_alias_info_v2(alias_info: AliasInfo) -> dict:
         contact = alias_info.latest_contact
         # latest activity
         res["latest_activity"] = {
-            "timestamp": email_log.created_at.timestamp,
+            "timestamp": email_log.created_at.int_timestamp,
             "action": email_log.get_action(),
             "contact": {
                 "email": contact.website_email,
@@ -97,7 +97,7 @@ def serialize_contact(contact: Contact, existed=False) -> dict:
     res = {
         "id": contact.id,
         "creation_date": contact.created_at.format(),
-        "creation_timestamp": contact.created_at.timestamp,
+        "creation_timestamp": contact.created_at.int_timestamp,
         "last_email_sent_date": None,
         "last_email_sent_timestamp": None,
         "contact": contact.website_email,
@@ -110,7 +110,7 @@ def serialize_contact(contact: Contact, existed=False) -> dict:
     email_log: EmailLog = contact.last_reply()
     if email_log:
         res["last_email_sent_date"] = email_log.created_at.format()
-        res["last_email_sent_timestamp"] = email_log.created_at.timestamp
+        res["last_email_sent_timestamp"] = email_log.created_at.int_timestamp
 
     return res
 
@@ -334,24 +334,22 @@ def construct_alias_query(user: User):
     alias_activity_subquery = (
         Session.query(
             Alias.id,
-            func.sum(case([(EmailLog.is_reply, 1)], else_=0)).label("nb_reply"),
+            func.sum(case((EmailLog.is_reply, 1), else_=0)).label("nb_reply"),
             func.sum(
                 case(
-                    [(and_(EmailLog.is_reply.is_(False), EmailLog.blocked), 1)],
+                    (and_(EmailLog.is_reply.is_(False), EmailLog.blocked), 1),
                     else_=0,
                 )
             ).label("nb_blocked"),
             func.sum(
                 case(
-                    [
-                        (
-                            and_(
-                                EmailLog.is_reply.is_(False),
-                                EmailLog.blocked.is_(False),
-                            ),
-                            1,
-                        )
-                    ],
+                    (
+                        and_(
+                            EmailLog.is_reply.is_(False),
+                            EmailLog.blocked.is_(False),
+                        ),
+                        1,
+                    ),
                     else_=0,
                 )
             ).label("nb_forward"),

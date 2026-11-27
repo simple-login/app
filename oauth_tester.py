@@ -18,7 +18,7 @@ app = Flask(__name__)
 app.secret_key = "very secret"
 
 # "prettify" the returned json in /profile
-app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
+app.json.compact = False
 
 # This client credential belongs to an existing SimpleLogin App registered on
 # https://app.simplelogin.io/developer (creating new apps is no longer possible).

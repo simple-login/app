@@ -13,7 +13,7 @@ def test_auth_mfa_success(flask_client):
 
     totp = pyotp.TOTP(user.otp_secret)
     s = Signer(FLASK_SECRET)
-    mfa_key = s.sign(str(user.id))
+    mfa_key = s.sign(str(user.id)).decode()
 
     r = flask_client.post(
         url_for("api.auth_mfa"),

@@ -24,7 +24,7 @@ class FakeRedis:
 def _make_app():
     app = flask.Flask(__name__)
     app.secret_key = "test"
-    app.session_cookie_name = "slapp"
+    app.config["SESSION_COOKIE_NAME"] = "slapp"
     return app
 
 

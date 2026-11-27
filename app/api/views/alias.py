@@ -237,7 +237,7 @@ def get_alias_activities(alias_id):
     activities = []
     for alias_log in alias_logs:
         activity = {
-            "timestamp": alias_log.when.timestamp,
+            "timestamp": alias_log.when.int_timestamp,
             "reverse_alias": alias_log.reverse_alias,
             "reverse_alias_address": alias_log.contact.reply_email,
         }

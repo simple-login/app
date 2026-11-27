@@ -62,7 +62,7 @@ class RedisSessionStore(SessionInterface):
     def extract_and_validate_session_id(
         cls, app: flask.Flask, request: flask.Request
     ) -> Optional[str]:
-        unverified_session_Id = request.cookies.get(app.session_cookie_name)
+        unverified_session_Id = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
         if not unverified_session_Id:
             return None
         signer = cls._get_signer(app)
@@ -140,11 +140,14 @@ class RedisSessionStore(SessionInterface):
             value=val,
             time=ttl,
         )
-        signed_session_id = self._get_signer(app).sign(
-            itsdangerous.want_bytes(session.session_id)
+        # Werkzeug >= 2.3 only accepts str cookie values
+        signed_session_id = (
+            self._get_signer(app)
+            .sign(itsdangerous.want_bytes(session.session_id))
+            .decode()
         )
         response.set_cookie(
-            app.session_cookie_name,
+            self.get_cookie_name(app),
             signed_session_id,
             expires=expires,
             httponly=httponly,

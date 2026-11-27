@@ -66,7 +66,7 @@ def manual_upgrade(way: str, ids: list[int], is_giveaway: bool):
                 user=user,
                 content=EventContent(
                     user_plan_change=UserPlanChanged(
-                        plan_end_time=manual_sub.end_at.timestamp
+                        plan_end_time=manual_sub.end_at.int_timestamp
                     )
                 ),
             )
@@ -87,7 +87,7 @@ def manual_upgrade(way: str, ids: list[int], is_giveaway: bool):
                 user=user,
                 content=EventContent(
                     user_plan_change=UserPlanChanged(
-                        plan_end_time=manual_sub.end_at.timestamp
+                        plan_end_time=manual_sub.end_at.int_timestamp
                     )
                 ),
             )

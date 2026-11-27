@@ -8,6 +8,7 @@ from typing import List, Optional
 import arrow
 import time
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql.expression import or_, and_
@@ -366,7 +367,8 @@ def get_jobs_to_run(taken_before_time: arrow.Arrow) -> List[Job]:
 
 
 def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
-    sql = """
+    sql = text(
+        """
         UPDATE job
         SET
             taken_at = :taken_time,
@@ -375,6 +377,7 @@ def take_job(job: Job, taken_before_time: arrow.Arrow) -> bool:
         WHERE id = :job_id
           AND (state = :ready_state OR (state=:taken_state AND taken_at < :taken_before_time))
         """
+    )
     args = {
         "taken_time": arrow.now().datetime,
         "job_id": job.id,

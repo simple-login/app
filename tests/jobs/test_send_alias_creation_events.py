@@ -41,7 +41,7 @@ def test_send_alias_creation_events():
     assert event_list[1].email == aliases[0].email
     assert event_list[1].note == ""
     assert event_list[1].enabled == aliases[0].enabled
-    assert event_list[1].created_at == int(aliases[0].created_at.timestamp)
+    assert event_list[1].created_at == int(aliases[0].created_at.int_timestamp)
     decoded_event = event_pb2.Event.FromString(dispatcher.events[1])
     assert decoded_event.user_id == user.id
     assert decoded_event.external_user_id == partner_user.external_user_id

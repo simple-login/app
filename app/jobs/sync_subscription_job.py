@@ -43,7 +43,7 @@ class SyncSubscriptionJob:
                 include_partner_subscription=False
             )
             if plan_end:
-                content = UserPlanChanged(plan_end_time=plan_end.timestamp)
+                content = UserPlanChanged(plan_end_time=plan_end.int_timestamp)
             else:
                 content = UserPlanChanged()
 

@@ -22,8 +22,7 @@ from jinja2 import FileSystemLoader, Environment, select_autoescape
 from sqlalchemy import orm, or_
 from sqlalchemy import text, desc, CheckConstraint, Index, Column
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import deferred
+from sqlalchemy.orm import declarative_base, deferred
 from sqlalchemy.orm.exc import ObjectDeletedError
 from sqlalchemy.sql import and_
 from sqlalchemy_utils import ArrowType
@@ -53,6 +52,9 @@ from app.utils import (
 )
 
 Base = declarative_base()
+# Models use plain (non-Mapped[]) type annotations; keep them out of the
+# SQLAlchemy 2.x annotated-declarative mapping.
+Base.__allow_unmapped__ = True
 
 PADDLE_SUBSCRIPTION_GRACE_DAYS = 14
 _PARTNER_SUBSCRIPTION_GRACE_DAYS = 14
@@ -80,7 +82,7 @@ class ModelMixin(object):
 
     @classmethod
     def get(cls, id):
-        return Session.query(cls).get(id)
+        return Session.get(cls, id)
 
     @classmethod
     def get_by(cls, **kw):
@@ -1708,7 +1710,9 @@ class Alias(Base, ModelMixin):
 
     # have I been pwned
     hibp_last_check = sa.Column(ArrowType, default=None, index=True)
-    hibp_breaches = orm.relationship("Hibp", secondary="alias_hibp")
+    hibp_breaches = orm.relationship(
+        "Hibp", secondary="alias_hibp", overlaps="breached_aliases"
+    )
 
     # to use Postgres full text search. Only applied on "note" column for now
     # this is a generated Postgres column
@@ -1807,7 +1811,7 @@ class Alias(Base, ModelMixin):
         last_email_log_id UPDATE.
         """
         Session.execute(
-            "SELECT id FROM alias WHERE id = :alias_id FOR UPDATE",
+            text("SELECT id FROM alias WHERE id = :alias_id FOR UPDATE"),
             {"alias_id": alias_id},
         )
 
@@ -1880,7 +1884,7 @@ class Alias(Base, ModelMixin):
             email=new_alias.email,
             note=new_alias.note,
             enabled=True,
-            created_at=int(new_alias.created_at.timestamp),
+            created_at=int(new_alias.created_at.int_timestamp),
         )
         EventDispatcher.send_event(user, EventContent(alias_created=event))
         emit_alias_audit_log(
@@ -2343,7 +2347,11 @@ class EmailLog(Base, ModelMixin):
     refused_email = orm.relationship("RefusedEmail")
     forward = orm.relationship(Contact)
 
-    contact = orm.relationship(Contact, backref="email_logs")
+    contact = orm.relationship(
+        Contact,
+        backref=orm.backref("email_logs", overlaps="forward"),
+        overlaps="forward",
+    )
     alias = orm.relationship(Alias)
     mailbox = orm.relationship("Mailbox", lazy="joined", foreign_keys=[mailbox_id])
     user = orm.relationship(User)
@@ -2382,7 +2390,9 @@ class EmailLog(Base, ModelMixin):
         email_log = super().create(*args, **kwargs)
         Session.flush()
         if "alias_id" in kwargs:
-            sql = "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
+            sql = text(
+                "UPDATE alias SET last_email_log_id = :el_id WHERE id = :alias_id"
+            )
             Session.execute(
                 sql, {"el_id": email_log.id, "alias_id": kwargs["alias_id"]}
             )
@@ -3268,7 +3278,7 @@ class AliasMailbox(Base, ModelMixin):
         sa.ForeignKey(Mailbox.id, ondelete="cascade"), nullable=False, index=True
     )
 
-    alias = orm.relationship(Alias)
+    alias = orm.relationship(Alias, overlaps="_mailboxes")
 
 
 class AliasHibp(Base, ModelMixin):
@@ -3285,10 +3295,22 @@ class AliasHibp(Base, ModelMixin):
     )
 
     alias = orm.relationship(
-        "Alias", backref=orm.backref("alias_hibp", cascade="all, delete-orphan")
+        "Alias",
+        backref=orm.backref(
+            "alias_hibp",
+            cascade="all, delete-orphan",
+            overlaps="breached_aliases,hibp_breaches",
+        ),
+        overlaps="breached_aliases,hibp_breaches",
     )
     hibp = orm.relationship(
-        "Hibp", backref=orm.backref("alias_hibp", cascade="all, delete-orphan")
+        "Hibp",
+        backref=orm.backref(
+            "alias_hibp",
+            cascade="all, delete-orphan",
+            overlaps="breached_aliases,hibp_breaches",
+        ),
+        overlaps="breached_aliases,hibp_breaches",
     )
 
 
@@ -4182,7 +4204,7 @@ class SyncEvent(Base, ModelMixin):
                 args["taken_older_than"] = allow_taken_older_than.datetime
             sql_taken_condition = "({})".format(" OR ".join(taken_condition))
             sql = f"UPDATE sync_event SET taken_time = :taken_time WHERE id = :sync_event_id AND {sql_taken_condition}"
-            res = Session.execute(sql, args)
+            res = Session.execute(text(sql), args)
             Session.commit()
         except ObjectDeletedError:
             return False
@@ -4198,7 +4220,8 @@ class SyncEvent(Base, ModelMixin):
         Rows locked by other workers are skipped, so concurrent workers never claim the same event
         nor wait for each other. Returns the claimed events ordered by id.
         """
-        sql = """
+        sql = text(
+            """
             UPDATE sync_event SET taken_time = :now
             WHERE id IN (
                 SELECT id FROM sync_event
@@ -4211,6 +4234,7 @@ class SyncEvent(Base, ModelMixin):
             )
             RETURNING id
         """
+        )
         res = Session.execute(
             sql,
             {

@@ -16,7 +16,7 @@ def custom_domain_to_dict(custom_domain: CustomDomain):
         "is_verified": custom_domain.verified,
         "nb_alias": custom_domain.nb_alias(),
         "creation_date": custom_domain.created_at.format(),
-        "creation_timestamp": custom_domain.created_at.timestamp,
+        "creation_timestamp": custom_domain.created_at.int_timestamp,
         "catch_all": custom_domain.catch_all,
         "name": custom_domain.name,
         "random_prefix_generation": custom_domain.random_prefix_generation,
@@ -53,7 +53,7 @@ def get_custom_domain_trash(custom_domain_id: int):
         aliases=[
             {
                 "alias": dda.email,
-                "deletion_timestamp": dda.created_at.timestamp,
+                "deletion_timestamp": dda.created_at.int_timestamp,
             }
             for dda in domain_deleted_aliases
         ]

@@ -303,12 +303,12 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
             domain_id = int(request.form.get("domain_id", ""))
         except ValueError:
             flash("Invalid domain_id", "error")
-            return redirect(url_for("admin.custom_domain_search.index"))
+            return redirect(url_for("admin_custom_domain_search.index"))
 
         domain: Optional[CustomDomain] = CustomDomain.get(domain_id)
         if domain is None:
             flash("Domain not found", "error")
-            return redirect(url_for("admin.custom_domain_search.index"))
+            return redirect(url_for("admin_custom_domain_search.index"))
 
         before = CustomDomainSearchHelpers.verification_flags(domain)
         validation_data = CustomDomainSearchHelpers.verify_dns_records(domain)
@@ -367,18 +367,18 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
 
         if not domain_id:
             flash("Missing domain_id", "error")
-            return redirect(url_for("admin.custom_domain_search.index"))
+            return redirect(url_for("admin_custom_domain_search.index"))
 
         try:
             domain_id = int(domain_id)
         except ValueError:
             flash("Invalid domain_id", "error")
-            return redirect(url_for("admin.custom_domain_search.index"))
+            return redirect(url_for("admin_custom_domain_search.index"))
 
         domain: Optional[CustomDomain] = CustomDomain.get(domain_id)
         if domain is None:
             flash("Domain not found", "error")
-            return redirect(url_for("admin.custom_domain_search.index"))
+            return redirect(url_for("admin_custom_domain_search.index"))
 
         domain_name = domain.domain
 
@@ -389,7 +389,7 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
                 "error",
             )
             return redirect(
-                url_for("admin.custom_domain_search.index", query=domain_name)
+                url_for("admin_custom_domain_search.index", query=domain_name)
             )
 
         # Validate deletion prerequisites before proceeding
@@ -414,4 +414,4 @@ class CustomDomainSearchAdmin(CSRFProtectedAdminView):
             f"Admin {current_user.email} scheduled deletion of custom domain {domain_name} (id={domain_id})"
         )
         flash(f"Scheduled deletion of custom domain {domain_name}", "success")
-        return redirect(url_for("admin.custom_domain_search.index", query=domain_name))
+        return redirect(url_for("admin_custom_domain_search.index", query=domain_name))

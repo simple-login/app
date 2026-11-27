@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+from app import pg_dialect
+
 ROOT_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
@@ -215,8 +217,16 @@ if "DKIM_PRIVATE_KEY_PATH" in os.environ:
     with open(DKIM_PRIVATE_KEY_PATH) as f:
         DKIM_PRIVATE_KEY = f.read()
 
+
 # Database
-DB_URI = os.environ["DB_URI"]
+# Any PostgreSQL URI is accepted, e.g. the historical
+# postgresql://user:password@host:port/dbname, or with a driver such as
+# postgresql+psycopg2://...: see app/pg_dialect.py
+
+# libpq-style URI, usable directly by psycopg.connect()
+RAW_DB_URI = pg_dialect.libpq_uri(os.environ["DB_URI"])
+# SQLAlchemy URI, using the psycopg (v3) driver through our dialect
+DB_URI = pg_dialect.sqlalchemy_uri(os.environ["DB_URI"])
 DB_CONN_NAME = os.environ.get("DB_CONN_NAME", "webapp")
 
 # Flask secret
@@ -722,7 +732,9 @@ EVENT_WEBHOOK_ENABLED_USER_IDS: Optional[List[int]] = read_webhook_enabled_user_
 
 # Allow to define a different DB_URI for the event listener, in case we want to skip the connection pool
 # It defaults to the regular DB_URI in case it's needed
-EVENT_LISTENER_DB_URI = os.environ.get("EVENT_LISTENER_DB_URI", DB_URI)
+EVENT_LISTENER_DB_URI = pg_dialect.libpq_uri(
+    os.environ.get("EVENT_LISTENER_DB_URI", RAW_DB_URI)
+)
 
 MAX_BOUNCES_1D = int(os.environ.get("MAX_BOUNCES_1D", 12))
 MAX_BOUNCES_1W = int(os.environ.get("MAX_BOUNCES_1W", 10))

@@ -65,6 +65,11 @@ def start_metrics_server(
         # Port in use (expected, e.g. several processes on one host).
         LOG.w("Cannot start metrics server on %s:%s: %s", host, port, e)
         return None
+    except SystemExit:
+        # Werkzeug >= 2.1 prints the bind error to stderr and calls sys.exit(1)
+        # instead of raising OSError: never let that kill the calling process.
+        LOG.w("Cannot start metrics server on %s:%s: cannot bind", host, port)
+        return None
 
     thread = threading.Thread(
         target=server.serve_forever, name="metrics-server", daemon=True

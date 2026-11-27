@@ -3,6 +3,7 @@ from uuid import UUID
 
 import arrow
 import pytest
+from sqlalchemy import text
 
 from app.config import EMAIL_DOMAIN, MAX_NB_EMAIL_FREE_PLAN
 from app.email_utils import get_noreply_email
@@ -442,9 +443,13 @@ def test_sync_event_claim_dead_letter_skips_locked_rows():
 
     conn = engine.connect()
     try:
-        conn.execute("SET lock_timeout = '2s'")
+        conn.execute(text("SET lock_timeout = '2s'"))
+        # SQLAlchemy 2 autobegins a transaction: end it before starting ours
+        conn.commit()
         trans = conn.begin()
-        conn.execute("SELECT id FROM sync_event WHERE id = %s FOR UPDATE", (ids[0],))
+        conn.execute(
+            text("SELECT id FROM sync_event WHERE id = :id FOR UPDATE"), {"id": ids[0]}
+        )
         claimed = SyncEvent.claim_dead_letter(older_than, max_retries=5, limit=2)
         assert [e.id for e in claimed] == ids[1:]
         trans.rollback()

@@ -1,5 +1,7 @@
 {% extends 'admin/master.html' %}
 
+{# This page renders its own header card: hide flask-admin's page title #}
+{% block page_title %}{% endblock %}
 {% block head_css %}
   {{ super() }}
   <style>
@@ -256,7 +258,7 @@
             <tr>
               <td>User:</td>
               <td>
-                <a href="{{ url_for('admin.email_search.index', query=diagnosis.user.email, search_type='email') }}">{{ diagnosis.user.email }}</a>
+                <a href="{{ url_for('admin_email_search.index', query=diagnosis.user.email, search_type='email') }}">{{ diagnosis.user.email }}</a>
                 <span class="text-muted">(id {{ diagnosis.user.id }})</span>
               </td>
             </tr>
@@ -304,9 +306,9 @@
               <tr>
                 <td>Already registered:</td>
                 <td>
-                  <a href="{{ url_for('admin.custom_domain_search.index', query=diagnosis.existing_domain.id) }}">#{{ diagnosis.existing_domain.id }}</a>
+                  <a href="{{ url_for('admin_custom_domain_search.index', query=diagnosis.existing_domain.id) }}">#{{ diagnosis.existing_domain.id }}</a>
                   owned by
-                  <a href="{{ url_for('admin.email_search.index', query=diagnosis.existing_domain.user.email, search_type='email') }}">{{ diagnosis.existing_domain.user.email }}</a>
+                  <a href="{{ url_for('admin_email_search.index', query=diagnosis.existing_domain.user.email, search_type='email') }}">{{ diagnosis.existing_domain.user.email }}</a>
                   {% if diagnosis.existing_domain.pending_deletion %}<span class="badge badge-secondary">pending deletion</span>{% endif %}
                 </td>
               </tr>
@@ -328,13 +330,13 @@
                 <td>
                   {% for parent in diagnosis.parent_domains %}
                     <div>
-                      <a href="{{ url_for('admin.custom_domain_search.index', query=parent.id) }}"><code>{{ parent.domain }}</code></a>
+                      <a href="{{ url_for('admin_custom_domain_search.index', query=parent.id) }}"><code>{{ parent.domain }}</code></a>
                       &mdash;
                       {% if parent.user_id == diagnosis.user.id %}
                         this user
                       {% else %}
                         <span class="badge badge-warning">other user</span>
-                        <a href="{{ url_for('admin.email_search.index', query=parent.user.email, search_type='email') }}">{{ parent.user.email }}</a>
+                        <a href="{{ url_for('admin_email_search.index', query=parent.user.email, search_type='email') }}">{{ parent.user.email }}</a>
                       {% endif %}
                       {% if parent.ownership_verified %}
                         <span class="badge badge-success">ownership verified</span>
@@ -356,7 +358,7 @@
                 </span>
                 {% for d in diagnosis.pending_domains %}
                   <div>
-                    <a href="{{ url_for('admin.custom_domain_search.index', query=d.id) }}"><code>{{ d.domain }}</code></a>
+                    <a href="{{ url_for('admin_custom_domain_search.index', query=d.id) }}"><code>{{ d.domain }}</code></a>
                     <span class="text-muted">created {{ d.created_at.humanize() }}</span>
                     {% if d.partner_id %}<span class="badge badge-info">partner</span>{% endif %}
                     {% if d.pending_deletion %}<span class="badge badge-secondary">pending deletion</span>{% endif %}

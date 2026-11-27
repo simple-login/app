@@ -2,7 +2,7 @@ import argparse
 import sys
 import time
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 from app.abuser_audit_log_utils import emit_abuser_audit_log, AbuserAuditLogAction
 from app.db import Session
@@ -61,7 +61,7 @@ else:
     LOG.i("Users will NOT be marked as abusers")
 for batch_start in range(user_id_start, max_user_id, step):
     rows = Session.execute(
-        sql,
+        text(sql),
         {
             "start": batch_start,
             "end": batch_start + step,
